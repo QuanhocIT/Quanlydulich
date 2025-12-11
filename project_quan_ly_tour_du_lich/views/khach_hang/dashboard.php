@@ -83,7 +83,7 @@
                     <img src="https://images.unsplash.com/photo-1465156799763-2c087c332922?auto=format&fit=crop&w=1500&q=80" class="d-block w-100 h-100" style="object-fit:cover;" alt="Banner 2">
                 </div>
                 <div class="carousel-item h-100">
-                    <img src="https://images.unsplash.com/photo-1519125323398-675f0ddb6308?auto=format&fit=crop&w=1500&q=80" class="d-block w-100 h-100" style="object-fit:cover;" alt="Banner 3">
+                    <img src="https://media.gody.vn/images/washington/toa-nha-quoc-hoi-hoa-ky-us-capitol/cd5a9e79d607ee8d7c3d6dc6bc11228d96ee8d0a.jpg" class="d-block w-100 h-100" style="object-fit:cover;" alt="Banner 3">
                 </div>
             </div>
             <!-- Các nút điều khiển vẫn giữ nguyên, nhưng carousel sẽ tự động chạy -->
@@ -109,7 +109,7 @@
                 <div class="row g-4">
                     <div class="col-md-4">
                         <div class="experience-card position-relative rounded-4 shadow-sm" style="height:320px;">
-                            <img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80" alt="Sing - Thái" class="w-100 h-100 object-fit-cover rounded-4">
+                            <img src="https://blog.ehl.edu/hs-fs/hubfs/1440x960-singapore-bay.jpg?width=1440&height=960&name=1440x960-singapore-bay.jpg" alt="Sing - Thái" class="w-100 h-100 object-fit-cover rounded-4">
                             <div class="experience-overlay position-absolute top-0 start-0 w-100 h-100 d-flex flex-column justify-content-end p-4 rounded-4" style="background: linear-gradient(120deg,rgba(0,123,255,0.7) 60%,rgba(0,0,0,0.2) 100%);">
                                 <h3 class="fw-bold text-white mb-2">Chốt Gấp Kèo Sing - Thái</h3>
                                 <div class="mb-2 text-white fs-5">Deal du lịch HOT nhất Singapore & Thái Lan</div>
@@ -129,7 +129,7 @@
                     </div>
                     <div class="col-md-4">
                         <div class="experience-card position-relative rounded-4 shadow-sm" style="height:320px;">
-                            <img src="https://images.unsplash.com/photo-1519125323398-675f0ddb6308?auto=format&fit=crop&w=800&q=80" alt="Zone Châu Âu - Hoa Kỳ" class="w-100 h-100 object-fit-cover rounded-4">
+                            <img src="https://epacket.vn/wp-content/uploads/2023/09/Hoa-Ky1.jpg" alt="Zone Châu Âu - Hoa Kỳ" class="w-100 h-100 object-fit-cover rounded-4">
                             <div class="experience-overlay position-absolute top-0 start-0 w-100 h-100 d-flex flex-column justify-content-end p-4 rounded-4" style="background: linear-gradient(120deg,rgba(0,180,180,0.7) 60%,rgba(0,0,0,0.2) 100%);">
                                 <h3 class="fw-bold text-white mb-2">Zone Châu Âu - Hoa Kỳ</h3>
                                 <div class="mb-2 text-white fs-5">Gợi ý du lịch hàng đầu Châu Âu và Hoa Kỳ.</div>
@@ -172,7 +172,7 @@
                         <div class="row justify-content-center g-4">
                             <div class="col-lg-2 col-md-4 col-6 d-flex justify-content-center">
                                 <div class="destination-card position-relative rounded-4 shadow-sm w-100" style="height:260px; max-width:180px;">
-                                    <img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80" alt="Thượng Hải" class="w-100 h-100 object-fit-cover rounded-4">
+                                    <img src="https://ik.imagekit.io/tvlk/blog/2021/11/kinh-nghiem-du-lich-thuong-hai-cover.jpg" alt="Thượng Hải" class="w-100 h-100 object-fit-cover rounded-4">
                                     <div class="destination-overlay position-absolute bottom-0 start-0 w-100 p-3 rounded-bottom-4" style="background: linear-gradient(180deg,rgba(0,0,0,0) 40%,rgba(0,0,0,0.7) 100%);">
                                         <h5 class="fw-bold text-white mb-1">Thượng Hải</h5>
                                         <small class="text-light fs-6">225 hoạt động</small>
@@ -181,7 +181,7 @@
                             </div>
                             <div class="col-lg-2 col-md-4 col-6 d-flex justify-content-center">
                                 <div class="destination-card position-relative rounded-4 shadow-sm w-100" style="height:260px; max-width:180px;">
-                                    <img src="https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=crop&w=800&q=80" alt="Bangkok" class="w-100 h-100 object-fit-cover rounded-4">
+                                    <img src="https://cly.1cdn.vn/2022/02/15/thu-do-bang-coc.jpg" alt="Bangkok" class="w-100 h-100 object-fit-cover rounded-4">
                                     <div class="destination-overlay position-absolute bottom-0 start-0 w-100 p-3 rounded-bottom-4" style="background: linear-gradient(180deg,rgba(0,0,0,0) 40%,rgba(0,0,0,0.7) 100%);">
                                         <h5 class="fw-bold text-white mb-1">Bangkok</h5>
                                         <small class="text-light fs-6">581 hoạt động</small>
@@ -190,7 +190,7 @@
                             </div>
                             <div class="col-lg-2 col-md-4 col-6 d-flex justify-content-center">
                                 <div class="destination-card position-relative rounded-4 shadow-sm w-100" style="height:260px; max-width:180px;">
-                                    <img src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80" alt="Đà Nẵng" class="w-100 h-100 object-fit-cover rounded-4">
+                                    <img src="https://vietnamdiscovery.com/wp-content/uploads/2020/12/Golden-Bridge-Featured.jpg" alt="Đà Nẵng" class="w-100 h-100 object-fit-cover rounded-4">
                                     <div class="destination-overlay position-absolute bottom-0 start-0 w-100 p-3 rounded-bottom-4" style="background: linear-gradient(180deg,rgba(0,0,0,0) 40%,rgba(0,0,0,0.7) 100%);">
                                         <h5 class="fw-bold text-white mb-1">Đà Nẵng</h5>
                                         <small class="text-light fs-6">146 hoạt động</small>
@@ -199,7 +199,7 @@
                             </div>
                             <div class="col-lg-2 col-md-4 col-6 d-flex justify-content-center">
                                 <div class="destination-card position-relative rounded-4 shadow-sm w-100" style="height:260px; max-width:180px;">
-                                    <img src="https://images.unsplash.com/photo-1465101178521-c1a4c8a0f8f9?auto=format&fit=crop&w=800&q=80" alt="Hà Nội" class="w-100 h-100 object-fit-cover rounded-4">
+                                    <img src="https://tse3.mm.bing.net/th/id/OIP.1puCYdr07Y7nQ9_AhECDagHaLH?rs=1&pid=ImgDetMain&o=7&rm=3" alt="Hà Nội" class="w-100 h-100 object-fit-cover rounded-4">
                                     <div class="destination-overlay position-absolute bottom-0 start-0 w-100 p-3 rounded-bottom-4" style="background: linear-gradient(180deg,rgba(0,0,0,0) 40%,rgba(0,0,0,0.7) 100%);">
                                         <h5 class="fw-bold text-white mb-1">Hà Nội</h5>
                                         <small class="text-light fs-6">154 hoạt động</small>
@@ -208,7 +208,7 @@
                             </div>
                             <div class="col-lg-2 col-md-4 col-6 d-flex justify-content-center">
                                 <div class="destination-card position-relative rounded-4 shadow-sm w-100" style="height:260px; max-width:180px;">
-                                    <img src="https://images.unsplash.com/photo-1509228468518-180dd4864904?auto=format&fit=crop&w=800&q=80" alt="TP. Hồ Chí Minh" class="w-100 h-100 object-fit-cover rounded-4">
+                                    <img src="https://st.ielts-fighter.com/src/ielts-fighter-image/2023/01/09/5e6dbb91-3dab-4500-9a28-b9599aa12949.png" alt="TP. Hồ Chí Minh" class="w-100 h-100 object-fit-cover rounded-4">
                                     <div class="destination-overlay position-absolute bottom-0 start-0 w-100 p-3 rounded-bottom-4" style="background: linear-gradient(180deg,rgba(0,0,0,0) 40%,rgba(0,0,0,0.7) 100%);">
                                         <h5 class="fw-bold text-white mb-1">TP. Hồ Chí Minh</h5>
                                         <small class="text-light fs-6">240 hoạt động</small>
@@ -217,7 +217,7 @@
                             </div>
                             <div class="col-lg-2 col-md-4 col-6 d-flex justify-content-center">
                                 <div class="destination-card position-relative rounded-4 shadow-sm w-100" style="height:260px; max-width:180px;">
-                                    <img src="https://images.unsplash.com/photo-1519125323398-675f0ddb6308?auto=format&fit=crop&w=800&q=80" alt="Đài Bắc" class="w-100 h-100 object-fit-cover rounded-4">
+                                    <img src="https://ik.imagekit.io/tvlk/blog/2022/12/du-lich-dai-bac-10.jpg?tr=dpr-2,w-675" alt="Đài Bắc" class="w-100 h-100 object-fit-cover rounded-4">
                                     <div class="destination-overlay position-absolute bottom-0 start-0 w-100 p-3 rounded-bottom-4" style="background: linear-gradient(180deg,rgba(0,0,0,0) 40%,rgba(0,0,0,0.7) 100%);">
                                         <h5 class="fw-bold text-white mb-1">Đài Bắc</h5>
                                         <small class="text-light fs-6">394 hoạt động</small>
@@ -338,72 +338,64 @@
             </div>
         </div>
             <!-- Section: Bạn muốn đi đâu chơi? (Demo tĩnh kiểu Klook) -->
-            <div class="mt-5">
-                <h2 class="fw-bold mb-4">Bạn muốn đi đâu chơi?</h2>
-                <div class="d-flex flex-row flex-nowrap overflow-auto pb-2" style="gap: 24px;">
-                    <!-- Card điểm đến đẹp kiểu Klook -->
-                    <div class="destination-card position-relative rounded-4 shadow-sm" style="min-width:200px; max-width:220px; height:260px; background: #fff;">
-                        <img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80" alt="Thượng Hải" class="w-100 h-100 object-fit-cover rounded-4">
-                        <div class="destination-overlay position-absolute bottom-0 start-0 w-100 p-3 rounded-bottom-4" style="background: linear-gradient(180deg,rgba(0,0,0,0) 40%,rgba(0,0,0,0.7) 100%);">
-                            <h6 class="fw-bold text-white mb-1">Thượng Hải</h6>
-                            <small class="text-light">225 hoạt động</small>
+            <div class="container">
+                        <div class="row justify-content-center g-4">
+                            <div class="col-lg-2 col-md-4 col-6 d-flex justify-content-center">
+                                <div class="destination-card position-relative rounded-4 shadow-sm w-100" style="height:260px; max-width:180px;">
+                                    <img src="https://ik.imagekit.io/tvlk/blog/2021/11/kinh-nghiem-du-lich-thuong-hai-cover.jpg" alt="Thượng Hải" class="w-100 h-100 object-fit-cover rounded-4">
+                                    <div class="destination-overlay position-absolute bottom-0 start-0 w-100 p-3 rounded-bottom-4" style="background: linear-gradient(180deg,rgba(0,0,0,0) 40%,rgba(0,0,0,0.7) 100%);">
+                                        <h5 class="fw-bold text-white mb-1">Thượng Hải</h5>
+                                        <small class="text-light fs-6">225 hoạt động</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-2 col-md-4 col-6 d-flex justify-content-center">
+                                <div class="destination-card position-relative rounded-4 shadow-sm w-100" style="height:260px; max-width:180px;">
+                                    <img src="https://cly.1cdn.vn/2022/02/15/thu-do-bang-coc.jpg" alt="Bangkok" class="w-100 h-100 object-fit-cover rounded-4">
+                                    <div class="destination-overlay position-absolute bottom-0 start-0 w-100 p-3 rounded-bottom-4" style="background: linear-gradient(180deg,rgba(0,0,0,0) 40%,rgba(0,0,0,0.7) 100%);">
+                                        <h5 class="fw-bold text-white mb-1">Bangkok</h5>
+                                        <small class="text-light fs-6">581 hoạt động</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-2 col-md-4 col-6 d-flex justify-content-center">
+                                <div class="destination-card position-relative rounded-4 shadow-sm w-100" style="height:260px; max-width:180px;">
+                                    <img src="https://vietnamdiscovery.com/wp-content/uploads/2020/12/Golden-Bridge-Featured.jpg" alt="Đà Nẵng" class="w-100 h-100 object-fit-cover rounded-4">
+                                    <div class="destination-overlay position-absolute bottom-0 start-0 w-100 p-3 rounded-bottom-4" style="background: linear-gradient(180deg,rgba(0,0,0,0) 40%,rgba(0,0,0,0.7) 100%);">
+                                        <h5 class="fw-bold text-white mb-1">Đà Nẵng</h5>
+                                        <small class="text-light fs-6">146 hoạt động</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-2 col-md-4 col-6 d-flex justify-content-center">
+                                <div class="destination-card position-relative rounded-4 shadow-sm w-100" style="height:260px; max-width:180px;">
+                                    <img src="https://tse3.mm.bing.net/th/id/OIP.1puCYdr07Y7nQ9_AhECDagHaLH?rs=1&pid=ImgDetMain&o=7&rm=3" alt="Hà Nội" class="w-100 h-100 object-fit-cover rounded-4">
+                                    <div class="destination-overlay position-absolute bottom-0 start-0 w-100 p-3 rounded-bottom-4" style="background: linear-gradient(180deg,rgba(0,0,0,0) 40%,rgba(0,0,0,0.7) 100%);">
+                                        <h5 class="fw-bold text-white mb-1">Hà Nội</h5>
+                                        <small class="text-light fs-6">154 hoạt động</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-2 col-md-4 col-6 d-flex justify-content-center">
+                                <div class="destination-card position-relative rounded-4 shadow-sm w-100" style="height:260px; max-width:180px;">
+                                    <img src="https://st.ielts-fighter.com/src/ielts-fighter-image/2023/01/09/5e6dbb91-3dab-4500-9a28-b9599aa12949.png" alt="TP. Hồ Chí Minh" class="w-100 h-100 object-fit-cover rounded-4">
+                                    <div class="destination-overlay position-absolute bottom-0 start-0 w-100 p-3 rounded-bottom-4" style="background: linear-gradient(180deg,rgba(0,0,0,0) 40%,rgba(0,0,0,0.7) 100%);">
+                                        <h5 class="fw-bold text-white mb-1">TP. Hồ Chí Minh</h5>
+                                        <small class="text-light fs-6">240 hoạt động</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-2 col-md-4 col-6 d-flex justify-content-center">
+                                <div class="destination-card position-relative rounded-4 shadow-sm w-100" style="height:260px; max-width:180px;">
+                                    <img src="https://ik.imagekit.io/tvlk/blog/2022/12/du-lich-dai-bac-10.jpg?tr=dpr-2,w-675" alt="Đài Bắc" class="w-100 h-100 object-fit-cover rounded-4">
+                                    <div class="destination-overlay position-absolute bottom-0 start-0 w-100 p-3 rounded-bottom-4" style="background: linear-gradient(180deg,rgba(0,0,0,0) 40%,rgba(0,0,0,0.7) 100%);">
+                                        <h5 class="fw-bold text-white mb-1">Đài Bắc</h5>
+                                        <small class="text-light fs-6">394 hoạt động</small>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div class="destination-card position-relative rounded-4 shadow-sm" style="min-width:200px; max-width:220px; height:260px; background: #fff;">
-                        <img src="https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=crop&w=400&q=80" alt="Bangkok" class="w-100 h-100 object-fit-cover rounded-4">
-                        <div class="destination-overlay position-absolute bottom-0 start-0 w-100 p-3 rounded-bottom-4" style="background: linear-gradient(180deg,rgba(0,0,0,0) 40%,rgba(0,0,0,0.7) 100%);">
-                            <h6 class="fw-bold text-white mb-1">Bangkok</h6>
-                            <small class="text-light">581 hoạt động</small>
-                        </div>
-                    </div>
-                    <div class="destination-card position-relative rounded-4 shadow-sm" style="min-width:200px; max-width:220px; height:260px; background: #fff;">
-                        <img src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=400&q=80" alt="Đà Nẵng" class="w-100 h-100 object-fit-cover rounded-4">
-                        <div class="destination-overlay position-absolute bottom-0 start-0 w-100 p-3 rounded-bottom-4" style="background: linear-gradient(180deg,rgba(0,0,0,0) 40%,rgba(0,0,0,0.7) 100%);">
-                            <h6 class="fw-bold text-white mb-1">Đà Nẵng</h6>
-                            <small class="text-light">146 hoạt động</small>
-                        </div>
-                    </div>
-                    <div class="destination-card position-relative rounded-4 shadow-sm" style="min-width:200px; max-width:220px; height:260px; background: #fff;">
-                        <img src="https://images.unsplash.com/photo-1465101178521-c1a4c8a0f8f9?auto=format&fit=crop&w=400&q=80" alt="Hà Nội" class="w-100 h-100 object-fit-cover rounded-4">
-                        <div class="destination-overlay position-absolute bottom-0 start-0 w-100 p-3 rounded-bottom-4" style="background: linear-gradient(180deg,rgba(0,0,0,0) 40%,rgba(0,0,0,0.7) 100%);">
-                            <h6 class="fw-bold text-white mb-1">Hà Nội</h6>
-                            <small class="text-light">154 hoạt động</small>
-                        </div>
-                    </div>
-                    <div class="destination-card position-relative rounded-4 shadow-sm" style="min-width:200px; max-width:220px; height:260px; background: #fff;">
-                        <img src="https://images.unsplash.com/photo-1509228468518-180dd4864904?auto=format&fit=crop&w=400&q=80" alt="TP. Hồ Chí Minh" class="w-100 h-100 object-fit-cover rounded-4">
-                        <div class="destination-overlay position-absolute bottom-0 start-0 w-100 p-3 rounded-bottom-4" style="background: linear-gradient(180deg,rgba(0,0,0,0) 40%,rgba(0,0,0,0.7) 100%);">
-                            <h6 class="fw-bold text-white mb-1">TP. Hồ Chí Minh</h6>
-                            <small class="text-light">240 hoạt động</small>
-                        </div>
-                    </div>
-                    <div class="destination-card position-relative rounded-4 shadow-sm" style="min-width:200px; max-width:220px; height:260px; background: #fff;">
-                        <img src="https://images.unsplash.com/photo-1519125323398-675f0ddb6308?auto=format&fit=crop&w=400&q=80" alt="Đài Bắc" class="w-100 h-100 object-fit-cover rounded-4">
-                        <div class="destination-overlay position-absolute bottom-0 start-0 w-100 p-3 rounded-bottom-4" style="background: linear-gradient(180deg,rgba(0,0,0,0) 40%,rgba(0,0,0,0.7) 100%);">
-                            <h6 class="fw-bold text-white mb-1">Đài Bắc</h6>
-                            <small class="text-light">394 hoạt động</small>
-                        </div>
-                    </div>
-                </div>
-                <style>
-                    .destination-card {
-                        transition: transform 0.2s, box-shadow 0.2s;
-                        cursor: pointer;
-                    }
-                    .destination-card:hover {
-                        transform: translateY(-8px) scale(1.04);
-                        box-shadow: 0 8px 32px rgba(0,0,0,0.18);
-                    }
-                    .destination-overlay {
-                        pointer-events: none;
-                    }
-                    @media (max-width: 768px) {
-                        .destination-card { min-width: 140px; max-width: 160px; height: 160px; }
-                        .destination-overlay { padding: 0.5rem; }
-                        .destination-overlay h6 { font-size: 0.95rem; }
-                    }
-                </style>
-            </div>
     </div>
     <footer class="footer text-center">
         <div class="container">

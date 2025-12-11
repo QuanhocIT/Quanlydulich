@@ -1,24 +1,81 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ghi nhận chi phí thực tế</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <style>
-        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
-        .container { max-width: 700px; margin: 40px auto; }
-        .card { background: #fff; border-radius: 16px; box-shadow: 0 8px 32px rgba(76,130,251,0.12); padding: 32px; }
-        .form-label { font-weight: 600; color: #4f8cff; }
-        .btn-primary { background: linear-gradient(90deg,#00c9a7 0%,#4f8cff 100%); border: none; }
-        .form-section { margin-bottom: 24px; }
+<?php
+$pageTitle = 'Ghi nhận chi phí thực tế';
+$currentPage = 'baoCaoTaiChinh';
+ob_start();
+?>
+<style>
+        .form-card {
+            background: rgba(45, 45, 45, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            padding: 32px;
+            backdrop-filter: blur(10px);
+        }
+        .form-section {
+            margin-bottom: 24px;
+        }
+        .form-label {
+            font-weight: 600;
+            color: var(--text-light);
+            display: block;
+            margin-bottom: 8px;
+        }
+        .form-control, .form-select {
+            width: 100%;
+            padding: 12px 15px;
+            background: rgba(30, 30, 30, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: var(--text-light);
+            border-radius: 4px;
+        }
+        .form-control:focus, .form-select:focus {
+            background: rgba(30, 30, 30, 0.9);
+            border-color: var(--accent-gold);
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(255, 193, 7, 0.2);
+            color: var(--text-light);
+        }
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-primary {
+            background: var(--accent-gold);
+            color: #000;
+        }
+        .btn-primary:hover {
+            background: #ffd700;
+        }
+        .mb-4 {
+            margin-bottom: 1.5rem;
+        }
+        .px-4 {
+            padding-left: 1.5rem;
+            padding-right: 1.5rem;
+        }
+        .py-2 {
+            padding-top: 0.5rem;
+            padding-bottom: 0.5rem;
+        }
     </style>
-</head>
-<body>
-<div class="container">
-    <div class="card">
-        <h2 class="mb-4"><i class="fa fa-money-bill-wave"></i> Ghi nhận chi phí thực tế</h2>
+
+<div style="padding: 20px; max-width: 700px; margin: 0 auto;">
+    <div class="page-header-section" style="margin-bottom: 30px;">
+        <h1 style="margin: 0; font-size: 2rem; color: var(--text-light);">
+            <i class="fa fa-money-bill-wave" style="color: var(--accent-gold);"></i> Ghi nhận chi phí thực tế
+        </h1>
+    </div>
+    
+    <div class="form-card">
         <form method="post" enctype="multipart/form-data">
             <div class="form-section">
                 <label class="form-label">Tour</label>
@@ -72,5 +129,7 @@
         </form>
     </div>
 </div>
-</body>
-</html>
+<?php
+$content = ob_get_clean();
+require __DIR__ . '/../../layouts/aventura.php';
+?>

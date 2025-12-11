@@ -1,10 +1,41 @@
 <?php
-class GiaoDich 
-{
+class GiaoDich {
+    // Lấy tổng thu các tháng gần nhất (mặc định 12 tháng)
+    public function getTongThuTheoThang($soThang = 12) {
+        $sql = "SELECT DATE_FORMAT(ngay_giao_dich, '%m/%Y') as thang, COALESCE(SUM(so_tien),0) as tong_thu
+                FROM giao_dich_tai_chinh
+                WHERE loai = 'Thu'
+                GROUP BY thang
+                ORDER BY MIN(ngay_giao_dich) DESC
+                LIMIT ?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute([$soThang]);
+        $rows = $stmt->fetchAll();
+        $result = [];
+        foreach (array_reverse($rows) as $row) {
+            $result[$row['thang']] = (float)$row['tong_thu'];
+        }
+        return $result;
+    }
+    // Lấy tổng thu của một tour
+    public function getTongThuByTourId($tourId) {
+        $sql = "SELECT SUM(so_tien) as tong_thu FROM giao_dich_tai_chinh WHERE tour_id = ? AND loai = 'Thu'";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute([(int)$tourId]);
+        $row = $stmt->fetch();
+        return (float)($row['tong_thu'] ?? 0);
+    }
+
+    // Lấy tổng chi của một tour
+    public function getTongChiByTourId($tourId) {
+        $sql = "SELECT SUM(so_tien) as tong_chi FROM giao_dich_tai_chinh WHERE tour_id = ? AND loai = 'Chi'";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute([(int)$tourId]);
+        $row = $stmt->fetch();
+        return (float)($row['tong_chi'] ?? 0);
+    }
     public $conn;
-    
-    public function __construct()
-    {
+    public function __construct() {
         $this->conn = connectDB();
     }
 

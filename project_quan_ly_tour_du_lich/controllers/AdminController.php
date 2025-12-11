@@ -8,6 +8,26 @@ class AdminController {
     }
     
     public function dashboard() {
+        // Lấy dữ liệu tài chính các tour
+        require_once __DIR__ . '/../models/GiaoDich.php';
+        $tourModel = new Tour();
+        $giaoDichModel = new GiaoDich();
+        $toursRaw = $tourModel->getAll();
+        $tours = [];
+        foreach ($toursRaw as $tour) {
+            $tongThu = $giaoDichModel->getTongThuByTourId($tour['tour_id']);
+            $tongChi = $giaoDichModel->getTongChiByTourId($tour['tour_id']);
+            $loiNhuan = $tongThu - $tongChi;
+            $tours[] = [
+                'ten_tour' => $tour['ten_tour'],
+                'tong_thu' => $tongThu,
+                'tong_chi_thuc_te' => $tongChi,
+                'tong_du_toan' => $tour['gia_co_ban'], // hoặc trường dự toán phù hợp
+                'loi_nhuan' => $loiNhuan
+            ];
+        }
+        // Lấy doanh thu từng tháng (12 tháng gần nhất)
+        $doanhThuTheoThang = $giaoDichModel->getTongThuTheoThang(12);
         require 'views/admin/dashboard.php';
     }
     
@@ -75,8 +95,9 @@ class AdminController {
     public function quanLyNguoiDung() {
     // 1. Lấy tham số tìm kiếm và lọc từ URL (GET)
     // Các tên biến PHẢI khớp với tên trong form của View: name="search" và name="role"
-    $search = $_GET['search'] ?? ''; // Mặc định là chuỗi rỗng nếu không có
-    $role = $_GET['role'] ?? '';     // Mặc định là chuỗi rỗng nếu không có
+    $search = $_GET['search'] ?? '';
+    $role = $_GET['role'] ?? '';
+    error_log('DEBUG: role param = ' . $role);
     
     // 2. Load Model và gọi phương thức lọc
         require_once __DIR__ . '/../models/NguoiDung.php';

@@ -919,6 +919,11 @@ class BookingController {
             exit();
         }
         
+        // Đảm bảo chỉ truyền một booking duy nhất vào template
+        if (isset($booking[0]) && is_array($booking[0])) {
+            $booking = $booking[0];
+        }
+        
         require 'views/admin/xuat_tai_lieu_booking.php';
     }
 
@@ -936,7 +941,10 @@ class BookingController {
             die('Booking không tồn tại');
         }
         
-        // Tạo nội dung HTML
+        // Đảm bảo chỉ truyền một booking duy nhất vào template
+        if (isset($booking[0]) && is_array($booking[0])) {
+            $booking = $booking[0];
+        }
         ob_start();
         switch ($type) {
             case 'hop-dong':
@@ -952,9 +960,6 @@ class BookingController {
                 $filename = 'Bao_Gia_' . $booking['booking_id'] . '.pdf';
         }
         $html = ob_get_clean();
-        
-        // Sử dụng thư viện dompdf hoặc tương tự để tạo PDF
-        // Nếu chưa cài, có thể tạm dùng cách đơn giản hơn
         $this->generateSimplePDF($html, $filename);
     }
 

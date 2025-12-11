@@ -1,36 +1,149 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Báo cáo Đánh giá Tổng hợp</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <style>
+<?php
+$pageTitle = 'Báo cáo Đánh giá Tổng hợp';
+$currentPage = 'danhGia';
+ob_start();
+?>
+<style>
         .report-section {
             margin-bottom: 30px;
         }
         .top-item {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background: rgba(102, 126, 234, 0.3);
+            border: 1px solid rgba(102, 126, 234, 0.5);
+            color: var(--text-light);
             border-radius: 10px;
             padding: 15px;
             margin-bottom: 10px;
             transition: transform 0.2s;
+            backdrop-filter: blur(10px);
         }
         .top-item:hover {
             transform: translateX(5px);
+            background: rgba(102, 126, 234, 0.4);
         }
         .warning-item {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            color: white;
+            background: rgba(245, 87, 108, 0.3);
+            border: 1px solid rgba(245, 87, 108, 0.5);
+            color: var(--text-light);
             border-radius: 10px;
             padding: 15px;
             margin-bottom: 10px;
+            backdrop-filter: blur(10px);
         }
         .rating-badge {
             font-size: 1.3em;
             padding: 8px 15px;
+        }
+        .card {
+            background: rgba(45, 45, 45, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+        }
+        .card-header {
+            background: rgba(45, 45, 45, 0.7);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-light);
+        }
+        .card-body {
+            color: var(--text-light);
+        }
+        .text-muted {
+            color: var(--text-muted) !important;
+        }
+        .badge {
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+        .bg-success {
+            background: rgba(40, 167, 69, 0.3) !important;
+            color: #5cb85c !important;
+        }
+        .bg-danger {
+            background: rgba(220, 53, 69, 0.3) !important;
+            color: #dc3545 !important;
+        }
+        .bg-warning {
+            background: rgba(255, 193, 7, 0.3) !important;
+            color: #ffc107 !important;
+        }
+        .bg-info {
+            background: rgba(0, 123, 255, 0.3) !important;
+            color: #4da3ff !important;
+        }
+        .bg-primary {
+            background: rgba(13, 110, 253, 0.3) !important;
+            color: #4da3ff !important;
+        }
+        .bg-dark {
+            background: rgba(33, 37, 41, 0.3) !important;
+            color: #adb5bd !important;
+        }
+        .bg-light {
+            background: rgba(248, 249, 250, 0.1) !important;
+            color: var(--text-light) !important;
+        }
+        .text-white {
+            color: var(--text-light) !important;
+        }
+        .text-success {
+            color: #5cb85c !important;
+        }
+        .text-danger {
+            color: #dc3545 !important;
+        }
+        .text-secondary {
+            color: var(--text-muted) !important;
+        }
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+        }
+        .btn-primary {
+            background: rgba(13, 110, 253, 0.3);
+            color: #4da3ff;
+            border: 1px solid rgba(13, 110, 253, 0.5);
+        }
+        .btn-primary:hover {
+            background: rgba(13, 110, 253, 0.5);
+        }
+        .btn-secondary {
+            background: rgba(108, 117, 125, 0.3);
+            color: var(--text-light);
+            border: 1px solid rgba(108, 117, 125, 0.5);
+        }
+        .btn-secondary:hover {
+            background: rgba(108, 117, 125, 0.5);
+        }
+        .btn-success {
+            background: rgba(40, 167, 69, 0.3);
+            color: #5cb85c;
+            border: 1px solid rgba(40, 167, 69, 0.5);
+        }
+        .btn-success:hover {
+            background: rgba(40, 167, 69, 0.5);
+        }
+        .table {
+            color: var(--text-light);
+        }
+        .table-striped tbody tr:nth-of-type(odd) {
+            background: rgba(255, 255, 255, 0.03);
+        }
+        .table th {
+            background: rgba(45, 45, 45, 0.7);
+            color: var(--text-light);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .table td {
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
         @media print {
             .no-print {
@@ -38,36 +151,26 @@
             }
         }
     </style>
-</head>
-<body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark no-print">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="index.php?act=admin/dashboard">Admin Panel</a>
-            <div class="navbar-nav ms-auto">
-                <a class="nav-link" href="index.php?act=admin/danhGia"><i class="bi bi-arrow-left"></i> Quản lý đánh giá</a>
-                <a class="nav-link" href="index.php?act=admin/dashboard"><i class="bi bi-house"></i> Dashboard</a>
-                <a class="nav-link" href="index.php?act=auth/logout"><i class="bi bi-box-arrow-right"></i> Đăng xuất</a>
+
+<div style="padding: 20px;">
+    <div class="page-header-section" style="margin-bottom: 30px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+            <h1 style="margin: 0; font-size: 2rem; color: var(--text-light);">
+                <i class="bi bi-file-earmark-bar-graph" style="color: var(--accent-gold);"></i> Báo cáo Đánh giá Tổng hợp
+            </h1>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;" class="no-print">
+                <a href="index.php?act=admin/danhGia" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Quay lại
+                </a>
+                <button onclick="window.print()" class="btn btn-primary">
+                    <i class="bi bi-printer"></i> In báo cáo
+                </button>
+                <a href="index.php?act=admin/danhGia/export&format=excel" class="btn btn-success">
+                    <i class="bi bi-file-excel"></i> Xuất Excel
+                </a>
             </div>
         </div>
-    </nav>
-    
-    <div class="container-fluid mt-4">
-        <div class="row">
-            <div class="col-12">
-                <div class="d-flex justify-content-between align-items-center mb-4 no-print">
-                    <h2><i class="bi bi-file-earmark-bar-graph"></i> Báo cáo Đánh giá Tổng hợp</h2>
-                    <div>
-                        <a href="index.php?act=admin/danhGia" class="btn btn-secondary">
-                            <i class="bi bi-arrow-left"></i> Quay lại
-                        </a>
-                        <button onclick="window.print()" class="btn btn-primary">
-                            <i class="bi bi-printer"></i> In báo cáo
-                        </button>
-                        <a href="index.php?act=admin/danhGia/export&format=excel" class="btn btn-success">
-                            <i class="bi bi-file-excel"></i> Xuất Excel
-                        </a>
-                    </div>
-                </div>
+    </div>
                 
                 <!-- TOP TOUR TỐT NHẤT -->
                 <div class="report-section">
@@ -86,7 +189,7 @@
                                                 <h5 class="mb-1">
                                                     #<?= $index + 1 ?>. 
                                                     <a href="index.php?act=admin/danhGia/baoCao&loai=tour&id=<?= $tour['tour_id'] ?>" 
-                                                       class="text-white text-decoration-none">
+                                                       style="color: var(--text-light); text-decoration: none;">
                                                         <?= htmlspecialchars($tour['ten_tour']) ?>
                                                     </a>
                                                 </h5>
@@ -124,7 +227,7 @@
                                             <div>
                                                 <h5 class="mb-1">
                                                     <a href="index.php?act=admin/danhGia/baoCao&loai=tour&id=<?= $tour['tour_id'] ?>" 
-                                                       class="text-white text-decoration-none">
+                                                       style="color: var(--text-light); text-decoration: none;">
                                                         <?= htmlspecialchars($tour['ten_tour']) ?>
                                                     </a>
                                                 </h5>
@@ -163,7 +266,7 @@
                                                 <h5 class="mb-1">
                                                     #<?= $index + 1 ?>. 
                                                     <a href="index.php?act=admin/danhGia/baoCao&loai=ncc&id=<?= $ncc['nha_cung_cap_id'] ?>" 
-                                                       class="text-white text-decoration-none">
+                                                       style="color: var(--text-light); text-decoration: none;">
                                                         <?= htmlspecialchars($ncc['ten_nha_cung_cap']) ?>
                                                     </a>
                                                 </h5>
@@ -199,7 +302,7 @@
                                         <div>
                                             <h5 class="mb-1">
                                                 <a href="index.php?act=admin/danhGia/baoCao&loai=ncc&id=<?= $ncc['nha_cung_cap_id'] ?>" 
-                                                   class="text-white text-decoration-none">
+                                                   style="color: var(--text-light); text-decoration: none;">
                                                     <?= htmlspecialchars($ncc['ten_nha_cung_cap']) ?>
                                                 </a>
                                             </h5>
@@ -360,11 +463,8 @@
                     </div>
                 </div>
                 <?php endif; ?>
-                
-            </div>
-        </div>
-    </div>
-    
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+</div>
+<?php
+$content = ob_get_clean();
+require __DIR__ . '/../layouts/aventura.php';
+?>

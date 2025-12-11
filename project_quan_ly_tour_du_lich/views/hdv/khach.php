@@ -19,30 +19,71 @@
             margin-bottom: 2rem;
         }
         
-        .customer-card {
+        .tour-info-card {
             background: white;
+            border-radius: 1.2rem;
+            box-shadow: 0 0.25rem 0.5rem rgba(102,126,234,0.08);
+            padding: 2rem 2.5rem;
+            margin-bottom: 2rem;
+        }
+        .table-custom {
             border-radius: 1rem;
-            padding: 1.5rem;
-            margin-bottom: 1rem;
-            box-shadow: 0 0.25rem 0.5rem rgba(0,0,0,0.05);
-            transition: all 0.3s;
+            overflow: hidden;
+            box-shadow: 0 0.25rem 0.5rem rgba(102,126,234,0.08);
         }
-        
-        .customer-card:hover {
-            box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.1);
+        .table-custom th {
+            background: linear-gradient(90deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: #fff;
+            font-weight: 600;
+            border: none;
         }
-        
+        .table-custom td {
+            background: #fff;
+            vertical-align: middle;
+            border: none;
+        }
+        .table-custom tbody tr {
+            transition: box-shadow 0.2s;
+        }
+        .table-custom tbody tr:hover {
+            box-shadow: 0 0.5rem 1rem rgba(102,126,234,0.12);
+            background: #f7f8fa;
+        }
+        .badge-status {
+            font-size: 1rem;
+            padding: 0.5em 1em;
+            border-radius: 1em;
+            font-weight: 500;
+            box-shadow: 0 0.15rem 0.3rem rgba(102,126,234,0.08);
+        }
         .customer-avatar {
-            width: 60px;
-            height: 60px;
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
             background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
-            font-size: 1.5rem;
-            font-weight: bold;
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-right: 0.5rem;
+        }
+        .table-responsive {
+            border-radius: 1rem;
+            overflow: hidden;
+        }
+        .fs-5 {
+            font-size: 1.15rem !important;
+        }
+        .fw-bold {
+            font-weight: 600 !important;
+        }
+        .mb-1 {
+            margin-bottom: 0.5rem !important;
+        }
+        .mb-2 {
+            margin-bottom: 1rem !important;
         }
     </style>
 </head>
@@ -85,23 +126,24 @@
         <?php else: ?>
         
         <!-- Tour Info -->
-        <div class="card mb-4">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h5 class="mb-1"><?php echo htmlspecialchars($tour['ten_tour'] ?? ''); ?></h5>
-                        <div class="text-muted">
-                            <i class="bi bi-calendar3"></i> 
-                            <?php echo date('d/m/Y', strtotime($tour['ngay_khoi_hanh'] ?? 'now')); ?>
-                            -
-                            <?php echo date('d/m/Y', strtotime($tour['ngay_ket_thuc'] ?? 'now')); ?>
-                        </div>
+        <div class="tour-info-card mb-2">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h4 class="fw-bold mb-1 text-primary">
+                        <i class="bi bi-geo-alt"></i> <?php echo htmlspecialchars($tour['ten_tour'] ?? ''); ?>
+                    </h4>
+                    <div class="text-muted mb-2">
+                        <i class="bi bi-calendar3"></i> <?php echo date('d/m/Y', strtotime($tour['ngay_khoi_hanh'] ?? 'now')); ?>
+                        &rarr; <?php echo date('d/m/Y', strtotime($tour['ngay_ket_thuc'] ?? 'now')); ?>
                     </div>
-                    <div>
-                        <span class="badge bg-primary fs-5">
-                            <i class="bi bi-people"></i> <?php echo count($khach_list); ?> khách
-                        </span>
+                    <div class="text-muted">
+                        <i class="bi bi-pin-map"></i> Điểm tập trung: <span class="fw-bold"> <?php echo htmlspecialchars($tour['diem_tap_trung'] ?? 'Chưa xác định'); ?> </span>
                     </div>
+                </div>
+                <div class="col-md-4 text-end">
+                    <span class="badge bg-primary fs-5">
+                        <i class="bi bi-people"></i> <?php echo count($khach_list); ?> khách
+                    </span>
                 </div>
             </div>
         </div>
@@ -109,11 +151,11 @@
         <!-- Customer List -->
         <?php if (!empty($khach_list)): ?>
             <div class="table-responsive">
-                <table class="table table-bordered table-hover">
-                    <thead class="table-light">
+                <table class="table table-custom align-middle">
+                    <thead>
                         <tr>
                             <th>STT</th>
-                            <th>Họ tên</th>
+                            <th>Khách</th>
                             <th>CMND/Passport</th>
                             <th>Ngày sinh</th>
                             <th>Giới tính</th>
@@ -127,28 +169,35 @@
                     <tbody>
                         <?php foreach($khach_list as $index => $khach): ?>
                         <tr>
-                            <td><?php echo $index + 1; ?></td>
-                            <td>
-                                <strong><?php echo htmlspecialchars($khach['ho_ten'] ?? 'Khách'); ?></strong>
+                            <td class="fw-bold text-primary">#<?php echo $index + 1; ?></td>
+                            <td class="d-flex align-items-center">
+                                <span class="customer-avatar">
+                                    <?php 
+                                    $name = $khach['ho_ten'] ?? 'Khách';
+                                    $initials = implode('', array_map(fn($w) => mb_substr($w,0,1), explode(' ', $name)));
+                                    echo strtoupper($initials);
+                                    ?>
+                                </span>
+                                <span class="fw-bold"> <?php echo htmlspecialchars($khach['ho_ten'] ?? 'Khách'); ?> </span>
                             </td>
                             <td>
                                 <?php if (!empty($khach['so_cmnd'])): ?>
-                                    CMND: <?php echo htmlspecialchars($khach['so_cmnd'] ?? ''); ?><br>
+                                    <span class="badge bg-info-subtle text-dark mb-1">CMND: <?php echo htmlspecialchars($khach['so_cmnd'] ?? ''); ?></span><br>
                                 <?php endif; ?>
                                 <?php if (!empty($khach['so_passport'])): ?>
-                                    Passport: <?php echo htmlspecialchars($khach['so_passport'] ?? ''); ?>
+                                    <span class="badge bg-secondary-subtle text-dark mb-1">Passport: <?php echo htmlspecialchars($khach['so_passport'] ?? ''); ?></span>
                                 <?php endif; ?>
                                 <?php if (empty($khach['so_cmnd']) && empty($khach['so_passport'])): ?>
                                     <span class="text-muted">Chưa cập nhật</span>
                                 <?php endif; ?>
                             </td>
                             <td>
-                                <?php echo !empty($khach['ngay_sinh']) ? date('d/m/Y', strtotime($khach['ngay_sinh'])) : 'N/A'; ?>
+                                <?php echo !empty($khach['ngay_sinh']) ? date('d/m/Y', strtotime($khach['ngay_sinh'])) : '<span class="text-muted">N/A</span>'; ?>
                             </td>
                             <td>
                                 <?php 
                                 $gioiTinhLabels = ['Nam' => 'Nam', 'Nu' => 'Nữ', 'Khac' => 'Khác'];
-                                echo $gioiTinhLabels[$khach['gioi_tinh']] ?? $khach['gioi_tinh'] ?? 'N/A';
+                                echo $gioiTinhLabels[$khach['gioi_tinh']] ?? $khach['gioi_tinh'] ?? '<span class="text-muted">N/A</span>';
                                 ?>
                             </td>
                             <td>
@@ -166,7 +215,7 @@
                                 <?php endif; ?>
                             </td>
                             <td>
-                                <?php echo !empty($khach['dia_chi']) ? htmlspecialchars($khach['dia_chi'] ?? '') : 'N/A'; ?>
+                                <?php echo !empty($khach['dia_chi']) ? htmlspecialchars($khach['dia_chi'] ?? '') : '<span class="text-muted">N/A</span>'; ?>
                             </td>
                             <td>
                                 <?php
@@ -182,15 +231,15 @@
                                 ];
                                 $trangThai = $khach['trang_thai'] ?? 'ChuaCheckIn';
                                 ?>
-                                <span class="badge bg-<?php echo $trangThaiClass[$trangThai] ?? 'warning'; ?>">
+                                <span class="badge badge-status bg-<?php echo $trangThaiClass[$trangThai] ?? 'warning'; ?>">
                                     <?php echo $trangThaiLabels[$trangThai] ?? $trangThai; ?>
                                 </span>
                             </td>
                             <td>
                                 <?php if (!empty($khach['booking_id'])): ?>
-                                    #<?php echo $khach['booking_id']; ?>
+                                    <span class="badge bg-primary-subtle text-dark">#<?php echo $khach['booking_id']; ?></span>
                                 <?php else: ?>
-                                    N/A
+                                    <span class="text-muted">N/A</span>
                                 <?php endif; ?>
                             </td>
                         </tr>

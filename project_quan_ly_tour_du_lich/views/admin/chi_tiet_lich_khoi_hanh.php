@@ -1,73 +1,94 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chi tiết Lịch Khởi Hành - Admin</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <style>
-        .page-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 2rem 0;
-            margin-bottom: 2rem;
-            border-radius: 0.5rem;
+<?php
+$pageTitle = 'Chi tiết Lịch Khởi Hành';
+$currentPage = 'lich_khoi_hanh';
+ob_start();
+?>
+<style>
+        .page-header-section {
+            background: rgba(45, 45, 45, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            padding: 40px;
+            margin-bottom: 40px;
+            backdrop-filter: blur(10px);
         }
         .info-card {
-            border: none;
-            box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
-            margin-bottom: 1.5rem;
+            background: rgba(45, 45, 45, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
         }
         .info-card .card-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background: rgba(45, 45, 45, 0.7);
+            color: var(--text-light);
             font-weight: 600;
             border: none;
+            padding: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
         .info-row {
-            padding: 0.75rem 0;
-            border-bottom: 1px solid #f0f0f0;
+            padding: 15px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
         }
         .info-row:last-child {
             border-bottom: none;
         }
         .info-label {
             font-weight: 600;
-            color: #6c757d;
+            color: var(--text-muted);
             font-size: 0.875rem;
         }
         .info-value {
-            color: #212529;
+            color: var(--text-light);
             font-size: 1rem;
         }
         .section-card {
-            border: none;
-            box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
-            margin-bottom: 2rem;
+            background: rgba(45, 45, 45, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
         }
         .section-header {
-            background: #f8f9fa;
-            padding: 1rem 1.5rem;
-            border-bottom: 2px solid #e9ecef;
+            background: rgba(45, 45, 45, 0.7);
+            padding: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
             font-weight: 600;
-            color: #495057;
+            color: var(--text-light);
         }
         .add-form-card {
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            border: 2px dashed #dee2e6;
-            border-radius: 0.5rem;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
+            background: rgba(45, 45, 45, 0.3);
+            border: 2px dashed rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            padding: 25px;
+            margin-bottom: 25px;
         }
         .table-custom {
             margin-bottom: 0;
+            width: 100%;
+            color: var(--text-light);
         }
         .table-custom thead {
-            background: #f8f9fa;
+            background: rgba(45, 45, 45, 0.7);
+        }
+        .table-custom thead th {
+            color: var(--text-light);
+            padding: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .table-custom tbody tr {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         }
         .table-custom tbody tr:hover {
-            background: #f8f9fa;
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .table-custom tbody td {
+            padding: 15px;
+            color: var(--text-light);
         }
         .badge-role {
             padding: 0.5rem 0.75rem;
@@ -94,20 +115,21 @@
             white-space: pre-line;
         }
         .diary-entry {
-            background-color: #fff;
-            border: 1px solid #e9ecef;
-            border-radius: 0.5rem;
-            padding: 1.5rem;
-            margin-bottom: 1rem;
-            border-left: 4px solid #667eea;
+            background: rgba(45, 45, 45, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            padding: 25px;
+            margin-bottom: 20px;
+            border-left: 4px solid var(--accent-gold);
+            backdrop-filter: blur(10px);
         }
         .entry-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 1rem;
-            padding-bottom: 1rem;
-            border-bottom: 1px solid #e9ecef;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
         .entry-type-badge {
             padding: 0.5rem 1rem;
@@ -115,10 +137,10 @@
             font-size: 0.875rem;
             font-weight: 500;
         }
-        .type-hanh_trinh { background: #e3f2fd; color: #1565c0; }
-        .type-su_co { background: #ffebee; color: #c62828; }
-        .type-phan_hoi { background: #f3e5f5; color: #6a1b9a; }
-        .type-hoat_dong { background: #e8f5e9; color: #2e7d32; }
+        .type-hanh_trinh { background: rgba(0, 123, 255, 0.3); color: #4da3ff; }
+        .type-su_co { background: rgba(220, 53, 69, 0.3); color: #dc3545; }
+        .type-phan_hoi { background: rgba(108, 117, 125, 0.3); color: #adb5bd; }
+        .type-hoat_dong { background: rgba(40, 167, 69, 0.3); color: #5cb85c; }
         .image-gallery {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
@@ -136,9 +158,125 @@
         .image-gallery img:hover {
             transform: scale(1.05);
         }
+        
+        /* Form elements */
+        .form-control, .form-select {
+            background: rgba(30, 30, 30, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: var(--text-light);
+            padding: 10px 15px;
+            border-radius: 4px;
+        }
+        .form-control:focus, .form-select:focus {
+            background: rgba(30, 30, 30, 0.9);
+            border-color: var(--accent-gold);
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(255, 193, 7, 0.2);
+        }
+        .form-label {
+            color: var(--text-light);
+            margin-bottom: 8px;
+            display: block;
+        }
+        
+        /* Buttons */
+        .btn {
+            padding: 10px 20px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background: var(--accent-gold);
+            color: #000;
+        }
+        .btn-primary:hover {
+            background: #ffd700;
+            transform: translateY(-2px);
+        }
+        .btn-success {
+            background: rgba(40, 167, 69, 0.3);
+            color: #5cb85c;
+            border: 1px solid rgba(40, 167, 69, 0.5);
+        }
+        .btn-success:hover {
+            background: rgba(40, 167, 69, 0.5);
+        }
+        .btn-danger, .btn-outline-danger {
+            background: rgba(220, 53, 69, 0.3);
+            color: #dc3545;
+            border: 1px solid rgba(220, 53, 69, 0.5);
+        }
+        .btn-danger:hover, .btn-outline-danger:hover {
+            background: rgba(220, 53, 69, 0.5);
+        }
+        .btn-info, .btn-outline-info {
+            background: rgba(0, 123, 255, 0.3);
+            color: #4da3ff;
+            border: 1px solid rgba(0, 123, 255, 0.5);
+        }
+        .btn-info:hover, .btn-outline-info:hover {
+            background: rgba(0, 123, 255, 0.5);
+        }
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.875rem;
+        }
+        
+        /* Badges */
+        .badge {
+            padding: 5px 12px;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        .bg-primary { background: rgba(0, 123, 255, 0.3); color: #4da3ff; }
+        .bg-success { background: rgba(40, 167, 69, 0.3); color: #5cb85c; }
+        .bg-danger { background: rgba(220, 53, 69, 0.3); color: #dc3545; }
+        .bg-warning { background: rgba(255, 193, 7, 0.3); color: #ffc107; }
+        .bg-info { background: rgba(0, 123, 255, 0.3); color: #4da3ff; }
+        .bg-secondary { background: rgba(108, 117, 125, 0.3); color: #adb5bd; }
+        .bg-light { background: rgba(255, 255, 255, 0.1); color: var(--text-light); }
+        .text-dark { color: var(--text-light) !important; }
+        .text-danger { color: #dc3545 !important; }
+        .text-warning { color: #ffc107 !important; }
+        .text-muted { color: var(--text-muted) !important; }
+        
+        /* Progress bar */
+        .progress {
+            background: rgba(30, 30, 30, 0.7);
+            border-radius: 4px;
+            height: 25px;
+            overflow: hidden;
+        }
+        .progress-bar {
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #000;
+            font-weight: 600;
+        }
+        
+        /* Card body */
+        .card-body {
+            padding: 20px;
+            color: var(--text-light);
+        }
+        
+        /* Responsive */
+        @media (max-width: 992px) {
+            div[style*="grid-template-columns: 1fr 2fr"] {
+                grid-template-columns: 1fr !important;
+            }
+        }
     </style>
-</head>
-<body class="bg-light">
 <?php
 $serviceTypeOptions = [
     'Xe' => 'Xe vận chuyển',
@@ -153,34 +291,39 @@ $serviceTypeOptions = [
 ];
 $catalogServicesMap = $catalogServicesMap ?? [];
 ?>
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="index.php?act=admin/dashboard">
-                <i class="bi bi-speedometer2"></i> Quản trị
-            </a>
-            <div class="collapse navbar-collapse">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="index.php?act=admin/quanLyTour">
-                            <i class="bi bi-compass"></i> Tour
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link active" href="index.php?act=admin/quanLyLichKhoiHanh">
-                            <i class="bi bi-calendar-check"></i> Lịch khởi hành
-                        </a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-        </nav>
 
-    <div class="container-fluid px-4 py-4">
-        <!-- Page Header -->
-        <div class="page-header">
-            <div class="container-fluid">
-                <div class="d-flex justify-content-between align-items-center">
+<div style="padding: 20px;">
+    <!-- Page Header -->
+    <div class="page-header-section" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
+        <div>
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                <span style="background: rgba(255, 255, 255, 0.1); padding: 5px 12px; border-radius: 4px; font-size: 0.9rem;">#<?php echo $lichKhoiHanh['id']; ?></span>
+                <span style="padding: 5px 12px; border-radius: 4px; font-size: 0.9rem; <?php 
+                    echo match($lichKhoiHanh['trang_thai']) {
+                        'SapKhoiHanh' => 'background: rgba(0, 123, 255, 0.3); color: #4da3ff;',
+                        'DangChay' => 'background: rgba(40, 167, 69, 0.3); color: #5cb85c;',
+                        'HoanThanh' => 'background: rgba(108, 117, 125, 0.3); color: #adb5bd;',
+                        default => 'background: rgba(108, 117, 125, 0.3); color: #adb5bd;'
+                    };
+                ?>">
+                <?php
+                $statusLabels = [
+                    'SapKhoiHanh' => 'Sắp khởi hành',
+                    'DangChay' => 'Đang chạy',
+                    'HoanThanh' => 'Hoàn thành'
+                ];
+                echo $statusLabels[$lichKhoiHanh['trang_thai']] ?? $lichKhoiHanh['trang_thai'];
+                ?>
+                </span>
+            </div>
+            <h1 style="margin: 0 0 10px 0; font-size: 2rem; color: var(--text-light);">
+                <i class="bi bi-calendar-event"></i> Chi tiết Lịch Khởi Hành
+            </h1>
+            <p style="margin: 0; opacity: 0.8; color: var(--text-light);">
+                <?php echo htmlspecialchars($lichKhoiHanh['ten_tour'] ?? 'N/A'); ?>
+            </p>
+        </div>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                     <div>
                         <div class="d-flex align-items-center gap-2 mb-2">
                             <span class="badge bg-light text-dark">#<?php echo $lichKhoiHanh['id']; ?></span>
@@ -209,57 +352,113 @@ $catalogServicesMap = $catalogServicesMap ?? [];
                             <?php echo htmlspecialchars($lichKhoiHanh['ten_tour'] ?? 'N/A'); ?>
                         </p>
                     </div>
-                    <div class="d-flex gap-2">
-                        <a href="index.php?act=lichKhoiHanh/edit&id=<?php echo $lichKhoiHanh['id']; ?>" 
-                           class="btn btn-warning">
-                            <i class="bi bi-pencil-square"></i> Sửa lịch
-                        </a>
-                    <a href="index.php?act=lichKhoiHanh/index" class="btn btn-light">
-                        <i class="bi bi-arrow-left"></i> Quay lại danh sách
-                    </a>
-                    </div>
-                </div>
-            </div>
+            <a href="index.php?act=lichKhoiHanh/edit&id=<?php echo $lichKhoiHanh['id']; ?>" 
+               style="background: var(--accent-gold); color: #000; padding: 10px 20px; border-radius: 4px; text-decoration: none; font-weight: 500; display: inline-flex; align-items: center; gap: 8px;">
+                <i class="bi bi-pencil-square"></i> Sửa lịch
+            </a>
+            <?php if (!empty($fromTourDetail) && !empty($tour)): ?>
+                <a href="index.php?act=admin/chiTietTour&id=<?php echo $tour['tour_id']; ?>" style="background: rgba(255, 255, 255, 0.1); color: var(--text-light); padding: 10px 20px; border-radius: 4px; text-decoration: none; font-weight: 500; display: inline-flex; align-items: center; gap: 8px; border: 1px solid rgba(255, 255, 255, 0.2);">
+                    <i class="bi bi-arrow-left"></i> Quay lại chi tiết tour
+                </a>
+            <?php else: ?>
+                <a href="index.php?act=lichKhoiHanh/index" style="background: rgba(255, 255, 255, 0.1); color: var(--text-light); padding: 10px 20px; border-radius: 4px; text-decoration: none; font-weight: 500; display: inline-flex; align-items: center; gap: 8px; border: 1px solid rgba(255, 255, 255, 0.2);">
+                    <i class="bi bi-arrow-left"></i> Quay lại danh sách
+                </a>
+            <?php endif; ?>
         </div>
+    </div>
 
-        <!-- Alerts -->
-        <?php if (isset($_SESSION['success'])): ?>
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                <i class="bi bi-check-circle"></i> <?php echo htmlspecialchars($_SESSION['success']); unset($_SESSION['success']); ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        <?php endif; ?>
-        <?php if (isset($_SESSION['warning'])): ?>
-            <div class="alert alert-warning alert-dismissible fade show" role="alert">
-                <i class="bi bi-exclamation-triangle"></i> 
-                <div><?php echo $_SESSION['warning']; unset($_SESSION['warning']); ?></div>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        <?php endif; ?>
-        <?php if (isset($_SESSION['info'])): ?>
-            <div class="alert alert-info alert-dismissible fade show" role="alert">
-                <i class="bi bi-info-circle"></i> <?php echo htmlspecialchars($_SESSION['info']); unset($_SESSION['info']); ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        <?php endif; ?>
-
-        <?php if (isset($_SESSION['warning'])): ?>
-            <div class="alert alert-warning alert-dismissible fade show" role="alert">
-                <i class="bi bi-exclamation-circle"></i> <?php echo htmlspecialchars($_SESSION['warning']); unset($_SESSION['warning']); ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        <?php endif; ?>
-
-        <?php if (isset($_SESSION['error'])): ?>
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                <i class="bi bi-exclamation-triangle"></i> <?php echo htmlspecialchars($_SESSION['error']); unset($_SESSION['error']); ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        <?php endif; ?>
+    <!-- Alerts -->
+    <?php if (isset($_SESSION['success'])): ?>
+        <div style="background: rgba(40, 167, 69, 0.2); border: 1px solid rgba(40, 167, 69, 0.5); color: #5cb85c; padding: 15px; border-radius: 4px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+            <div><i class="bi bi-check-circle"></i> <?php echo htmlspecialchars($_SESSION['success']); unset($_SESSION['success']); ?></div>
+            <button type="button" onclick="this.parentElement.remove()" style="background: none; border: none; color: inherit; font-size: 1.2rem; cursor: pointer;">&times;</button>
+        </div>
+    <?php endif; ?>
+    <?php if (isset($_SESSION['warning'])): ?>
+        <div style="background: rgba(255, 193, 7, 0.2); border: 1px solid rgba(255, 193, 7, 0.5); color: #ffc107; padding: 15px; border-radius: 4px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+            <div><i class="bi bi-exclamation-triangle"></i> <?php echo $_SESSION['warning']; unset($_SESSION['warning']); ?></div>
+            <button type="button" onclick="this.parentElement.remove()" style="background: none; border: none; color: inherit; font-size: 1.2rem; cursor: pointer;">&times;</button>
+        </div>
+    <?php endif; ?>
+    <?php if (isset($_SESSION['info'])): ?>
+        <div style="background: rgba(0, 123, 255, 0.2); border: 1px solid rgba(0, 123, 255, 0.5); color: #4da3ff; padding: 15px; border-radius: 4px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+            <div><i class="bi bi-info-circle"></i> <?php echo htmlspecialchars($_SESSION['info']); unset($_SESSION['info']); ?></div>
+            <button type="button" onclick="this.parentElement.remove()" style="background: none; border: none; color: inherit; font-size: 1.2rem; cursor: pointer;">&times;</button>
+        </div>
+    <?php endif; ?>
+        
+        <!-- Cảnh báo khi thiếu nhân sự hoặc dịch vụ -->
+        <?php
+        $coCanhBao = false;
+        $danhSachCanhBao = [];
+        
+        // Không hiển thị cảnh báo nếu tour đã hoàn thành
+        if (isset($lichKhoiHanh['trang_thai']) && $lichKhoiHanh['trang_thai'] === 'HoanThanh') {
+            $coCanhBao = false;
+        } else {
+            // Kiểm tra nhân sự
+            if (empty($phanBoNhanSu) || count($phanBoNhanSu) === 0) {
+                $coCanhBao = true;
+                $danhSachCanhBao[] = '<a href="#staff" class="alert-link">Chưa có nhân sự (HDV) được phân bổ</a>';
+            }
             
-        <div class="row">
-            <!-- Left Column: Info -->
-            <div class="col-lg-4">
+            // Kiểm tra dịch vụ
+            if (empty($phanBoDichVu)) {
+                $coCanhBao = true;
+                $danhSachCanhBao[] = '<a href="#service" class="alert-link">Chưa có dịch vụ nào được phân bổ</a>';
+            } elseif (!empty($dichVuThieu)) {
+                $coCanhBao = true;
+                $danhSachCanhBao[] = '<a href="#service" class="alert-link">Thiếu các dịch vụ cơ bản: ' . implode(', ', array_map(function($loai) use ($serviceTypeOptions) {
+                    return $serviceTypeOptions[$loai] ?? $loai;
+                }, $dichVuThieu)) . '</a>';
+            }
+            
+            // Kiểm tra gần ngày khởi hành (trong 7 ngày)
+            if (!empty($lichKhoiHanh['ngay_khoi_hanh'])) {
+                $ngayKhoiHanh = new DateTime($lichKhoiHanh['ngay_khoi_hanh']);
+                $ngayHienTai = new DateTime();
+                $soNgayConLai = $ngayHienTai->diff($ngayKhoiHanh)->days;
+                
+                if ($soNgayConLai <= 7 && $soNgayConLai >= 0) {
+                    $coCanhBao = true;
+                    if ($soNgayConLai == 0) {
+                        $danhSachCanhBao[] = '<strong class="text-danger">Tour khởi hành HÔM NAY!</strong>';
+                    } else {
+                        $danhSachCanhBao[] = '<strong class="text-warning">Tour khởi hành sau ' . $soNgayConLai . ' ngày nữa!</strong>';
+                    }
+                }
+            }
+        }
+        ?>
+    <?php if ($coCanhBao): ?>
+        <div style="background: rgba(255, 193, 7, 0.2); border: 2px solid rgba(255, 193, 7, 0.5); color: #ffc107; padding: 20px; border-radius: 4px; margin-bottom: 20px; position: relative;">
+            <h5 style="margin: 0 0 15px 0; color: #ffc107;">
+                <i class="bi bi-exclamation-triangle-fill"></i> Cảnh báo chuẩn bị tour
+            </h5>
+            <ul style="margin: 0 0 15px 0; padding-left: 20px;">
+                <?php foreach ($danhSachCanhBao as $canhBao): ?>
+                    <li><?php echo $canhBao; ?></li>
+                <?php endforeach; ?>
+            </ul>
+            <hr style="border-color: rgba(255, 193, 7, 0.3); margin: 15px 0;">
+            <p style="margin: 0; font-size: 0.9rem;">
+                Vui lòng kiểm tra và hoàn thiện phân bổ nhân sự và dịch vụ trước khi tour khởi hành.
+            </p>
+            <button type="button" onclick="this.parentElement.remove()" style="position: absolute; top: 15px; right: 15px; background: none; border: none; color: inherit; font-size: 1.2rem; cursor: pointer;">&times;</button>
+        </div>
+    <?php endif; ?>
+
+    <?php if (isset($_SESSION['error'])): ?>
+        <div style="background: rgba(220, 53, 69, 0.2); border: 1px solid rgba(220, 53, 69, 0.5); color: #dc3545; padding: 15px; border-radius: 4px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+            <div><i class="bi bi-exclamation-triangle"></i> <?php echo htmlspecialchars($_SESSION['error']); unset($_SESSION['error']); ?></div>
+            <button type="button" onclick="this.parentElement.remove()" style="background: none; border: none; color: inherit; font-size: 1.2rem; cursor: pointer;">&times;</button>
+        </div>
+    <?php endif; ?>
+        
+    <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 30px; margin-top: 30px;">
+        <!-- Left Column: Info -->
+        <div>
                 <!-- Quick Stats -->
                 <div class="info-card card">
                     <div class="card-header">
@@ -347,41 +546,31 @@ $catalogServicesMap = $catalogServicesMap ?? [];
                 </div>
             </div>
 
-            <!-- Right Column: Tabs -->
-            <div class="col-lg-8">
-                <!-- Nav Tabs -->
-                <ul class="nav nav-pills mb-4" id="detailTabs" role="tablist">
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link active" id="staff-tab" data-bs-toggle="pill" data-bs-target="#staff" type="button">
-                            <i class="bi bi-people"></i> Nhân sự
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="customer-tab" data-bs-toggle="pill" data-bs-target="#customer" type="button">
-                            <i class="bi bi-person-lines-fill"></i> Danh sách khách
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="service-tab" data-bs-toggle="pill" data-bs-target="#service" type="button">
-                            <i class="bi bi-gear"></i> Dịch vụ
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="special-request-tab" data-bs-toggle="pill" data-bs-target="#special-request" type="button">
-                            <i class="bi bi-heart-pulse"></i> ! Yêu cầu đặc biệt
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="diary-tab" data-bs-toggle="pill" data-bs-target="#diary" type="button">
-                            <i class="bi bi-journal-text"></i> Nhật ký tour
-                        </button>
-                    </li>
-                </ul>
+        <!-- Right Column: Tabs -->
+        <div>
+            <!-- Nav Tabs -->
+            <div style="display: flex; gap: 10px; margin-bottom: 30px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); flex-wrap: wrap;">
+                <button class="tab-btn active" onclick="switchTab('staff')" style="background: rgba(45, 45, 45, 0.5); border: none; color: var(--text-light); padding: 12px 24px; border-radius: 4px 4px 0 0; cursor: pointer; font-weight: 500; border-bottom: 2px solid var(--accent-gold);">
+                    <i class="bi bi-people"></i> Nhân sự
+                </button>
+                <button class="tab-btn" onclick="switchTab('customer')" style="background: rgba(45, 45, 45, 0.3); border: none; color: var(--text-muted); padding: 12px 24px; border-radius: 4px 4px 0 0; cursor: pointer; font-weight: 500;">
+                    <i class="bi bi-person-lines-fill"></i> Danh sách khách
+                </button>
+                <button class="tab-btn" onclick="switchTab('service')" style="background: rgba(45, 45, 45, 0.3); border: none; color: var(--text-muted); padding: 12px 24px; border-radius: 4px 4px 0 0; cursor: pointer; font-weight: 500;">
+                    <i class="bi bi-gear"></i> Dịch vụ
+                </button>
+                <button class="tab-btn" onclick="switchTab('special-request')" style="background: rgba(45, 45, 45, 0.3); border: none; color: var(--text-muted); padding: 12px 24px; border-radius: 4px 4px 0 0; cursor: pointer; font-weight: 500;">
+                    <i class="bi bi-heart-pulse"></i> ! Yêu cầu đặc biệt
+                </button>
+                <button class="tab-btn" onclick="switchTab('diary')" style="background: rgba(45, 45, 45, 0.3); border: none; color: var(--text-muted); padding: 12px 24px; border-radius: 4px 4px 0 0; cursor: pointer; font-weight: 500;">
+                    <i class="bi bi-journal-text"></i> Nhật ký tour
+                </button>
+            </div>
 
-                <!-- Tab Content -->
-                <div class="tab-content" id="detailTabsContent">
-                    <!-- Tab: Nhân sự -->
-                    <div class="tab-pane fade show active" id="staff" role="tabpanel">
+            <!-- Tab Content -->
+            <div id="detailTabsContent">
+                <!-- Tab: Nhân sự -->
+                <div class="tab-pane active" id="staff" style="display: block;">
                         <!-- Add Staff Form -->
                         <div class="add-form-card">
                             <h6 class="fw-bold mb-3">
@@ -529,8 +718,8 @@ $catalogServicesMap = $catalogServicesMap ?? [];
                         </div>
                     </div>
 
-                    <!-- Tab: Danh sách khách -->
-                    <div class="tab-pane fade" id="customer" role="tabpanel">
+                <!-- Tab: Danh sách khách -->
+                <div class="tab-pane" id="customer" style="display: none;">
                         
                         <!-- Add Customer Form -->
                         <div class="add-form-card">
@@ -546,15 +735,18 @@ $catalogServicesMap = $catalogServicesMap ?? [];
                                 <input type="hidden" name="lich_khoi_hanh_id" value="<?php echo $lichKhoiHanh['id']; ?>">
                                 <div class="row g-3 mb-3">
                                     <div class="col-md-6">
-                                        <label class="form-label small fw-semibold">Booking <span class="text-danger">*</span></label>
-                                        <select name="booking_id" class="form-select" required>
-                                            <option value="">-- Chọn booking --</option>
-                                            <?php foreach ($bookingList as $b): ?>
-                                                <option value="<?php echo $b['booking_id']; ?>">
-                                                    Booking #<?php echo $b['booking_id']; ?> - <?php echo htmlspecialchars($b['ho_ten'] ?? 'N/A'); ?> (<?php echo $b['so_nguoi']; ?> người)
-                                                </option>
-                                            <?php endforeach; ?>
+                                        <label class="form-label small fw-semibold">Booking</label>
+                                        <select name="booking_id" class="form-select">
+                                            <option value="">-- Khách check-in không có booking (không cần đăng ký) --</option>
+                                            <?php if (!empty($bookingList)): ?>
+                                                <?php foreach ($bookingList as $b): ?>
+                                                    <option value="<?php echo $b['booking_id']; ?>">
+                                                        Booking #<?php echo $b['booking_id']; ?> - <?php echo htmlspecialchars($b['ho_ten'] ?? 'N/A'); ?> (<?php echo $b['so_nguoi']; ?> người)
+                                                    </option>
+                                                <?php endforeach; ?>
+                                            <?php endif; ?>
                                         </select>
+                                        <small class="text-muted">Để trống nếu khách check-in không có booking (không cần đăng ký)</small>
                                     </div>
                                     <div class="col-md-6 d-flex align-items-end justify-content-end">
                                         <small class="text-muted">
@@ -636,88 +828,120 @@ $catalogServicesMap = $catalogServicesMap ?? [];
                                 <i class="bi bi-person-lines-fill"></i> Danh sách khách chi tiết
                             </div>
                             <div class="card-body p-0">
-                                <?php if (!empty($bookingList)): ?>
-                                    <?php foreach ($bookingList as $booking): ?>
-                                        <div class="border-bottom p-3">
-                                            <h6 class="fw-bold mb-2">
-                                                Booking #<?php echo $booking['booking_id']; ?> - 
-                                                <?php echo htmlspecialchars($booking['ho_ten'] ?? 'N/A'); ?>
-                                                <span class="badge bg-primary ms-2"><?php echo $booking['so_nguoi']; ?> người</span>
-                                            </h6>
-                                            <?php 
-                                            $khachList = $danhSachKhachChiTiet[$booking['booking_id']] ?? [];
-                                            if (!empty($khachList)): ?>
-                                                <div class="table-responsive">
-                                                    <table class="table table-sm table-bordered mb-0">
-                                                        <thead class="table-light">
-                                                            <tr>
-                                                                <th>STT</th>
-                                                                <th>Họ tên</th>
-                                                                <th>CMND/Passport</th>
-                                                                <th>Ngày sinh</th>
-                                                                <th>Giới tính</th>
-                                                                <th>SĐT</th>
-                                                                <th>Trạng thái</th>
-                                                                <th>Thao tác</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody>
-                                                            <?php foreach ($khachList as $idx => $khach): ?>
-                                                                <tr>
-                                                                    <td><?php echo $idx + 1; ?></td>
-                                                                    <td><?php echo htmlspecialchars($khach['ho_ten'] ?? 'N/A'); ?></td>
-                                                                    <td>
-                                                                        <?php if ($khach['so_cmnd']): ?>
-                                                                            CMND: <?php echo htmlspecialchars($khach['so_cmnd']); ?><br>
-                                                                        <?php endif; ?>
-                                                                        <?php if ($khach['so_passport']): ?>
-                                                                            Passport: <?php echo htmlspecialchars($khach['so_passport']); ?>
-                                                                        <?php endif; ?>
-                                                                    </td>
-                                                                    <td><?php echo $khach['ngay_sinh'] ? date('d/m/Y', strtotime($khach['ngay_sinh'])) : 'N/A'; ?></td>
-                                                                    <td><?php echo htmlspecialchars($khach['gioi_tinh'] ?? 'N/A'); ?></td>
-                                                                    <td><?php echo htmlspecialchars($khach['so_dien_thoai'] ?? 'N/A'); ?></td>
-                                                                    <td>
-                                                                        <span class="badge <?php 
-                                                                            echo $khach['trang_thai'] === 'DaCheckIn' ? 'bg-success' : 
-                                                                                ($khach['trang_thai'] === 'DaCheckOut' ? 'bg-secondary' : 'bg-warning');
-                                                                        ?>">
-                                                                            <?php 
-                                                                            echo $khach['trang_thai'] === 'DaCheckIn' ? 'Đã check-in' : 
-                                                                                ($khach['trang_thai'] === 'DaCheckOut' ? 'Đã check-out' : 'Chưa check-in');
-                                                                            ?>
-                                                                        </span>
-                                                                    </td>
-                                                                    <td>
-                                                                        <div class="btn-group btn-group-sm">
-                                                                            <a href="index.php?act=lichKhoiHanh/suaKhachChiTiet&id=<?php echo $khach['id']; ?>&lich_khoi_hanh_id=<?php echo $lichKhoiHanh['id']; ?>" 
-                                                                               class="btn btn-info" title="Sửa">
-                                                                                <i class="bi bi-pencil"></i>
-                                                                            </a>
-                                                                            <a href="index.php?act=lichKhoiHanh/xoaKhachChiTiet&id=<?php echo $khach['id']; ?>&lich_khoi_hanh_id=<?php echo $lichKhoiHanh['id']; ?>" 
-                                                                               class="btn btn-danger" 
-                                                                               onclick="return confirm('Xóa khách này?');"
-                                                                               title="Xóa">
-                                                                                <i class="bi bi-trash"></i>
-                                                                            </a>
-                                                                        </div>
-                                                                    </td>
-                                                                </tr>
-                                                            <?php endforeach; ?>
-                                                        </tbody>
-                                                    </table>
-                                                </div>
-                                            <?php else: ?>
-                                                <p class="text-muted mb-0">Chưa có khách nào trong booking này.</p>
-                                            <?php endif; ?>
-                                        </div>
-                                    <?php endforeach; ?>
-                                <?php else: ?>
-                                    <div class="text-center py-5 text-muted">
-                                        <i class="bi bi-person-x fs-1 opacity-25"></i>
-                                        <p class="mt-3">Chưa có booking nào cho lịch khởi hành này</p>
+                                <?php 
+                                // Đảm bảo biến được khởi tạo (danh sách khách trong đoàn từ tour_checkin)
+                                // Nếu biến không tồn tại, lấy lại từ model
+                                if (!isset($allCheckinRows) || empty($allCheckinRows)) {
+                                    require_once 'models/CheckinKhach.php';
+                                    $checkinModel = new CheckinKhach();
+                                    $allCheckinRows = $checkinModel->getByLichKhoiHanh($lichKhoiHanh['id'] ?? $id ?? 0);
+                                }
+                                
+                                // Debug: Kiểm tra dữ liệu (đã tắt)
+                                // echo "<!-- DEBUG VIEW: allCheckinRows count: " . count($allCheckinRows ?? []) . " -->";
+                                // echo "<!-- DEBUG VIEW: lich_khoi_hanh_id: " . ($lichKhoiHanh['id'] ?? $id ?? 'N/A') . " -->";
+                                
+                                // Hiển thị toàn bộ khách từ tour_checkin trong một bảng
+                                if (!empty($allCheckinRows)): ?>
+                                    <div class="table-responsive p-3">
+                                        <table class="table table-sm table-bordered">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>STT</th>
+                                                    <th>Booking ID</th>
+                                                    <th>Họ tên</th>
+                                                    <th>CMND/Passport</th>
+                                                    <th>Ngày sinh</th>
+                                                    <th>Giới tính</th>
+                                                    <th>Quốc tịch</th>
+                                                    <th>SĐT</th>
+                                                    <th>Email</th>
+                                                    <th>Địa chỉ</th>
+                                                    <th>Trạng thái</th>
+                                                    <th>Check-in</th>
+                                                    <th>Check-out</th>
+                                                    <th>Thao tác</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <?php foreach ($allCheckinRows as $idx => $khach): ?>
+                                                    <tr>
+                                                        <td><?php echo $idx + 1; ?></td>
+                                                        <td>
+                                                            <?php if ($khach['booking_id']): ?>
+                                                                <span class="badge bg-primary">#<?php echo $khach['booking_id']; ?></span>
+                                                            <?php else: ?>
+                                                                <span class="badge bg-secondary">Không có</span>
+                                                            <?php endif; ?>
+                                                        </td>
+                                                        <td><?php echo htmlspecialchars($khach['ho_ten'] ?? 'N/A'); ?></td>
+                                                        <td>
+                                                            <?php if ($khach['so_cmnd']): ?>
+                                                                <small>CMND: <?php echo htmlspecialchars($khach['so_cmnd']); ?></small><br>
+                                                            <?php endif; ?>
+                                                            <?php if ($khach['so_passport']): ?>
+                                                                <small>Passport: <?php echo htmlspecialchars($khach['so_passport']); ?></small>
+                                                            <?php endif; ?>
+                                                            <?php if (!$khach['so_cmnd'] && !$khach['so_passport']): ?>
+                                                                <span class="text-muted">-</span>
+                                                            <?php endif; ?>
+                                                        </td>
+                                                        <td><?php echo $khach['ngay_sinh'] ? date('d/m/Y', strtotime($khach['ngay_sinh'])) : 'N/A'; ?></td>
+                                                        <td><?php echo htmlspecialchars($khach['gioi_tinh'] ?? 'N/A'); ?></td>
+                                                        <td><?php echo htmlspecialchars($khach['quoc_tich'] ?? 'N/A'); ?></td>
+                                                        <td><?php echo htmlspecialchars($khach['so_dien_thoai'] ?? 'N/A'); ?></td>
+                                                        <td><?php echo htmlspecialchars($khach['email'] ?? 'N/A'); ?></td>
+                                                        <td><?php echo htmlspecialchars($khach['dia_chi'] ?? 'N/A'); ?></td>
+                                                        <td>
+                                                            <span class="badge <?php 
+                                                                echo $khach['trang_thai'] === 'DaCheckIn' ? 'bg-success' : 
+                                                                    ($khach['trang_thai'] === 'DaCheckOut' ? 'bg-secondary' : 'bg-warning');
+                                                            ?>">
+                                                                <?php 
+                                                                echo $khach['trang_thai'] === 'DaCheckIn' ? 'Đã check-in' : 
+                                                                    ($khach['trang_thai'] === 'DaCheckOut' ? 'Đã check-out' : 'Chưa check-in');
+                                                                ?>
+                                                            </span>
+                                                        </td>
+                                                        <td>
+                                                            <?php if ($khach['checkin_time']): ?>
+                                                                <small><?php echo date('d/m/Y H:i', strtotime($khach['checkin_time'])); ?></small>
+                                                            <?php else: ?>
+                                                                <span class="text-muted">-</span>
+                                                            <?php endif; ?>
+                                                        </td>
+                                                        <td>
+                                                            <?php if ($khach['checkout_time']): ?>
+                                                                <small><?php echo date('d/m/Y H:i', strtotime($khach['checkout_time'])); ?></small>
+                                                            <?php else: ?>
+                                                                <span class="text-muted">-</span>
+                                                            <?php endif; ?>
+                                                        </td>
+                                                        <td>
+                                                            <div class="btn-group btn-group-sm">
+                                                                <a href="index.php?act=lichKhoiHanh/suaKhachChiTiet&id=<?php echo $khach['id']; ?>&lich_khoi_hanh_id=<?php echo $lichKhoiHanh['id']; ?>" 
+                                                                   class="btn btn-info btn-sm" title="Sửa">
+                                                                    <i class="bi bi-pencil"></i>
+                                                                </a>
+                                                                <a href="index.php?act=lichKhoiHanh/xoaKhachChiTiet&id=<?php echo $khach['id']; ?>&lich_khoi_hanh_id=<?php echo $lichKhoiHanh['id']; ?>" 
+                                                                   class="btn btn-danger btn-sm" 
+                                                                   onclick="return confirm('Xóa khách này?');"
+                                                                   title="Xóa">
+                                                                    <i class="bi bi-trash"></i>
+                                                                </a>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                <?php endforeach; ?>
+                                            </tbody>
+                                        </table>
                                     </div>
-            <?php endif; ?>
+                                <?php else: ?>
+                                    <div class="p-3 text-center text-muted">
+                                        <p class="mb-0">Chưa có khách nào trong danh sách check-in.</p>
+                                    </div>
+                                <?php endif; ?>
+                                
                             </div>
                         </div>
                     </div>
@@ -803,10 +1027,9 @@ $catalogServicesMap = $catalogServicesMap ?? [];
                                                     <th>Ưu tiên</th>
                                                     <th>Trạng thái</th>
                                                     <th>Ngày tạo</th>
-                                                   
+                                                    <th>Thao tác</th>
                                                 </tr>
                                             </thead>
-                                           <!-- Tìm và thay thế phần tbody trong bảng "Danh sách yêu cầu đặc biệt" (khoảng dòng 732-790) -->
 
 <tbody>
     <?php foreach ($yeuCauDacBietList as $yc): ?>
@@ -870,15 +1093,14 @@ $catalogServicesMap = $catalogServicesMap ?? [];
             </td>
             <td><small><?php echo $yc['ngay_tao'] ? date('d/m/Y H:i', strtotime($yc['ngay_tao'])) : 'N/A'; ?></small></td>
             <td>
-                <!-- <a href="index.php?act=lichKhoiHanh/suaYeuCauDacBiet&id=<?php echo $yc['id']; ?>&lich_khoi_hanh_id=<?php echo $lichKhoiHanh['id']; ?>" 
-                   class="btn btn-sm btn-info">
+                <button type="button" onclick="openModal('editYeuCauModal<?php echo $yc['yeu_cau_id']; ?>')" style="background: rgba(0, 123, 255, 0.3); border: 1px solid rgba(0, 123, 255, 0.5); color: #4da3ff; padding: 6px 12px; border-radius: 4px; cursor: pointer;">
                     <i class="bi bi-pencil"></i>
-                </a>
-                <a href="index.php?act=lichKhoiHanh/xoaYeuCauDacBiet&id=<?php echo $yc['id']; ?>&lich_khoi_hanh_id=<?php echo $lichKhoiHanh['id']; ?>" 
+                </button>
+                <a href="index.php?act=lichKhoiHanh/xoaYeuCauDacBiet&id=<?php echo $yc['yeu_cau_id']; ?>&lich_khoi_hanh_id=<?php echo $lichKhoiHanh['id']; ?>" 
                    class="btn btn-sm btn-danger"
                    onclick="return confirm('Xóa yêu cầu này?');">
                     <i class="bi bi-trash"></i>
-                </a> -->
+                </a>
             </td>
         </tr>
     <?php endforeach; ?>
@@ -955,7 +1177,7 @@ $catalogServicesMap = $catalogServicesMap ?? [];
                                                 <div class="me-3">
                                                     <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
                                                         <i class="bi bi-<?php 
-                                                            echo match($log['loai_su_kien']) {
+                                                            echo match($log['loai_su_kien'] ?? $log['loai_nhat_ky'] ?? '') {
                                                                 'DuocLichTrinhDuaKhach' => 'calendar-check',
                                                                 'DuaKhachDenDiem' => 'geo-alt',
                                                                 'CoDoanLuu' => 'stop',
@@ -984,14 +1206,17 @@ $catalogServicesMap = $catalogServicesMap ?? [];
                                                     </h6>
                                                     <p class="text-muted mb-2"><?php echo htmlspecialchars($log['noi_dung']); ?></p>
                                                     <small class="text-muted d-block">
-                                                        <i class="bi bi-calendar"></i> <?php echo $log['thoi_gian_su_kien'] ? date('d/m/Y H:i', strtotime($log['thoi_gian_su_kien'])) : 'N/A'; ?>
-                                                        <?php if ($log['dia_diem']): ?>
+                                                        <i class="bi bi-calendar"></i> <?php echo !empty($log['thoi_gian_su_kien'] ?? null) ? date('d/m/Y H:i', strtotime($log['thoi_gian_su_kien'])) : 'N/A'; ?>
+                                                        <?php if (!empty($log['dia_diem'] ?? null)): ?>
                                                             | <i class="bi bi-geo-alt"></i> <?php echo htmlspecialchars($log['dia_diem']); ?>
                                                         <?php endif; ?>
                                                         | <i class="bi bi-person"></i> <?php echo htmlspecialchars($log['nguoi_ghi_chep'] ?? 'N/A'); ?>
                                                     </small>
                                                 </div>
                                                 <div>
+                                                    <button type="button" onclick="openModal('editNhatKyModal<?php echo $log['id']; ?>')" style="background: rgba(0, 123, 255, 0.3); border: 1px solid rgba(0, 123, 255, 0.5); color: #4da3ff; padding: 6px 12px; border-radius: 4px; cursor: pointer; margin-right: 5px;">
+                                                        <i class="bi bi-pencil"></i>
+                                                    </button>
                                                     <a href="index.php?act=lichKhoiHanh/xoaNhatKy&id=<?php echo $log['id']; ?>&lich_khoi_hanh_id=<?php echo $lichKhoiHanh['id']; ?>" 
                                                        class="btn btn-sm btn-outline-danger"
                                                        onclick="return confirm('Xóa ghi chép này?');">
@@ -1009,9 +1234,87 @@ $catalogServicesMap = $catalogServicesMap ?? [];
                                 <?php endif; ?>
                             </div>
                         </div>
+                        
+                        <!-- Modal sửa nhật ký tour -->
+                        <?php foreach ($nhatKyTourList as $log): ?>
+                        <div class="modal-overlay" id="editNhatKyModal<?php echo $log['id']; ?>" onclick="closeModal('editNhatKyModal<?php echo $log['id']; ?>')" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); z-index: 1000; backdrop-filter: blur(5px);">
+                            <div class="modal-content" onclick="event.stopPropagation()" style="background: rgba(30, 30, 30, 0.95); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 4px; padding: 0; max-width: 600px; margin: 50px auto; max-height: 90vh; overflow-y: auto;">
+                                <div style="padding: 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); display: flex; justify-content: space-between; align-items: center;">
+                                    <h5 style="margin: 0; color: var(--text-light);">Sửa nhật ký tour</h5>
+                                    <button type="button" onclick="closeModal('editNhatKyModal<?php echo $log['id']; ?>')" style="background: none; border: none; color: var(--text-light); font-size: 1.5rem; cursor: pointer;">&times;</button>
+                                </div>
+                                <form method="POST" action="index.php?act=lichKhoiHanh/suaNhatKy">
+                                    <input type="hidden" name="id" value="<?php echo $log['id']; ?>">
+                                    <input type="hidden" name="lich_khoi_hanh_id" value="<?php echo $lichKhoiHanh['id']; ?>">
+                                    <div style="padding: 20px;">
+                                            <?php
+                                            // Parse loai_su_kien và noi_dung từ nội dung lưu
+                                            $noiDung = $log['noi_dung'] ?? '';
+                                            $loaiSuKien = '';
+                                            if (preg_match('/^([^-]+)\s*-\s*(.+)$/', $noiDung, $matches)) {
+                                                $loaiSuKien = trim($matches[1]);
+                                                $noiDung = trim($matches[2]);
+                                            }
+                                            ?>
+                                            <div class="mb-3">
+                                                <label class="form-label">Loại sự kiện <span class="text-danger">*</span></label>
+                                                <select name="loai_su_kien" class="form-select" required>
+                                                    <option value="DuocLichTrinhDuaKhach" <?php echo $loaiSuKien == 'DuocLichTrinhDuaKhach' ? 'selected' : ''; ?>>Được lịch trình đưa khách</option>
+                                                    <option value="DuaKhachDenDiem" <?php echo $loaiSuKien == 'DuaKhachDenDiem' ? 'selected' : ''; ?>>Đưa khách đến điểm</option>
+                                                    <option value="CoDoanLuu" <?php echo $loaiSuKien == 'CoDoanLuu' ? 'selected' : ''; ?>>Có đoàn lưu</option>
+                                                    <option value="DoanVeTour" <?php echo $loaiSuKien == 'DoanVeTour' ? 'selected' : ''; ?>>Đoàn về tour</option>
+                                                    <option value="SuCo" <?php echo $loaiSuKien == 'SuCo' ? 'selected' : ''; ?>>Sự cố</option>
+                                                    <option value="YLenCap" <?php echo $loaiSuKien == 'YLenCap' ? 'selected' : ''; ?>>Yêu lên cấp</option>
+                                                    <option value="Khac" <?php echo empty($loaiSuKien) || $loaiSuKien == 'Khac' ? 'selected' : ''; ?>>Khác</option>
+                                                </select>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Thời gian <span class="text-danger">*</span></label>
+                                                <input type="datetime-local" name="thoi_gian_su_kien" class="form-control" 
+                                                       value="<?php echo $log['ngay_ghi'] ? date('Y-m-d\TH:i', strtotime($log['ngay_ghi'])) : ''; ?>" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Nội dung <span class="text-danger">*</span></label>
+                                                <textarea name="noi_dung" class="form-control" rows="3" required><?php echo htmlspecialchars($noiDung); ?></textarea>
+                                            </div>
+                                        </div>
+                                    <div style="padding: 20px; border-top: 1px solid rgba(255, 255, 255, 0.1); display: flex; justify-content: flex-end; gap: 10px;">
+                                        <button type="button" onclick="closeModal('editNhatKyModal<?php echo $log['id']; ?>')" style="background: rgba(108, 117, 125, 0.3); border: 1px solid rgba(108, 117, 125, 0.5); color: var(--text-light); padding: 10px 20px; border-radius: 4px; cursor: pointer;">Hủy</button>
+                                        <button type="submit" style="background: var(--accent-gold); color: #000; padding: 10px 20px; border-radius: 4px; border: none; cursor: pointer; font-weight: 500;">Lưu thay đổi</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                        <?php endforeach; ?>
                     </div>
-                    <!-- Tab: Dịch vụ -->
-                    <div class="tab-pane fade" id="service" role="tabpanel">
+                <!-- Tab: Dịch vụ -->
+                <div class="tab-pane" id="service" style="display: none;">
+                        <?php
+                        // Kiểm tra dịch vụ đã phân bổ
+                        $dichVuDaPhanBo = !empty($phanBoDichVu) ? array_column($phanBoDichVu, 'loai_dich_vu') : [];
+                        $dichVuCanThiet = ['Xe', 'KhachSan', 'VeMayBay']; // Các dịch vụ cơ bản
+                        $dichVuThieu = array_diff($dichVuCanThiet, $dichVuDaPhanBo);
+                        ?>
+                        
+                        <!-- Cảnh báo khi chưa có dịch vụ -->
+                        <?php if (empty($phanBoDichVu)): ?>
+                            <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                                <i class="bi bi-exclamation-triangle"></i>
+                                <strong>CẢNH BÁO:</strong> Chưa có dịch vụ nào được phân bổ cho lịch khởi hành này. 
+                                Vui lòng phân bổ các dịch vụ cần thiết như: <strong>Xe vận chuyển, Khách sạn, Vé máy bay</strong>.
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        <?php elseif (!empty($dichVuThieu)): ?>
+                            <div class="alert alert-info alert-dismissible fade show" role="alert">
+                                <i class="bi bi-info-circle"></i>
+                                <strong>Gợi ý:</strong> Bạn chưa phân bổ các dịch vụ cơ bản: 
+                                <strong><?php echo implode(', ', array_map(function($loai) use ($serviceTypeOptions) {
+                                    return $serviceTypeOptions[$loai] ?? $loai;
+                                }, $dichVuThieu)); ?></strong>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        <?php endif; ?>
+                        
                         <!-- Add Service Form -->
                         <div class="add-form-card">
                             <h6 class="fw-bold mb-3">
@@ -1205,8 +1508,69 @@ $catalogServicesMap = $catalogServicesMap ?? [];
                         </div>
                     </div>
 
-                    <!-- Tab: Yêu cầu đặc biệt -->
-                    <div class="tab-pane fade" id="special-request" role="tabpanel">
+                <!-- Tab: Yêu cầu đặc biệt -->
+                <div class="tab-pane" id="special-request" style="display: none;">
+                        <!-- Add Request Form -->
+                        <div class="add-form-card">
+                            <h6 class="fw-bold mb-3">
+                                <i class="bi bi-plus-circle"></i> Thêm yêu cầu đặc biệt
+                            </h6>
+                            <form method="POST" action="index.php?act=lichKhoiHanh/themYeuCauDacBiet">
+                                <input type="hidden" name="lich_khoi_hanh_id" value="<?php echo $lichKhoiHanh['id']; ?>">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-semibold">Khách hàng <span class="text-danger">*</span></label>
+                                        <select name="booking_id" class="form-select" required>
+                                            <option value="">-- Chọn khách hàng --</option>
+                                            <?php foreach ($bookingList as $b): ?>
+                                                <option value="<?php echo $b['booking_id']; ?>">
+                                                    <?php echo htmlspecialchars($b['ho_ten'] ?? 'N/A'); ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-semibold">Loại yêu cầu <span class="text-danger">*</span></label>
+                                        <select name="loai_yeu_cau" class="form-select" required>
+                                            <option value="ThucPham">Thực phẩm / Dị ứng</option>
+                                            <option value="YTe">Y tế / Sức khỏe</option>
+                                            <option value="DichVu">Yêu cầu dịch vụ</option>
+                                            <option value="NguNgu">Ngủ ngơi / Chỗ ở</option>
+                                            <option value="AnToan">An toàn / Sự cố</option>
+                                            <option value="Khac">Khác</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-semibold">Mức độ ưu tiên <span class="text-danger">*</span></label>
+                                        <select name="muc_do_uu_tien" class="form-select" required>
+                                            <option value="Thap">Thấp</option>
+                                            <option value="Trung" selected>Trung bình</option>
+                                            <option value="Cao">Cao</option>
+                                            <option value="RatCao">Rất cao</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-semibold">Trạng thái</label>
+                                        <select name="trang_thai" class="form-select">
+                                            <option value="Moi">Mới</option>
+                                            <option value="DangXuLy">Đang xử lý</option>
+                                            <option value="HoanTat">Hoàn tất</option>
+                                            <option value="KhongTheXuLy">Không thể xử lý</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label small fw-semibold">Nội dung yêu cầu <span class="text-danger">*</span></label>
+                                        <textarea name="noi_dung" class="form-control" rows="3" required></textarea>
+                                    </div>
+                                    <div class="col-12">
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="bi bi-plus-circle"></i> Thêm yêu cầu
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                        
                         <div class="section-card card">
                             <div class="section-header">
                                 <i class="bi bi-heart-pulse"></i> Yêu cầu đặc biệt của khách hàng
@@ -1223,6 +1587,7 @@ $catalogServicesMap = $catalogServicesMap ?? [];
                                                     <th>Mức độ ưu tiên</th>
                                                     <th>Trạng thái</th>
                                                     <th>Ghi chú HDV</th>
+                                                    <th>Thao tác</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -1270,6 +1635,16 @@ $catalogServicesMap = $catalogServicesMap ?? [];
                                                         <td>
                                                             <small><?php echo htmlspecialchars($yc['ghi_chu_hdv'] ?? 'Chưa có'); ?></small>
                                                         </td>
+                                                        <td>
+                                                            <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#editYeuCauModal<?php echo $yc['yeu_cau_id']; ?>">
+                                                                <i class="bi bi-pencil"></i>
+                                                            </button>
+                                                            <a href="index.php?act=lichKhoiHanh/xoaYeuCauDacBiet&id=<?php echo $yc['yeu_cau_id']; ?>&lich_khoi_hanh_id=<?php echo $lichKhoiHanh['id']; ?>" 
+                                                               class="btn btn-sm btn-danger"
+                                                               onclick="return confirm('Xóa yêu cầu này?');">
+                                                                <i class="bi bi-trash"></i>
+                                                            </a>
+                                                        </td>
                                                     </tr>
                                                 <?php endforeach; ?>
                                             </tbody>
@@ -1285,8 +1660,8 @@ $catalogServicesMap = $catalogServicesMap ?? [];
                         </div>
                     </div>
 
-                    <!-- Tab: Nhật ký tour -->
-                    <div class="tab-pane fade" id="diary" role="tabpanel">
+                <!-- Tab: Nhật ký tour -->
+                <div class="tab-pane" id="diary" style="display: none;">
                         <div class="section-card card">
                             <div class="section-header">
                                 <i class="bi bi-journal-text"></i> Nhật ký tour
@@ -1301,8 +1676,8 @@ $catalogServicesMap = $catalogServicesMap ?? [];
                                                         <h6 class="mb-1"><?php echo htmlspecialchars($nhatKy['tieu_de'] ?? 'Nhật ký'); ?></h6>
                                                         <small class="text-muted">
                                                             <i class="bi bi-calendar"></i> <?php echo $nhatKy['ngay_ghi'] ? date('d/m/Y H:i', strtotime($nhatKy['ngay_ghi'])) : 'N/A'; ?>
-                                                            <?php if ($nhatKy['hdv_ten']): ?>
-                                                                | <i class="bi bi-person"></i> <?php echo htmlspecialchars($nhatKy['hdv_ten']); ?>
+                                                            <?php if (!empty($nhatKy['hdv_ten'] ?? $nhatKy['nhan_su_ten'] ?? null)): ?>
+                                                                | <i class="bi bi-person"></i> <?php echo htmlspecialchars($nhatKy['hdv_ten'] ?? $nhatKy['nhan_su_ten'] ?? ''); ?>
                                                             <?php endif; ?>
                                                         </small>
                                                     </div>
@@ -1353,9 +1728,40 @@ $catalogServicesMap = $catalogServicesMap ?? [];
             </div>
         </div>
     </div>
+</div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+    // Tab switching function
+    function switchTab(tabName) {
+        // Hide all tab panes
+        document.querySelectorAll('.tab-pane').forEach(pane => {
+            pane.style.display = 'none';
+        });
+        
+        // Remove active class from all tab buttons
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.remove('active');
+            btn.style.background = 'rgba(45, 45, 45, 0.3)';
+            btn.style.color = 'var(--text-muted)';
+            btn.style.borderBottom = 'none';
+        });
+        
+        // Show selected tab pane
+        const selectedPane = document.getElementById(tabName);
+        if (selectedPane) {
+            selectedPane.style.display = 'block';
+        }
+        
+        // Add active class to selected tab button
+        const selectedBtn = event.target.closest('.tab-btn');
+        if (selectedBtn) {
+            selectedBtn.classList.add('active');
+            selectedBtn.style.background = 'rgba(45, 45, 45, 0.5)';
+            selectedBtn.style.color = 'var(--text-light)';
+            selectedBtn.style.borderBottom = '2px solid var(--accent-gold)';
+        }
+    }
+    
     (function() {
         // --- Thêm/xóa form khách nhanh ---
         const guestWrapper = document.getElementById('guestFormsWrapper');
@@ -1587,6 +1993,89 @@ $catalogServicesMap = $catalogServicesMap ?? [];
             vaiTroSelect.addEventListener('change', checkConflict);
         }
     })();
+    
+    // Modal functions
+    function openModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.style.display = 'block';
+        }
+    }
+    
+    function closeModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.style.display = 'none';
+        }
+    }
+    
+    // Close modal on Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            document.querySelectorAll('.modal-overlay').forEach(modal => {
+                modal.style.display = 'none';
+            });
+        }
+    });
     </script>
-</body>
-</html>
+
+    <!-- Modal sửa yêu cầu đặc biệt -->
+    <?php if (!empty($yeuCauDacBietList)): ?>
+        <?php foreach ($yeuCauDacBietList as $yc): ?>
+        <div class="modal-overlay" id="editYeuCauModal<?php echo $yc['yeu_cau_id']; ?>" onclick="closeModal('editYeuCauModal<?php echo $yc['yeu_cau_id']; ?>')" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); z-index: 1000; backdrop-filter: blur(5px);">
+            <div class="modal-content" onclick="event.stopPropagation()" style="background: rgba(30, 30, 30, 0.95); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 4px; padding: 0; max-width: 600px; margin: 50px auto; max-height: 90vh; overflow-y: auto;">
+                <div style="padding: 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); display: flex; justify-content: space-between; align-items: center;">
+                    <h5 style="margin: 0; color: var(--text-light);">Sửa yêu cầu đặc biệt</h5>
+                    <button type="button" onclick="closeModal('editYeuCauModal<?php echo $yc['yeu_cau_id']; ?>')" style="background: none; border: none; color: var(--text-light); font-size: 1.5rem; cursor: pointer;">&times;</button>
+                </div>
+                    <form method="POST" action="index.php?act=lichKhoiHanh/suaYeuCauDacBiet">
+                        <input type="hidden" name="id" value="<?php echo $yc['yeu_cau_id']; ?>">
+                        <input type="hidden" name="lich_khoi_hanh_id" value="<?php echo $lichKhoiHanh['id']; ?>">
+                <div style="padding: 20px;">
+                            <div class="mb-3">
+                                <label class="form-label">Loại yêu cầu <span class="text-danger">*</span></label>
+                                <select name="loai_yeu_cau" class="form-select" required>
+                                    <option value="ThucPham" <?php echo ($yc['loai_yeu_cau'] ?? '') == 'ThucPham' ? 'selected' : ''; ?>>Thực phẩm / Dị ứng</option>
+                                    <option value="YTe" <?php echo ($yc['loai_yeu_cau'] ?? '') == 'YTe' ? 'selected' : ''; ?>>Y tế / Sức khỏe</option>
+                                    <option value="DichVu" <?php echo ($yc['loai_yeu_cau'] ?? '') == 'DichVu' ? 'selected' : ''; ?>>Yêu cầu dịch vụ</option>
+                                    <option value="NguNgu" <?php echo ($yc['loai_yeu_cau'] ?? '') == 'NguNgu' ? 'selected' : ''; ?>>Ngủ ngơi / Chỗ ở</option>
+                                    <option value="AnToan" <?php echo ($yc['loai_yeu_cau'] ?? '') == 'AnToan' ? 'selected' : ''; ?>>An toàn / Sự cố</option>
+                                    <option value="Khac" <?php echo empty($yc['loai_yeu_cau']) || ($yc['loai_yeu_cau'] ?? '') == 'Khac' ? 'selected' : ''; ?>>Khác</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Mức độ ưu tiên <span class="text-danger">*</span></label>
+                                <select name="muc_do_uu_tien" class="form-select" required>
+                                    <option value="Thap" <?php echo ($yc['muc_do_uu_tien'] ?? '') == 'Thap' ? 'selected' : ''; ?>>Thấp</option>
+                                    <option value="Trung" <?php echo empty($yc['muc_do_uu_tien']) || ($yc['muc_do_uu_tien'] ?? '') == 'Trung' ? 'selected' : ''; ?>>Trung bình</option>
+                                    <option value="Cao" <?php echo ($yc['muc_do_uu_tien'] ?? '') == 'Cao' ? 'selected' : ''; ?>>Cao</option>
+                                    <option value="RatCao" <?php echo ($yc['muc_do_uu_tien'] ?? '') == 'RatCao' ? 'selected' : ''; ?>>Rất cao</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Trạng thái</label>
+                                <select name="trang_thai" class="form-select">
+                                    <option value="Moi" <?php echo empty($yc['trang_thai']) || ($yc['trang_thai'] ?? '') == 'Moi' ? 'selected' : ''; ?>>Mới</option>
+                                    <option value="DangXuLy" <?php echo ($yc['trang_thai'] ?? '') == 'DangXuLy' ? 'selected' : ''; ?>>Đang xử lý</option>
+                                    <option value="HoanTat" <?php echo ($yc['trang_thai'] ?? '') == 'HoanTat' ? 'selected' : ''; ?>>Hoàn tất</option>
+                                    <option value="KhongTheXuLy" <?php echo ($yc['trang_thai'] ?? '') == 'KhongTheXuLy' ? 'selected' : ''; ?>>Không thể xử lý</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Nội dung <span class="text-danger">*</span></label>
+                                <textarea name="noi_dung" class="form-control" rows="3" required><?php echo htmlspecialchars($yc['mo_ta'] ?? ''); ?></textarea>
+                            </div>
+                        </div>
+                <div style="padding: 20px; border-top: 1px solid rgba(255, 255, 255, 0.1); display: flex; justify-content: flex-end; gap: 10px;">
+                    <button type="button" onclick="closeModal('editYeuCauModal<?php echo $yc['yeu_cau_id']; ?>')" style="background: rgba(108, 117, 125, 0.3); border: 1px solid rgba(108, 117, 125, 0.5); color: var(--text-light); padding: 10px 20px; border-radius: 4px; cursor: pointer;">Hủy</button>
+                    <button type="submit" style="background: var(--accent-gold); color: #000; padding: 10px 20px; border-radius: 4px; border: none; cursor: pointer; font-weight: 500;">Lưu thay đổi</button>
+                </div>
+                    </form>
+            </div>
+        </div>
+        <?php endforeach; ?>
+    <?php endif; ?>
+<?php
+$content = ob_get_clean();
+require __DIR__ . '/../layouts/aventura.php';
+?>

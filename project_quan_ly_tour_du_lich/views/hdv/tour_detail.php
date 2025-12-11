@@ -156,6 +156,22 @@
                     <div><?php echo nl2br(htmlspecialchars($tour['mo_ta'] ?? '')); ?></div>
                 </div>
                 <?php endif; ?>
+                <!-- Lịch trình chi tiết -->
+                <div class="info-card">
+                    <h5 class="mb-3"><i class="bi bi-list-check"></i> Lịch trình chi tiết</h5>
+                    <?php if (!empty($lichTrinhList)): ?>
+                        <ol class="list-group list-group-numbered">
+                            <?php foreach ($lichTrinhList as $lichTrinh): ?>
+                                <li class="list-group-item mb-2">
+                                    <div class="fw-bold text-primary">Ngày <?= htmlspecialchars($lichTrinh['ngay_thu']) ?>: <?= htmlspecialchars($lichTrinh['dia_diem']) ?></div>
+                                    <div><?= nl2br(htmlspecialchars($lichTrinh['hoat_dong'])) ?></div>
+                                </li>
+                            <?php endforeach; ?>
+                        </ol>
+                    <?php else: ?>
+                        <div class="text-muted">Chưa có lịch trình chi tiết cho tour này.</div>
+                    <?php endif; ?>
+                </div>
             </div>
 
             <div class="col-md-4">
@@ -209,4 +225,4 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
-</html>
+</html> 

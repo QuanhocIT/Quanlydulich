@@ -167,8 +167,9 @@ class DuToanTour
     
     // Lấy danh sách dự toán có cảnh báo
     public function getDuToanCanhBao() {
+        // Ép collation cho canh_bao để tránh lỗi mix of collations
         $sql = "SELECT * FROM v_so_sanh_du_toan_thuc_te 
-                WHERE canh_bao IN ('VuotDuToan', 'GanVuot')
+                WHERE CONVERT(canh_bao USING utf8mb4) COLLATE utf8mb4_unicode_ci IN ('VuotDuToan', 'GanVuot')
                 ORDER BY 
                     CASE canh_bao 
                         WHEN 'VuotDuToan' THEN 1

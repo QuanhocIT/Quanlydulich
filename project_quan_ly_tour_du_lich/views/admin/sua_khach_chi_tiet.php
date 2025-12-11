@@ -3,34 +3,125 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'Admin') {
     header('Location: index.php?act=auth/login');
     exit;
 }
+$pageTitle = 'Sửa Khách';
+$currentPage = 'lichKhoiHanh';
+ob_start();
 ?>
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sửa Khách - Admin</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-</head>
-<body class="bg-light">
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="index.php?act=admin/dashboard">
-                <i class="bi bi-speedometer2"></i> Quản trị
-            </a>
-        </div>
-    </nav>
+<style>
+    .form-section {
+        background: rgba(45, 45, 45, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 2px;
+        padding: 25px;
+        margin-bottom: 30px;
+        backdrop-filter: blur(10px);
+    }
+    .form-control, .form-select {
+        background: rgba(30, 30, 30, 0.7);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: var(--text-light);
+        padding: 10px 15px;
+        border-radius: 4px;
+    }
+    .form-control:focus, .form-select:focus {
+        background: rgba(30, 30, 30, 0.9);
+        border-color: var(--accent-gold);
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(255, 193, 7, 0.2);
+        color: var(--text-light);
+    }
+    .form-label {
+        color: var(--text-light);
+        margin-bottom: 8px;
+        display: block;
+    }
+    .btn {
+        padding: 10px 20px;
+        border-radius: 4px;
+        border: none;
+        cursor: pointer;
+        font-weight: 500;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s;
+    }
+    .btn-primary {
+        background: var(--accent-gold);
+        color: #000;
+    }
+    .btn-primary:hover {
+        background: #ffd700;
+    }
+    .btn-secondary {
+        background: rgba(108, 117, 125, 0.3);
+        color: var(--text-light);
+        border: 1px solid rgba(108, 117, 125, 0.5);
+    }
+    .btn-secondary:hover {
+        background: rgba(108, 117, 125, 0.5);
+    }
+    .card {
+        background: rgba(45, 45, 45, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+        backdrop-filter: blur(10px);
+    }
+    .card-header {
+        background: rgba(0, 123, 255, 0.3);
+        color: var(--text-light);
+        padding: 20px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .card-body {
+        padding: 20px;
+        color: var(--text-light);
+    }
+    .alert-danger {
+        background: rgba(220, 53, 69, 0.2);
+        border: 1px solid rgba(220, 53, 69, 0.5);
+        color: #dc3545;
+        padding: 15px;
+        border-radius: 4px;
+        margin-bottom: 20px;
+    }
+    .text-danger { color: #dc3545 !important; }
+    .row {
+        display: flex;
+        flex-wrap: wrap;
+        margin-left: -15px;
+        margin-right: -15px;
+    }
+    .row > * {
+        padding-left: 15px;
+        padding-right: 15px;
+    }
+    .col-md-3, .col-md-4, .col-md-6 { width: 50%; }
+    .col-12 { width: 100%; }
+    .g-3 { gap: 1rem; }
+    .mb-3 { margin-bottom: 1rem; }
+    .mt-4 { margin-top: 1.5rem; }
+    @media (max-width: 768px) {
+        .col-md-3, .col-md-4, .col-md-6 { width: 100%; }
+    }
+</style>
 
-    <div class="container-fluid px-4 py-4">
-        <div class="card">
-            <div class="card-header bg-info text-white">
-                <h5 class="mb-0"><i class="bi bi-pencil"></i> Sửa Thông Tin Khách</h5>
-            </div>
-            <div class="card-body">
-                <?php if (isset($_SESSION['error'])): ?>
-                    <div class="alert alert-danger"><?php echo htmlspecialchars($_SESSION['error']); unset($_SESSION['error']); ?></div>
-                <?php endif; ?>
+<div style="padding: 20px;">
+    <div class="page-header-section" style="margin-bottom: 30px;">
+        <h1 style="margin: 0 0 10px 0; font-size: 2rem; color: var(--text-light);">
+            <i class="bi bi-pencil" style="color: var(--accent-gold);"></i> Sửa Thông Tin Khách
+        </h1>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <h5 style="margin: 0; color: var(--text-light);"><i class="bi bi-pencil"></i> Sửa Thông Tin Khách</h5>
+        </div>
+        <div class="card-body">
+            <?php if (isset($_SESSION['error'])): ?>
+                <div class="alert-danger"><?php echo htmlspecialchars($_SESSION['error']); unset($_SESSION['error']); ?></div>
+            <?php endif; ?>
                 
                 <form method="POST" action="index.php?act=lichKhoiHanh/suaKhachChiTiet&id=<?php echo $khach['id']; ?>&lich_khoi_hanh_id=<?php echo $lichKhoiHanhId; ?>">
                     <div class="row g-3">
@@ -84,9 +175,11 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'Admin') {
                         <a href="index.php?act=lichKhoiHanh/chiTiet&id=<?php echo $lichKhoiHanhId; ?>" class="btn btn-secondary">Hủy</a>
                     </div>
                 </form>
-            </div>
         </div>
     </div>
-</body>
-</html>
+</div>
+<?php
+$content = ob_get_clean();
+require __DIR__ . '/../layouts/aventura.php';
+?>
 

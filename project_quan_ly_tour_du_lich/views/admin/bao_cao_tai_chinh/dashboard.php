@@ -1,378 +1,357 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Báo Cáo Tài Chính - Dashboard</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-        
-        .admin-container {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-        
-        .header {
-            background: rgba(255, 255, 255, 0.95);
-            padding: 25px;
-            border-radius: 15px;
-            margin-bottom: 30px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-        }
-        
-        .header h1 {
-            color: #333;
-            font-size: 32px;
-            margin-bottom: 10px;
-        }
-        
-        .header .breadcrumb {
-            color: #666;
-            font-size: 14px;
-        }
-        
-        .header .breadcrumb a {
-            color: #667eea;
-            text-decoration: none;
-        }
-        
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-        
-        .stat-card {
-            background: rgba(255, 255, 255, 0.95);
-            padding: 25px;
-            border-radius: 15px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s ease;
-        }
-        
-        .stat-card:hover {
-            transform: translateY(-5px);
-        }
-        
-        .stat-card .icon {
-            width: 60px;
-            height: 60px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 28px;
-            margin-bottom: 15px;
-        }
-        
-        .stat-card.revenue .icon {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-        }
-        
-        .stat-card.expense .icon {
-            background: linear-gradient(135deg, #f093fb, #f5576c);
-            color: white;
-        }
-        
-        .stat-card.profit .icon {
-            background: linear-gradient(135deg, #4facfe, #00f2fe);
-            color: white;
-        }
-        
-        .stat-card h3 {
-            color: #666;
-            font-size: 14px;
-            font-weight: 500;
-            margin-bottom: 10px;
-        }
-        
-        .stat-card .value {
-            color: #333;
-            font-size: 32px;
-            font-weight: 700;
-            margin-bottom: 5px;
-        }
-        
-        .stat-card .change {
-            font-size: 13px;
-        }
-        
-        .stat-card .change.positive {
-            color: #10b981;
-        }
-        
-        .stat-card .change.negative {
-            color: #ef4444;
-        }
-        
+<?php
+$pageTitle = 'Báo Cáo Tài Chính';
+$currentPage = 'baoCaoTaiChinh';
+ob_start();
+?>
+
+<style>
+    .page-header-section {
+        background: rgba(45, 45, 45, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 2px;
+        padding: 40px;
+        margin-bottom: 40px;
+        backdrop-filter: blur(10px);
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+
+    .stat-card {
+        background: rgba(45, 45, 45, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 2px;
+        padding: 25px;
+        backdrop-filter: blur(10px);
+        transition: transform 0.3s;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .stat-card .icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 2px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+        margin-bottom: 15px;
+    }
+
+    .stat-card.revenue .icon {
+        background: rgba(212, 175, 55, 0.2);
+        color: var(--accent-gold);
+    }
+
+    .stat-card.expense .icon {
+        background: rgba(245, 87, 108, 0.2);
+        color: #f5576c;
+    }
+
+    .stat-card.profit .icon {
+        background: rgba(79, 172, 254, 0.2);
+        color: #4facfe;
+    }
+
+    .stat-card h3 {
+        color: var(--text-muted);
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 10px;
+    }
+
+    .stat-card .value {
+        color: var(--text-light);
+        font-size: 32px;
+        font-weight: 700;
+        margin-bottom: 5px;
+    }
+
+    .stat-card .value.positive {
+        color: #10b981;
+    }
+
+    .stat-card .value.negative {
+        color: #ef4444;
+    }
+
+    .stat-card .change {
+        font-size: 12px;
+        color: var(--text-muted);
+    }
+
+    .stat-card .change.positive {
+        color: #10b981;
+    }
+
+    .stat-card .change.negative {
+        color: #ef4444;
+    }
+
+    .content-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 30px;
+        margin-bottom: 30px;
+    }
+
+    @media (max-width: 992px) {
         .content-grid {
-            display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 20px;
-            margin-bottom: 30px;
+            grid-template-columns: 1fr;
         }
-        
-        .card {
-            background: rgba(255, 255, 255, 0.95);
-            padding: 25px;
-            border-radius: 15px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-        }
-        
-        .card h2 {
-            color: #333;
-            font-size: 20px;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #f0f0f0;
-        }
-        
-        .quick-links {
-            display: grid;
-            gap: 15px;
-        }
-        
-        .quick-link {
-            display: flex;
-            align-items: center;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 10px;
-            text-decoration: none;
-            color: #333;
-            transition: all 0.3s ease;
-        }
-        
-        .quick-link:hover {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            transform: translateX(5px);
-        }
-        
-        .quick-link i {
-            width: 40px;
-            height: 40px;
-            background: rgba(102, 126, 234, 0.1);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-right: 15px;
-            font-size: 18px;
-        }
-        
-        .quick-link:hover i {
-            background: rgba(255, 255, 255, 0.2);
-        }
-        
-        .top-tours {
-            list-style: none;
-        }
-        
-        .tour-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px;
-            border-bottom: 1px solid #f0f0f0;
-        }
-        
-        .tour-item:last-child {
-            border-bottom: none;
-        }
-        
-        .tour-name {
-            color: #333;
-            font-weight: 500;
-        }
-        
-        .tour-revenue {
-            color: #667eea;
-            font-weight: 700;
-        }
-        
-        .back-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 12px 24px;
-            background: rgba(255, 255, 255, 0.95);
-            color: #667eea;
-            text-decoration: none;
-            border-radius: 10px;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-        }
-        
-        .back-btn:hover {
-            background: white;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-        }
-        
-        @media (max-width: 768px) {
-            .content-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="admin-container">
-        <a href="index.php?act=admin/dashboard" class="back-btn">
-            <i class="fas fa-arrow-left"></i>
-            Quay lại Dashboard
-        </a>
-        
-        <div class="header">
-            <h1><i class="fas fa-chart-line"></i> Báo Cáo Tài Chính</h1>
-            <div class="breadcrumb">
-                <a href="index.php?act=admin/dashboard">Dashboard</a> / 
+    }
+
+    .info-card {
+        background: rgba(45, 45, 45, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 2px;
+        padding: 25px;
+        backdrop-filter: blur(10px);
+    }
+
+    .info-card h2 {
+        color: var(--accent-gold);
+        font-size: 18px;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+        font-weight: 600;
+    }
+
+    .quick-links {
+        display: grid;
+        gap: 15px;
+    }
+
+    .quick-link {
+        display: flex;
+        align-items: center;
+        padding: 15px;
+        background: rgba(45, 45, 45, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 2px;
+        text-decoration: none;
+        color: var(--text-light);
+        transition: all 0.3s;
+    }
+
+    .quick-link:hover {
+        background: rgba(212, 175, 55, 0.1);
+        border-color: var(--accent-gold);
+        color: var(--accent-gold);
+        transform: translateX(5px);
+    }
+
+    .quick-link-icon {
+        width: 40px;
+        height: 40px;
+        background: rgba(212, 175, 55, 0.2);
+        border-radius: 2px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 15px;
+        font-size: 18px;
+        color: var(--accent-gold);
+    }
+
+    .quick-link:hover .quick-link-icon {
+        background: rgba(212, 175, 55, 0.3);
+    }
+
+    .quick-link-title {
+        font-weight: 600;
+        font-size: 14px;
+        margin-bottom: 3px;
+    }
+
+    .quick-link-desc {
+        font-size: 11px;
+        color: var(--text-muted);
+    }
+
+    .top-tours {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .tour-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .tour-item:last-child {
+        border-bottom: none;
+    }
+
+    .tour-name {
+        color: var(--text-light);
+        font-weight: 500;
+        font-size: 13px;
+    }
+
+    .tour-revenue {
+        color: var(--accent-gold);
+        font-weight: 700;
+        font-size: 14px;
+    }
+
+    .tour-rank {
+        color: var(--accent-gold);
+        font-weight: 700;
+        margin-right: 10px;
+    }
+</style>
+
+<!-- Page Header -->
+<div class="page-header-section">
+    <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 20px;">
+        <div>
+            <h1>📊 Báo Cáo Tài Chính</h1>
+            <p style="color: var(--text-muted); margin-top: 10px;">
+                <a href="index.php?act=admin/dashboard" style="color: var(--accent-gold); text-decoration: none;">Dashboard</a> / 
                 <span>Báo cáo tài chính</span>
-            </div>
+            </p>
         </div>
-        
-        <div class="stats-grid">
-            <div class="stat-card revenue">
-                <div class="icon">
-                    <i class="fas fa-money-bill-wave"></i>
-                </div>
-                <h3>TỔNG THU THÁNG NÀY</h3>
-                <div class="value"><?= number_format($tongThu) ?>đ</div>
-                <div class="change positive">
-                    <i class="fas fa-arrow-up"></i> Tháng <?= date('m/Y') ?>
-                </div>
-            </div>
-            
-            <div class="stat-card expense">
-                <div class="icon">
-                    <i class="fas fa-receipt"></i>
-                </div>
-                <h3>TỔNG CHI THÁNG NÀY</h3>
-                <div class="value"><?= number_format($tongChi) ?>đ</div>
-                <div class="change">
-                    <i class="fas fa-calendar"></i> Tháng <?= date('m/Y') ?>
-                </div>
-            </div>
-            
-            <div class="stat-card profit">
-                <div class="icon">
-                    <i class="fas fa-chart-pie"></i>
-                </div>
-                <h3>LỢI NHUẬN</h3>
-                <div class="value <?= $loiNhuan >= 0 ? 'positive' : 'negative' ?>">
-                    <?= number_format($loiNhuan) ?>đ
-                </div>
-                <div class="change <?= $loiNhuan >= 0 ? 'positive' : 'negative' ?>">
-                    <?php if($loiNhuan >= 0): ?>
-                        <i class="fas fa-arrow-up"></i> Khả quan
-                    <?php else: ?>
-                        <i class="fas fa-arrow-down"></i> Cần cải thiện
-                    <?php endif; ?>
-                </div>
-            </div>
-        </div>
-        
-        <div class="content-grid">
-            <div class="card">
-                <h2><i class="fas fa-star"></i> Top 5 Tour Doanh Thu Cao Nhất</h2>
-                <ul class="top-tours">
-                    <?php if(empty($topTours)): ?>
-                        <li class="tour-item">
-                            <span style="color: #999;">Chưa có dữ liệu</span>
-                        </li>
-                    <?php else: ?>
-                        <?php foreach($topTours as $index => $item): ?>
-                            <li class="tour-item">
-                                <div>
-                                    <span style="color: #667eea; font-weight: 700; margin-right: 10px;">
-                                        #<?= $index + 1 ?>
-                                    </span>
-                                    <span class="tour-name">
-                                        <?= htmlspecialchars($item['tour']['ten_tour']) ?>
-                                    </span>
-                                </div>
-                                <span class="tour-revenue">
-                                    <?= number_format($item['doanh_thu']) ?>đ
-                                </span>
-                            </li>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                </ul>
-            </div>
-            
-            <div class="card">
-                <h2><i class="fas fa-link"></i> Truy Cập Nhanh</h2>
-                <div class="quick-links">
-                    <a href="index.php?act=admin/lichSuGiaoDich" class="quick-link">
-                        <i class="fas fa-history"></i>
-                        <div>
-                            <div style="font-weight: 600;">Lịch sử giao dịch</div>
-                            <div style="font-size: 12px; color: #999;">Xem chi tiết các giao dịch</div>
-                        </div>
-                    </a>
-                    
-                    <a href="index.php?act=admin/thuChiTour" class="quick-link">
-                        <i class="fas fa-route"></i>
-                        <div>
-                            <div style="font-weight: 600;">Thu chi từng tour</div>
-                            <div style="font-size: 12px; color: #999;">Báo cáo theo tour</div>
-                        </div>
-                    </a>
-                    
-                    <a href="index.php?act=admin/congNo" class="quick-link">
-                        <i class="fas fa-file-invoice-dollar"></i>
-                        <div>
-                            <div style="font-weight: 600;">Công nợ</div>
-                            <div style="font-size: 12px; color: #999;">Quản lý công nợ KH/NCC</div>
-                        </div>
-                    </a>
-                    
-                    <a href="index.php?act=admin/laiLoTour" class="quick-link">
-                        <i class="fas fa-chart-bar"></i>
-                        <div>
-                            <div style="font-weight: 600;">Lãi lỗ từng tour</div>
-                            <div style="font-size: 12px; color: #999;">Phân tích lãi lỗ</div>
-                        </div>
-                    </a>
-                    
-                    <a href="index.php?act=admin/duToanTour" class="quick-link">
-                        <i class="fas fa-calculator"></i>
-                        <div>
-                            <div style="font-weight: 600;">Dự toán tour</div>
-                            <div style="font-size: 12px; color: #999;">Quản lý dự toán chi phí</div>
-                        </div>
-                    </a>
-                    
-                    <a href="index.php?act=admin/soSanhDuToan" class="quick-link">
-                        <i class="fas fa-balance-scale"></i>
-                        <div>
-                            <div style="font-weight: 600;">So sánh dự toán</div>
-                            <div style="font-size: 12px; color: #999;">Dự toán vs Thực tế</div>
-                        </div>
-                    </a>
-                </div>
-            </div>
+        <div>
+            <a href="index.php?act=admin/dashboard" class="btn btn-secondary">
+                ← Quay lại Dashboard
+            </a>
         </div>
     </div>
-</body>
-</html>
+</div>
+
+<!-- Statistics -->
+<div class="stats-grid">
+    <div class="stat-card revenue">
+        <div class="icon">💰</div>
+        <h3>TỔNG THU THÁNG NÀY</h3>
+        <div class="value"><?php echo number_format($tongThu ?? 0); ?>đ</div>
+        <div class="change positive">
+            ↑ Tháng <?php echo date('m/Y'); ?>
+        </div>
+    </div>
+    
+    <div class="stat-card expense">
+        <div class="icon">💸</div>
+        <h3>TỔNG CHI THÁNG NÀY</h3>
+        <div class="value"><?php echo number_format($tongChi ?? 0); ?>đ</div>
+        <div class="change">
+            📅 Tháng <?php echo date('m/Y'); ?>
+        </div>
+    </div>
+    
+    <div class="stat-card profit">
+        <div class="icon">📈</div>
+        <h3>LỢI NHUẬN</h3>
+        <div class="value <?php echo ($loiNhuan ?? 0) >= 0 ? 'positive' : 'negative'; ?>">
+            <?php echo number_format($loiNhuan ?? 0); ?>đ
+        </div>
+        <div class="change <?php echo ($loiNhuan ?? 0) >= 0 ? 'positive' : 'negative'; ?>">
+            <?php if(($loiNhuan ?? 0) >= 0): ?>
+                ↑ Khả quan
+            <?php else: ?>
+                ↓ Cần cải thiện
+            <?php endif; ?>
+        </div>
+    </div>
+</div>
+
+<!-- Content Grid -->
+<div class="content-grid">
+    <div class="info-card">
+        <h2>⭐ Top 5 Tour Doanh Thu Cao Nhất</h2>
+        <ul class="top-tours">
+            <?php if(empty($topTours)): ?>
+                <li class="tour-item">
+                    <span style="color: var(--text-muted);">Chưa có dữ liệu</span>
+                </li>
+            <?php else: ?>
+                <?php foreach($topTours as $index => $item): ?>
+                    <li class="tour-item">
+                        <div>
+                            <span class="tour-rank">#<?php echo $index + 1; ?></span>
+                            <span class="tour-name">
+                                <?php echo htmlspecialchars($item['tour']['ten_tour']); ?>
+                            </span>
+                        </div>
+                        <span class="tour-revenue">
+                            <?php echo number_format($item['doanh_thu']); ?>đ
+                        </span>
+                    </li>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </ul>
+    </div>
+    
+    <div class="info-card">
+        <h2>🔗 Truy Cập Nhanh</h2>
+        <div class="quick-links">
+            <a href="index.php?act=admin/lichSuGiaoDich" class="quick-link">
+                <div class="quick-link-icon">🕐</div>
+                <div>
+                    <div class="quick-link-title">Lịch sử giao dịch</div>
+                    <div class="quick-link-desc">Xem chi tiết các giao dịch</div>
+                </div>
+            </a>
+            
+            <a href="index.php?act=admin/thuChiTour" class="quick-link">
+                <div class="quick-link-icon">🗺️</div>
+                <div>
+                    <div class="quick-link-title">Thu chi từng tour</div>
+                    <div class="quick-link-desc">Báo cáo theo tour</div>
+                </div>
+            </a>
+            
+            <a href="index.php?act=admin/congNo" class="quick-link">
+                <div class="quick-link-icon">💳</div>
+                <div>
+                    <div class="quick-link-title">Công nợ</div>
+                    <div class="quick-link-desc">Quản lý công nợ KH/NCC</div>
+                </div>
+            </a>
+            
+            <a href="index.php?act=admin/laiLoTour" class="quick-link">
+                <div class="quick-link-icon">📊</div>
+                <div>
+                    <div class="quick-link-title">Lãi lỗ từng tour</div>
+                    <div class="quick-link-desc">Phân tích lãi lỗ</div>
+                </div>
+            </a>
+            
+            <a href="index.php?act=admin/duToanTour" class="quick-link">
+                <div class="quick-link-icon">🧮</div>
+                <div>
+                    <div class="quick-link-title">Dự toán tour</div>
+                    <div class="quick-link-desc">Quản lý dự toán chi phí</div>
+                </div>
+            </a>
+            
+            <a href="index.php?act=admin/soSanhDuToan" class="quick-link">
+                <div class="quick-link-icon">⚖️</div>
+                <div>
+                    <div class="quick-link-title">So sánh dự toán</div>
+                    <div class="quick-link-desc">Dự toán vs Thực tế</div>
+                </div>
+            </a>
+        </div>
+    </div>
+</div>
+
+<?php
+$content = ob_get_clean();
+require __DIR__ . '/../../layouts/aventura.php';
+?>

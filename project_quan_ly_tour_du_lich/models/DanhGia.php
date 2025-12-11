@@ -21,9 +21,9 @@ class DanhGia {
         $params = [];
         
         // Lọc theo loại
-        if (!empty($filters['loai'])) {
+        if (!empty($filters['loai_danh_gia'])) {
             $sql .= " AND dg.loai_danh_gia = ?";
-            $params[] = $filters['loai'];
+            $params[] = $filters['loai_danh_gia'];
         }
         
         // Lọc theo điểm
@@ -129,10 +129,10 @@ class DanhGia {
     public function getReportByNhaCungCap($ncc_id) {
         // Thông tin nhà cung cấp
         $sql = "SELECT ncc.*, AVG(dg.diem) as diem_tb, COUNT(dg.danh_gia_id) as so_danh_gia
-                FROM nha_cung_cap ncc
-                LEFT JOIN danh_gia dg ON ncc.nha_cung_cap_id = dg.nha_cung_cap_id
-                WHERE ncc.nha_cung_cap_id = ?
-                GROUP BY ncc.nha_cung_cap_id";
+            FROM nha_cung_cap ncc
+            LEFT JOIN danh_gia dg ON ncc.id_nha_cung_cap = dg.nha_cung_cap_id
+            WHERE ncc.id_nha_cung_cap = ?
+            GROUP BY ncc.id_nha_cung_cap";
         
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([$ncc_id]);
@@ -231,49 +231,53 @@ class DanhGia {
         $report['tour_can_cai_thien'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
         // Top nhà cung cấp
-        $sql = "SELECT ncc.ten_nha_cung_cap, ncc.nha_cung_cap_id, AVG(dg.diem) as diem_tb, COUNT(dg.danh_gia_id) as so_danh_gia
-                FROM nha_cung_cap ncc
-                JOIN danh_gia dg ON ncc.nha_cung_cap_id = dg.nha_cung_cap_id
-                GROUP BY ncc.nha_cung_cap_id
-                HAVING COUNT(dg.danh_gia_id) >= 3
-                ORDER BY diem_tb DESC
-                LIMIT 10";
+        $sql = "SELECT ncc.ten_don_vi, ncc.id_nha_cung_cap, AVG(dg.diem) as diem_tb, COUNT(dg.danh_gia_id) as so_danh_gia
+            FROM danh_gia dg
+            JOIN nha_cung_cap ncc ON dg.nha_cung_cap_id = ncc.id_nha_cung_cap
+            WHERE dg.loai_danh_gia = 'NhaCungCap'
+            GROUP BY ncc.id_nha_cung_cap
+            HAVING COUNT(dg.danh_gia_id) >= 3
+            ORDER BY diem_tb DESC
+            LIMIT 10";
         
         $stmt = $this->conn->query($sql);
         $report['top_nha_cung_cap'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
         // NCC cần cải thiện
-        $sql = "SELECT ncc.ten_nha_cung_cap, ncc.nha_cung_cap_id, AVG(dg.diem) as diem_tb, COUNT(dg.danh_gia_id) as so_danh_gia
-                FROM nha_cung_cap ncc
-                JOIN danh_gia dg ON ncc.nha_cung_cap_id = dg.nha_cung_cap_id
-                GROUP BY ncc.nha_cung_cap_id
-                HAVING COUNT(dg.danh_gia_id) >= 3 AND diem_tb < 3
-                ORDER BY diem_tb ASC
-                LIMIT 10";
+        $sql = "SELECT ncc.ten_don_vi, ncc.id_nha_cung_cap, AVG(dg.diem) as diem_tb, COUNT(dg.danh_gia_id) as so_danh_gia
+            FROM danh_gia dg
+            JOIN nha_cung_cap ncc ON dg.nha_cung_cap_id = ncc.id_nha_cung_cap
+            WHERE dg.loai_danh_gia = 'NhaCungCap'
+            GROUP BY ncc.id_nha_cung_cap
+            HAVING COUNT(dg.danh_gia_id) >= 3 AND diem_tb < 3
+            ORDER BY diem_tb ASC
+            LIMIT 10";
         
         $stmt = $this->conn->query($sql);
         $report['ncc_can_cai_thien'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
         // Top nhân sự
-        $sql = "SELECT ns.ho_ten, ns.nhan_su_id, AVG(dg.diem) as diem_tb, COUNT(dg.danh_gia_id) as so_danh_gia
-                FROM nhan_su ns
-                JOIN danh_gia dg ON ns.nhan_su_id = dg.nhan_su_id
-                GROUP BY ns.nhan_su_id
-                HAVING COUNT(dg.danh_gia_id) >= 3
-                ORDER BY diem_tb DESC
-                LIMIT 10";
+        $sql = "SELECT nd.ho_ten, ns.nhan_su_id, AVG(dg.diem) as diem_tb, COUNT(dg.danh_gia_id) as so_danh_gia
+            FROM nhan_su ns
+            JOIN nguoi_dung nd ON ns.nguoi_dung_id = nd.id
+            JOIN danh_gia dg ON ns.nhan_su_id = dg.nhan_su_id
+            GROUP BY ns.nhan_su_id
+            HAVING COUNT(dg.danh_gia_id) >= 3
+            ORDER BY diem_tb DESC
+            LIMIT 10";
         
         $stmt = $this->conn->query($sql);
         $report['top_nhan_su'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
         // Nhân sự cần nhắc nhở
-        $sql = "SELECT ns.ho_ten, ns.nhan_su_id, AVG(dg.diem) as diem_tb, COUNT(dg.danh_gia_id) as so_danh_gia
-                FROM nhan_su ns
-                JOIN danh_gia dg ON ns.nhan_su_id = dg.nhan_su_id
-                GROUP BY ns.nhan_su_id
-                HAVING COUNT(dg.danh_gia_id) >= 3 AND diem_tb < 3
-                ORDER BY diem_tb ASC
-                LIMIT 10";
+        $sql = "SELECT nd.ho_ten, ns.nhan_su_id, AVG(dg.diem) as diem_tb, COUNT(dg.danh_gia_id) as so_danh_gia
+            FROM nhan_su ns
+            JOIN nguoi_dung nd ON ns.nguoi_dung_id = nd.id
+            JOIN danh_gia dg ON ns.nhan_su_id = dg.nhan_su_id
+            GROUP BY ns.nhan_su_id
+            HAVING COUNT(dg.danh_gia_id) >= 3 AND diem_tb < 3
+            ORDER BY diem_tb ASC
+            LIMIT 10";
         
         $stmt = $this->conn->query($sql);
         $report['nhan_su_can_nhac_nho'] = $stmt->fetchAll(PDO::FETCH_ASSOC);

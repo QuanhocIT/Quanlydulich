@@ -1,446 +1,654 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quản lý Nhân Sự</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <style>
-        .page-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 2.5rem 0;
-            margin-bottom: 2rem;
-            border-radius: 0.5rem;
-            box-shadow: 0 0.5rem 1rem rgba(102, 126, 234, 0.3);
-        }
-        .stats-card {
-            border: none;
-            border-left: 4px solid;
-            box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
-            transition: all 0.3s;
-        }
-        .stats-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15);
-        }
-        .stats-icon {
-            width: 3.5rem;
-            height: 3.5rem;
-            border-radius: 0.5rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.75rem;
-        }
-        .filter-card {
-            background: white;
-            border-radius: 0.5rem;
-            padding: 1.5rem;
-            box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
-            margin-bottom: 1.5rem;
-        }
-        .role-tab {
-            border: 2px solid transparent;
-            border-radius: 0.5rem;
-            padding: 0.75rem 1.5rem;
-            margin-right: 0.5rem;
-            margin-bottom: 0.5rem;
-            transition: all 0.3s;
-            background: white;
-            box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
-        }
-        .role-tab:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 0.25rem 0.5rem rgba(0,0,0,0.15);
-        }
-        .role-tab.active {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border-color: #667eea;
-        }
-        .employee-avatar {
-            width: 4rem;
-            height: 4rem;
-            border-radius: 0.5rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.75rem;
-            font-weight: bold;
-            color: white;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-        .role-badge {
-            padding: 0.5rem 1rem;
-            border-radius: 2rem;
-            font-weight: 500;
-            font-size: 0.875rem;
-        }
-        .action-btn-group {
-            display: flex;
-            gap: 0.25rem;
-            flex-wrap: wrap;
-        }
-        .table-custom {
-            margin-bottom: 0;
-        }
-        .table-custom thead {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-        .table-custom tbody tr {
-            transition: all 0.2s;
-        }
-        .table-custom tbody tr:hover {
-            background: #f8f9fa;
-            transform: scale(1.005);
-        }
-        .empty-state {
-            text-align: center;
-            padding: 4rem 2rem;
-            color: #6c757d;
-        }
-        .empty-state i {
-            font-size: 5rem;
-            margin-bottom: 1.5rem;
-            opacity: 0.3;
-        }
-        .modal-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-    </style>
-</head>
-<body class="bg-light">
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="index.php?act=admin/dashboard">
-                <i class="bi bi-speedometer2"></i> Quản trị
+<?php
+$pageTitle = 'Quản lý Nhân Sự';
+$currentPage = 'nhanSu';
+ob_start();
+?>
+
+<style>
+    .page-header-section {
+        background: rgba(45, 45, 45, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 2px;
+        padding: 40px;
+        margin-bottom: 40px;
+        backdrop-filter: blur(10px);
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+
+    .stat-card {
+        background: rgba(45, 45, 45, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-left: 4px solid;
+        border-radius: 2px;
+        padding: 25px;
+        backdrop-filter: blur(10px);
+        transition: all 0.3s;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-4px);
+    }
+
+    .stat-card.border-primary { border-left-color: #0d6efd; }
+    .stat-card.border-success { border-left-color: #198754; }
+    .stat-card.border-info { border-left-color: #0dcaf0; }
+    .stat-card.border-warning { border-left-color: #ffc107; }
+
+    .stat-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 2px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+    }
+
+    .stat-icon.bg-primary { background: rgba(13, 110, 253, 0.2); color: #0d6efd; }
+    .stat-icon.bg-success { background: rgba(25, 135, 84, 0.2); color: #198754; }
+    .stat-icon.bg-info { background: rgba(13, 202, 240, 0.2); color: #0dcaf0; }
+    .stat-icon.bg-warning { background: rgba(255, 193, 7, 0.2); color: #ffc107; }
+
+    .stat-label {
+        font-size: 11px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 8px;
+    }
+
+    .stat-value {
+        font-size: 32px;
+        font-weight: 700;
+        color: var(--text-light);
+    }
+
+    .stat-value.success { color: #198754; }
+    .stat-value.info { color: #0dcaf0; }
+    .stat-value.warning { color: #ffc107; }
+
+    .filter-section {
+        background: rgba(45, 45, 45, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 2px;
+        padding: 25px;
+        margin-bottom: 30px;
+        backdrop-filter: blur(10px);
+    }
+
+    .role-tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 30px;
+    }
+
+    .role-tab {
+        border: 2px solid rgba(255, 255, 255, 0.1);
+        border-radius: 2px;
+        padding: 12px 20px;
+        transition: all 0.3s;
+        background: rgba(45, 45, 45, 0.3);
+        color: var(--text-light);
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+    }
+
+    .role-tab:hover {
+        background: rgba(45, 45, 45, 0.5);
+        border-color: var(--accent-gold);
+        color: var(--accent-gold);
+    }
+
+    .role-tab.active {
+        background: rgba(212, 175, 55, 0.2);
+        border-color: var(--accent-gold);
+        color: var(--accent-gold);
+    }
+
+    .table-wrapper {
+        background: rgba(45, 45, 45, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 2px;
+        overflow: hidden;
+        backdrop-filter: blur(10px);
+    }
+
+    .table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .table thead {
+        background: rgba(212, 175, 55, 0.1);
+    }
+
+    .table th {
+        padding: 15px;
+        text-align: left;
+        font-size: 12px;
+        letter-spacing: 1px;
+        color: var(--accent-gold);
+        font-weight: 600;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .table td {
+        padding: 15px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        color: var(--text-light);
+        font-size: 13px;
+    }
+
+    .table tbody tr:hover {
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    .employee-avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 2px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        font-weight: bold;
+        color: var(--primary-dark);
+        background: var(--accent-gold);
+    }
+
+    .role-badge {
+        padding: 6px 12px;
+        border-radius: 2px;
+        font-weight: 600;
+        font-size: 11px;
+        letter-spacing: 0.5px;
+        display: inline-block;
+    }
+
+    .role-badge.bg-success {
+        background: rgba(25, 135, 84, 0.2);
+        color: #198754;
+        border: 1px solid rgba(25, 135, 84, 0.3);
+    }
+
+    .role-badge.bg-info {
+        background: rgba(13, 202, 240, 0.2);
+        color: #0dcaf0;
+        border: 1px solid rgba(13, 202, 240, 0.3);
+    }
+
+    .role-badge.bg-warning {
+        background: rgba(255, 193, 7, 0.2);
+        color: #ffc107;
+        border: 1px solid rgba(255, 193, 7, 0.3);
+    }
+
+    .role-badge.bg-secondary {
+        background: rgba(108, 117, 125, 0.2);
+        color: #6c757d;
+        border: 1px solid rgba(108, 117, 125, 0.3);
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: var(--text-muted);
+    }
+
+    .empty-state-icon {
+        font-size: 64px;
+        margin-bottom: 20px;
+        opacity: 0.3;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        color: var(--text-light);
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .form-group .input,
+    .form-group .select,
+    .form-group textarea {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: var(--text-light);
+        padding: 12px 10px;
+        font-size: 13px;
+        border-radius: 2px;
+        transition: all 0.3s;
+        width: 100%;
+        font-family: inherit;
+    }
+
+    .form-group textarea {
+        resize: vertical;
+        min-height: 80px;
+    }
+
+    .form-group .input::placeholder,
+    .form-group textarea::placeholder {
+        color: rgba(255, 255, 255, 0.5);
+    }
+
+    .form-group .input:focus,
+    .form-group .select:focus,
+    .form-group textarea:focus {
+        outline: none;
+        background: rgba(255, 255, 255, 0.15);
+        border-color: var(--accent-gold);
+    }
+
+    .form-group .select {
+        cursor: pointer;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23d4af37' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 10px center;
+        padding-right: 30px;
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+    }
+
+    .alert {
+        padding: 15px 20px;
+        border-radius: 2px;
+        margin-bottom: 20px;
+        border: 1px solid;
+    }
+
+    .alert-success {
+        background: rgba(25, 135, 84, 0.1);
+        border-color: rgba(25, 135, 84, 0.3);
+        color: #198754;
+    }
+
+    .alert-danger {
+        background: rgba(220, 53, 69, 0.1);
+        border-color: rgba(220, 53, 69, 0.3);
+        color: #dc3545;
+    }
+
+    .input-group {
+        display: flex;
+        gap: 10px;
+    }
+
+    .input-group .input {
+        flex: 1;
+    }
+
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(5px);
+    }
+
+    .modal.show {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal-content {
+        background: rgba(45, 45, 45, 0.95);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 2px;
+        width: 90%;
+        max-width: 800px;
+        max-height: 90vh;
+        overflow-y: auto;
+        backdrop-filter: blur(10px);
+    }
+
+    .modal-header {
+        padding: 20px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: rgba(212, 175, 55, 0.2);
+    }
+
+    .modal-title {
+        margin: 0;
+        color: var(--accent-gold);
+        font-size: 18px;
+        font-weight: 600;
+    }
+
+    .modal-body {
+        padding: 25px;
+    }
+
+    .modal-footer {
+        padding: 20px;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+    }
+
+    .btn-close {
+        background: none;
+        border: none;
+        color: var(--text-light);
+        font-size: 24px;
+        cursor: pointer;
+        opacity: 0.7;
+        transition: opacity 0.3s;
+    }
+
+    .btn-close:hover {
+        opacity: 1;
+    }
+
+    .btn-close-white {
+        color: white;
+    }
+</style>
+
+<!-- Page Header -->
+<div class="page-header-section">
+    <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 20px;">
+        <div>
+            <h1>👥 Quản Lý Nhân Sự</h1>
+            <p style="color: var(--text-muted); margin-top: 10px;">Quản lý thông tin nhân viên và hồ sơ cá nhân</p>
+        </div>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <a href="index.php?act=admin/hdv_advanced" class="btn btn-secondary">
+                🎯 Quản lý HDV
             </a>
-            <div class="collapse navbar-collapse">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link active" href="#">
-                            <i class="bi bi-people"></i> Nhân sự
-                        </a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
-
-    <div class="container-fluid px-4 py-4">
-        <!-- Page Header -->
-        <div class="page-header">
-            <div class="container-fluid">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h1 class="display-5 fw-bold mb-2">
-                            <i class="bi bi-people-fill"></i> Quản Lý Nhân Sự
-                        </h1>
-                        <p class="lead mb-0 opacity-75">Quản lý thông tin nhân viên và hồ sơ cá nhân</p>
-                    </div>
-                    <div class="d-flex gap-2">
-                        <a href="index.php?act=admin/hdv_advanced" class="btn btn-light btn-lg">
-                            <i class="bi bi-person-badge"></i> Quản lý HDV
-                        </a>
-                        <button id="btnAdd" class="btn btn-warning btn-lg" data-bs-toggle="modal" data-bs-target="#nhanSuModal">
-                            <i class="bi bi-plus-circle"></i> Thêm nhân sự
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Alerts -->
-        <?php if (!empty($_SESSION['flash'])): $f = $_SESSION['flash']; ?>
-            <div class="alert alert-<?php echo htmlspecialchars($f['type']); ?> alert-dismissible fade show" role="alert">
-                <i class="bi bi-<?php echo $f['type'] === 'success' ? 'check-circle' : 'exclamation-triangle'; ?>"></i>
-                <?php echo htmlspecialchars($f['message']); ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-            <?php unset($_SESSION['flash']); endif; ?>
-
-        <!-- Statistics -->
-        <div class="row g-4 mb-4">
-            <?php 
-            $total = count($nhan_su_list);
-            $hdvCount = isset($data_by_role['HDV']) ? count($data_by_role['HDV']) : 0;
-            $dieuHanhCount = isset($data_by_role['DieuHanh']) ? count($data_by_role['DieuHanh']) : 0;
-            $nhaCungCapCount = isset($data_by_role['NhaCungCap']) ? count($data_by_role['NhaCungCap']) : 0;
-            ?>
-            <div class="col-md-3">
-                <div class="card stats-card h-100" style="border-left-color: #0d6efd !important;">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <p class="text-muted mb-1 small">Tổng nhân sự</p>
-                                <h2 class="mb-0 fw-bold"><?php echo $total; ?></h2>
-                            </div>
-                            <div class="stats-icon bg-primary bg-opacity-10 text-primary">
-                                <i class="bi bi-people"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card stats-card h-100" style="border-left-color: #198754 !important;">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <p class="text-muted mb-1 small">Hướng dẫn viên</p>
-                                <h2 class="mb-0 fw-bold text-success"><?php echo $hdvCount; ?></h2>
-                            </div>
-                            <div class="stats-icon bg-success bg-opacity-10 text-success">
-                                <i class="bi bi-person-badge"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card stats-card h-100" style="border-left-color: #0dcaf0 !important;">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <p class="text-muted mb-1 small">Điều hành</p>
-                                <h2 class="mb-0 fw-bold text-info"><?php echo $dieuHanhCount; ?></h2>
-                            </div>
-                            <div class="stats-icon bg-info bg-opacity-10 text-info">
-                                <i class="bi bi-briefcase"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card stats-card h-100" style="border-left-color: #ffc107 !important;">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <p class="text-muted mb-1 small">Nhà cung cấp</p>
-                                <h2 class="mb-0 fw-bold text-warning"><?php echo $nhaCungCapCount; ?></h2>
-                            </div>
-                            <div class="stats-icon bg-warning bg-opacity-10 text-warning">
-                                <i class="bi bi-shop"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Filter Card -->
-        <div class="filter-card">
-            <div class="row align-items-center">
-                <div class="col-md-6">
-                    <form class="d-flex" method="get" action="index.php">
-                        <input type="hidden" name="act" value="admin/nhanSu">
-                        <div class="input-group">
-                            <span class="input-group-text"><i class="bi bi-search"></i></span>
-                            <input class="form-control" type="search" placeholder="Tìm kiếm tên, email, số điện thoại..." 
-                                   name="q" value="<?php echo htmlspecialchars($_GET['q'] ?? '') ?>">
-                            <button class="btn btn-primary" type="submit">Tìm kiếm</button>
-                        </div>
-                    </form>
-                </div>
-                <div class="col-md-6 text-end">
-                    <small class="text-muted">
-                        <i class="bi bi-funnel"></i> Lọc theo vai trò bên dưới
-                    </small>
-                </div>
-            </div>
-        </div>
-
-        <!-- Role Tabs -->
-        <?php if (!empty($roles)): ?>
-        <div class="d-flex flex-wrap mb-4">
-            <button class="role-tab <?php echo ($active_role===null)?'active':''; ?>" 
-                    onclick="window.location.href='index.php?act=admin/nhanSu'">
-                <i class="bi bi-grid"></i> Tất cả 
-                <span class="badge <?php echo ($active_role===null)?'bg-light text-dark':'bg-secondary'; ?> ms-2">
-                    <?php echo count($nhan_su_list); ?>
-                </span>
+            <button id="btnAdd" class="btn btn-primary" onclick="document.getElementById('nhanSuModal').classList.add('show')">
+                ➕ Thêm nhân sự
             </button>
-            <?php 
-            $roleIcons = [
-                'HDV' => 'person-badge',
-                'DieuHanh' => 'briefcase',
-                'NhaCungCap' => 'shop',
-                'Khac' => 'three-dots'
-            ];
-            foreach($roles as $r): 
-                $count = isset($data_by_role[$r]) ? count($data_by_role[$r]) : 0; 
-                $icon = $roleIcons[$r] ?? 'person';
-            ?>
-                <button class="role-tab <?php echo ($active_role===$r)?'active':''; ?>" 
-                        onclick="window.location.href='index.php?act=admin/nhanSu&role=<?php echo urlencode($r); ?>'">
-                    <i class="bi bi-<?php echo $icon; ?>"></i> <?php echo htmlspecialchars($r); ?> 
-                    <span class="badge <?php echo ($active_role===$r)?'bg-light text-dark':'bg-secondary'; ?> ms-2">
-                        <?php echo $count; ?>
-                    </span>
-                </button>
-            <?php endforeach; ?>
-        </div>
-        <?php endif; ?>
-
-        <!-- Employee Table -->
-        <div class="card border-0 shadow-sm">
-            <div class="card-body p-0">
-                <?php if (!empty($nhan_su_list)): ?>
-                    <div class="table-responsive">
-                        <table class="table table-custom table-hover mb-0">
-                            <thead>
-                                <tr>
-                                    <th style="width: 80px;">Avatar</th>
-                                    <th>Họ tên</th>
-                                    <th>Vai trò</th>
-                                    <th>Liên hệ</th>
-                                    <th>Chứng chỉ</th>
-                                    <th>Ngôn ngữ</th>
-                                    <th>Kinh nghiệm</th>
-                                    <th style="width: 280px;">Hành động</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                            <?php foreach ($nhan_su_list as $nhan_su): ?>
-                                <tr>
-                                    <td>
-                                        <div class="employee-avatar">
-                                            <?php 
-                                            $name = $nhan_su['ho_ten'] ?? 'N';
-                                            echo strtoupper(mb_substr($name, 0, 1));
-                                            ?>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="fw-semibold"><?php echo htmlspecialchars($nhan_su['ho_ten'] ?? ''); ?></div>
-                                        <small class="text-muted">ID: #<?php echo htmlspecialchars($nhan_su['nhan_su_id']); ?></small>
-                                    </td>
-                                    <td>
-                                        <span class="role-badge <?php 
-                                            echo match($nhan_su['vai_tro'] ?? '') {
-                                                'HDV' => 'bg-success',
-                                                'DieuHanh' => 'bg-info',
-                                                'NhaCungCap' => 'bg-warning text-dark',
-                                                default => 'bg-secondary'
-                                            };
-                                        ?>">
-                                            <?php echo htmlspecialchars($nhan_su['vai_tro'] ?? ''); ?>
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <small>
-                                            <div><i class="bi bi-phone text-primary"></i> <?php echo htmlspecialchars($nhan_su['so_dien_thoai'] ?? 'N/A'); ?></div>
-                                            <div><i class="bi bi-envelope text-info"></i> <?php echo htmlspecialchars($nhan_su['email'] ?? 'N/A'); ?></div>
-                                        </small>
-                                    </td>
-                                    <td><small><?php echo htmlspecialchars($nhan_su['chung_chi'] ?? 'N/A'); ?></small></td>
-                                    <td><small><?php echo htmlspecialchars($nhan_su['ngon_ngu'] ?? 'N/A'); ?></small></td>
-                                    <td><small><?php echo htmlspecialchars($nhan_su['kinh_nghiem'] ?? 'N/A'); ?></small></td>
-                                    <td>
-                                        <div class="action-btn-group">
-                                            <a href="index.php?act=admin/nhanSu_chi_tiet&id=<?php echo $nhan_su['nhan_su_id']; ?>" 
-                                               class="btn btn-sm btn-info" title="Xem sơ yếu lý lịch">
-                                                <i class="bi bi-eye"></i>
-                                            </a>
-                                            <?php if ($nhan_su['vai_tro'] === 'HDV'): ?>
-                                            <a href="index.php?act=admin/hdv_detail&id=<?php echo $nhan_su['nhan_su_id']; ?>" 
-                                               class="btn btn-sm btn-success" title="Quản lý HDV">
-                                                <i class="bi bi-calendar-check"></i>
-                                            </a>
-                                            <?php endif; ?>
-                                            <button class="btn btn-sm btn-primary btn-edit" 
-                                                data-id="<?php echo $nhan_su['nhan_su_id']; ?>"
-                                                data-vai_tro="<?php echo htmlspecialchars($nhan_su['vai_tro'] ?? ''); ?>"
-                                                data-chung_chi="<?php echo htmlspecialchars($nhan_su['chung_chi'] ?? ''); ?>"
-                                                data-ngon_ngu="<?php echo htmlspecialchars($nhan_su['ngon_ngu'] ?? ''); ?>"
-                                                data-kinh_nghiem="<?php echo htmlspecialchars($nhan_su['kinh_nghiem'] ?? ''); ?>"
-                                                data-suc_khoe="<?php echo htmlspecialchars($nhan_su['suc_khoe'] ?? ''); ?>"
-                                                data-user_info="<?php echo htmlspecialchars(($nhan_su['ho_ten'] ?? '') . ' (' . ($nhan_su['ten_dang_nhap'] ?? '') . ')'); ?>"
-                                                title="Sửa">
-                                                <i class="bi bi-pencil"></i>
-                                            </button>
-                                            <a href="index.php?act=admin/nhanSu_delete&id=<?php echo $nhan_su['nhan_su_id']; ?>" 
-                                               class="btn btn-sm btn-warning" 
-                                               onclick="return confirm('Xóa nhân sự này? (Tài khoản sẽ được giữ)');"
-                                               title="Xóa NV">
-                                                <i class="bi bi-person-x"></i>
-                                            </a>
-                                            <a href="index.php?act=admin/nhanSu_delete&id=<?php echo $nhan_su['nhan_su_id']; ?>&delete_user=1" 
-                                               class="btn btn-sm btn-danger" 
-                                               onclick="return confirm('XÓA VĨ VIỄN: Nhân sự này và tài khoản liên kết sẽ bị xóa. Bạn chắc chắn?');"
-                                               title="Xóa All">
-                                                <i class="bi bi-trash"></i>
-                                            </a>
-                                        </div>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                <?php else: ?>
-                    <div class="empty-state">
-                        <i class="bi bi-people"></i>
-                        <h4 class="mb-3">Chưa có nhân sự nào</h4>
-                        <p class="text-muted mb-4">Hãy thêm nhân sự đầu tiên để bắt đầu quản lý</p>
-                        <button class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#nhanSuModal">
-                            <i class="bi bi-plus-circle"></i> Thêm nhân sự ngay
-                        </button>
-                    </div>
-                <?php endif; ?>
-            </div>
         </div>
     </div>
+</div>
 
-    <!-- Modal -->
-    <div class="modal fade" id="nhanSuModal" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-          <div class="modal-header">
+<!-- Alerts -->
+<?php if (!empty($_SESSION['flash'])): $f = $_SESSION['flash']; ?>
+    <div class="alert alert-<?php echo $f['type'] === 'success' ? 'success' : 'danger'; ?>">
+        <?php echo $f['type'] === 'success' ? '✓' : '⚠'; ?> <?php echo htmlspecialchars($f['message']); ?>
+    </div>
+    <?php unset($_SESSION['flash']); ?>
+<?php endif; ?>
+
+<!-- Statistics -->
+<?php 
+$total = count($nhan_su_list ?? []);
+$hdvCount = isset($data_by_role['HDV']) ? count($data_by_role['HDV']) : 0;
+$dieuHanhCount = isset($data_by_role['DieuHanh']) ? count($data_by_role['DieuHanh']) : 0;
+$nhaCungCapCount = isset($data_by_role['NhaCungCap']) ? count($data_by_role['NhaCungCap']) : 0;
+?>
+<div class="stats-grid">
+    <div class="stat-card border-primary">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <div class="stat-label">Tổng nhân sự</div>
+                <div class="stat-value"><?php echo $total; ?></div>
+            </div>
+            <div class="stat-icon bg-primary">👥</div>
+        </div>
+    </div>
+    <div class="stat-card border-success">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <div class="stat-label">Hướng dẫn viên</div>
+                <div class="stat-value success"><?php echo $hdvCount; ?></div>
+            </div>
+            <div class="stat-icon bg-success">🎯</div>
+        </div>
+    </div>
+    <div class="stat-card border-info">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <div class="stat-label">Điều hành</div>
+                <div class="stat-value info"><?php echo $dieuHanhCount; ?></div>
+            </div>
+            <div class="stat-icon bg-info">💼</div>
+        </div>
+    </div>
+    <div class="stat-card border-warning">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <div class="stat-label">Nhà cung cấp</div>
+                <div class="stat-value warning"><?php echo $nhaCungCapCount; ?></div>
+            </div>
+            <div class="stat-icon bg-warning">🏢</div>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Section -->
+<div class="filter-section">
+    <form method="get" action="index.php">
+        <input type="hidden" name="act" value="admin/nhanSu">
+        <div style="display: grid; grid-template-columns: 1fr auto; gap: 15px; align-items: end;">
+            <div class="form-group" style="margin: 0;">
+                <label>🔍 Tìm kiếm</label>
+                <div class="input-group">
+                    <input class="input" type="search" placeholder="Tìm kiếm tên, email, số điện thoại..." 
+                           name="q" value="<?php echo htmlspecialchars($_GET['q'] ?? ''); ?>">
+                    <button class="btn btn-primary" type="submit">🔍 Tìm kiếm</button>
+                </div>
+            </div>
+            <div style="font-size: 11px; color: var(--text-muted); text-align: right;">
+                <div>Lọc theo vai trò bên dưới</div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Role Tabs -->
+<?php if (!empty($roles)): ?>
+<div class="role-tabs">
+    <button class="role-tab <?php echo ($active_role === null) ? 'active' : ''; ?>" 
+            onclick="window.location.href='index.php?act=admin/nhanSu'">
+        📋 Tất cả 
+        <span class="badge badge-secondary" style="margin-left: 8px;">
+            <?php echo count($nhan_su_list ?? []); ?>
+        </span>
+    </button>
+    <?php 
+    $roleIcons = [
+        'HDV' => '🎯',
+        'DieuHanh' => '💼',
+        'NhaCungCap' => '🏢',
+        'Khac' => '⚙️'
+    ];
+    foreach($roles as $r): 
+        $count = isset($data_by_role[$r]) ? count($data_by_role[$r]) : 0; 
+        $icon = $roleIcons[$r] ?? '👤';
+    ?>
+        <button class="role-tab <?php echo ($active_role === $r) ? 'active' : ''; ?>" 
+                onclick="window.location.href='index.php?act=admin/nhanSu&role=<?php echo urlencode($r); ?>'">
+            <?php echo $icon; ?> <?php echo htmlspecialchars($r); ?> 
+            <span class="badge badge-secondary" style="margin-left: 8px;">
+                <?php echo $count; ?>
+            </span>
+        </button>
+    <?php endforeach; ?>
+</div>
+<?php endif; ?>
+
+<!-- Employee Table -->
+<div class="table-wrapper">
+    <?php if (!empty($nhan_su_list)): ?>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th style="width: 80px;">Avatar</th>
+                    <th>Họ tên</th>
+                    <th>Vai trò</th>
+                    <th>Liên hệ</th>
+                    <th>Chứng chỉ</th>
+                    <th>Ngôn ngữ</th>
+                    <th>Kinh nghiệm</th>
+                    <th style="width: 280px;">Hành động</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($nhan_su_list as $nhan_su): ?>
+                    <tr>
+                        <td>
+                            <div class="employee-avatar">
+                                <?php 
+                                $name = $nhan_su['ho_ten'] ?? 'N';
+                                echo strtoupper(mb_substr($name, 0, 1));
+                                ?>
+                            </div>
+                        </td>
+                        <td>
+                            <div style="font-weight: 600; margin-bottom: 5px; color: var(--text-light);">
+                                <?php echo htmlspecialchars($nhan_su['ho_ten'] ?? ''); ?>
+                            </div>
+                            <small style="color: var(--text-muted); font-size: 11px;">
+                                ID: #<?php echo htmlspecialchars($nhan_su['nhan_su_id']); ?>
+                            </small>
+                        </td>
+                        <td>
+                            <span class="role-badge <?php 
+                                echo match($nhan_su['vai_tro'] ?? '') {
+                                    'HDV' => 'bg-success',
+                                    'DieuHanh' => 'bg-info',
+                                    'NhaCungCap' => 'bg-warning',
+                                    default => 'bg-secondary'
+                                };
+                            ?>">
+                                <?php echo htmlspecialchars($nhan_su['vai_tro'] ?? ''); ?>
+                            </span>
+                        </td>
+                        <td>
+                            <small style="color: var(--text-muted); font-size: 12px; display: block; line-height: 1.6;">
+                                <div>📞 <?php echo htmlspecialchars($nhan_su['so_dien_thoai'] ?? 'N/A'); ?></div>
+                                <div>✉️ <?php echo htmlspecialchars($nhan_su['email'] ?? 'N/A'); ?></div>
+                            </small>
+                        </td>
+                        <td><small style="color: var(--text-muted);"><?php echo htmlspecialchars($nhan_su['chung_chi'] ?? 'N/A'); ?></small></td>
+                        <td><small style="color: var(--text-muted);"><?php echo htmlspecialchars($nhan_su['ngon_ngu'] ?? 'N/A'); ?></small></td>
+                        <td><small style="color: var(--text-muted);"><?php echo htmlspecialchars($nhan_su['kinh_nghiem'] ?? 'N/A'); ?></small></td>
+                        <td>
+                            <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                                <a href="index.php?act=admin/nhanSu_chi_tiet&id=<?php echo $nhan_su['nhan_su_id']; ?>" 
+                                   class="btn btn-secondary btn-sm" 
+                                   style="background: rgba(13, 202, 240, 0.2); color: #0dcaf0; border-color: rgba(13, 202, 240, 0.3);"
+                                   title="Xem sơ yếu lý lịch">
+                                    👁️
+                                </a>
+                                <?php if ($nhan_su['vai_tro'] === 'HDV'): ?>
+                                <a href="index.php?act=admin/hdv_detail&id=<?php echo $nhan_su['nhan_su_id']; ?>" 
+                                   class="btn btn-secondary btn-sm" 
+                                   style="background: rgba(25, 135, 84, 0.2); color: #198754; border-color: rgba(25, 135, 84, 0.3);"
+                                   title="Quản lý HDV">
+                                    📅
+                                </a>
+                                <?php endif; ?>
+                                <button class="btn btn-secondary btn-sm btn-edit" 
+                                    style="background: rgba(13, 110, 253, 0.2); color: #0d6efd; border-color: rgba(13, 110, 253, 0.3);"
+                                    data-id="<?php echo $nhan_su['nhan_su_id']; ?>"
+                                    data-vai_tro="<?php echo htmlspecialchars($nhan_su['vai_tro'] ?? ''); ?>"
+                                    data-chung_chi="<?php echo htmlspecialchars($nhan_su['chung_chi'] ?? ''); ?>"
+                                    data-ngon_ngu="<?php echo htmlspecialchars($nhan_su['ngon_ngu'] ?? ''); ?>"
+                                    data-kinh_nghiem="<?php echo htmlspecialchars($nhan_su['kinh_nghiem'] ?? ''); ?>"
+                                    data-suc_khoe="<?php echo htmlspecialchars($nhan_su['suc_khoe'] ?? ''); ?>"
+                                    data-user_info="<?php echo htmlspecialchars(($nhan_su['ho_ten'] ?? '') . ' (' . ($nhan_su['ten_dang_nhap'] ?? '') . ')'); ?>"
+                                    title="Sửa">
+                                    ✏️
+                                </button>
+                                <a href="index.php?act=admin/nhanSu_delete&id=<?php echo $nhan_su['nhan_su_id']; ?>" 
+                                   class="btn btn-secondary btn-sm" 
+                                   style="background: rgba(255, 193, 7, 0.2); color: #ffc107; border-color: rgba(255, 193, 7, 0.3);"
+                                   onclick="return confirm('Xóa nhân sự này? (Tài khoản sẽ được giữ)');"
+                                   title="Xóa NV">
+                                    👤❌
+                                </a>
+                                <a href="index.php?act=admin/nhanSu_delete&id=<?php echo $nhan_su['nhan_su_id']; ?>&delete_user=1" 
+                                   class="btn btn-secondary btn-sm" 
+                                   style="background: rgba(220, 53, 69, 0.2); color: #dc3545; border-color: rgba(220, 53, 69, 0.3);"
+                                   onclick="return confirm('XÓA VĨ VIỄN: Nhân sự này và tài khoản liên kết sẽ bị xóa. Bạn chắc chắn?');"
+                                   title="Xóa All">
+                                    🗑️
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    <?php else: ?>
+        <div class="empty-state">
+            <div class="empty-state-icon">👥</div>
+            <h4 style="margin-bottom: 15px; color: var(--text-light);">Chưa có nhân sự nào</h4>
+            <p style="color: var(--text-muted); margin-bottom: 20px;">Hãy thêm nhân sự đầu tiên để bắt đầu quản lý</p>
+            <button class="btn btn-primary" onclick="document.getElementById('nhanSuModal').classList.add('show')">
+                ➕ Thêm nhân sự ngay
+            </button>
+        </div>
+    <?php endif; ?>
+</div>
+
+<!-- Modal -->
+<div id="nhanSuModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
             <h5 class="modal-title">
-                <i class="bi bi-person-plus"></i> Thêm / Sửa nhân sự
+                ➕ Thêm / Sửa nhân sự
             </h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <form id="nhanSuForm" method="post" action="index.php?act=admin/nhanSu_create">
-          <div class="modal-body">
+            <button type="button" class="btn-close btn-close-white" onclick="this.closest('.modal').classList.remove('show')">&times;</button>
+        </div>
+        <form id="nhanSuForm" method="post" action="index.php?act=admin/nhanSu_create">
+            <div class="modal-body">
                 <input type="hidden" name="nhan_su_id" id="nhan_su_id" value="">
                 
-                <div class="row g-3">
-                    <div class="col-12" id="userSelectWrapper">
-                        <label class="form-label fw-semibold">
-                            <i class="bi bi-person-circle text-primary"></i> Chọn người dùng 
-                            <span class="text-danger">*</span>
-                        </label>
-                        <select name="nguoi_dung_id" id="nguoi_dung_id" class="form-select" required>
+                <div class="form-row">
+                    <div class="form-group" id="userSelectWrapper" style="grid-column: 1 / -1;">
+                        <label>👤 Chọn người dùng <span style="color: #dc3545;">*</span></label>
+                        <select name="nguoi_dung_id" id="nguoi_dung_id" class="select" required>
                             <option value="">-- Chọn người dùng --</option>
                         </select>
-                        <small class="form-text text-muted">
-                            <i class="bi bi-info-circle"></i> Chỉ hiển thị tài khoản chưa có hồ sơ nhân sự
+                        <small style="color: var(--text-muted); font-size: 11px; margin-top: 5px; display: block;">
+                            ℹ️ Chỉ hiển thị tài khoản chưa có hồ sơ nhân sự
                         </small>
                     </div>
                     
-                    <div class="col-12" id="userInfoDisplay" style="display:none;">
-                        <label class="form-label fw-semibold">
-                            <i class="bi bi-person-circle text-primary"></i> Người dùng
-                        </label>
-                        <input type="text" id="userInfoText" class="form-control" readonly>
-                        <small class="form-text text-muted">
-                            <i class="bi bi-lock"></i> Không thể thay đổi người dùng khi sửa nhân sự
+                    <div class="form-group" id="userInfoDisplay" style="display:none; grid-column: 1 / -1;">
+                        <label>👤 Người dùng</label>
+                        <input type="text" id="userInfoText" class="input" readonly>
+                        <small style="color: var(--text-muted); font-size: 11px; margin-top: 5px; display: block;">
+                            🔒 Không thể thay đổi người dùng khi sửa nhân sự
                         </small>
                     </div>
                     
-                    <div class="col-md-6">
-                        <label class="form-label fw-semibold">
-                            <i class="bi bi-briefcase text-success"></i> Vai trò
-                        </label>
-                        <select name="vai_tro" id="vai_tro" class="form-select">
+                    <div class="form-group">
+                        <label>💼 Vai trò</label>
+                        <select name="vai_tro" id="vai_tro" class="select">
                             <option value="HDV">HDV</option>
                             <option value="DieuHanh">Điều hành</option>
                             <option value="NhaCungCap">Nhà cung cấp</option>
@@ -448,109 +656,108 @@
                         </select>
                     </div>
                     
-                    <div class="col-md-6">
-                        <label class="form-label fw-semibold">
-                            <i class="bi bi-heart-pulse text-danger"></i> Sức khỏe
-                        </label>
-                        <input name="suc_khoe" id="suc_khoe" class="form-control" placeholder="VD: Tốt, khỏe mạnh">
+                    <div class="form-group">
+                        <label>❤️ Sức khỏe</label>
+                        <input name="suc_khoe" id="suc_khoe" class="input" placeholder="VD: Tốt, khỏe mạnh">
                     </div>
                     
-                    <div class="col-md-6">
-                        <label class="form-label fw-semibold">
-                            <i class="bi bi-award text-warning"></i> Chứng chỉ
-                        </label>
-                        <textarea name="chung_chi" id="chung_chi" class="form-control" rows="2" 
+                    <div class="form-group">
+                        <label>🏆 Chứng chỉ</label>
+                        <textarea name="chung_chi" id="chung_chi" class="textarea" rows="2" 
                                   placeholder="VD: Chứng chỉ HDV, Bằng lái xe B2..."></textarea>
                     </div>
                     
-                    <div class="col-md-6">
-                        <label class="form-label fw-semibold">
-                            <i class="bi bi-translate text-info"></i> Ngôn ngữ
-                        </label>
-                        <input name="ngon_ngu" id="ngon_ngu" class="form-control" placeholder="VD: Tiếng Anh, Tiếng Nhật">
+                    <div class="form-group">
+                        <label>🌐 Ngôn ngữ</label>
+                        <input name="ngon_ngu" id="ngon_ngu" class="input" placeholder="VD: Tiếng Anh, Tiếng Nhật">
                     </div>
                     
-                    <div class="col-12">
-                        <label class="form-label fw-semibold">
-                            <i class="bi bi-clock-history text-primary"></i> Kinh nghiệm
-                        </label>
-                        <textarea name="kinh_nghiem" id="kinh_nghiem" class="form-control" rows="3" 
+                    <div class="form-group" style="grid-column: 1 / -1;">
+                        <label>⏰ Kinh nghiệm</label>
+                        <textarea name="kinh_nghiem" id="kinh_nghiem" class="textarea" rows="3" 
                                   placeholder="VD: 5 năm kinh nghiệm làm HDV quốc tế..."></textarea>
                     </div>
                 </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                <i class="bi bi-x-circle"></i> Đóng
-            </button>
-            <button type="submit" class="btn btn-primary" id="submitBtn">
-                <i class="bi bi-check-circle"></i> Lưu thông tin
-            </button>
-          </div>
-          </form>
-        </div>
-      </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="document.getElementById('nhanSuModal').classList.remove('show')">
+                    ✕ Đóng
+                </button>
+                <button type="submit" class="btn btn-primary" id="submitBtn">
+                    ✓ Lưu thông tin
+                </button>
+            </div>
+        </form>
     </div>
+</div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        (function(){
-            const modal = document.getElementById('nhanSuModal');
-            const form = document.getElementById('nhanSuForm');
-            const submitBtn = document.getElementById('submitBtn');
+<script>
+    (function(){
+        const modal = document.getElementById('nhanSuModal');
+        const form = document.getElementById('nhanSuForm');
+        const submitBtn = document.getElementById('submitBtn');
 
-            // Load danh sách người dùng có sẵn
-            function loadAvailableUsers() {
-                const select = document.getElementById('nguoi_dung_id');
-                fetch('index.php?act=admin/nhanSu_get_users')
-                    .then(r => r.json())
-                    .then(data => {
-                        if (data.users && data.users.length > 0) {
-                            const html = '<option value="">-- Chọn người dùng --</option>' + 
-                                data.users.map(u => `<option value="${u.id}">${u.ho_ten} (${u.ten_dang_nhap})</option>`).join('');
-                            select.innerHTML = html;
-                        }
-                    })
-                    .catch(e => console.error('Lỗi tải người dùng:', e));
+        // Load danh sách người dùng có sẵn
+        function loadAvailableUsers() {
+            const select = document.getElementById('nguoi_dung_id');
+            fetch('index.php?act=admin/nhanSu_get_users')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.users && data.users.length > 0) {
+                        const html = '<option value="">-- Chọn người dùng --</option>' + 
+                            data.users.map(u => `<option value="${u.id}">${u.ho_ten} (${u.ten_dang_nhap})</option>`).join('');
+                        select.innerHTML = html;
+                    }
+                })
+                .catch(e => console.error('Lỗi tải người dùng:', e));
+        }
+
+        document.getElementById('btnAdd').addEventListener('click', function(){
+            form.action = 'index.php?act=admin/nhanSu_create';
+            form.nhan_su_id.value = '';
+            form.reset();
+            
+            // Show user select, hide user info
+            document.getElementById('userSelectWrapper').style.display = 'block';
+            document.getElementById('userInfoDisplay').style.display = 'none';
+            document.getElementById('nguoi_dung_id').required = true;
+            
+            loadAvailableUsers();
+            modal.querySelector('.modal-title').innerHTML = '➕ Thêm nhân sự';
+        });
+
+        document.querySelectorAll('.btn-edit').forEach(btn => {
+            btn.addEventListener('click', function(){
+                const id = this.dataset.id;
+                form.action = 'index.php?act=admin/nhanSu_update';
+                form.nhan_su_id.value = id;
+                
+                // Hide user select, show user info
+                document.getElementById('userSelectWrapper').style.display = 'none';
+                document.getElementById('userInfoDisplay').style.display = 'block';
+                document.getElementById('nguoi_dung_id').required = false;
+                document.getElementById('userInfoText').value = this.dataset.user_info || '';
+                
+                document.getElementById('vai_tro').value = this.dataset.vai_tro || '';
+                document.getElementById('chung_chi').value = this.dataset.chung_chi || '';
+                document.getElementById('ngon_ngu').value = this.dataset.ngon_ngu || '';
+                document.getElementById('kinh_nghiem').value = this.dataset.kinh_nghiem || '';
+                document.getElementById('suc_khoe').value = this.dataset.suc_khoe || '';
+                modal.querySelector('.modal-title').innerHTML = '✏️ Sửa nhân sự';
+                modal.classList.add('show');
+            });
+        });
+
+        // Close modal when clicking outside
+        modal.addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.classList.remove('show');
             }
+        });
+    })();
+</script>
 
-            document.getElementById('btnAdd').addEventListener('click', function(){
-                form.action = 'index.php?act=admin/nhanSu_create';
-                form.nhan_su_id.value = '';
-                form.reset();
-                
-                // Show user select, hide user info
-                document.getElementById('userSelectWrapper').style.display = 'block';
-                document.getElementById('userInfoDisplay').style.display = 'none';
-                document.getElementById('nguoi_dung_id').required = true;
-                
-                loadAvailableUsers();
-                modal.querySelector('.modal-title').innerHTML = '<i class="bi bi-person-plus"></i> Thêm nhân sự';
-            });
-
-            document.querySelectorAll('.btn-edit').forEach(btn => {
-                btn.addEventListener('click', function(){
-                    const id = this.dataset.id;
-                    form.action = 'index.php?act=admin/nhanSu_update';
-                    form.nhan_su_id.value = id;
-                    
-                    // Hide user select, show user info
-                    document.getElementById('userSelectWrapper').style.display = 'none';
-                    document.getElementById('userInfoDisplay').style.display = 'block';
-                    document.getElementById('nguoi_dung_id').required = false;
-                    document.getElementById('userInfoText').value = this.dataset.user_info || '';
-                    
-                    document.getElementById('vai_tro').value = this.dataset.vai_tro || '';
-                    document.getElementById('chung_chi').value = this.dataset.chung_chi || '';
-                    document.getElementById('ngon_ngu').value = this.dataset.ngon_ngu || '';
-                    document.getElementById('kinh_nghiem').value = this.dataset.kinh_nghiem || '';
-                    document.getElementById('suc_khoe').value = this.dataset.suc_khoe || '';
-                    modal.querySelector('.modal-title').innerHTML = '<i class="bi bi-pencil"></i> Sửa nhân sự';
-                    const bsModal = new bootstrap.Modal(modal);
-                    bsModal.show();
-                });
-            });
-        })();
-    </script>
-</body>
-</html>
+<?php
+$content = ob_get_clean();
+require __DIR__ . '/../layouts/aventura.php';
+?>

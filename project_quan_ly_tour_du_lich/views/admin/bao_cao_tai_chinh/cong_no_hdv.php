@@ -1,18 +1,75 @@
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+<?php
+$pageTitle = 'Tổng quan công nợ HDV';
+$currentPage = 'baoCaoTaiChinh';
+ob_start();
+?>
 <style>
-    body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
-    .card-hdv { background: #fff; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); padding: 32px; margin-top: 40px; }
-    .table-hdv th { background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; }
-    .table-hdv td, .table-hdv th { text-align: center; vertical-align: middle; }
-    .badge-pos { font-size: 1rem; padding: 8px 16px; border-radius: 8px; }
-    .badge-du { background: #10b981; color: #fff; }
-    .badge-no { background: #ef4444; color: #fff; }
-    .badge-zero { background: #6b7280; color: #fff; }
-</style>
-<div class="container">
-    <div class="card-hdv">
-        <h2 class="mb-4" style="color:#764ba2"><i class="fas fa-user-tie"></i> Tổng quan công nợ HDV</h2>
-        <table class="table table-bordered table-hdv">
+        .report-card {
+            background: rgba(45, 45, 45, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            padding: 32px;
+            backdrop-filter: blur(10px);
+        }
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            color: var(--text-light);
+        }
+        .table th {
+            background: rgba(45, 45, 45, 0.7);
+            color: var(--text-light);
+            padding: 15px;
+            text-align: center;
+            vertical-align: middle;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .table td {
+            padding: 15px;
+            text-align: center;
+            vertical-align: middle;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-light);
+        }
+        .table tbody tr:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .badge {
+            font-size: 1rem;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+        .badge-pos {
+            background: rgba(16, 185, 129, 0.3);
+            color: #10b981;
+        }
+        .badge-du {
+            background: rgba(16, 185, 129, 0.3);
+            color: #10b981;
+        }
+        .badge-no {
+            background: rgba(239, 68, 68, 0.3);
+            color: #ef4444;
+        }
+        .badge-zero {
+            background: rgba(107, 114, 128, 0.3);
+            color: #adb5bd;
+        }
+        .mb-4 {
+            margin-bottom: 1.5rem;
+        }
+    </style>
+
+<div style="padding: 20px;">
+    <div class="page-header-section" style="margin-bottom: 30px;">
+        <h1 style="margin: 0; font-size: 2rem; color: var(--text-light);">
+            <i class="fas fa-user-tie" style="color: var(--accent-gold);"></i> Tổng quan công nợ HDV
+        </h1>
+    </div>
+    
+    <div class="report-card">
+        <table class="table table-bordered">
             <thead>
                 <tr>
                     <th>HDV</th>
@@ -44,4 +101,7 @@
         </table>
     </div>
 </div>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<?php
+$content = ob_get_clean();
+require __DIR__ . '/../../layouts/aventura.php';
+?>

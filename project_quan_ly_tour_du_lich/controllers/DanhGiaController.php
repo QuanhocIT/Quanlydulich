@@ -141,16 +141,20 @@ class DanhGiaController {
         echo "<h2>Báo cáo đánh giá - " . ucfirst($loai) . "</h2>";
         echo "<table border='1'>";
         echo "<tr><th>Ngày</th><th>Khách hàng</th><th>Loại</th><th>Điểm</th><th>Nội dung</th></tr>";
-        
-        foreach ($data['danh_gia_list'] as $dg) {
-            echo "<tr>";
-            echo "<td>" . date('d/m/Y', strtotime($dg['ngay_danh_gia'])) . "</td>";
-            echo "<td>" . htmlspecialchars($dg['ho_ten']) . "</td>";
-            echo "<td>" . htmlspecialchars($dg['loai']) . "</td>";
-            echo "<td>" . $dg['diem'] . "/5</td>";
-            echo "<td>" . htmlspecialchars($dg['noi_dung']) . "</td>";
-            echo "</tr>";
-        }
+
+                if (!empty($data['danh_gia_list']) && is_array($data['danh_gia_list'])) {
+                    foreach ($data['danh_gia_list'] as $dg) {
+                        echo "<tr>";
+                        echo "<td>" . date('d/m/Y', strtotime($dg['ngay_danh_gia'])) . "</td>";
+                        echo "<td>" . htmlspecialchars($dg['ho_ten']) . "</td>";
+                        echo "<td>" . htmlspecialchars($dg['loai']) . "</td>";
+                        echo "<td>" . $dg['diem'] . "/5</td>";
+                        echo "<td>" . htmlspecialchars($dg['noi_dung']) . "</td>";
+                        echo "</tr>";
+                    }
+                } else {
+                    echo "<tr><td colspan='5' style='color:#999;text-align:center'>Không có dữ liệu đánh giá</td></tr>";
+                }
         
         echo "</table>";
         echo "</body></html>";

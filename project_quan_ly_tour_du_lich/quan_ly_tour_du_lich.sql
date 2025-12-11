@@ -1582,6 +1582,24 @@ ALTER TABLE `giao_dich_tai_chinh`
   ADD KEY `idx_gd_ngay` (`ngay_giao_dich`),
   ADD KEY `idx_gd_nguoi_th` (`nguoi_thuc_hien_id`);
 
+
+-- Dữ liệu mẫu doanh thu 12 tháng cho bảng giao_dich_tai_chinh
+INSERT INTO `giao_dich_tai_chinh` 
+(`id`, `tour_id`, `booking_id`, `khach_hang_id`, `loai`, `loai_doi_tuong`, `doi_tuong_id`, `loai_giao_dich`, `so_tien`, `mo_ta`, `nguoi_thuc_hien_id`, `nguoi_thuc_hien`, `ngay_giao_dich`, `created_at`, `updated_at`) VALUES
+(1001, 1, 1, 1, 'Thu', 'KhachHang', 1, 'Booking', 100000000, 'Doanh thu tháng 1', 1, 'Admin', '2025-01-15', '2025-01-15 10:00:00', '2025-01-15 10:00:00'),
+(1002, 1, 1, 1, 'Thu', 'KhachHang', 1, 'Booking', 56000000, 'Doanh thu tháng 2', 1, 'Admin', '2025-02-15', '2025-02-15 10:00:00', '2025-02-15 10:00:00'),
+(1003, 1, 1, 1, 'Thu', 'KhachHang', 1, 'Booking', 130000000, 'Doanh thu tháng 3', 1, 'Admin', '2025-03-15', '2025-03-15 10:00:00', '2025-03-15 10:00:00'),
+(1004, 1, 1, 1, 'Thu', 'KhachHang', 1, 'Booking', 27000000, 'Doanh thu tháng 4', 1, 'Admin', '2025-04-15', '2025-04-15 10:00:00', '2025-04-15 10:00:00'),
+(1005, 1, 1, 1, 'Thu', 'KhachHang', 1, 'Booking', 89000000, 'Doanh thu tháng 5', 1, 'Admin', '2025-05-15', '2025-05-15 10:00:00', '2025-05-15 10:00:00'),
+(1006, 1, 1, 1, 'Thu', 'KhachHang', 1, 'Booking', 77000000, 'Doanh thu tháng 6', 1, 'Admin', '2025-06-15', '2025-06-15 10:00:00', '2025-06-15 10:00:00'),
+(1007, 1, 1, 1, 'Thu', 'KhachHang', 1, 'Booking', 36000000, 'Doanh thu tháng 7', 1, 'Admin', '2025-07-15', '2025-07-15 10:00:00', '2025-07-15 10:00:00'),
+(1008, 1, 1, 1, 'Thu', 'KhachHang', 1, 'Booking', 149000000, 'Doanh thu tháng 8', 1, 'Admin', '2025-08-15', '2025-08-15 10:00:00', '2025-08-15 10:00:00'),
+(1009, 1, 1, 1, 'Thu', 'KhachHang', 1, 'Booking', 75500000, 'Doanh thu tháng 9', 1, 'Admin', '2025-09-15', '2025-09-15 10:00:00', '2025-09-15 10:00:00'),
+(1010, 1, 1, 1, 'Thu', 'KhachHang', 1, 'Booking', 126500000, 'Doanh thu tháng 10', 1, 'Admin', '2025-10-15', '2025-10-15 10:00:00', '2025-10-15 10:00:00'),
+(1011, 1, 1, 1, 'Thu', 'KhachHang', 1, 'Booking', 117500000, 'Doanh thu tháng 11', 1, 'Admin', '2025-11-15', '2025-11-15 10:00:00', '2025-11-15 10:00:00'),
+(1012, 1, 1, 1, 'Thu', 'KhachHang', 1, 'Booking', 19000000, 'Doanh thu tháng 12', 1, 'Admin', '2025-12-15', '2025-12-15 10:00:00', '2025-12-15 10:00:00');
+
+
 --
 -- Indexes for table `hieu_suat_hdv`
 --

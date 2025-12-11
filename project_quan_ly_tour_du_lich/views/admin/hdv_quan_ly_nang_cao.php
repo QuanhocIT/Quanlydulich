@@ -1,39 +1,55 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quản lý HDV Nâng cao</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.9/index.global.min.css' rel='stylesheet' />
-    <style>
+<?php
+$pageTitle = 'Quản lý HDV Nâng cao';
+$currentPage = 'nhanSu';
+ob_start();
+?>
+<link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.9/index.global.min.css' rel='stylesheet' />
+<style>
         .hdv-card {
+            background: rgba(45, 45, 45, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             border-left: 4px solid #007bff;
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
             transition: all 0.3s;
         }
         .hdv-card:hover {
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
             transform: translateY(-2px);
+            background: rgba(45, 45, 45, 0.6);
         }
         .status-badge {
             padding: 0.25rem 0.75rem;
             border-radius: 20px;
             font-size: 0.875rem;
         }
-        .status-sansang { background: #d4edda; color: #155724; }
-        .status-dangban { background: #fff3cd; color: #856404; }
-        .status-nghiphep { background: #f8d7da; color: #721c24; }
-        .status-tamnhi { background: #d1ecf1; color: #0c5460; }
+        .status-sansang { background: rgba(40, 167, 69, 0.3); color: #5cb85c; }
+        .status-dangban { background: rgba(255, 193, 7, 0.3); color: #ffc107; }
+        .status-nghiphep { background: rgba(220, 53, 69, 0.3); color: #dc3545; }
+        .status-tamnhi { background: rgba(0, 123, 255, 0.3); color: #4da3ff; }
         
         .rating-stars {
             color: #ffc107;
         }
         
         .stat-card {
+            background: rgba(45, 45, 45, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 10px;
             padding: 1.5rem;
             margin-bottom: 1rem;
+            backdrop-filter: blur(10px);
+        }
+        .stat-card.bg-success {
+            background: rgba(40, 167, 69, 0.3) !important;
+        }
+        .stat-card.bg-warning {
+            background: rgba(255, 193, 7, 0.3) !important;
+        }
+        .stat-card.bg-info {
+            background: rgba(0, 123, 255, 0.3) !important;
+        }
+        .stat-card.bg-primary {
+            background: rgba(13, 110, 253, 0.3) !important;
         }
         .stat-icon {
             font-size: 2.5rem;
@@ -54,49 +70,188 @@
             padding: 0.2rem 0.5rem;
         }
         
+        .nav-tabs {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .nav-tabs .nav-link {
+            color: var(--text-muted);
+            border: 1px solid transparent;
+        }
         .nav-tabs .nav-link.active {
-            background-color: #007bff;
-            color: white;
+            background: rgba(13, 110, 253, 0.3);
+            border-color: rgba(255, 255, 255, 0.1) rgba(255, 255, 255, 0.1) transparent;
+            color: var(--text-light);
+        }
+        .card {
+            background: rgba(45, 45, 45, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+        }
+        .card-header {
+            background: rgba(45, 45, 45, 0.7);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-light);
+        }
+        .card-body {
+            color: var(--text-light);
+        }
+        .table {
+            color: var(--text-light);
+        }
+        .table th {
+            background: rgba(45, 45, 45, 0.7);
+            color: var(--text-light);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .table td {
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .table tbody tr:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .table-light {
+            background: rgba(45, 45, 45, 0.7) !important;
+        }
+        .form-control, .form-select {
+            background: rgba(45, 45, 45, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-light);
+        }
+        .form-control:focus, .form-select:focus {
+            background: rgba(45, 45, 45, 0.8);
+            border-color: var(--accent-gold);
+            color: var(--text-light);
+        }
+        .form-label {
+            color: var(--text-light);
+        }
+        .badge {
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+        .bg-primary {
+            background: rgba(13, 110, 253, 0.3) !important;
+            color: #4da3ff !important;
+        }
+        .bg-info {
+            background: rgba(0, 123, 255, 0.3) !important;
+            color: #4da3ff !important;
+        }
+        .bg-success {
+            background: rgba(40, 167, 69, 0.3) !important;
+            color: #5cb85c !important;
+        }
+        .bg-secondary {
+            background: rgba(108, 117, 125, 0.3) !important;
+            color: #adb5bd !important;
+        }
+        .bg-danger {
+            background: rgba(220, 53, 69, 0.3) !important;
+            color: #dc3545 !important;
+        }
+        .text-white {
+            color: var(--text-light) !important;
+        }
+        .text-muted {
+            color: var(--text-muted) !important;
+        }
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+        }
+        .btn-primary {
+            background: rgba(13, 110, 253, 0.3);
+            color: #4da3ff;
+            border: 1px solid rgba(13, 110, 253, 0.5);
+        }
+        .btn-primary:hover {
+            background: rgba(13, 110, 253, 0.5);
+        }
+        .btn-success {
+            background: rgba(40, 167, 69, 0.3);
+            color: #5cb85c;
+            border: 1px solid rgba(40, 167, 69, 0.5);
+        }
+        .btn-success:hover {
+            background: rgba(40, 167, 69, 0.5);
+        }
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.875rem;
+        }
+        .btn-outline-primary {
+            background: transparent;
+            color: #4da3ff;
+            border: 1px solid rgba(13, 110, 253, 0.5);
+        }
+        .btn-outline-primary:hover {
+            background: rgba(13, 110, 253, 0.3);
+        }
+        .btn-outline-success {
+            background: transparent;
+            color: #5cb85c;
+            border: 1px solid rgba(40, 167, 69, 0.5);
+        }
+        .btn-outline-success:hover {
+            background: rgba(40, 167, 69, 0.3);
+        }
+        .btn-outline-info {
+            background: transparent;
+            color: #4da3ff;
+            border: 1px solid rgba(0, 123, 255, 0.5);
+        }
+        .btn-outline-info:hover {
+            background: rgba(0, 123, 255, 0.3);
+        }
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .list-group-item {
+            background: rgba(45, 45, 45, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-light);
+        }
+        .modal-content {
+            background: rgba(45, 45, 45, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+        .modal-header {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .modal-title {
+            color: var(--text-light);
+        }
+        .btn-close {
+            filter: invert(1);
         }
     </style>
-</head>
-<body class="bg-light">
-    <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="index.php?act=admin/dashboard">
-                <i class="bi bi-speedometer2"></i> Quản trị
-            </a>
-            <div class="collapse navbar-collapse">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="index.php?act=admin/nhanSu">
-                            <i class="bi bi-people"></i> Quản lý nhân sự
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link active" href="index.php?act=admin/hdv_advanced">
-                            <i class="bi bi-person-badge"></i> Quản lý HDV
-                        </a>
-                    </li>
-                </ul>
-            </div>
+
+<div style="padding: 20px;">
+    <?php if (!empty($_SESSION['flash'])): $f = $_SESSION['flash']; ?>
+        <div class="alert alert-<?php echo htmlspecialchars($f['type']); ?>" style="display: flex; justify-content: space-between; align-items: center;">
+            <span><?php echo htmlspecialchars($f['message']); ?></span>
+            <button type="button" onclick="this.parentElement.style.display='none'" style="background: none; border: none; color: inherit; cursor: pointer; font-size: 1.2rem;">&times;</button>
         </div>
-    </nav>
+        <?php unset($_SESSION['flash']); endif; ?>
 
-    <div class="container-fluid mt-4">
-        <?php if (!empty($_SESSION['flash'])): $f = $_SESSION['flash']; ?>
-            <div class="alert alert-<?php echo htmlspecialchars($f['type']); ?> alert-dismissible fade show">
-                <?php echo htmlspecialchars($f['message']); ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-            <?php unset($_SESSION['flash']); endif; ?>
-
-        <div class="row mb-3">
-            <div class="col">
-                <h3><i class="bi bi-person-badge"></i> Quản lý HDV Nâng cao</h3>
-            </div>
-            <div class="col-auto">
+    <div class="page-header-section" style="margin-bottom: 30px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+            <h1 style="margin: 0; font-size: 2rem; color: var(--text-light);">
+                <i class="bi bi-person-badge" style="color: var(--accent-gold);"></i> Quản lý HDV Nâng cao
+            </h1>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                 <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addScheduleModal">
                     <i class="bi bi-calendar-check"></i> Phân công HDV
                 </button>
@@ -105,6 +260,7 @@
                 </button>
             </div>
         </div>
+    </div>
 
         <!-- Thống kê tổng quan -->
         <div class="row mb-4">
@@ -714,5 +870,8 @@
             });
         }
     </script>
-</body>
-</html>
+</div>
+<?php
+$content = ob_get_clean();
+require __DIR__ . '/../layouts/aventura.php';
+?>

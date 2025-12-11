@@ -1,31 +1,17 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quản lý Nhật ký Tour - Admin</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="<?php echo BASE_URL; ?>public/css/style.css">
-    <style>
-        .page-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 2rem 0;
-            margin-bottom: 2rem;
-            border-radius: 0.5rem;
-        }
-        
+<?php
+$pageTitle = 'Quản lý Nhật ký Tour';
+$currentPage = 'nhatKyTour';
+ob_start();
+?>
+<style>
         .diary-entry {
-            background-color: rgba(255, 255, 255, 0.7);
+            background: rgba(45, 45, 45, 0.5);
             backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 12px;
             padding: 1.5rem;
             margin-bottom: 1.5rem;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-            border-left: 4px solid #667eea;
+            border-left: 4px solid var(--accent-gold);
         }
         
         .entry-header {
@@ -34,7 +20,7 @@
             align-items: center;
             margin-bottom: 1rem;
             padding-bottom: 1rem;
-            border-bottom: 1px solid rgba(0,0,0,0.1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
         
         .entry-type-badge {
@@ -44,10 +30,10 @@
             font-weight: 500;
         }
         
-        .type-hanh_trinh { background: #e3f2fd; color: #1565c0; }
-        .type-su_co { background: #ffebee; color: #c62828; }
-        .type-phan_hoi { background: #f3e5f5; color: #6a1b9a; }
-        .type-hoat_dong { background: #e8f5e9; color: #2e7d32; }
+        .type-hanh_trinh { background: rgba(21, 101, 192, 0.3); color: #64b5f6; }
+        .type-su_co { background: rgba(198, 40, 40, 0.3); color: #ef5350; }
+        .type-phan_hoi { background: rgba(106, 27, 154, 0.3); color: #ba68c8; }
+        .type-hoat_dong { background: rgba(46, 125, 50, 0.3); color: #66bb6a; }
         
         .image-gallery {
             display: grid;
@@ -70,25 +56,21 @@
         }
         
         .filter-card {
-            background-color: rgba(255, 255, 255, 0.7);
+            background: rgba(45, 45, 45, 0.5);
             backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 12px;
             padding: 1.5rem;
             margin-bottom: 2rem;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
         }
         
         .stats-card {
-            background-color: rgba(255, 255, 255, 0.7);
+            background: rgba(45, 45, 45, 0.5);
             backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 12px;
             padding: 1.5rem;
             margin-bottom: 2rem;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
         }
         
         .stat-item {
@@ -99,69 +81,127 @@
         .stat-number {
             font-size: 2rem;
             font-weight: bold;
-            color: #667eea;
+            color: var(--accent-gold);
         }
         
         .stat-label {
-            color: #666;
+            color: var(--text-muted);
             font-size: 0.875rem;
             margin-top: 0.5rem;
         }
+        .form-control, .form-select {
+            background: rgba(45, 45, 45, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-light);
+        }
+        .form-control:focus, .form-select:focus {
+            background: rgba(45, 45, 45, 0.8);
+            border-color: var(--accent-gold);
+            color: var(--text-light);
+        }
+        .form-label {
+            color: var(--text-light);
+        }
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+        }
+        .btn-primary {
+            background: rgba(13, 110, 253, 0.3);
+            color: #4da3ff;
+            border: 1px solid rgba(13, 110, 253, 0.5);
+        }
+        .btn-primary:hover {
+            background: rgba(13, 110, 253, 0.5);
+        }
+        .btn-secondary {
+            background: rgba(108, 117, 125, 0.3);
+            color: var(--text-light);
+            border: 1px solid rgba(108, 117, 125, 0.5);
+        }
+        .btn-secondary:hover {
+            background: rgba(108, 117, 125, 0.5);
+        }
+        .btn-outline-secondary {
+            background: transparent;
+            color: var(--text-light);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .btn-outline-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.875rem;
+        }
+        .btn-danger {
+            background: rgba(220, 53, 69, 0.3);
+            color: #dc3545;
+            border: 1px solid rgba(220, 53, 69, 0.5);
+        }
+        .btn-danger:hover {
+            background: rgba(220, 53, 69, 0.5);
+        }
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .alert-info {
+            background: rgba(0, 123, 255, 0.2);
+            border: 1px solid rgba(0, 123, 255, 0.5);
+            color: #4da3ff;
+        }
+        .alert-success {
+            background: rgba(40, 167, 69, 0.2);
+            border: 1px solid rgba(40, 167, 69, 0.5);
+            color: #5cb85c;
+        }
+        .alert-danger {
+            background: rgba(220, 53, 69, 0.2);
+            border: 1px solid rgba(220, 53, 69, 0.5);
+            color: #dc3545;
+        }
+        .alert-warning {
+            background: rgba(255, 193, 7, 0.2);
+            border: 1px solid rgba(255, 193, 7, 0.5);
+            color: #ffc107;
+        }
+        .text-muted {
+            color: var(--text-muted) !important;
+        }
+        .alert-link {
+            color: #4da3ff;
+        }
     </style>
-</head>
-<body class="bg-light">
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="index.php?act=admin/dashboard">
-                <i class="bi bi-speedometer2"></i> Quản trị
-            </a>
-            <div class="collapse navbar-collapse">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="index.php?act=admin/quanLyTour">
-                            <i class="bi bi-compass"></i> Tour
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link active" href="index.php?act=admin/quanLyNhatKyTour">
-                            <i class="bi bi-journal-text"></i> Nhật ký Tour
-                        </a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
 
-    <div class="container-fluid px-4 py-4">
-        <!-- Page Header -->
-        <div class="page-header">
-            <div class="container-fluid">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h1 class="display-6 fw-bold mb-2">
-                            <i class="bi bi-journal-text"></i> Quản lý Nhật ký Tour
-                        </h1>
-                        <p class="lead mb-0 opacity-75">Theo dõi diễn biến, sự cố, phản hồi và hoạt động của các tour</p>
-                    </div>
-                  
-                    </a>
-                </div>
-            </div>
-        </div>
+<div style="padding: 20px;">
+    <div class="page-header-section" style="margin-bottom: 30px;">
+        <h1 style="margin: 0; font-size: 2rem; color: var(--text-light);">
+            <i class="bi bi-journal-text" style="color: var(--accent-gold);"></i> Quản lý Nhật ký Tour
+        </h1>
+        <p style="color: var(--text-muted); margin: 8px 0 0 0;">Theo dõi diễn biến, sự cố, phản hồi và hoạt động của các tour</p>
+    </div>
 
         <!-- Alerts -->
         <?php if (isset($_SESSION['success'])): ?>
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                <i class="bi bi-check-circle"></i> <?php echo htmlspecialchars($_SESSION['success']); unset($_SESSION['success']); ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            <div class="alert alert-success" role="alert" style="display: flex; justify-content: space-between; align-items: center;">
+                <span><i class="bi bi-check-circle"></i> <?php echo htmlspecialchars($_SESSION['success']); unset($_SESSION['success']); ?></span>
+                <button type="button" onclick="this.parentElement.style.display='none'" style="background: none; border: none; color: inherit; cursor: pointer; font-size: 1.2rem;">&times;</button>
             </div>
         <?php endif; ?>
         
         <?php if (isset($_SESSION['error'])): ?>
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                <i class="bi bi-exclamation-triangle"></i> <?php echo htmlspecialchars($_SESSION['error']); unset($_SESSION['error']); ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            <div class="alert alert-danger" role="alert" style="display: flex; justify-content: space-between; align-items: center;">
+                <span><i class="bi bi-exclamation-triangle"></i> <?php echo htmlspecialchars($_SESSION['error']); unset($_SESSION['error']); ?></span>
+                <button type="button" onclick="this.parentElement.style.display='none'" style="background: none; border: none; color: inherit; cursor: pointer; font-size: 1.2rem;">&times;</button>
             </div>
         <?php endif; ?>
 
@@ -333,7 +373,9 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+</div>
+<?php
+$content = ob_get_clean();
+require __DIR__ . '/../layouts/aventura.php';
+?>
 

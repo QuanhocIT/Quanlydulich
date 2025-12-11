@@ -261,10 +261,15 @@ class Booking
                 LEFT JOIN tour t ON b.tour_id = t.tour_id
                 LEFT JOIN khach_hang kh ON b.khach_hang_id = kh.khach_hang_id
                 LEFT JOIN nguoi_dung nd ON kh.nguoi_dung_id = nd.id
-                WHERE b.booking_id = ?";
+                WHERE b.booking_id = ? LIMIT 1";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([$bookingId]);
-        return $stmt->fetch();
+        $result = $stmt->fetchAll();
+        // Đảm bảo luôn trả về mảng đơn, không phải danh sách
+        if (is_array($result) && count($result) > 0) {
+            return $result[0];
+        }
+        return null;
     }
 
     // Lấy danh sách yêu cầu đặc biệt dành cho một lịch khởi hành cụ thể

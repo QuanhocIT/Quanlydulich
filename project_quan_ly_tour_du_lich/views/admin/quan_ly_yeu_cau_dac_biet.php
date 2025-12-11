@@ -1,20 +1,17 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quản lý Yêu cầu đặc biệt - Admin</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <style>
-        body {
-            background: #f5f7fb;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
+<?php
+$pageTitle = 'Quản lý Yêu cầu đặc biệt';
+$currentPage = 'yeuCauDacBiet';
+ob_start();
+?>
+<style>
         .stat-card {
-            border-radius: 1rem;
-            border: none;
-            box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.05);
+            background: rgba(45, 45, 45, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+        }
+        .stat-card.border-start {
+            border-left-width: 4px !important;
         }
         .badge-priority {
             font-size: 0.85rem;
@@ -28,9 +25,144 @@
             max-width: 320px;
             white-space: pre-line;
         }
+        .card {
+            background: rgba(45, 45, 45, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+        }
+        .card-body {
+            color: var(--text-light);
+        }
+        .form-control, .form-select {
+            background: rgba(45, 45, 45, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-light);
+        }
+        .form-control:focus, .form-select:focus {
+            background: rgba(45, 45, 45, 0.8);
+            border-color: var(--accent-gold);
+            color: var(--text-light);
+        }
+        .form-label {
+            color: var(--text-light);
+        }
+        .badge {
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+        .bg-danger {
+            background: rgba(220, 53, 69, 0.3) !important;
+            color: #dc3545 !important;
+        }
+        .bg-warning {
+            background: rgba(255, 193, 7, 0.3) !important;
+            color: #ffc107 !important;
+        }
+        .bg-info {
+            background: rgba(0, 123, 255, 0.3) !important;
+            color: #4da3ff !important;
+        }
+        .bg-secondary {
+            background: rgba(108, 117, 125, 0.3) !important;
+            color: #adb5bd !important;
+        }
+        .bg-success {
+            background: rgba(40, 167, 69, 0.3) !important;
+            color: #5cb85c !important;
+        }
+        .bg-primary {
+            background: rgba(13, 110, 253, 0.3) !important;
+            color: #4da3ff !important;
+        }
+        .text-muted {
+            color: var(--text-muted) !important;
+        }
+        .text-primary {
+            color: #4da3ff !important;
+        }
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+        }
+        .btn-primary {
+            background: rgba(13, 110, 253, 0.3);
+            color: #4da3ff;
+            border: 1px solid rgba(13, 110, 253, 0.5);
+        }
+        .btn-primary:hover {
+            background: rgba(13, 110, 253, 0.5);
+        }
+        .btn-outline-primary {
+            background: transparent;
+            color: #4da3ff;
+            border: 1px solid rgba(13, 110, 253, 0.5);
+        }
+        .btn-outline-primary:hover {
+            background: rgba(13, 110, 253, 0.3);
+        }
+        .btn-light {
+            background: rgba(248, 249, 250, 0.2);
+            color: var(--text-light);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .btn-light:hover {
+            background: rgba(248, 249, 250, 0.3);
+        }
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .alert-success {
+            background: rgba(40, 167, 69, 0.2);
+            border: 1px solid rgba(40, 167, 69, 0.5);
+            color: #5cb85c;
+        }
+        .alert-danger {
+            background: rgba(220, 53, 69, 0.2);
+            border: 1px solid rgba(220, 53, 69, 0.5);
+            color: #dc3545;
+        }
+        .table {
+            color: var(--text-light);
+        }
+        .table th {
+            background: rgba(45, 45, 45, 0.7);
+            color: var(--text-light);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .table td {
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .table tbody tr:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .modal-content {
+            background: rgba(45, 45, 45, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+        .modal-header {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .modal-title {
+            color: var(--text-light);
+        }
+        .btn-close {
+            filter: invert(1);
+        }
     </style>
-</head>
-<body>
+
+<div style="padding: 20px;">
 <?php
 $priorityMap = [
     'khan_cap' => ['label' => 'Khẩn cấp', 'badge' => 'danger'],
@@ -47,32 +179,35 @@ $statusMap = [
 $stats = $stats ?? [];
 $totalRequests = (int)(($stats['khan_cap'] ?? 0) + ($stats['cao'] ?? 0) + ($stats['trung_binh'] ?? 0) + ($stats['thap'] ?? 0));
 ?>
-    <div class="container py-4">
-        <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+    <div class="page-header-section" style="margin-bottom: 30px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
             <div>
-                <h1 class="h3 mb-1">Quản lý yêu cầu đặc biệt</h1>
-                <p class="text-muted mb-0">Theo dõi và xử lý các yêu cầu cá nhân của khách hàng</p>
+                <h1 style="margin: 0; font-size: 2rem; color: var(--text-light);">
+                    <i class="bi bi-clipboard-check" style="color: var(--accent-gold);"></i> Quản lý yêu cầu đặc biệt
+                </h1>
+                <p style="color: var(--text-muted); margin: 8px 0 0 0;">Theo dõi và xử lý các yêu cầu cá nhân của khách hàng</p>
             </div>
-            <div class="d-flex gap-2">
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                 <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createRequestModal">
-                    <i class="bi bi-plus-lg me-1"></i>Tạo yêu cầu
+                    <i class="bi bi-plus-lg"></i> Tạo yêu cầu
                 </button>
                 <a href="index.php?act=admin/dashboard" class="btn btn-outline-primary">
-                    <i class="bi bi-arrow-left me-2"></i>Dashboard
+                    <i class="bi bi-arrow-left"></i> Dashboard
                 </a>
             </div>
         </div>
+    </div>
 
         <?php if (isset($_SESSION['success'])): ?>
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                <?php echo htmlspecialchars($_SESSION['success']); unset($_SESSION['success']); ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            <div class="alert alert-success" role="alert" style="display: flex; justify-content: space-between; align-items: center;">
+                <span><?php echo htmlspecialchars($_SESSION['success']); unset($_SESSION['success']); ?></span>
+                <button type="button" onclick="this.parentElement.style.display='none'" style="background: none; border: none; color: inherit; cursor: pointer; font-size: 1.2rem;">&times;</button>
             </div>
         <?php endif; ?>
         <?php if (isset($_SESSION['error'])): ?>
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                <?php echo htmlspecialchars($_SESSION['error']); unset($_SESSION['error']); ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            <div class="alert alert-danger" role="alert" style="display: flex; justify-content: space-between; align-items: center;">
+                <span><?php echo htmlspecialchars($_SESSION['error']); unset($_SESSION['error']); ?></span>
+                <button type="button" onclick="this.parentElement.style.display='none'" style="background: none; border: none; color: inherit; cursor: pointer; font-size: 1.2rem;">&times;</button>
             </div>
         <?php endif; ?>
 
@@ -387,8 +522,10 @@ $totalRequests = (int)(($stats['khan_cap'] ?? 0) + ($stats['cao'] ?? 0) + ($stat
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // Custom modal handling for Aventura theme
         const modalElement = document.getElementById('updateModal');
-        modalElement.addEventListener('show.bs.modal', function (event) {
+        if (modalElement) {
+            modalElement.addEventListener('show.bs.modal', function (event) {
             const button = event.relatedTarget;
             if (!button) return;
             const id = button.getAttribute('data-id');
@@ -424,7 +561,11 @@ $totalRequests = (int)(($stats['khan_cap'] ?? 0) + ($stats['cao'] ?? 0) + ($stat
             } catch (e) {
                 historyWrapper.innerHTML = '<p class="text-muted mb-0">Không thể tải lịch sử.</p>';
             }
-        });
+            });
+        }
     </script>
-</body>
-</html>
+</div>
+<?php
+$content = ob_get_clean();
+require __DIR__ . '/../layouts/aventura.php';
+?>

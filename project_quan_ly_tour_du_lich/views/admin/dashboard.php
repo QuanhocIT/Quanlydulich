@@ -1,692 +1,308 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Admin - Quản lý Tour Du lịch</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <style>
-        :root {
-            --primary-color: #667eea;
-            --secondary-color: #764ba2;
-        }
+
+<?php
+$pageTitle = 'Dashboard Admin';
+$currentPage = 'dashboard';
+ob_start();
+
+// $tours đã được truyền từ controller
+?>
+
+<style>
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 30px;
+        margin-top: 40px;
+    }
+
+    .feature-card {
+        background: rgba(45, 45, 45, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 2px;
+        padding: 30px;
+        transition: all 0.3s;
+        text-decoration: none;
+        color: var(--text-light);
+        display: block;
+        position: relative;
+        overflow: hidden;
+        backdrop-filter: blur(10px);
+    }
+
+    .feature-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.1), transparent);
+        transition: left 0.5s;
+    }
+
+    .feature-card:hover::before {
+        left: 100%;
+    }
+
+    .feature-card:hover {
+        border-color: var(--accent-gold);
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(212, 175, 55, 0.2);
+    }
+
+    .feature-icon {
+        width: 70px;
+        height: 70px;
+        border-radius: 2px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        margin-bottom: 20px;
+        background: rgba(212, 175, 55, 0.1);
+        color: var(--accent-gold);
+        transition: all 0.3s;
+    }
+
+    .feature-card:hover .feature-icon {
+        background: var(--accent-gold);
+        color: var(--primary-dark);
+        transform: scale(1.1) rotate(5deg);
+    }
+
+    .feature-card h5 {
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 10px;
+        letter-spacing: 1px;
+    }
+
+    .feature-card p {
+        font-size: 13px;
+        color: var(--text-muted);
+        line-height: 1.6;
+    }
+
+    .welcome-section {
+        background: rgba(45, 45, 45, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 2px;
+        padding: 40px;
+        margin-bottom: 40px;
+        backdrop-filter: blur(10px);
+        border-color: var(--accent-gold);
         
-        body {
-            background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-        
-        /* Animated Background Particles */
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: 
-                radial-gradient(circle at 20% 50%, rgba(102, 126, 234, 0.05) 0%, transparent 50%),
-                radial-gradient(circle at 80% 80%, rgba(118, 75, 162, 0.05) 0%, transparent 50%),
-                radial-gradient(circle at 40% 20%, rgba(102, 126, 234, 0.03) 0%, transparent 50%);
-            pointer-events: none;
-            z-index: -1;
-            animation: particleFloat 20s ease-in-out infinite;
-        }
-        
-        @keyframes particleFloat {
-            0%, 100% { transform: translateY(0) scale(1); }
-            50% { transform: translateY(-20px) scale(1.05); }
-        }
-        
-        /* Header */
-        .dashboard-header {
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-            color: white;
-            padding: 2rem 0;
-            margin-bottom: 2rem;
-            border-radius: 0 0 1rem 1rem;
-            box-shadow: 0 0.5rem 1.5rem rgba(102, 126, 234, 0.3);
-            position: relative;
-            overflow: hidden;
-        }
-        
-        /* Header Animated Gradient */
-        .dashboard-header::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
-            animation: headerShine 8s linear infinite;
-        }
-        
-        @keyframes headerShine {
-            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
-            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
-        }
-        
-        .dashboard-header .container {
-            position: relative;
-            z-index: 1;
-        }
-        
-        /* Welcome Card */
-        .welcome-card {
-            background: white;
-            border-radius: 1rem;
-            padding: 2rem;
-            margin-top: -3rem;
-            box-shadow: 0 0.5rem 1.5rem rgba(0,0,0,0.1);
-            margin-bottom: 2rem;
-            position: relative;
-            overflow: hidden;
-            animation: slideInDown 0.6s ease-out;
-        }
-        
-        @keyframes slideInDown {
-            from {
-                opacity: 0;
-                transform: translateY(-30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        /* Shimmer effect on welcome card */
-        .welcome-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.1), transparent);
-            animation: shimmer 3s infinite;
-        }
-        
-        @keyframes shimmer {
-            0% { left: -100%; }
-            100% { left: 100%; }
-        }
-        
-        .avatar-circle {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2rem;
-            color: white;
-            font-weight: bold;
-            position: relative;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-            animation: avatarPulse 3s ease-in-out infinite;
-        }
-        
-        @keyframes avatarPulse {
-            0%, 100% { 
-                box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-                transform: scale(1);
-            }
-            50% { 
-                box-shadow: 0 6px 25px rgba(118, 75, 162, 0.5);
-                transform: scale(1.05);
-            }
-        }
-        
-        /* Avatar Ring Animation */
-        .avatar-circle::before {
-            content: '';
-            position: absolute;
-            top: -5px;
-            left: -5px;
-            right: -5px;
-            bottom: -5px;
-            border-radius: 50%;
-            border: 2px solid transparent;
-            border-top-color: var(--primary-color);
-            border-right-color: var(--secondary-color);
-            animation: avatarRotate 3s linear infinite;
-            opacity: 0.6;
-        }
-        
-        @keyframes avatarRotate {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        /* Feature Cards */
-        .feature-card {
-            background: white;
-            border-radius: 1rem;
-            padding: 2rem;
-            margin-bottom: 1.5rem;
-            border: 2px solid #f0f0f0;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            cursor: pointer;
-            text-decoration: none;
-            color: inherit;
-            display: block;
-            position: relative;
-            overflow: hidden;
-            opacity: 0;
-            animation: fadeInUp 0.6s ease-out forwards;
-        }
-        
-        /* Background image for cards */
-        .feature-card .card-bg-image {
-            position: absolute;
-            top: 0;
-            right: 0;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            opacity: 1;
-            background-size: cover;
-            background-position: center;
-            transition: all 0.4s ease;
-            z-index: 0;
-            border-radius: 1rem;
-        }
-        
-        .feature-card:hover .card-bg-image {
-            opacity: 1;
-            transform: scale(1.05);
-        }
-        
-        /* Add overlay to make text readable */
-        .feature-card::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.65));
-            border-radius: 1rem;
-            z-index: 0;
-        }
-        
-        /* Staggered animation delay */
-        .feature-card:nth-child(1) { animation-delay: 0.1s; }
-        .feature-card:nth-child(2) { animation-delay: 0.2s; }
-        .feature-card:nth-child(3) { animation-delay: 0.3s; }
-        .feature-card:nth-child(4) { animation-delay: 0.4s; }
-        .feature-card:nth-child(5) { animation-delay: 0.5s; }
-        .feature-card:nth-child(6) { animation-delay: 0.6s; }
-        .feature-card:nth-child(7) { animation-delay: 0.7s; }
-        .feature-card:nth-child(8) { animation-delay: 0.8s; }
-        .feature-card:nth-child(9) { animation-delay: 0.9s; }
-        
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        /* Card Glow Effect on Hover */
-        .feature-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            opacity: 0;
-            transition: opacity 0.4s ease;
-            border-radius: 1rem;
-        }
-        
-        .feature-card:hover {
-            border-color: var(--primary-color);
-            transform: translateY(-8px) scale(1.02);
-            box-shadow: 0 1rem 3rem rgba(102, 126, 234, 0.2);
-        }
-        
-        .feature-icon {
-            width: 70px;
-            height: 70px;
-            border-radius: 1rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2rem;
-            margin-bottom: 1rem;
-            position: relative;
-            z-index: 1;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        
-        .feature-card:hover .feature-icon {
-            transform: scale(1.1) rotate(5deg);
-            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
-        }
-        
-        /* Icon Bounce on Hover */
-        .feature-card:hover .feature-icon i {
-            animation: iconBounce 0.6s ease;
-        }
-        
-        @keyframes iconBounce {
-            0%, 100% { transform: translateY(0); }
-            25% { transform: translateY(-10px); }
-            50% { transform: translateY(0); }
-            75% { transform: translateY(-5px); }
-        }
-        
-        .feature-card h5 {
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-            color: #1a202c;
-            position: relative;
-            z-index: 1;
-            transition: color 0.3s ease;
-        }
-        
-        .feature-card:hover h5 {
-            color: var(--primary-color);
-        }
-        
-        .feature-card p {
-            color: #718096;
-            font-size: 0.9rem;
-            margin-bottom: 0;
-            position: relative;
-            z-index: 1;
-            transition: color 0.3s ease;
-        }
-        
-        .feature-card:hover p {
-            color: #4a5568;
-        }
-        
-        /* Notification Badge */
-        .notification-badge {
-            position: absolute;
-            top: -8px;
-            right: -8px;
-            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
-            color: white;
-            border-radius: 50%;
-            min-width: 24px;
-            height: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.75rem;
-            font-weight: bold;
-            padding: 0 6px;
-            box-shadow: 0 3px 8px rgba(220, 53, 69, 0.4);
-            animation: badgePulse 2s ease-in-out infinite;
-            z-index: 2;
-        }
-        
-        @keyframes badgePulse {
-            0%, 100% {
-                transform: scale(1);
-                box-shadow: 0 3px 8px rgba(220, 53, 69, 0.4);
-            }
-            50% {
-                transform: scale(1.1);
-                box-shadow: 0 4px 12px rgba(220, 53, 69, 0.6);
-            }
-        }
-        
-        /* Badge Ring Animation */
-        .notification-badge::before {
-            content: '';
-            position: absolute;
-            top: -3px;
-            left: -3px;
-            right: -3px;
-            bottom: -3px;
-            border-radius: 50%;
-            border: 2px solid #dc3545;
-            opacity: 0;
-            animation: badgeRing 2s ease-in-out infinite;
-        }
-        
-        @keyframes badgeRing {
-            0% {
-                transform: scale(1);
-                opacity: 0.8;
-            }
-            50% {
-                transform: scale(1.3);
-                opacity: 0;
-            }
-            100% {
-                transform: scale(1.5);
-                opacity: 0;
-            }
-        }
-        
-        /* Icon Colors */
-        .icon-blue { background: rgba(102, 126, 234, 0.1); color: #667eea; }
-        .icon-green { background: rgba(72, 187, 120, 0.1); color: #48bb78; }
-        .icon-purple { background: rgba(159, 122, 234, 0.1); color: #9f7aea; }
-        .icon-orange { background: rgba(237, 137, 54, 0.1); color: #ed8936; }
-        .icon-teal { background: rgba(56, 178, 172, 0.1); color: #38b2ac; }
-        .icon-pink { background: rgba(237, 100, 166, 0.1); color: #ed64a6; }
-        .icon-indigo { background: rgba(102, 126, 234, 0.1); color: #667eea; }
-        .icon-yellow { background: rgba(236, 201, 75, 0.1); color: #ecc94b; }
-        .icon-red { background: rgba(245, 101, 101, 0.1); color: #f56565; }
-        
-        /* Logout Card */
-        .feature-card.logout-card {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            border-color: transparent;
-            color: white;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        /* Animated gradient background */
-        .feature-card.logout-card::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
-            animation: logoutShine 3s linear infinite;
-        }
-        
-        @keyframes logoutShine {
-            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
-            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
-        }
-        
-        .feature-card.logout-card:hover {
-            border-color: transparent;
-            box-shadow: 0 1rem 3rem rgba(245, 87, 108, 0.4);
-            transform: translateY(-8px) scale(1.02);
-        }
-        
-        .feature-card.logout-card h5,
-        .feature-card.logout-card p {
-            color: #1a202c;
-            position: relative;
-            z-index: 1;
-        }
-        
-        .feature-card.logout-card .feature-icon {
-            background: rgba(255, 255, 255, 0.3);
-            color: #1a202c;
-            backdrop-filter: blur(10px);
-        }
-        
-        .feature-card.logout-card:hover .feature-icon {
-            background: rgba(255, 255, 255, 0.4);
-            color: #c53030;
-            transform: scale(1.15) rotate(-5deg);
-        }
-        
-        /* Smooth Page Load */
-        .container {
-            animation: containerFadeIn 0.8s ease-out;
-        }
-        
-        @keyframes containerFadeIn {
-            from {
-                opacity: 0;
-            }
-            to {
-                opacity: 1;
-            }
-        }
-        
-        /* Button Hover Effect */
-        .btn-light {
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .btn-light::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 0;
-            height: 0;
-            border-radius: 50%;
-            background: rgba(102, 126, 234, 0.2);
-            transform: translate(-50%, -50%);
-            transition: width 0.6s, height 0.6s;
-        }
-        
-        .btn-light:hover::before {
-            width: 300px;
-            height: 300px;
-        }
-        
-        .btn-light:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
-        
-        /* Responsive Grid */
-        @media (max-width: 768px) {
-            .welcome-card {
-                margin-top: 0;
-            }
-            
-            .feature-card:hover {
-                transform: translateY(-4px) scale(1);
-            }
-        }
-        
-        /* Scrollbar Styling */
-        ::-webkit-scrollbar {
-            width: 10px;
-        }
-        
-        ::-webkit-scrollbar-track {
-            background: #f1f1f1;
-        }
-        
-        ::-webkit-scrollbar-thumb {
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            border-radius: 10px;
-        }
-        
-        ::-webkit-scrollbar-thumb:hover {
-            background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
-        }
-    </style>
-</head>
-<body>
-    <!-- Header -->
-    <div class="dashboard-header">
-        <div class="container">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h4 class="mb-1">
-                        <i class="bi bi-speedometer2"></i> Dashboard Admin
-                    </h4>
-                    <p class="mb-0 opacity-75">Hệ thống quản lý tour du lịch</p>
-                </div>
-                <a href="index.php?act=auth/logout" class="btn btn-light">
-                    <i class="bi bi-box-arrow-right"></i> Đăng xuất
-                </a>
-            </div>
+    }
+
+    .welcome-avatar {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: var(--accent-gold);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        color: var(--primary-dark);
+        font-weight: bold;
+        margin-bottom: 20px;
+    }
+
+    .welcome-section h2 {
+        font-size: 28px;
+        margin-bottom: 10px;
+        letter-spacing: 1px;
+    }
+
+    .welcome-section p {
+        color: var(--text-muted);
+        font-size: 14px;
+    }
+
+    .notification-badge {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        background: #dc3545;
+        color: white;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: bold;
+    }
+</style>
+
+<div class="welcome-section" style="display: flex; justify-content: flex-start; gap: 20px; ">
+    <div class="welcome-avatar">
+        <?php echo strtoupper(mb_substr($_SESSION['user_name'] ?? 'A', 0, 1, 'UTF-8')); ?>
+    </div>
+    <div>
+        <h2>Xin chào, <?php echo htmlspecialchars($_SESSION['user_name'] ?? 'Administrator'); ?>!</h2>
+        <p>Quản trị viên hệ thống - Quản lý tour du lịch</p>
+    </div>
+</div>
+
+<!-- BIỂU ĐỒ TÀI CHÍNH -->
+<div class="report-card" style="margin-bottom:40px; margin-left: 100px; margin-top: 10px; color:yellow;">
+    <div style="display:flex;flex-wrap:wrap;justify-content:center;align-items:flex-start;">
+        <div style="flex:1;min-width:420px;max-width:700px;display:flex;align-items:center;justify-content:center;margin-left:15px;">
+            <canvas id="barChart" width="880" height="400"></canvas>
+        </div>
+        <div style="flex:1;min-width:420px;max-width:700px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start; margin-left:10px;">
+            <canvas id="pieChart" width="400" height="200" style="margin-left: 200px; margin-top: 0px;"></canvas>
+            <div id="pieLegend" style="margin-top:24px;margin-left:280px;display:flex;flex-direction:column;align-items:flex-start;gap:6px;min-width:260px;"></div>
         </div>
     </div>
-    
-    <div class="container">
-        <!-- Welcome Card -->
-        <div class="welcome-card">
-            <div class="d-flex align-items-center">
-                <div class="avatar-circle me-3">
-                    <?php echo strtoupper(mb_substr($_SESSION['user_name'] ?? 'A', 0, 1, 'UTF-8')); ?>
-                </div>
-                <div>
-                    <h5 class="mb-1">Xin chào, <?php echo htmlspecialchars($_SESSION['user_name'] ?? 'Administrator'); ?>!</h5>
-                    <p class="text-muted mb-0">
-                        <i class="bi bi-shield-check text-success"></i> Quản trị viên hệ thống
-                    </p>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Feature Grid -->
-        <div class="row">
-            <div class="col-md-6 col-lg-4">
-                <a href="index.php?act=admin/quanLyTour" class="feature-card">
-                    <div class="card-bg-image" style="background-image: url('https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=400');"></div>
-                    <div class="feature-icon icon-blue">
-                        <i class="bi bi-geo-alt"></i>
-                        <span class="notification-badge">12</span>
-                    </div>
-                    <h5>Quản lý Tour</h5>
-                    <p>Quản lý danh sách tour, lịch trình và thông tin chi tiết các chuyến đi</p>
-                </a>
-            </div>
-            
-            <div class="col-md-6 col-lg-4">
-                <a href="index.php?act=admin/nhaCungCap" class="feature-card">
-                    <div class="card-bg-image" style="background-image: url('https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=400');"></div>
-                    <div class="feature-icon icon-purple">
-                        <i class="bi bi-building-gear"></i>
-                    </div>
-                    <h5>Quản lý Nhà cung cấp</h5>
-                    <p>Theo dõi báo giá, dịch vụ và duyệt yêu cầu từ nhà cung cấp</p>
-                </a>
-            </div>
-            
-            <div class="col-md-6 col-lg-4">
-                <a href="index.php?act=lichKhoiHanh/index" class="feature-card">
-                    <div class="card-bg-image" style="background-image: url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400');"></div>
-                    <div class="feature-icon icon-green">
-                        <i class="bi bi-calendar-event"></i>
-                        <span class="notification-badge">5</span>
-                    </div>
-                    <h5>Lịch Khởi Hành</h5>
-                    <p>Theo dõi và quản lý lịch khởi hành, phân công nhân sự cho tour</p>
-                </a>
-            </div>
-            
-            <div class="col-md-6 col-lg-4">
-                <a href="index.php?act=admin/nhanSu" class="feature-card">
-                    <div class="card-bg-image" style="background-image: url('https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=400');"></div>
-                    <div class="feature-icon icon-purple">
-                        <i class="bi bi-people"></i>
-                    </div>
-                    <h5>Quản lý Nhân sự</h5>
-                    <p>Quản lý hướng dẫn viên, điều hành và toàn bộ nhân viên</p>
-                </a>
-            </div>
-            
-            <div class="col-md-6 col-lg-4">
-                <a href="index.php?act=admin/quanLyNguoiDung" class="feature-card">
-                    <div class="card-bg-image" style="background-image: url('https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=400');"></div>
-                    <div class="feature-icon icon-orange">
-                        <i class="bi bi-person-badge"></i>
-                    </div>
-                    <h5>Quản lý Người dùng</h5>
-                    <p>Quản lý tài khoản, phân quyền và cấp quyền truy cập</p>
-                </a>
-            </div>
-            
-            <div class="col-md-6 col-lg-4">
-                <a href="index.php?act=admin/quanLyBooking" class="feature-card">
-                    <div class="card-bg-image" style="background-image: url('https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?w=400');"></div>
-                    <div class="feature-icon icon-teal">
-                        <i class="bi bi-journal-check"></i>
-                        <span class="notification-badge">8</span>
-                    </div>
-                    <h5>Quản lý Booking</h5>
-                    <p>Xem và quản lý đặt chỗ, xác nhận booking của khách hàng</p>
-                </a>
-            </div>
-            
-            <div class="col-md-6 col-lg-4">
-                <a href="index.php?act=booking/datTourChoKhach" class="feature-card">
-                    <div class="card-bg-image" style="background-image: url('https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=400');"></div>
-                    <div class="feature-icon icon-pink">
-                        <i class="bi bi-plus-circle"></i>
-                    </div>
-                    <h5>Đặt tour cho khách</h5>
-                    <p>Tạo booking mới và đặt tour trực tiếp cho khách hàng</p>
-                </a>
-            </div>
-            
-            <div class="col-md-6 col-lg-4">
-                <a href="index.php?act=admin/baoCaoTaiChinh" class="feature-card">
-                    <div class="card-bg-image" style="background-image: url('https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400');"></div>
-                    <div class="feature-icon icon-indigo">
-                        <i class="bi bi-graph-up"></i>
-                    </div>
-                    <h5>Báo cáo Tài chính</h5>
-                    <p>Thống kê doanh thu, chi phí và báo cáo tài chính tổng quan</p>
-                </a>
-            </div>
-            
-            <div class="col-md-6 col-lg-4">
-                <a href="index.php?act=admin/danhGia" class="feature-card">
-                    <div class="card-bg-image" style="background-image: url('https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=400');"></div>
-                    <div class="feature-icon icon-yellow">
-                        <i class="bi bi-star"></i>
-                        <span class="notification-badge">3</span>
-                    </div>
-                    <h5>Đánh giá & Phản hồi</h5>
-                    <p>Quản lý đánh giá và phản hồi từ khách hàng về dịch vụ</p>
-                </a>
-            </div>
-            
-            <!-- <div class="col-md-6 col-lg-4">
-                <a href="index.php?act=admin/quanLyNhatKyTour" class="feature-card">
-                    <div class="card-bg-image" style="background-image: url('https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=400');"></div>
-                    <div class="feature-icon icon-red">
-                        <i class="bi bi-journal-text"></i>
-                    </div>
-                    <h5>Nhật ký tour</h5>
-                    <p>Theo dõi sự cố, phản hồi khách, đánh giá HDV theo từng tour</p>
-                </a>
-            </div>
-            
-            <div class="col-md-6 col-lg-4">
-                <a href="index.php?act=admin/yeuCauDacBiet" class="feature-card">
-                    <div class="card-bg-image" style="background-image: url('https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=400');"></div>
-                    <div class="feature-icon icon-pink">
-                        <i class="bi bi-heart-pulse"></i>
-                    </div>
-                    <h5>Yêu cầu đặc biệt</h5>
-                    <p>Theo dõi ưu tiên, phân công xử lý yêu cầu riêng của khách</p>
-                </a>
-            </div>
-             -->
-            <div class="col-md-6 col-lg-4">
-                <a href="index.php?act=auth/logout" class="feature-card logout-card">
-                    <div class="card-bg-image" style="background-image: url('https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?w=400');"></div>
-                    <div class="feature-icon">
-                        <i class="bi bi-box-arrow-right"></i>
-                    </div>
-                    <h5>Đăng xuất</h5>
-                    <p>Thoát khỏi hệ thống quản trị một cách an toàn</p>
-                </a>
-            </div>
-        </div>
-    </div>
-    
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Dữ liệu PHP sang JS
+const tours = <?php echo json_encode($tours ?? []); ?>;
+const tourNames = tours.map(t => t.ten_tour);
+const tongThu = tours.map(t => Number(t.tong_thu));
+const tongChi = tours.map(t => Number(t.tong_chi_thuc_te));
+const duToan = tours.map(t => Number(t.tong_du_toan));
+const loiNhuan = tours.map(t => Number(t.loi_nhuan));
+
+// Bar chart: Tổng Thu, Chi phí, Dự toán
+const ctxBar = document.getElementById('barChart').getContext('2d');
+// Dữ liệu doanh thu các tháng
+const monthLabels = <?php echo json_encode(array_keys($doanhThuTheoThang ?? [])); ?>;
+const monthRevenue = <?php echo json_encode(array_values($doanhThuTheoThang ?? [])); ?>.map(x => Number(x) || 0);
+
+// Bar chart: Doanh thu các tháng
+new Chart(ctxBar, {
+    type: 'bar',
+    data: {
+        labels: monthLabels,
+        datasets: [
+            { label: 'Doanh thu', data: monthRevenue, backgroundColor: 'rgba(16,185,129,0.7)' }
+        ]
+    },
+    options: {
+        responsive: false,
+        plugins: {
+            legend: { display: true },
+            tooltip: {
+                enabled: true,
+                callbacks: {
+                    label: function(context) {
+                        let value = context.parsed.y || 0;
+                        return 'Doanh thu: ' + value.toLocaleString('vi-VN');
+                    }
+                }
+            }
+        },
+        scales: { y: { beginAtZero: true } },
+        layout: { padding: { left: 20, right: 20, top: 20, bottom: 20 } }
+    }
+});
+
+// Pie chart: Tỷ lệ lợi nhuận các tour
+const ctxPie = document.getElementById('pieChart').getContext('2d');
+const pieColors = [
+    'rgba(16,185,129,0.7)',
+    'rgba(239,68,68,0.7)',
+    'rgba(212,175,55,0.7)',
+    'rgba(59,130,246,0.7)',
+    'rgba(168,85,247,0.7)',
+    'rgba(251,191,36,0.7)',
+    'rgba(34,197,94,0.7)',
+    'rgba(244,63,94,0.7)',
+    'rgba(132,204,22,0.7)',
+    'rgba(253,224,71,0.7)'
+];
+const pieChart = new Chart(ctxPie, {
+    type: 'pie',
+    data: {
+        labels: tourNames,
+        datasets: [{
+            label: 'Lợi nhuận',
+            data: loiNhuan,
+            backgroundColor: pieColors.slice(0, tourNames.length)
+        }]
+    },
+    options: {
+        responsive: false,
+        plugins: { legend: { display: false } },
+        layout: { padding: { left: 20, right: 20, top: 20, bottom: 20 } }
+    }
+});
+// Custom legend dưới biểu đồ tròn (1 cột dọc, nhỏ gọn)
+const pieLegend = document.getElementById('pieLegend');
+pieLegend.innerHTML = tourNames.map((name, i) =>
+    `<span style="display:flex;align-items:center;margin-bottom:4px;width:240px;">
+        <span style="display:inline-block;width:13px;height:13px;background:${pieColors[i]};border-radius:3px;margin-right:7px;flex-shrink:0;"></span>
+        <span style="font-size:10px;color:#fff;line-height:1.2;text-align:left;">${name}</span>
+    </span>`
+).join('');
+</script>
+
+<div class="dashboard-grid">
+    <a href="index.php?act=admin/quanLyTour" class="feature-card">
+        <span class="notification-badge">12</span>
+        <div class="feature-icon">📍</div>
+        <h5>Quản lý Tour</h5>
+        <p>Quản lý danh sách tour, lịch trình và thông tin chi tiết các chuyến đi</p>
+    </a>
+
+    <a href="index.php?act=admin/quanLyBooking" class="feature-card">
+        <span class="notification-badge">8</span>
+        <div class="feature-icon">📋</div>
+        <h5>Quản lý Booking</h5>
+        <p>Xem và quản lý đặt chỗ, xác nhận booking của khách hàng</p>
+    </a>
+
+    <a href="index.php?act=lichKhoiHanh/index" class="feature-card">
+        <span class="notification-badge">5</span>
+        <div class="feature-icon">📅</div>
+        <h5>Lịch Khởi Hành</h5>
+        <p>Theo dõi và quản lý lịch khởi hành, phân công nhân sự cho tour</p>
+    </a>
+
+    <a href="index.php?act=admin/nhanSu" class="feature-card">
+        <div class="feature-icon">👥</div>
+        <h5>Quản lý Nhân sự</h5>
+        <p>Quản lý hướng dẫn viên, điều hành và toàn bộ nhân viên</p>
+    </a>
+
+    <a href="index.php?act=admin/quanLyNguoiDung" class="feature-card">
+        <div class="feature-icon">👤</div>
+        <h5>Quản lý Người dùng</h5>
+        <p>Quản lý tài khoản, phân quyền và cấp quyền truy cập</p>
+    </a>
+
+    <a href="index.php?act=admin/nhaCungCap" class="feature-card">
+        <div class="feature-icon">🏢</div>
+        <h5>Quản lý Nhà cung cấp</h5>
+        <p>Theo dõi báo giá, dịch vụ và duyệt yêu cầu từ nhà cung cấp</p>
+    </a>
+
+    <a href="index.php?act=admin/baoCaoTaiChinh" class="feature-card">
+        <div class="feature-icon">📊</div>
+        <h5>Báo cáo Tài chính</h5>
+        <p>Thống kê doanh thu, chi phí và báo cáo tài chính tổng quan</p>
+    </a>
+
+    <a href="index.php?act=admin/danhGia" class="feature-card">
+        <span class="notification-badge">3</span>
+        <div class="feature-icon">⭐</div>
+        <h5>Đánh giá & Phản hồi</h5>
+        <p>Quản lý đánh giá và phản hồi từ khách hàng về dịch vụ</p>
+    </a>
+
+    <a href="index.php?act=auth/logout" class="feature-card" style="background: rgba(220, 53, 69, 0.2); border-color: rgba(220, 53, 69, 0.3);">
+        <div class="feature-icon" style="background: rgba(220, 53, 69, 0.2); color: #dc3545;">🚪</div>
+        <h5>Đăng xuất</h5>
+        <p>Thoát khỏi hệ thống quản trị một cách an toàn</p>
+    </a>
+</div>
+
+<?php
+$content = ob_get_clean();
+require __DIR__ . '/../layouts/aventura.php';
+?>

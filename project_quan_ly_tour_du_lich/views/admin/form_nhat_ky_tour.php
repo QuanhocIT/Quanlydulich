@@ -1,62 +1,156 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo isset($entry) ? 'Sửa' : 'Thêm'; ?> Nhật ký Tour - Admin</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="<?php echo BASE_URL; ?>public/css/style.css">
-</head>
-<body class="bg-light">
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="index.php?act=admin/dashboard">
-                <i class="bi bi-speedometer2"></i> Quản trị
-            </a>
-            <div class="collapse navbar-collapse">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="index.php?act=admin/quanLyTour">
-                            <i class="bi bi-compass"></i> Tour
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link active" href="index.php?act=admin/quanLyNhatKyTour">
-                            <i class="bi bi-journal-text"></i> Nhật ký Tour
-                        </a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
+<?php
+$pageTitle = isset($entry) ? 'Sửa Nhật ký Tour' : 'Thêm Nhật ký Tour';
+$currentPage = 'nhat_ky_tour';
+ob_start();
+?>
+<style>
+    .form-section {
+        background: rgba(45, 45, 45, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 2px;
+        padding: 25px;
+        margin-bottom: 30px;
+        backdrop-filter: blur(10px);
+    }
+    .form-control, .form-select {
+        background: rgba(30, 30, 30, 0.7);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: var(--text-light);
+        padding: 10px 15px;
+        border-radius: 4px;
+    }
+    .form-control:focus, .form-select:focus {
+        background: rgba(30, 30, 30, 0.9);
+        border-color: var(--accent-gold);
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(255, 193, 7, 0.2);
+        color: var(--text-light);
+    }
+    .form-label {
+        color: var(--text-light);
+        margin-bottom: 8px;
+        display: block;
+    }
+    .btn {
+        padding: 10px 20px;
+        border-radius: 4px;
+        border: none;
+        cursor: pointer;
+        font-weight: 500;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s;
+    }
+    .btn-primary {
+        background: var(--accent-gold);
+        color: #000;
+    }
+    .btn-primary:hover {
+        background: #ffd700;
+    }
+    .btn-secondary {
+        background: rgba(108, 117, 125, 0.3);
+        color: var(--text-light);
+        border: 1px solid rgba(108, 117, 125, 0.5);
+    }
+    .btn-secondary:hover {
+        background: rgba(108, 117, 125, 0.5);
+    }
+    .card {
+        background: rgba(45, 45, 45, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+        backdrop-filter: blur(10px);
+    }
+    .card-header {
+        background: rgba(0, 123, 255, 0.3);
+        color: var(--text-light);
+        padding: 20px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .card-body {
+        padding: 20px;
+        color: var(--text-light);
+    }
+    .alert {
+        padding: 15px;
+        border-radius: 4px;
+        margin-bottom: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .alert-success {
+        background: rgba(40, 167, 69, 0.2);
+        border: 1px solid rgba(40, 167, 69, 0.5);
+        color: #5cb85c;
+    }
+    .alert-danger {
+        background: rgba(220, 53, 69, 0.2);
+        border: 1px solid rgba(220, 53, 69, 0.5);
+        color: #dc3545;
+    }
+    .text-danger { color: #dc3545 !important; }
+    .text-muted { color: var(--text-muted) !important; }
+    .row {
+        display: flex;
+        flex-wrap: wrap;
+        margin-left: -15px;
+        margin-right: -15px;
+    }
+    .row > * {
+        padding-left: 15px;
+        padding-right: 15px;
+    }
+    .col-md-6, .col-md-8 { width: 66.666667%; }
+    .mx-auto { margin-left: auto; margin-right: auto; }
+    .mb-3 { margin-bottom: 1rem; }
+    .d-flex { display: flex; }
+    .justify-content-between { justify-content: space-between; }
+    .flex-wrap { flex-wrap: wrap; }
+    .gap-2 { gap: 0.5rem; }
+    img {
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    @media (max-width: 768px) {
+        .col-md-6, .col-md-8 {
+            width: 100%;
+        }
+    }
+</style>
 
-    <div class="container-fluid px-4 py-4">
-        <div class="row">
-            <div class="col-md-8 mx-auto">
-                <div class="card shadow-sm">
-                    <div class="card-header bg-primary text-white">
-                        <h4 class="mb-0">
-                            <i class="bi bi-journal-plus"></i> 
-                            <?php echo isset($entry) ? 'Sửa' : 'Thêm'; ?> Nhật ký Tour
-                        </h4>
-                    </div>
-                    <div class="card-body">
-                        <!-- Alerts -->
-                        <?php if (isset($_SESSION['success'])): ?>
-                            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                                <i class="bi bi-check-circle"></i> <?php echo htmlspecialchars($_SESSION['success']); unset($_SESSION['success']); ?>
-                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                            </div>
-                        <?php endif; ?>
-                        
-                        <?php if (isset($_SESSION['error'])): ?>
-                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                                <i class="bi bi-exclamation-triangle"></i> <?php echo htmlspecialchars($_SESSION['error']); unset($_SESSION['error']); ?>
-                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                            </div>
-                        <?php endif; ?>
+<div style="padding: 20px; max-width: 900px; margin: 0 auto;">
+    <div class="page-header-section" style="margin-bottom: 30px;">
+        <h1 style="margin: 0 0 10px 0; font-size: 2rem; color: var(--text-light);">
+            <i class="bi bi-journal-plus" style="color: var(--accent-gold);"></i> 
+            <?php echo isset($entry) ? 'Sửa' : 'Thêm'; ?> Nhật ký Tour
+        </h1>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <h4 style="margin: 0; color: var(--text-light);">
+                <i class="bi bi-journal-plus"></i> 
+                <?php echo isset($entry) ? 'Sửa' : 'Thêm'; ?> Nhật ký Tour
+            </h4>
+        </div>
+        <div class="card-body">
+            <!-- Alerts -->
+            <?php if (isset($_SESSION['success'])): ?>
+                <div class="alert alert-success">
+                    <div><i class="bi bi-check-circle"></i> <?php echo htmlspecialchars($_SESSION['success']); unset($_SESSION['success']); ?></div>
+                    <button type="button" onclick="this.parentElement.remove()" style="background: none; border: none; color: inherit; font-size: 1.2rem; cursor: pointer;">&times;</button>
+                </div>
+            <?php endif; ?>
+            
+            <?php if (isset($_SESSION['error'])): ?>
+                <div class="alert alert-danger">
+                    <div><i class="bi bi-exclamation-triangle"></i> <?php echo htmlspecialchars($_SESSION['error']); unset($_SESSION['error']); ?></div>
+                    <button type="button" onclick="this.parentElement.remove()" style="background: none; border: none; color: inherit; font-size: 1.2rem; cursor: pointer;">&times;</button>
+                </div>
+            <?php endif; ?>
 
                         <form method="POST" action="index.php?act=admin/saveNhatKyTour" enctype="multipart/form-data">
                             <input type="hidden" name="id" value="<?php echo $entry['id'] ?? ''; ?>">
@@ -161,14 +255,11 @@
                                 </button>
                             </div>
                         </form>
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
+</div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
+<script>
         // Show/hide cách xử lý field
         document.getElementById('loai_nhat_ky').addEventListener('change', function() {
             var cachXuLyGroup = document.getElementById('cach_xu_ly_group');
@@ -203,5 +294,7 @@
             });
         });
     </script>
-</body>
-</html>
+<?php
+$content = ob_get_clean();
+require __DIR__ . '/../layouts/aventura.php';
+?>

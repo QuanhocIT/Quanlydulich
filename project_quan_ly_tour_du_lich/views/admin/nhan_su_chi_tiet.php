@@ -1,56 +1,60 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sơ yếu lý lịch - <?php echo htmlspecialchars($nhanSu['ho_ten'] ?? 'Nhân sự'); ?></title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <style>
+<?php
+$pageTitle = 'Sơ yếu lý lịch - ' . htmlspecialchars($nhanSu['ho_ten'] ?? 'Nhân sự');
+$currentPage = 'nhanSu';
+ob_start();
+?>
+<style>
         .profile-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background: rgba(102, 126, 234, 0.3);
+            border: 1px solid rgba(102, 126, 234, 0.5);
+            color: var(--text-light);
             padding: 2rem 0;
             margin-bottom: 2rem;
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
         }
         .profile-avatar {
             width: 150px;
             height: 150px;
             border-radius: 50%;
-            border: 5px solid white;
+            border: 5px solid rgba(255, 255, 255, 0.3);
             object-fit: cover;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
         }
         .info-section {
-            background: white;
+            background: rgba(45, 45, 45, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 8px;
             padding: 1.5rem;
             margin-bottom: 1.5rem;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            backdrop-filter: blur(10px);
         }
         .info-section h5 {
-            color: #667eea;
-            border-bottom: 2px solid #667eea;
+            color: var(--accent-gold);
+            border-bottom: 2px solid var(--accent-gold);
             padding-bottom: 0.5rem;
             margin-bottom: 1rem;
         }
         .info-row {
             display: flex;
             padding: 0.75rem 0;
-            border-bottom: 1px solid #f0f0f0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
         .info-row:last-child {
             border-bottom: none;
         }
         .info-label {
             font-weight: 600;
-            color: #666;
+            color: var(--text-muted);
             width: 200px;
             flex-shrink: 0;
         }
         .info-value {
-            color: #333;
+            color: var(--text-light);
             flex: 1;
+        }
+        .info-value a {
+            color: #4da3ff;
         }
         .status-badge {
             display: inline-block;
@@ -59,12 +63,12 @@
             font-size: 0.875rem;
         }
         .status-active {
-            background-color: #d4edda;
-            color: #155724;
+            background-color: rgba(40, 167, 69, 0.3);
+            color: #5cb85c;
         }
         .status-locked {
-            background-color: #f8d7da;
-            color: #721c24;
+            background-color: rgba(220, 53, 69, 0.3);
+            color: #dc3545;
         }
         .print-btn {
             position: fixed;
@@ -73,57 +77,99 @@
             width: 60px;
             height: 60px;
             border-radius: 50%;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+        .badge {
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+        .bg-primary {
+            background: rgba(13, 110, 253, 0.3) !important;
+            color: #4da3ff !important;
+        }
+        .bg-warning {
+            background: rgba(255, 193, 7, 0.3) !important;
+            color: #ffc107 !important;
+        }
+        .bg-secondary {
+            background: rgba(108, 117, 125, 0.3) !important;
+            color: #adb5bd !important;
+        }
+        .text-muted {
+            color: var(--text-muted) !important;
+        }
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+        }
+        .btn-secondary {
+            background: rgba(108, 117, 125, 0.3);
+            color: var(--text-light);
+            border: 1px solid rgba(108, 117, 125, 0.5);
+        }
+        .btn-secondary:hover {
+            background: rgba(108, 117, 125, 0.5);
+        }
+        .btn-primary {
+            background: rgba(13, 110, 253, 0.3);
+            color: #4da3ff;
+            border: 1px solid rgba(13, 110, 253, 0.5);
+        }
+        .btn-primary:hover {
+            background: rgba(13, 110, 253, 0.5);
+        }
+        .btn-lg {
+            padding: 12px 24px;
+            font-size: 1.1rem;
+        }
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .alert-danger {
+            background: rgba(220, 53, 69, 0.2);
+            border: 1px solid rgba(220, 53, 69, 0.5);
+            color: #dc3545;
         }
         @media print {
             .no-print { display: none; }
-            .profile-header { background: #667eea !important; }
+            .profile-header { background: rgba(102, 126, 234, 0.5) !important; }
         }
     </style>
-</head>
-<body class="bg-light">
-    <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary no-print">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="index.php?act=admin/dashboard">
-                <i class="bi bi-speedometer2"></i> Quản trị
-            </a>
-            <div class="collapse navbar-collapse">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="index.php?act=admin/nhanSu">
-                            <i class="bi bi-arrow-left"></i> Quay lại danh sách
-                        </a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
+
+<div style="padding: 20px;">
 
     <?php if ($error): ?>
-        <div class="container mt-4">
-            <div class="alert alert-danger">
-                <i class="bi bi-exclamation-triangle"></i> <?php echo htmlspecialchars($error); ?>
-            </div>
-            <a href="index.php?act=admin/nhanSu" class="btn btn-primary">
-                <i class="bi bi-arrow-left"></i> Quay lại danh sách
-            </a>
+        <div class="alert alert-danger">
+            <i class="bi bi-exclamation-triangle"></i> <?php echo htmlspecialchars($error); ?>
         </div>
+        <a href="index.php?act=admin/nhanSu" class="btn btn-primary">
+            <i class="bi bi-arrow-left"></i> Quay lại danh sách
+        </a>
     <?php else: ?>
         <!-- Profile Header -->
         <div class="profile-header">
-            <div class="container">
-                <div class="row align-items-center">
-                    <div class="col-md-3 text-center">
+            <div style="max-width: 1200px; margin: 0 auto; padding: 0 20px;">
+                <div style="display: grid; grid-template-columns: auto 1fr; gap: 30px; align-items: center;">
+                    <div style="text-align: center;">
                         <?php if (!empty($nhanSu['avatar'])): ?>
                             <img src="<?php echo htmlspecialchars($nhanSu['avatar']); ?>" alt="Avatar" class="profile-avatar">
                         <?php else: ?>
-                            <div class="profile-avatar d-flex align-items-center justify-content-center bg-light">
-                                <i class="bi bi-person-fill" style="font-size: 4rem; color: #667eea;"></i>
+                            <div class="profile-avatar" style="display: flex; align-items: center; justify-content: center; background: rgba(45, 45, 45, 0.5);">
+                                <i class="bi bi-person-fill" style="font-size: 4rem; color: var(--accent-gold);"></i>
                             </div>
                         <?php endif; ?>
                     </div>
-                    <div class="col-md-9">
+                    <div>
                         <h2 class="mb-2"><?php echo htmlspecialchars($nhanSu['ho_ten'] ?? 'N/A'); ?></h2>
                         <p class="mb-1 fs-5">
                             <i class="bi bi-briefcase"></i> 
@@ -139,10 +185,10 @@
             </div>
         </div>
 
-        <div class="container mb-5">
-            <div class="row">
+        <div style="max-width: 1200px; margin: 0 auto; padding: 0 20px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
                 <!-- Thông tin cá nhân -->
-                <div class="col-md-6">
+                <div>
                     <div class="info-section">
                         <h5><i class="bi bi-person-badge"></i> Thông tin cá nhân</h5>
                         <div class="info-row">
@@ -195,7 +241,7 @@
                 </div>
 
                 <!-- Thông tin nghiệp vụ -->
-                <div class="col-md-6">
+                <div>
                     <div class="info-section">
                         <h5><i class="bi bi-award"></i> Trình độ & Chứng chỉ</h5>
                         <div class="info-row">
@@ -226,12 +272,11 @@
             </div>
 
             <!-- Thông tin tài khoản -->
-            <div class="row">
-                <div class="col-12">
-                    <div class="info-section">
-                        <h5><i class="bi bi-shield-lock"></i> Thông tin tài khoản</h5>
-                        <div class="row">
-                            <div class="col-md-6">
+            <div style="margin-top: 30px;">
+                <div class="info-section">
+                    <h5><i class="bi bi-shield-lock"></i> Thông tin tài khoản</h5>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div>
                                 <div class="info-row">
                                     <div class="info-label"><i class="bi bi-key"></i> Vai trò hệ thống:</div>
                                     <div class="info-value">
@@ -251,8 +296,8 @@
                                         ?>
                                     </div>
                                 </div>
-                            </div>
-                            <div class="col-md-6">
+                        </div>
+                        <div>
                                 <div class="info-row">
                                     <div class="info-label"><i class="bi bi-toggle-on"></i> Trạng thái:</div>
                                     <div class="info-value">
@@ -268,22 +313,19 @@
                                         <?php echo !empty($nhanSu['quyen_cap_cao']) ? '<span class="badge bg-warning text-dark">Có</span>' : '<span class="badge bg-secondary">Không</span>'; ?>
                                     </div>
                                 </div>
-                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- Action buttons -->
-            <div class="row no-print">
-                <div class="col-12 text-center mt-3">
-                    <a href="index.php?act=admin/nhanSu" class="btn btn-secondary btn-lg">
-                        <i class="bi bi-arrow-left"></i> Quay lại danh sách
-                    </a>
-                    <button onclick="window.print()" class="btn btn-primary btn-lg">
-                        <i class="bi bi-printer"></i> In sơ yếu lý lịch
-                    </button>
-                </div>
+            <div class="no-print" style="text-align: center; margin-top: 30px;">
+                <a href="index.php?act=admin/nhanSu" class="btn btn-secondary btn-lg">
+                    <i class="bi bi-arrow-left"></i> Quay lại danh sách
+                </a>
+                <button onclick="window.print()" class="btn btn-primary btn-lg">
+                    <i class="bi bi-printer"></i> In sơ yếu lý lịch
+                </button>
             </div>
         </div>
 
@@ -292,7 +334,8 @@
             <i class="bi bi-printer-fill" style="font-size: 1.5rem;"></i>
         </button>
     <?php endif; ?>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+</div>
+<?php
+$content = ob_get_clean();
+require __DIR__ . '/../layouts/aventura.php';
+?>

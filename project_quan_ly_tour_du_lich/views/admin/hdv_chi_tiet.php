@@ -1,20 +1,21 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chi tiết HDV - <?php echo htmlspecialchars($hdv['ho_ten'] ?? 'N/A'); ?></title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.9/index.global.min.css' rel='stylesheet' />
-    <style>
+<?php
+$pageTitle = 'Chi tiết HDV - ' . htmlspecialchars($hdv['ho_ten'] ?? 'N/A');
+$currentPage = 'nhanSu';
+ob_start();
+?>
+<link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.9/index.global.min.css' rel='stylesheet' />
+<style>
         .stat-card {
+            background: rgba(45, 45, 45, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             border-left: 4px solid;
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
             transition: all 0.3s;
         }
         .stat-card:hover {
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
             transform: translateY(-2px);
+            background: rgba(45, 45, 45, 0.6);
         }
         .stat-card.primary { border-left-color: #0d6efd; }
         .stat-card.success { border-left-color: #198754; }
@@ -27,23 +28,25 @@
         }
         
         .profile-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background: rgba(102, 126, 234, 0.3);
+            border: 1px solid rgba(102, 126, 234, 0.5);
+            color: var(--text-light);
             padding: 2rem;
-            border-radius: 10px 10px 0 0;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
         }
         
         .profile-avatar {
             width: 120px;
             height: 120px;
             border-radius: 50%;
-            background: white;
+            background: rgba(45, 45, 45, 0.5);
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 3rem;
-            color: #667eea;
-            border: 4px solid rgba(255,255,255,0.3);
+            color: var(--accent-gold);
+            border: 4px solid rgba(255, 255, 255, 0.3);
         }
         
         #calendar {
@@ -51,7 +54,7 @@
         }
         
         .timeline-item {
-            border-left: 2px solid #dee2e6;
+            border-left: 2px solid rgba(255, 255, 255, 0.2);
             padding-left: 1.5rem;
             padding-bottom: 1.5rem;
             position: relative;
@@ -61,7 +64,7 @@
             content: '';
             width: 12px;
             height: 12px;
-            background: #0d6efd;
+            background: #4da3ff;
             border-radius: 50%;
             position: absolute;
             left: -7px;
@@ -69,36 +72,109 @@
         }
         
         .review-card {
+            background: rgba(255, 193, 7, 0.1);
             border-left: 3px solid #ffc107;
-            background: #fffbf0;
+            border: 1px solid rgba(255, 193, 7, 0.3);
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+        }
+        .card {
+            background: rgba(45, 45, 45, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+        }
+        .card-header {
+            background: rgba(45, 45, 45, 0.7);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-light);
+        }
+        .card-body {
+            color: var(--text-light);
+        }
+        .table {
+            color: var(--text-light);
+        }
+        .table th {
+            background: rgba(45, 45, 45, 0.7);
+            color: var(--text-light);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .table td {
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .badge {
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+        .bg-info {
+            background: rgba(0, 123, 255, 0.3) !important;
+            color: #4da3ff !important;
+        }
+        .bg-warning {
+            background: rgba(255, 193, 7, 0.3) !important;
+            color: #ffc107 !important;
+        }
+        .bg-light {
+            background: rgba(248, 249, 250, 0.1) !important;
+            color: var(--text-light) !important;
+        }
+        .text-muted {
+            color: var(--text-muted) !important;
+        }
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+        }
+        .btn-light {
+            background: rgba(248, 249, 250, 0.2);
+            color: var(--text-light);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .btn-light:hover {
+            background: rgba(248, 249, 250, 0.3);
+        }
+        .btn-outline-light {
+            background: transparent;
+            color: var(--text-light);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .btn-outline-light:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .nav-tabs {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .nav-tabs .nav-link {
+            color: var(--text-muted);
+            border: 1px solid transparent;
+        }
+        .nav-tabs .nav-link.active {
+            background: rgba(45, 45, 45, 0.5);
+            border-color: rgba(255, 255, 255, 0.1) rgba(255, 255, 255, 0.1) transparent;
+            color: var(--text-light);
+        }
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .alert-warning {
+            background: rgba(255, 193, 7, 0.2);
+            border: 1px solid rgba(255, 193, 7, 0.5);
+            color: #ffc107;
         }
     </style>
-</head>
-<body class="bg-light">
-    <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="index.php?act=admin/dashboard">
-                <i class="bi bi-speedometer2"></i> Quản trị
-            </a>
-            <div class="collapse navbar-collapse">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="index.php?act=admin/nhanSu">
-                            <i class="bi bi-people"></i> Quản lý nhân sự
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="index.php?act=admin/hdv_advanced">
-                            <i class="bi bi-person-badge"></i> Quản lý HDV
-                        </a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
 
-    <div class="container-fluid mt-4">
+<div style="padding: 20px;">
         <?php if (!empty($hdv)): ?>
         
         <!-- Profile Header -->
@@ -417,10 +493,9 @@
             <i class="bi bi-exclamation-triangle"></i> Không tìm thấy thông tin HDV
         </div>
         <?php endif; ?>
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.9/index.global.min.js'></script>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.9/index.global.min.js'></script>
     <script>
         // Initialize FullCalendar
         document.addEventListener('DOMContentLoaded', function() {
@@ -461,5 +536,7 @@
             calendar.render();
         });
     </script>
-</body>
-</html>
+<?php
+$content = ob_get_clean();
+require __DIR__ . '/../layouts/aventura.php';
+?>

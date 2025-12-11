@@ -1,41 +1,188 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lịch làm việc HDV - Dạng bảng</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-</head>
-<body class="bg-light">
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="index.php?act=admin/dashboard">
-                <i class="bi bi-calendar-check"></i> Lịch làm việc HDV
-            </a>
-            <div class="ms-auto">
-                <a href="index.php?act=admin/hdv_advanced" class="btn btn-light btn-sm">
-                    <i class="bi bi-arrow-left"></i> Quay lại
-                </a>
-            </div>
+<?php
+$pageTitle = 'Lịch làm việc HDV - Dạng bảng';
+$currentPage = 'nhanSu';
+ob_start();
+?>
+<style>
+        .card {
+            background: rgba(45, 45, 45, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+        }
+        .card-header {
+            background: rgba(13, 110, 253, 0.3);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-light);
+        }
+        .card-body {
+            color: var(--text-light);
+        }
+        .table {
+            color: var(--text-light);
+        }
+        .table th {
+            background: rgba(45, 45, 45, 0.7);
+            color: var(--text-light);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .table td {
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .table tbody tr:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .table-bordered {
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .table-light {
+            background: rgba(45, 45, 45, 0.7) !important;
+        }
+        .form-control, .form-select {
+            background: rgba(45, 45, 45, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-light);
+        }
+        .form-control:focus, .form-select:focus {
+            background: rgba(45, 45, 45, 0.8);
+            border-color: var(--accent-gold);
+            color: var(--text-light);
+        }
+        .badge {
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+        .bg-info {
+            background: rgba(0, 123, 255, 0.3) !important;
+            color: #4da3ff !important;
+        }
+        .bg-success {
+            background: rgba(40, 167, 69, 0.3) !important;
+            color: #5cb85c !important;
+        }
+        .bg-warning {
+            background: rgba(255, 193, 7, 0.3) !important;
+            color: #ffc107 !important;
+        }
+        .bg-dark {
+            background: rgba(33, 37, 41, 0.3) !important;
+            color: #adb5bd !important;
+        }
+        .bg-primary {
+            background: rgba(13, 110, 253, 0.3) !important;
+            color: #4da3ff !important;
+        }
+        .bg-danger {
+            background: rgba(220, 53, 69, 0.3) !important;
+            color: #dc3545 !important;
+        }
+        .bg-secondary {
+            background: rgba(108, 117, 125, 0.3) !important;
+            color: #adb5bd !important;
+        }
+        .text-muted {
+            color: var(--text-muted) !important;
+        }
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+        }
+        .btn-primary {
+            background: rgba(13, 110, 253, 0.3);
+            color: #4da3ff;
+            border: 1px solid rgba(13, 110, 253, 0.5);
+        }
+        .btn-primary:hover {
+            background: rgba(13, 110, 253, 0.5);
+        }
+        .btn-light {
+            background: rgba(248, 249, 250, 0.2);
+            color: var(--text-light);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .btn-light:hover {
+            background: rgba(248, 249, 250, 0.3);
+        }
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.875rem;
+        }
+        .btn-secondary {
+            background: rgba(108, 117, 125, 0.3);
+            color: var(--text-light);
+            border: 1px solid rgba(108, 117, 125, 0.5);
+        }
+        .btn-secondary:hover {
+            background: rgba(108, 117, 125, 0.5);
+        }
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .alert-info {
+            background: rgba(0, 123, 255, 0.2);
+            border: 1px solid rgba(0, 123, 255, 0.5);
+            color: #4da3ff;
+        }
+        .modal-content {
+            background: rgba(45, 45, 45, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+        .modal-header {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .modal-title {
+            color: var(--text-light);
+        }
+        .btn-close {
+            filter: invert(1);
+        }
+        code {
+            background: rgba(45, 45, 45, 0.5);
+            color: var(--text-light);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+        pre {
+            background: rgba(45, 45, 45, 0.5);
+            color: var(--text-light);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+
+<div style="padding: 20px;">
+    <?php if (!empty($_SESSION['flash'])): $f = $_SESSION['flash']; ?>
+        <div class="alert alert-<?php echo htmlspecialchars($f['type']); ?>" style="display: flex; justify-content: space-between; align-items: center;">
+            <span><?php echo htmlspecialchars($f['message']); ?></span>
+            <button type="button" onclick="this.parentElement.style.display='none'" style="background: none; border: none; color: inherit; cursor: pointer; font-size: 1.2rem;">&times;</button>
         </div>
-    </nav>
+        <?php unset($_SESSION['flash']); endif; ?>
 
-    <div class="container mt-4">
-        <?php if (!empty($_SESSION['flash'])): $f = $_SESSION['flash']; ?>
-            <div class="alert alert-<?php echo htmlspecialchars($f['type']); ?> alert-dismissible fade show">
-                <?php echo htmlspecialchars($f['message']); ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-            <?php unset($_SESSION['flash']); endif; ?>
+    <div class="page-header-section" style="margin-bottom: 30px;">
+        <h1 style="margin: 0; font-size: 2rem; color: var(--text-light);">
+            <i class="bi bi-calendar-check" style="color: var(--accent-gold);"></i> Lịch làm việc tất cả HDV
+        </h1>
+    </div>
 
-        <div class="card">
-            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                <h5 class="mb-0"><i class="bi bi-calendar3"></i> Lịch làm việc tất cả HDV</h5>
-                <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#addScheduleModal">
-                    <i class="bi bi-plus-circle"></i> Thêm lịch
-                </button>
-            </div>
+    <div class="card">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <h5 style="margin: 0; color: var(--text-light);"><i class="bi bi-calendar3"></i> Lịch làm việc tất cả HDV</h5>
+            <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#addScheduleModal">
+                <i class="bi bi-plus-circle"></i> Thêm lịch
+            </button>
+        </div>
             <div class="card-body">
                 <!-- Bộ lọc -->
                 <div class="row mb-3">
@@ -297,5 +444,8 @@
                 });
         }
     </script>
-</body>
-</html>
+</div>
+<?php
+$content = ob_get_clean();
+require __DIR__ . '/../layouts/aventura.php';
+?>

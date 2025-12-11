@@ -3,88 +3,278 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'Admin') {
     header('Location: index.php?act=auth/login');
     exit;
 }
+$pageTitle = 'Danh Sách Khách Theo Tour';
+$currentPage = 'danh_sach_khach';
+ob_start();
 ?>
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Danh Sách Khách Theo Tour - Quản Lý Tour Du Lịch</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <style>
-        .page-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 2rem 0;
-            margin-bottom: 2rem;
-            border-radius: 0.5rem;
+<style>
+        .page-header-section {
+            background: rgba(45, 45, 45, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            padding: 40px;
+            margin-bottom: 40px;
+            backdrop-filter: blur(10px);
         }
         .stats-card {
             border-left: 4px solid;
             transition: all 0.3s;
-            border: none;
-            box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(45, 45, 45, 0.5);
+            backdrop-filter: blur(10px);
         }
         .stats-card:hover {
             transform: translateY(-4px);
-            box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
         }
         .stats-icon {
             width: 3rem;
             height: 3rem;
-            border-radius: 0.5rem;
+            border-radius: 4px;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 1.5rem;
         }
         .tour-info-card {
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            border-radius: 0.5rem;
-            padding: 2rem;
-            margin-bottom: 2rem;
-            border: 2px solid #dee2e6;
+            background: rgba(45, 45, 45, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            padding: 30px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
         }
         .customer-table-card {
-            border: none;
-            box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(45, 45, 45, 0.5);
+            backdrop-filter: blur(10px);
+        }
+        .table-custom {
+            color: var(--text-light);
         }
         .table-custom thead {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background: rgba(45, 45, 45, 0.7);
+            color: var(--text-light);
+        }
+        .table-custom thead th {
+            color: var(--text-light);
+            padding: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .table-custom tbody tr {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         }
         .table-custom tbody tr:hover {
-            background: #f8f9fa;
-            transform: scale(1.01);
-            box-shadow: 0 0.25rem 0.5rem rgba(0,0,0,0.1);
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .table-custom tbody td {
+            padding: 15px;
+            color: var(--text-light);
         }
         .status-badge {
-            padding: 0.5rem 1rem;
-            border-radius: 2rem;
+            padding: 8px 16px;
+            border-radius: 20px;
             font-weight: 500;
             font-size: 0.875rem;
         }
         .schedule-select-card {
-            background: white;
-            border-radius: 0.5rem;
-            padding: 1.5rem;
-            margin-bottom: 1rem;
-            border: 2px solid #e9ecef;
+            background: rgba(45, 45, 45, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            padding: 20px;
+            margin-bottom: 15px;
             transition: all 0.3s;
             text-decoration: none;
             display: block;
-            color: inherit;
+            color: var(--text-light);
+            backdrop-filter: blur(10px);
         }
         .schedule-select-card:hover {
-            border-color: #667eea;
-            box-shadow: 0 0.5rem 1rem rgba(102, 126, 234, 0.2);
+            border-color: var(--accent-gold);
+            box-shadow: 0 8px 16px rgba(255, 193, 7, 0.2);
             transform: translateX(8px);
         }
         .signature-section {
             margin-top: 3rem;
             display: none;
             page-break-inside: avoid;
+        }
+        .card {
+            background: rgba(45, 45, 45, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            backdrop-filter: blur(10px);
+        }
+        .card-header {
+            background: rgba(45, 45, 45, 0.7);
+            color: var(--text-light);
+            padding: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .card-body {
+            padding: 20px;
+            color: var(--text-light);
+        }
+        .badge {
+            padding: 5px 12px;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        .bg-primary { background: rgba(0, 123, 255, 0.3); color: #4da3ff; }
+        .bg-success { background: rgba(40, 167, 69, 0.3); color: #5cb85c; }
+        .bg-warning { background: rgba(255, 193, 7, 0.3); color: #ffc107; }
+        .bg-info { background: rgba(0, 123, 255, 0.3); color: #4da3ff; }
+        .bg-light { background: rgba(255, 255, 255, 0.1); color: var(--text-light); }
+        .text-dark { color: var(--text-light) !important; }
+        .text-success { color: #5cb85c !important; }
+        .text-warning { color: #ffc107 !important; }
+        .text-muted { color: var(--text-muted) !important; }
+        .alert {
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        .alert-success {
+            background: rgba(40, 167, 69, 0.2);
+            border: 1px solid rgba(40, 167, 69, 0.5);
+            color: #5cb85c;
+        }
+        .alert-danger {
+            background: rgba(220, 53, 69, 0.2);
+            border: 1px solid rgba(220, 53, 69, 0.5);
+            color: #dc3545;
+        }
+        .alert-warning {
+            background: rgba(255, 193, 7, 0.2);
+            border: 1px solid rgba(255, 193, 7, 0.5);
+            color: #ffc107;
+        }
+        .btn {
+            padding: 10px 20px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background: var(--accent-gold);
+            color: #000;
+        }
+        .btn-primary:hover {
+            background: #ffd700;
+        }
+        .btn-light {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-light);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .btn-light:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        .btn-outline-light {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-light);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .btn-outline-light:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        .btn-info {
+            background: rgba(0, 123, 255, 0.3);
+            color: #4da3ff;
+            border: 1px solid rgba(0, 123, 255, 0.5);
+        }
+        .btn-info:hover {
+            background: rgba(0, 123, 255, 0.5);
+        }
+        .btn-success {
+            background: rgba(40, 167, 69, 0.3);
+            color: #5cb85c;
+            border: 1px solid rgba(40, 167, 69, 0.5);
+        }
+        .btn-success:hover {
+            background: rgba(40, 167, 69, 0.5);
+        }
+        .btn-warning {
+            background: rgba(255, 193, 7, 0.3);
+            color: #ffc107;
+            border: 1px solid rgba(255, 193, 7, 0.5);
+        }
+        .btn-warning:hover {
+            background: rgba(255, 193, 7, 0.5);
+        }
+        .btn-danger {
+            background: rgba(220, 53, 69, 0.3);
+            color: #dc3545;
+            border: 1px solid rgba(220, 53, 69, 0.5);
+        }
+        .btn-danger:hover {
+            background: rgba(220, 53, 69, 0.5);
+        }
+        .btn-dark {
+            background: rgba(33, 37, 41, 0.3);
+            color: var(--text-light);
+            border: 1px solid rgba(33, 37, 41, 0.5);
+        }
+        .btn-dark:hover {
+            background: rgba(33, 37, 41, 0.5);
+        }
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.875rem;
+        }
+        .btn-lg {
+            padding: 12px 24px;
+            font-size: 1rem;
+        }
+        .btn-group {
+            display: inline-flex;
+            gap: 5px;
+        }
+        .row {
+            display: flex;
+            flex-wrap: wrap;
+            margin-left: -15px;
+            margin-right: -15px;
+        }
+        .row > * {
+            padding-left: 15px;
+            padding-right: 15px;
+        }
+        .col-md-3 { width: 25%; }
+        .col-lg-4 { width: 33.333333%; }
+        .col-lg-8 { width: 66.666667%; }
+        .g-3, .g-4 { gap: 1rem; }
+        .mb-0 { margin-bottom: 0; }
+        .mb-1 { margin-bottom: 0.25rem; }
+        .mb-2 { margin-bottom: 0.5rem; }
+        .mb-3 { margin-bottom: 1rem; }
+        .mb-4 { margin-bottom: 1.5rem; }
+        .mt-3 { margin-top: 1rem; }
+        .mt-4 { margin-top: 1.5rem; }
+        .px-4 { padding-left: 1.5rem; padding-right: 1.5rem; }
+        .py-4 { padding-top: 1.5rem; padding-bottom: 1.5rem; }
+        .p-0 { padding: 0; }
+        .d-flex { display: flex; }
+        .justify-content-between { justify-content: space-between; }
+        .align-items-center { align-items: center; }
+        .text-center { text-align: center; }
+        .text-end { text-align: right; }
+        .fw-bold { font-weight: 700; }
+        .fw-semibold { font-weight: 600; }
+        .small { font-size: 0.875rem; }
+        .lead { font-size: 1.1rem; }
+        .opacity-75 { opacity: 0.75; }
+        .opacity-25 { opacity: 0.25; }
+        .h-100 { height: 100%; }
+        .table-responsive {
+            overflow-x: auto;
         }
         @media print {
             .no-print {
@@ -93,7 +283,7 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'Admin') {
             body {
                 font-size: 11pt;
             }
-            .page-header {
+            .page-header-section {
                 background: none !important;
                 color: black !important;
                 border: 2px solid black;
@@ -130,69 +320,46 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'Admin') {
                 padding-top: 0.5rem;
             }
         }
+        @media (max-width: 768px) {
+            .col-md-3, .col-lg-4, .col-lg-8 {
+                width: 100%;
+            }
+        }
     </style>
-</head>
-<body class="bg-light">
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary no-print">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="index.php?act=admin/dashboard">
-                <i class="bi bi-speedometer2"></i> Quản trị
+
+<div style="padding: 20px;">
+    <!-- Page Header -->
+    <div class="page-header-section" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
+        <div>
+            <h1 style="margin: 0 0 10px 0; font-size: 2rem; color: var(--text-light);">
+                <i class="bi bi-people-fill" style="color: var(--accent-gold);"></i> Danh Sách Khách Theo Tour
+            </h1>
+            <p style="margin: 0; opacity: 0.8; color: var(--text-light);">Quản lý thông tin khách hàng, check-in và phân phòng</p>
+        </div>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;" class="no-print">
+            <a href="<?php echo BASE_URL; ?>index.php?act=admin/dashboard" style="background: rgba(255, 255, 255, 0.1); color: var(--text-light); padding: 10px 20px; border-radius: 4px; text-decoration: none; font-weight: 500; display: inline-flex; align-items: center; gap: 8px; border: 1px solid rgba(255, 255, 255, 0.2);">
+                <i class="bi bi-arrow-left"></i> Dashboard
             </a>
-            <div class="collapse navbar-collapse">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="index.php?act=admin/quanLyTour">
-                            <i class="bi bi-compass"></i> Tour
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link active" href="#">
-                            <i class="bi bi-people"></i> Danh sách khách
-                        </a>
-                    </li>
-                </ul>
-            </div>
+            <a href="<?php echo BASE_URL; ?>index.php?act=admin/quanLyTour" style="background: rgba(255, 255, 255, 0.1); color: var(--text-light); padding: 10px 20px; border-radius: 4px; text-decoration: none; font-weight: 500; display: inline-flex; align-items: center; gap: 8px; border: 1px solid rgba(255, 255, 255, 0.2);">
+                <i class="bi bi-compass"></i> Quản lý Tour
+            </a>
         </div>
-    </nav>
+    </div>
 
-    <div class="container-fluid px-4 py-4">
-        <!-- Page Header -->
-        <div class="page-header">
-            <div class="container-fluid">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h1 class="display-6 fw-bold mb-2">
-                            <i class="bi bi-people-fill"></i> Danh Sách Khách Theo Tour
-                        </h1>
-                        <p class="lead mb-0 opacity-75">Quản lý thông tin khách hàng, check-in và phân phòng</p>
-                    </div>
-                    <div class="d-flex gap-2 no-print">
-                        <a href="<?php echo BASE_URL; ?>index.php?act=admin/dashboard" class="btn btn-light">
-                            <i class="bi bi-arrow-left"></i> Dashboard
-                        </a>
-                        <a href="<?php echo BASE_URL; ?>index.php?act=admin/quanLyTour" class="btn btn-outline-light">
-                            <i class="bi bi-compass"></i> Quản lý Tour
-                        </a>
-                    </div>
-                </div>
-            </div>
+    <!-- Alerts -->
+    <?php if (isset($_SESSION['success'])): ?>
+        <div class="alert alert-success no-print" style="display: flex; justify-content: space-between; align-items: center;">
+            <div><i class="bi bi-check-circle"></i> <?php echo htmlspecialchars($_SESSION['success']); unset($_SESSION['success']); ?></div>
+            <button type="button" onclick="this.parentElement.remove()" style="background: none; border: none; color: inherit; font-size: 1.2rem; cursor: pointer;">&times;</button>
         </div>
-
-        <!-- Alerts -->
-        <?php if (isset($_SESSION['success'])): ?>
-            <div class="alert alert-success alert-dismissible fade show no-print" role="alert">
-                <i class="bi bi-check-circle"></i> <?php echo htmlspecialchars($_SESSION['success']); unset($_SESSION['success']); ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        <?php endif; ?>
-        
-        <?php if (isset($_SESSION['error'])): ?>
-            <div class="alert alert-danger alert-dismissible fade show no-print" role="alert">
-                <i class="bi bi-exclamation-triangle"></i> <?php echo htmlspecialchars($_SESSION['error']); unset($_SESSION['error']); ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        <?php endif; ?>
+    <?php endif; ?>
+    
+    <?php if (isset($_SESSION['error'])): ?>
+        <div class="alert alert-danger no-print" style="display: flex; justify-content: space-between; align-items: center;">
+            <div><i class="bi bi-exclamation-triangle"></i> <?php echo htmlspecialchars($_SESSION['error']); unset($_SESSION['error']); ?></div>
+            <button type="button" onclick="this.parentElement.remove()" style="background: none; border: none; color: inherit; font-size: 1.2rem; cursor: pointer;">&times;</button>
+        </div>
+    <?php endif; ?>
         
         <?php if ($lichKhoiHanh && $tour): ?>
             <!-- Tour Info -->
@@ -479,8 +646,12 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'Admin') {
                 </div>
             </div>
         <?php endif; ?>
-    </div>
+</div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+<script>
+    // Print functionality preserved
+</script>
+<?php
+$content = ob_get_clean();
+require __DIR__ . '/../layouts/aventura.php';
+?>

@@ -8,6 +8,24 @@ require_once __DIR__ . '/../models/DuToanTour.php';
 require_once __DIR__ . '/../models/ChiPhiThucTe.php';
 
 class BaoCaoTaiChinhController {
+        // Hiển thị thu chi từng tour
+        public function thuChiTour() {
+            // Lấy danh sách tour
+            $tours = $this->tourModel->getAll();
+            // Lấy tổng thu chi từng tour
+            $thuChiTours = [];
+            foreach ($tours as $tour) {
+                $tongThu = $this->giaoDichModel->getTongThuByTourId($tour['tour_id']);
+                $tongChi = $this->giaoDichModel->getTongChiByTourId($tour['tour_id']);
+                $thuChiTours[] = [
+                    'tour' => $tour,
+                    'tong_thu' => $tongThu,
+                    'tong_chi' => $tongChi,
+                    'loi_nhuan' => $tongThu - $tongChi
+                ];
+            }
+            require __DIR__ . '/../views/admin/bao_cao_tai_chinh/thu_chi_tour.php';
+        }
     private $giaoDichModel;
     private $tourModel;
     private $bookingModel;
@@ -459,6 +477,24 @@ class BaoCaoTaiChinhController {
                 ]
             ];
             
+            // Chuẩn hóa dữ liệu cho view
+            $chiPhiSoSanh = [];
+            foreach ($soSanh as $loai => $cp) {
+                $chenhLech = $cp['thuc_te'] - $cp['du_toan'];
+                $ghiChu = '';
+                if ($chenhLech < 0) {
+                    $ghiChu = 'Tiết kiệm';
+                } elseif ($chenhLech > 0) {
+                    $ghiChu = 'Vượt dự toán';
+                }
+                $chiPhiSoSanh[] = [
+                    'loai_chi_phi' => $loai,
+                    'du_toan' => $cp['du_toan'],
+                    'thuc_te' => $cp['thuc_te'],
+                    'chenh_lech' => $chenhLech,
+                    'ghi_chu' => $ghiChu
+                ];
+            }
             require __DIR__ . '/../views/admin/bao_cao_tai_chinh/so_sanh_chi_tiet.php';
         } else {
             // Tổng quan các dự toán có cảnh báo
@@ -568,7 +604,7 @@ class BaoCaoTaiChinhController {
                 'lich_su_thanh_toan' => $lich_su
             ];
         }
-        require __DIR__ . '/../views/admin/bao_cao_tai_chinh/cong_no.php';
+        require __DIR__ . '/../views/admin/bao_cao_tai_chinh/cong_no_khach_hang.php';
     }
 
     // Hiển thị công nợ nhà cung cấp

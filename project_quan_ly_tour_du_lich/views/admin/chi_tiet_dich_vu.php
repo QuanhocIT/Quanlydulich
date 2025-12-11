@@ -1,53 +1,164 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chi tiết dịch vụ - Admin</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="<?php echo BASE_URL; ?>public/css/style.css">
-</head>
-<body>
 <?php
-    $statusMap = [
-        'ChoXacNhan' => ['text' => 'Chờ xác nhận', 'class' => 'warning'],
-        'DaXacNhan' => ['text' => 'Đã xác nhận', 'class' => 'success'],
-        'TuChoi' => ['text' => 'Từ chối', 'class' => 'danger'],
-        'HoanTat' => ['text' => 'Hoàn tất', 'class' => 'info'],
-        'Huy' => ['text' => 'Hủy', 'class' => 'secondary'],
-    ];
-    $loaiDichVuMap = [
-        'Xe' => 'Xe',
-        'KhachSan' => 'Khách sạn',
-        'Ve' => 'Vé',
-        'VeMayBay' => 'Vé máy bay',
-        'NhaHang' => 'Nhà hàng',
-        'DiemThamQuan' => 'Điểm tham quan',
-        'Visa' => 'Visa',
-        'BaoHiem' => 'Bảo hiểm',
-        'Khac' => 'Khác'
-    ];
-    $nccId = $_GET['ncc_id'] ?? $dichVu['nha_cung_cap_id'] ?? null;
+$statusMap = [
+    'ChoXacNhan' => ['text' => 'Chờ xác nhận', 'class' => 'warning'],
+    'DaXacNhan' => ['text' => 'Đã xác nhận', 'class' => 'success'],
+    'TuChoi' => ['text' => 'Từ chối', 'class' => 'danger'],
+    'HoanTat' => ['text' => 'Hoàn tất', 'class' => 'info'],
+    'Huy' => ['text' => 'Hủy', 'class' => 'secondary'],
+];
+$loaiDichVuMap = [
+    'Xe' => 'Xe',
+    'KhachSan' => 'Khách sạn',
+    'Ve' => 'Vé',
+    'VeMayBay' => 'Vé máy bay',
+    'NhaHang' => 'Nhà hàng',
+    'DiemThamQuan' => 'Điểm tham quan',
+    'Visa' => 'Visa',
+    'BaoHiem' => 'Bảo hiểm',
+    'Khac' => 'Khác'
+];
+$nccId = $_GET['ncc_id'] ?? $dichVu['nha_cung_cap_id'] ?? null;
+$pageTitle = 'Chi tiết dịch vụ';
+$currentPage = 'nha_cung_cap';
+ob_start();
 ?>
-<div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h3 mb-0"><i class="bi bi-info-circle"></i> Chi tiết dịch vụ</h1>
-        <a href="index.php?act=admin/nhaCungCap<?php echo $nccId ? '&id=' . $nccId : ''; ?>" class="btn btn-outline-secondary">
+<style>
+    .info-card {
+        background: rgba(45, 45, 45, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 2px;
+        padding: 25px;
+        margin-bottom: 30px;
+        backdrop-filter: blur(10px);
+    }
+    .info-card .card-header {
+        background: rgba(0, 123, 255, 0.3);
+        color: var(--text-light);
+        padding: 20px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .info-card .card-body {
+        padding: 20px;
+        color: var(--text-light);
+    }
+    .badge {
+        padding: 5px 12px;
+        border-radius: 4px;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+    .bg-info { background: rgba(0, 123, 255, 0.3); color: #4da3ff; }
+    .bg-success { background: rgba(40, 167, 69, 0.3); color: #5cb85c; }
+    .bg-warning { background: rgba(255, 193, 7, 0.3); color: #ffc107; }
+    .bg-danger { background: rgba(220, 53, 69, 0.3); color: #dc3545; }
+    .bg-secondary { background: rgba(108, 117, 125, 0.3); color: #adb5bd; }
+    .text-success { color: #5cb85c !important; }
+    .text-muted { color: var(--text-muted) !important; }
+    .alert {
+        padding: 15px;
+        border-radius: 4px;
+        margin-bottom: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .alert-success {
+        background: rgba(40, 167, 69, 0.2);
+        border: 1px solid rgba(40, 167, 69, 0.5);
+        color: #5cb85c;
+    }
+    .alert-danger {
+        background: rgba(220, 53, 69, 0.2);
+        border: 1px solid rgba(220, 53, 69, 0.5);
+        color: #dc3545;
+    }
+    .btn {
+        padding: 10px 20px;
+        border-radius: 4px;
+        border: none;
+        cursor: pointer;
+        font-weight: 500;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s;
+    }
+    .btn-outline-secondary {
+        background: rgba(108, 117, 125, 0.3);
+        color: var(--text-light);
+        border: 1px solid rgba(108, 117, 125, 0.5);
+    }
+    .btn-outline-secondary:hover {
+        background: rgba(108, 117, 125, 0.5);
+    }
+    .row {
+        display: flex;
+        flex-wrap: wrap;
+        margin-left: -15px;
+        margin-right: -15px;
+    }
+    .row > * {
+        padding-left: 15px;
+        padding-right: 15px;
+    }
+    .col-lg-4 { width: 33.333333%; }
+    .col-lg-8 { width: 66.666667%; }
+    .mb-0 { margin-bottom: 0; }
+    .mb-1 { margin-bottom: 0.25rem; }
+    .mb-2 { margin-bottom: 0.5rem; }
+    .mb-3 { margin-bottom: 1rem; }
+    .mb-4 { margin-bottom: 1.5rem; }
+    .py-4 { padding-top: 1.5rem; padding-bottom: 1.5rem; }
+    .d-flex { display: flex; }
+    .justify-content-between { justify-content: space-between; }
+    .align-items-center { align-items: center; }
+    .fw-bold { font-weight: 700; }
+    .fs-5 { font-size: 1.25rem; }
+    .fs-6 { font-size: 1rem; }
+    .card {
+        background: rgba(45, 45, 45, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+        backdrop-filter: blur(10px);
+    }
+    .card-header {
+        background: rgba(0, 123, 255, 0.3);
+        color: var(--text-light);
+        padding: 20px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .card-body {
+        padding: 20px;
+        color: var(--text-light);
+    }
+    @media (max-width: 992px) {
+        .col-lg-4, .col-lg-8 {
+            width: 100%;
+        }
+    }
+</style>
+
+<div style="padding: 20px;">
+    <div class="page-header-section" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; margin-bottom: 30px;">
+        <h1 style="margin: 0; font-size: 2rem; color: var(--text-light);">
+            <i class="bi bi-info-circle" style="color: var(--accent-gold);"></i> Chi tiết dịch vụ
+        </h1>
+        <a href="index.php?act=admin/nhaCungCap<?php echo $nccId ? '&id=' . $nccId : ''; ?>" style="background: rgba(108, 117, 125, 0.3); color: var(--text-light); padding: 10px 20px; border-radius: 4px; text-decoration: none; font-weight: 500; display: inline-flex; align-items: center; gap: 8px; border: 1px solid rgba(108, 117, 125, 0.5);">
             <i class="bi bi-arrow-left"></i> Quay lại
         </a>
     </div>
 
     <?php if (isset($_SESSION['success'])): ?>
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <i class="bi bi-check-circle"></i> <?php echo $_SESSION['success']; unset($_SESSION['success']); ?>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <div class="alert alert-success">
+            <div><i class="bi bi-check-circle"></i> <?php echo $_SESSION['success']; unset($_SESSION['success']); ?></div>
+            <button type="button" onclick="this.parentElement.remove()" style="background: none; border: none; color: inherit; font-size: 1.2rem; cursor: pointer;">&times;</button>
         </div>
     <?php endif; ?>
     <?php if (isset($_SESSION['error'])): ?>
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <i class="bi bi-exclamation-triangle"></i> <?php echo $_SESSION['error']; unset($_SESSION['error']); ?>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <div class="alert alert-danger">
+            <div><i class="bi bi-exclamation-triangle"></i> <?php echo $_SESSION['error']; unset($_SESSION['error']); ?></div>
+            <button type="button" onclick="this.parentElement.remove()" style="background: none; border: none; color: inherit; font-size: 1.2rem; cursor: pointer;">&times;</button>
         </div>
     <?php endif; ?>
 
@@ -210,8 +321,8 @@
         </div>
     </div>
 </div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+<?php
+$content = ob_get_clean();
+require __DIR__ . '/../layouts/aventura.php';
+?>
 

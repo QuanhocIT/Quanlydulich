@@ -3,25 +3,22 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'Admin') {
     header('Location: index.php?act=auth/login');
     exit;
 }
+$pageTitle = 'Check-in Khách';
+$currentPage = 'checkin';
+ob_start();
 ?>
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Check-in Khách - Quản Lý Tour Du Lịch</title>
-    <link rel="stylesheet" href="public/assets/css/admin.css">
-    <style>
+<style>
         .checkin-container {
             max-width: 800px;
             margin: 20px auto;
             padding: 20px;
         }
         .checkin-form {
-            background: #fff;
+            background: rgba(45, 45, 45, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-radius: 4px;
+            backdrop-filter: blur(10px);
         }
         .form-group {
             margin-bottom: 20px;
@@ -30,16 +27,26 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'Admin') {
             display: block;
             margin-bottom: 5px;
             font-weight: 600;
-            color: #333;
+            color: var(--text-light);
         }
         .form-group input,
         .form-group select,
         .form-group textarea {
             width: 100%;
             padding: 10px;
-            border: 1px solid #ddd;
+            border: 1px solid rgba(255, 255, 255, 0.2);
             border-radius: 4px;
             font-size: 14px;
+            background: rgba(30, 30, 30, 0.7);
+            color: var(--text-light);
+        }
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            background: rgba(30, 30, 30, 0.9);
+            border-color: var(--accent-gold);
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(255, 193, 7, 0.2);
         }
         .form-group textarea {
             min-height: 80px;
@@ -51,58 +58,63 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'Admin') {
             gap: 15px;
         }
         .booking-info {
-            background: #f8f9fa;
-            padding: 15px;
+            background: rgba(45, 45, 45, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 20px;
             border-radius: 4px;
             margin-bottom: 20px;
+            backdrop-filter: blur(10px);
         }
         .booking-info h3 {
             margin: 0 0 10px 0;
             font-size: 16px;
-            color: #333;
+            color: var(--text-light);
         }
         .booking-info p {
             margin: 5px 0;
             font-size: 14px;
+            color: var(--text-light);
         }
         .btn-submit {
-            background: #28a745;
-            color: white;
+            background: rgba(40, 167, 69, 0.3);
+            color: #5cb85c;
             padding: 12px 30px;
-            border: none;
+            border: 1px solid rgba(40, 167, 69, 0.5);
             border-radius: 4px;
             font-size: 16px;
             cursor: pointer;
             margin-right: 10px;
+            font-weight: 500;
+        }
+        .btn-submit:hover {
+            background: rgba(40, 167, 69, 0.5);
         }
         .btn-cancel {
-            background: #6c757d;
-            color: white;
+            background: rgba(108, 117, 125, 0.3);
+            color: var(--text-light);
             padding: 12px 30px;
-            border: none;
+            border: 1px solid rgba(108, 117, 125, 0.5);
             border-radius: 4px;
             font-size: 16px;
             cursor: pointer;
             text-decoration: none;
             display: inline-block;
-        }
-        .btn-submit:hover {
-            background: #218838;
+            font-weight: 500;
         }
         .btn-cancel:hover {
-            background: #5a6268;
+            background: rgba(108, 117, 125, 0.5);
         }
         .checkin-status {
-            background: #d4edda;
-            color: #155724;
+            background: rgba(40, 167, 69, 0.2);
+            color: #5cb85c;
             padding: 15px;
             border-radius: 4px;
             margin-bottom: 20px;
-            border-left: 4px solid #28a745;
+            border-left: 4px solid #5cb85c;
         }
     </style>
-</head>
-<body>
+
+<div style="padding: 20px;">
     <div class="checkin-container">
         <div style="margin-bottom: 20px;">
             <a href="<?php echo BASE_URL; ?>index.php?act=admin/dashboard" style="color: #007bff; text-decoration: none;">← Dashboard</a> | 
@@ -211,5 +223,8 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'Admin') {
             </div>
         <?php endif; ?>
     </div>
-</body>
-</html>
+</div>
+<?php
+$content = ob_get_clean();
+require __DIR__ . '/../layouts/aventura.php';
+?>

@@ -91,21 +91,16 @@ class NguoiDung
 
         $sql = "SELECT * FROM nguoi_dung WHERE 1=1";
         $params = [];
-        
-        // Xử lý Tìm kiếm (Search)
         if (!empty($search)) {
-            // Tìm kiếm theo tên đăng nhập, họ tên hoặc email
             $sql .= " AND (ten_dang_nhap LIKE :search OR ho_ten LIKE :search OR email LIKE :search)";
             $params[':search'] = '%' . $search . '%';
         }
-        
-        // Xử lý Lọc (Filter) theo vai trò
         if (!empty($role)) {
             $sql .= " AND vai_tro = :role";
             $params[':role'] = $role;
         }
-        
         $sql .= " ORDER BY id DESC";
+        error_log('DEBUG: SQL = ' . $sql . ' | Params = ' . json_encode($params));
 
         try {
             // SỬA LỖI: Sử dụng $this->conn thay vì $this->db

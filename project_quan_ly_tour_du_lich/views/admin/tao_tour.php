@@ -1,27 +1,25 @@
-<?php $isCapNhat = isset($tour) && isset($tour['tour_id']); ?>
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo $isCapNhat ? 'Sửa tour' : 'Thêm tour mới'; ?> - Quản lý Tour</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <style>
+<?php 
+$isCapNhat = isset($tour) && isset($tour['tour_id']); 
+$pageTitle = $isCapNhat ? 'Sửa tour' : 'Thêm tour mới';
+$currentPage = 'tour';
+ob_start();
+?>
+<style>
         .form-section {
-            background: white;
-            border-radius: 0.5rem;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
+            background: rgba(45, 45, 45, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            padding: 25px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
         }
         .form-section-title {
             font-size: 1.1rem;
             font-weight: 600;
-            color: #0d6efd;
-            margin-bottom: 1rem;
-            padding-bottom: 0.5rem;
-            border-bottom: 2px solid #e9ecef;
+            color: var(--accent-gold);
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
         .required-label::after {
             content: " *";
@@ -30,104 +28,301 @@
         .image-preview {
             max-width: 200px;
             max-height: 200px;
-            border-radius: 0.375rem;
-            border: 2px dashed #dee2e6;
-            padding: 0.5rem;
+            border-radius: 4px;
+            border: 2px dashed rgba(255, 255, 255, 0.2);
+            padding: 10px;
         }
         .custom-file-upload {
-            border: 2px dashed #0d6efd;
+            border: 2px dashed var(--accent-gold);
             display: inline-block;
-            padding: 2rem;
+            padding: 30px;
             cursor: pointer;
             text-align: center;
-            border-radius: 0.375rem;
-            background: #f8f9fa;
+            border-radius: 4px;
+            background: rgba(45, 45, 45, 0.3);
             transition: all 0.3s;
             width: 100%;
+            color: var(--text-light);
         }
         .custom-file-upload:hover {
-            background: #e7f1ff;
-            border-color: #0a58ca;
+            background: rgba(45, 45, 45, 0.5);
+            border-color: #ffd700;
         }
         .btn-action-group {
             position: sticky;
             bottom: 0;
-            background: white;
-            padding: 1rem 0;
-            border-top: 1px solid #dee2e6;
-            margin-top: 2rem;
+            background: rgba(30, 30, 30, 0.95);
+            padding: 20px 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 30px;
+            backdrop-filter: blur(10px);
         }
         .lich-trinh-item {
-            border: 1px solid #dee2e6;
+            border: 1px solid rgba(255, 255, 255, 0.1);
             transition: all 0.3s;
+            background: rgba(45, 45, 45, 0.3);
+            border-radius: 4px;
         }
         .lich-trinh-item:hover {
-            box-shadow: 0 0.25rem 0.5rem rgba(0,0,0,0.1);
-            border-color: #0d6efd;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            border-color: var(--accent-gold);
         }
         .lich-trinh-item .card-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background: rgba(45, 45, 45, 0.7);
+            color: var(--text-light);
             border: none;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
         .lich-trinh-item .card-header .btn-danger {
-            background: rgba(220, 53, 69, 0.9);
-            border: none;
+            background: rgba(220, 53, 69, 0.3);
+            border: 1px solid rgba(220, 53, 69, 0.5);
+            color: #dc3545;
         }
         .lich-trinh-item .card-header .btn-danger:hover {
-            background: #dc3545;
+            background: rgba(220, 53, 69, 0.5);
+        }
+        
+        /* Form elements */
+        .form-control, .form-select {
+            background: rgba(30, 30, 30, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: var(--text-light);
+            padding: 10px 15px;
+            border-radius: 4px;
+        }
+        .form-control:focus, .form-select:focus {
+            background: rgba(30, 30, 30, 0.9);
+            border-color: var(--accent-gold);
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(255, 193, 7, 0.2);
+            color: var(--text-light);
+        }
+        .form-label {
+            color: var(--text-light);
+            margin-bottom: 8px;
+            display: block;
+        }
+        .input-group-text {
+            background: rgba(45, 45, 45, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: var(--text-light);
+        }
+        .list-group-item {
+            background: rgba(45, 45, 45, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-light);
+        }
+        .img-thumbnail {
+            background: rgba(30, 30, 30, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        /* Buttons */
+        .btn {
+            padding: 10px 20px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background: var(--accent-gold);
+            color: #000;
+        }
+        .btn-primary:hover {
+            background: #ffd700;
+            transform: translateY(-2px);
+        }
+        .btn-outline-primary {
+            background: rgba(0, 123, 255, 0.3);
+            color: #4da3ff;
+            border: 1px solid rgba(0, 123, 255, 0.5);
+        }
+        .btn-outline-primary:hover {
+            background: rgba(0, 123, 255, 0.5);
+        }
+        .btn-outline-secondary {
+            background: rgba(108, 117, 125, 0.3);
+            color: var(--text-light);
+            border: 1px solid rgba(108, 117, 125, 0.5);
+        }
+        .btn-outline-secondary:hover {
+            background: rgba(108, 117, 125, 0.5);
+        }
+        .btn-outline-danger {
+            background: rgba(220, 53, 69, 0.3);
+            color: #dc3545;
+            border: 1px solid rgba(220, 53, 69, 0.5);
+        }
+        .btn-outline-danger:hover {
+            background: rgba(220, 53, 69, 0.5);
+        }
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.875rem;
+        }
+        .btn-lg {
+            padding: 12px 24px;
+            font-size: 1rem;
+        }
+        
+        /* Badges */
+        .badge {
+            padding: 5px 12px;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        .bg-primary { background: rgba(0, 123, 255, 0.3); color: #4da3ff; }
+        
+        /* Alerts */
+        .alert {
+            background: rgba(0, 123, 255, 0.2);
+            border: 1px solid rgba(0, 123, 255, 0.5);
+            color: #4da3ff;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        .alert-danger {
+            background: rgba(220, 53, 69, 0.2);
+            border-color: rgba(220, 53, 69, 0.5);
+            color: #dc3545;
+        }
+        .alert-warning {
+            background: rgba(255, 193, 7, 0.2);
+            border-color: rgba(255, 193, 7, 0.5);
+            color: #ffc107;
+        }
+        .alert-info {
+            background: rgba(0, 123, 255, 0.2);
+            border-color: rgba(0, 123, 255, 0.5);
+            color: #4da3ff;
+        }
+        .alert-heading {
+            color: inherit;
+            margin-bottom: 10px;
+        }
+        
+        /* Card */
+        .card {
+            background: rgba(45, 45, 45, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+        .card-body {
+            padding: 20px;
+            color: var(--text-light);
+        }
+        
+        /* Text colors */
+        .text-primary { color: #4da3ff !important; }
+        .text-muted { color: var(--text-muted) !important; }
+        .text-danger { color: #dc3545 !important; }
+        
+        /* Bootstrap grid compatibility */
+        .row {
+            display: flex;
+            flex-wrap: wrap;
+            margin-left: -15px;
+            margin-right: -15px;
+        }
+        .row > * {
+            padding-left: 15px;
+            padding-right: 15px;
+        }
+        .col-12 { width: 100%; }
+        .col-md-4 { width: 33.333333%; }
+        .col-md-6 { width: 50%; }
+        .col-md-8 { width: 66.666667%; }
+        .col-lg-4 { width: 33.333333%; }
+        .col-lg-8 { width: 66.666667%; }
+        .g-3 { gap: 1rem; }
+        .mb-0 { margin-bottom: 0; }
+        .mb-1 { margin-bottom: 0.25rem; }
+        .mb-2 { margin-bottom: 0.5rem; }
+        .mb-3 { margin-bottom: 1rem; }
+        .mt-1 { margin-top: 0.25rem; }
+        .px-0 { padding-left: 0; padding-right: 0; }
+        .ps-3 { padding-left: 1rem; }
+        .w-100 { width: 100%; }
+        .small { font-size: 0.875rem; }
+        .fw-semibold { font-weight: 600; }
+        .list-group-flush .list-group-item {
+            border-left: none;
+            border-right: none;
+            border-radius: 0;
+        }
+        .list-group-flush .list-group-item:first-child {
+            border-top: none;
+        }
+        .list-group-flush .list-group-item:last-child {
+            border-bottom: none;
+        }
+        .form-check {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .form-check-input {
+            width: auto;
+            margin: 0;
+        }
+        .form-check-label {
+            color: var(--text-light);
+            margin: 0;
+        }
+        hr {
+            border-color: rgba(255, 255, 255, 0.1);
+            margin: 15px 0;
+        }
+        
+        /* Responsive */
+        @media (max-width: 992px) {
+            div[style*="grid-template-columns: 2fr 1fr"] {
+                grid-template-columns: 1fr !important;
+            }
+            .col-md-4, .col-md-6, .col-md-8, .col-lg-4, .col-lg-8 {
+                width: 100%;
+            }
         }
     </style>
-</head>
-<body class="bg-light">
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="index.php?act=admin/dashboard">
-                <i class="bi bi-speedometer2"></i> Quản trị
-            </a>
-            <div class="collapse navbar-collapse">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link active" href="index.php?act=admin/quanLyTour">
-                            <i class="bi bi-compass"></i> Tour
-                        </a>
-                    </li>
-                </ul>
-            </div>
+<div style="padding: 20px;">
+    <!-- Header -->
+    <div class="page-header-section" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; margin-bottom: 30px;">
+        <div>
+            <h1 style="margin: 0 0 10px 0; font-size: 2rem; color: var(--text-light);">
+                <i class="bi bi-<?php echo $isCapNhat ? 'pencil-square' : 'plus-circle'; ?>" style="color: var(--accent-gold);"></i>
+                <?php echo $isCapNhat ? 'Sửa thông tin tour' : 'Thêm tour mới'; ?>
+            </h1>
+            <p style="margin: 0; opacity: 0.8; color: var(--text-light);">
+                <?php echo $isCapNhat ? 'Cập nhật thông tin chi tiết của tour' : 'Điền đầy đủ thông tin để tạo tour mới'; ?>
+            </p>
         </div>
-    </nav>
+        <a href="<?php echo BASE_URL; ?>index.php?act=admin/quanLyTour" style="background: rgba(255, 255, 255, 0.1); color: var(--text-light); padding: 10px 20px; border-radius: 4px; text-decoration: none; font-weight: 500; display: inline-flex; align-items: center; gap: 8px; border: 1px solid rgba(255, 255, 255, 0.2);">
+            <i class="bi bi-arrow-left"></i> Quay lại danh sách
+        </a>
+    </div>
 
-    <div class="container-fluid px-4 pb-5">
-        <!-- Header -->
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <div>
-                <h3 class="mb-1">
-                    <i class="bi bi-<?php echo $isCapNhat ? 'pencil-square' : 'plus-circle'; ?> text-primary"></i>
-                    <?php echo $isCapNhat ? 'Sửa thông tin tour' : 'Thêm tour mới'; ?>
-                </h3>
-                <p class="text-muted mb-0">
-                    <?php echo $isCapNhat ? 'Cập nhật thông tin chi tiết của tour' : 'Điền đầy đủ thông tin để tạo tour mới'; ?>
-                </p>
-            </div>
-            <a href="<?php echo BASE_URL; ?>index.php?act=admin/quanLyTour" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left"></i> Quay lại danh sách
-            </a>
+    <!-- Alerts -->
+    <?php if (isset($_SESSION['error'])): ?>
+        <div style="background: rgba(220, 53, 69, 0.2); border: 1px solid rgba(220, 53, 69, 0.5); color: #dc3545; padding: 15px; border-radius: 4px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+            <div><i class="bi bi-exclamation-triangle"></i> <?php echo htmlspecialchars($_SESSION['error']); unset($_SESSION['error']); ?></div>
+            <button type="button" onclick="this.parentElement.remove()" style="background: none; border: none; color: inherit; font-size: 1.2rem; cursor: pointer;">&times;</button>
         </div>
-
-        <!-- Alerts -->
-        <?php if (isset($_SESSION['error'])): ?>
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                <i class="bi bi-exclamation-triangle"></i> <?php echo htmlspecialchars($_SESSION['error']); unset($_SESSION['error']); ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        <?php endif; ?>
-        
-        <?php if (isset($_SESSION['image_upload_error'])): ?>
-            <div class="alert alert-warning alert-dismissible fade show" role="alert">
-                <i class="bi bi-exclamation-circle"></i> <?php echo htmlspecialchars($_SESSION['image_upload_error']); unset($_SESSION['image_upload_error']); ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        <?php endif; ?>
+    <?php endif; ?>
+    
+    <?php if (isset($_SESSION['image_upload_error'])): ?>
+        <div style="background: rgba(255, 193, 7, 0.2); border: 1px solid rgba(255, 193, 7, 0.5); color: #ffc107; padding: 15px; border-radius: 4px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+            <div><i class="bi bi-exclamation-circle"></i> <?php echo htmlspecialchars($_SESSION['image_upload_error']); unset($_SESSION['image_upload_error']); ?></div>
+            <button type="button" onclick="this.parentElement.remove()" style="background: none; border: none; color: inherit; font-size: 1.2rem; cursor: pointer;">&times;</button>
+        </div>
+    <?php endif; ?>
 
         <!-- Form -->
 
@@ -139,8 +334,8 @@
                 <input type="hidden" name="id" value="<?php echo htmlspecialchars($tour['tour_id']); ?>">
             <?php endif; ?>
 
-            <div class="row">
-                <div class="col-lg-8">
+    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 30px; margin-top: 30px;">
+        <div>
                     <!-- Thông tin cơ bản -->
                     <div class="form-section">
                         <div class="form-section-title">
@@ -273,9 +468,9 @@
                             <?php if (!empty($lichTrinhList)): ?>
                                 <?php foreach ($lichTrinhList as $idx => $lt): ?>
                                     <div class="lich-trinh-item card mb-3" data-index="<?php echo $idx; ?>">
-                                        <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                                            <span class="fw-semibold">
-                                                <i class="bi bi-calendar-day text-primary"></i> 
+                                        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; padding: 15px;">
+                                            <span style="font-weight: 600; color: var(--text-light);">
+                                                <i class="bi bi-calendar-day" style="color: var(--accent-gold);"></i> 
                                                 Ngày <?php echo $lt['ngay_thu'] ?? ($idx + 1); ?>
                                             </span>
                                             <button type="button" class="btn btn-sm btn-danger" onclick="xoaLichTrinh(this)">
@@ -341,9 +536,9 @@
                             </div>
                         </div>
                     </div>
-                </div>
+        </div>
 
-                <div class="col-lg-4">
+        <div>
                 <!-- Hình ảnh -->
                 <div class="form-section">
                     <div class="form-section-title">
@@ -410,30 +605,27 @@
                             <li>Giá cả minh bạch, rõ ràng</li>
                         </ul>
                     </div>
-                </div>
-            </div>
-
-            <!-- Action Buttons -->
-            <div class="btn-action-group">
-                <div class="container-fluid px-0">
-                    <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-primary btn-lg">
-                            <i class="bi bi-check-circle"></i> <?php echo $isCapNhat ? 'Cập nhật tour' : 'Tạo tour mới'; ?>
-                        </button>
-                        <button type="reset" class="btn btn-outline-secondary btn-lg">
-                            <i class="bi bi-arrow-counterclockwise"></i> Đặt lại
-                        </button>
-                        <a href="<?php echo BASE_URL; ?>index.php?act=admin/quanLyTour" class="btn btn-outline-danger btn-lg">
-                            <i class="bi bi-x-circle"></i> Hủy bỏ
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </form>
+        </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
+    <!-- Action Buttons -->
+    <div class="btn-action-group">
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button type="submit" class="btn btn-primary btn-lg">
+                <i class="bi bi-check-circle"></i> <?php echo $isCapNhat ? 'Cập nhật tour' : 'Tạo tour mới'; ?>
+            </button>
+            <button type="reset" class="btn btn-outline-secondary btn-lg">
+                <i class="bi bi-arrow-counterclockwise"></i> Đặt lại
+            </button>
+            <a href="<?php echo BASE_URL; ?>index.php?act=admin/quanLyTour" class="btn btn-outline-danger btn-lg">
+                <i class="bi bi-x-circle"></i> Hủy bỏ
+            </a>
+        </div>
+    </div>
+    </form>
+</div>
+
+<script>
         let hinhAnhIndex = <?php echo !empty($hinhAnhList) ? count($hinhAnhList) : 0; ?>;
         
         function themHinhAnh() {
@@ -477,9 +669,9 @@
             div.className = 'lich-trinh-item card mb-3';
             div.dataset.index = lichTrinhIndex;
             div.innerHTML = `
-                <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                    <span class="fw-semibold">
-                        <i class="bi bi-calendar-day text-primary"></i> 
+                <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; padding: 15px;">
+                    <span style="font-weight: 600; color: var(--text-light);">
+                        <i class="bi bi-calendar-day" style="color: var(--accent-gold);"></i> 
                         Ngày ${lichTrinhIndex + 1}
                     </span>
                     <button type="button" class="btn btn-sm btn-danger" onclick="xoaLichTrinh(this)">
@@ -489,14 +681,14 @@
                 <div class="card-body">
                     <input type="hidden" name="lich_trinh[${lichTrinhIndex}][ngay_thu]" value="${lichTrinhIndex + 1}">
                     
-                    <div class="mb-3">
-                        <label class="form-label small">Địa điểm</label>
+                    <div style="margin-bottom: 15px;">
+                        <label class="form-label" style="font-size: 0.875rem;">Địa điểm</label>
                         <input type="text" name="lich_trinh[${lichTrinhIndex}][dia_diem]" 
                                class="form-control" placeholder="VD: Vịnh Hạ Long, Đảo Titop" required>
                     </div>
                     
-                    <div class="mb-0">
-                        <label class="form-label small">Hoạt động</label>
+                    <div style="margin-bottom: 0;">
+                        <label class="form-label" style="font-size: 0.875rem;">Hoạt động</label>
                         <textarea name="lich_trinh[${lichTrinhIndex}][hoat_dong]" 
                                   class="form-control" rows="3" 
                                   placeholder="Mô tả hoạt động trong ngày..."></textarea>
@@ -518,7 +710,7 @@
             const items = document.querySelectorAll('.lich-trinh-item');
             items.forEach((item, idx) => {
                 const headerText = item.querySelector('.card-header span');
-                headerText.innerHTML = `<i class="bi bi-calendar-day text-primary"></i> Ngày ${idx + 1}`;
+                headerText.innerHTML = `<i class="bi bi-calendar-day" style="color: var(--accent-gold);"></i> Ngày ${idx + 1}`;
                 const hiddenInput = item.querySelector('input[type="hidden"]');
                 if (hiddenInput) {
                     hiddenInput.value = idx + 1;
@@ -531,5 +723,7 @@
             themLichTrinh();
         }
     </script>
-</body>
-</html>
+<?php
+$content = ob_get_clean();
+require __DIR__ . '/../layouts/aventura.php';
+?>

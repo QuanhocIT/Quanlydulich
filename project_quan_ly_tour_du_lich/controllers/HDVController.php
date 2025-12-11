@@ -682,6 +682,11 @@ $stats = $this->yeuCauDacBietModel->getSummaryStatsForHDV($nhanSuId, $filters);
             }
         }
         
+        // Lấy lịch trình chi tiết theo tour_id (nếu có)
+        $lichTrinhList = [];
+        if (!empty($tour['tour_id'])) {
+            $lichTrinhList = $this->tourModel->getLichTrinhByTourId($tour['tour_id']);
+        }
         require 'views/hdv/tour_detail.php';
     }
     
@@ -2244,4 +2249,3 @@ $stats = $this->yeuCauDacBietModel->getSummaryStatsForHDV($nhanSuId, $filters);
         return $result;
     }
 }
-
