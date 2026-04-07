@@ -247,14 +247,43 @@
         }
     }
 
-    $qrImageUrl = trim((string)QR_PAYMENT_IMAGE_URL);
-    if ($qrImageUrl !== '' && preg_match('/^https?:\/\//i', $qrImageUrl) !== 1) {
-        $qrImageUrl = rtrim(BASE_URL, '/') . '/' . ltrim($qrImageUrl, '/');
+    $qrImageEnv = trim((string)QR_PAYMENT_IMAGE_URL);
+    $qrImageCandidates = [];
+    if ($qrImageEnv !== '') {
+        $qrImageCandidates[] = $qrImageEnv;
     }
-    $defaultQrImageUrl = rtrim(BASE_URL, '/') . '/public/uploads/qr/image.png';
-    if ($qrImageUrl === '') {
-        $qrImageUrl = $defaultQrImageUrl;
+    $qrImageCandidates[] = '/uploads/qr/image.png';
+    $qrImageCandidates[] = '/public/uploads/qr/image.png';
+
+    $resolvedQrImageUrl = '';
+    foreach ($qrImageCandidates as $candidateUrl) {
+        $candidateUrl = trim((string)$candidateUrl);
+        if ($candidateUrl === '') {
+            continue;
+        }
+
+        if (preg_match('/^https?:\/\//i', $candidateUrl) === 1) {
+            $resolvedQrImageUrl = $candidateUrl;
+            break;
+        }
+
+        $relativePath = ltrim($candidateUrl, '/');
+        if (is_file(PATH_ROOT . $relativePath)) {
+            $resolvedQrImageUrl = rtrim(BASE_URL, '/') . '/' . $relativePath;
+            break;
+        }
+
+        if (strpos($relativePath, 'public/') === 0) {
+            $withoutPublic = substr($relativePath, 7);
+            if ($withoutPublic !== false && is_file(PATH_ROOT . $withoutPublic)) {
+                $resolvedQrImageUrl = rtrim(BASE_URL, '/') . '/' . ltrim($withoutPublic, '/');
+                break;
+            }
+        }
     }
+
+    $defaultQrImageUrl = rtrim(BASE_URL, '/') . '/uploads/qr/image.png';
+    $qrImageUrl = $resolvedQrImageUrl !== '' ? $resolvedQrImageUrl : $defaultQrImageUrl;
 
     $anhTourHienThi = $tour['hinh_anh'] ?? '';
     if (empty($anhTourHienThi) && !empty($hinhAnhList) && !empty($hinhAnhList[0]['url_anh'])) {

@@ -83,7 +83,7 @@ if (!class_exists('ProfiledPDOStatement', false)) {
 // Base URL
 $envBaseUrl = trim((string)($_ENV['BASE_URL'] ?? ''));
 if ($envBaseUrl === '' || strtoupper($envBaseUrl) === 'AUTO') {
-    $defaultPath = '/du_an_1-main/project_quan_ly_tour_du_lich/';
+    $defaultPath = '/quanlydulich-main/project_quan_ly_tour_du_lich/';
     if (!empty($_SERVER['HTTP_HOST'])) {
         $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
             || ((int)($_SERVER['SERVER_PORT'] ?? 0) === 443)
@@ -121,7 +121,7 @@ define('VNPAY_HASH_SECRET', $_ENV['VNPAY_HASH_SECRET'] ?? '');
 define('VNPAY_URL', $_ENV['VNPAY_URL'] ?? 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html');
 define('VNPAY_RETURN_URL', $_ENV['VNPAY_RETURN_URL'] ?? (BASE_URL . 'index.php?act=payment/callback'));
 define('VNPAY_IPN_URL', $_ENV['VNPAY_IPN_URL'] ?? (BASE_URL . 'index.php?act=payment/vnpayIpn'));
-define('QR_PAYMENT_IMAGE_URL', $_ENV['QR_PAYMENT_IMAGE_URL'] ?? '/public/uploads/qr/image.png');
+define('QR_PAYMENT_IMAGE_URL', $_ENV['QR_PAYMENT_IMAGE_URL'] ?? '/uploads/qr/image.png');
 define('QR_PAYMENT_ACCOUNT_NAME', $_ENV['QR_PAYMENT_ACCOUNT_NAME'] ?? 'CAP NHAT TEN CHU TK');
 define('QR_PAYMENT_ACCOUNT_NUMBER', $_ENV['QR_PAYMENT_ACCOUNT_NUMBER'] ?? 'CAP NHAT SO TAI KHOAN');
 define('QR_PAYMENT_BANK_NAME', $_ENV['QR_PAYMENT_BANK_NAME'] ?? 'MB Bank');

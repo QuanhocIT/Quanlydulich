@@ -395,7 +395,7 @@ class Booking
                 FROM booking 
                 WHERE tour_id = ? 
                 AND ngay_khoi_hanh = ? 
-                AND trang_thai IN ('ChoXacNhan', 'DaCoc', 'HoanTat')";
+                AND trang_thai IN ('DaCoc', 'HoanTat')";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([(int)$tourId, $ngayKhoiHanh]);
         $result = $stmt->fetch();
@@ -422,7 +422,7 @@ class Booking
         }
 
         $sql .= ")
-                  AND (trang_thai IS NULL OR trang_thai NOT IN ('Huy', 'DaHuy', 'TuChoi'))";
+                  AND trang_thai IN ('DaCoc', 'HoanTat')";
 
         $stmt = $this->conn->prepare($sql);
         $stmt->execute($params);

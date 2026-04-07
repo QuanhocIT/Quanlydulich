@@ -171,8 +171,11 @@ class KhachHangController {
             }
         }
 
-        // Thống kê
-        $tongBooking = count($bookings);
+        // Thống kê (chỉ tính booking hợp lệ đã đi vào quy trình xử lý).
+        $bookingsHopLe = array_filter($bookings, static function ($b) {
+            return in_array((string)($b['trang_thai'] ?? ''), ['ChoXacNhan', 'DaCoc', 'HoanTat'], true);
+        });
+        $tongBooking = count($bookingsHopLe);
         $bookingChoXacNhan = count(array_filter($bookings, fn($b) => $b['trang_thai'] === 'ChoXacNhan'));
         $bookingDaCoc = count(array_filter($bookings, fn($b) => $b['trang_thai'] === 'DaCoc'));
         $bookingHoanTat = count(array_filter($bookings, fn($b) => $b['trang_thai'] === 'HoanTat'));
@@ -766,22 +769,59 @@ class KhachHangController {
             }
 
             try {
-                // Tạo booking mới
-                $bookingData = [
-                    'tour_id' => $tourId,
-                    'khach_hang_id' => $khachHang['khach_hang_id'],
-                    'ngay_dat' => date('Y-m-d'),
-                    'ngay_khoi_hanh' => null,   // Khách đặt & thanh toán nhanh, có thể bổ sung sau
-                    'ngay_ket_thuc' => null,
-                    'so_nguoi' => $soLuong,
-                    'tong_tien' => $tongTien,
-                    'trang_thai' => 'ChoXacNhan',
-                    'ghi_chu' => 'Khoi tao booking cho thanh toan online tu trang khach hang'
-                ];
+                $pendingBooking = $this->findReusablePendingBooking(
+                    $bookingModel->conn,
+                    (int)$tourId,
+                    (int)$khachHang['khach_hang_id']
+                );
 
-                $bookingId = $bookingModel->insert($bookingData);
-                if (!$bookingId) {
-                    throw new Exception('Không thể tạo booking. Vui lòng thử lại sau.');
+                if (!empty($pendingBooking) && strtoupper((string)($pendingBooking['payment_status'] ?? '')) === 'DANGXULY') {
+                    $_SESSION['error'] = 'Ban da co giao dich dang xu ly. Vui long hoan tat giao dich hien tai truoc khi tao giao dich moi.';
+                    header('Location: index.php?act=khachHang/thanhToanTour&id=' . (int)$tourId . '&booking_id=' . (int)($pendingBooking['booking_id'] ?? 0));
+                    exit();
+                }
+
+                $pendingNote = '[PENDING_PAYMENT] Booking tam cho thanh toan online tu trang khach hang';
+                $bookingId = (int)($pendingBooking['booking_id'] ?? 0);
+
+                if ($bookingId > 0) {
+                    $stmtUpdateDraft = $bookingModel->conn->prepare(
+                        'UPDATE booking
+                         SET ngay_dat = ?, ngay_khoi_hanh = NULL, ngay_ket_thuc = NULL,
+                             so_nguoi = ?, tong_tien = ?, trang_thai = ?, ghi_chu = ?
+                         WHERE booking_id = ?'
+                    );
+                    $stmtUpdateDraft->execute([
+                        date('Y-m-d'),
+                        (int)$soLuong,
+                        (float)$tongTien,
+                        'Huy',
+                        $pendingNote,
+                        $bookingId,
+                    ]);
+                } else {
+                    $bookingData = [
+                        'tour_id' => $tourId,
+                        'khach_hang_id' => $khachHang['khach_hang_id'],
+                        'ngay_dat' => date('Y-m-d'),
+                        'ngay_khoi_hanh' => null,
+                        'ngay_ket_thuc' => null,
+                        'so_nguoi' => $soLuong,
+                        'tong_tien' => $tongTien,
+                        // Booking tam: chi duoc coi la booking hop le sau khi payment thanh cong.
+                        'trang_thai' => 'Huy',
+                        'ghi_chu' => $pendingNote,
+                    ];
+
+                    $bookingId = (int)$bookingModel->insert($bookingData);
+                    if ($bookingId <= 0) {
+                        throw new Exception('Không thể khởi tạo booking tạm. Vui lòng thử lại sau.');
+                    }
+                }
+
+                if (dbColumnExists('booking', 'trang_thai_thanh_toan', $bookingModel->conn)) {
+                    $stmtPaymentStatus = $bookingModel->conn->prepare('UPDATE booking SET trang_thai_thanh_toan = ? WHERE booking_id = ?');
+                    $stmtPaymentStatus->execute(['ChuaThanhToan', $bookingId]);
                 }
 
                 // Chuyển sang cổng thanh toán online và quay lại chính trang này để khách copy nội dung chuyển khoản chính xác.
@@ -1184,6 +1224,37 @@ class KhachHangController {
                                    ORDER BY payment_id DESC
                                    LIMIT 1");
             $stmt->execute([$bookingId]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $row ?: null;
+        } catch (Throwable $e) {
+            return null;
+        }
+    }
+
+    private function findReusablePendingBooking(PDO $conn, int $tourId, int $khachHangId): ?array {
+        if ($tourId <= 0 || $khachHangId <= 0) {
+            return null;
+        }
+
+        try {
+            $sql = "SELECT b.booking_id,
+                           (
+                               SELECT p.status
+                               FROM payments p
+                               WHERE p.booking_id = b.booking_id
+                               ORDER BY p.payment_id DESC
+                               LIMIT 1
+                           ) AS payment_status
+                    FROM booking b
+                    WHERE b.tour_id = ?
+                      AND b.khach_hang_id = ?
+                      AND b.trang_thai = 'Huy'
+                      AND b.ghi_chu LIKE '[PENDING_PAYMENT]%'
+                    ORDER BY b.booking_id DESC
+                    LIMIT 1";
+
+            $stmt = $conn->prepare($sql);
+            $stmt->execute([$tourId, $khachHangId]);
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
             return $row ?: null;
         } catch (Throwable $e) {
