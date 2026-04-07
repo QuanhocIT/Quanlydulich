@@ -1,0 +1,61 @@
+/* Admin styles */
+.admin-container {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.admin-container h1 {
+    margin-bottom: 20px;
+    color: #333;
+}
+
+.admin-container nav {
+    background: #343a40;
+    margin-bottom: 30px;
+    border-radius: 4px;
+}
+
+.admin-container nav a {
+    color: white;
+    text-decoration: none;
+    margin-right: 15px;
+    border-radius: 4px;
+    display: inline-block;
+}
+
+.admin-container nav a:hover {
+    background: #495057;
+}
+
+.content {
+    background: white;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+table th,
+table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+table th {
+    background: #f8f9fa;
+    font-weight: bold;
+}
+
+table tr:hover {
+    background: #f8f9fa;
+}
+
+
+
+

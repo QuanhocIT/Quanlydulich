@@ -1,0 +1,150 @@
+/* Print-friendly CSS is already included in danh_sach_khach.php via @media print */
+/* This file provides enhanced print styles for customer lists */
+
+@media print {
+        /* Hide navigation, buttons, and forms */
+        .no-print,
+        nav,
+        .navbar,
+        .sidebar,
+        form,
+        .btn,
+        .action-buttons,
+        .alert {
+            display: none !important;
+        }
+        
+        /* Page setup */
+        @page {
+            size: A4;
+            margin: 15mm;
+        }
+        
+        body {
+            font-size: 12pt;
+            line-height: 1.4;
+            color: #000;
+        }
+        
+        /* Title styling */
+        h1, h2, h3 {
+            color: #000;
+            page-break-after: avoid;
+        }
+        
+        h1 {
+            text-align: center;
+            font-size: 18pt;
+            margin-bottom: 10mm;
+        }
+        
+        /* Tour info box */
+        .tour-info-box {
+            border: 2px solid #000;
+            padding: 10mm;
+            margin-bottom: 5mm;
+            background: #fff !important;
+        }
+        
+        /* Statistics cards */
+        .stats-cards {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 5mm;
+            margin-bottom: 5mm;
+        }
+        
+        .stat-card {
+            border: 1px solid #000;
+            padding: 5mm;
+            background: #fff !important;
+        }
+        
+        .stat-card h3 {
+            font-size: 10pt;
+            margin-bottom: 2mm;
+        }
+        
+        .stat-card .value {
+            font-size: 16pt;
+            font-weight: bold;
+        }
+        
+        /* Table styling */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            page-break-inside: auto;
+        }
+        
+        thead {
+            display: table-header-group;
+        }
+        
+        tr {
+            page-break-inside: avoid;
+            page-break-after: auto;
+        }
+        
+        th {
+            background: #333 !important;
+            color: #fff !important;
+            border: 1px solid #000;
+            padding: 3mm;
+            font-weight: bold;
+            text-align: left;
+        }
+        
+        td {
+            border: 1px solid #000;
+            padding: 2mm;
+        }
+        
+        /* Status badges */
+        .status-badge {
+            border: 1px solid #000;
+            padding: 1mm 2mm;
+            font-weight: bold;
+        }
+        
+        .status-checked-in {
+            background: #e8f5e9 !important;
+        }
+        
+        .status-pending {
+            background: #fff3e0 !important;
+        }
+        
+        /* Footer with page numbers */
+        .print-footer {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            text-align: center;
+            font-size: 10pt;
+            border-top: 1px solid #000;
+            padding-top: 2mm;
+        }
+        
+        /* Signature section */
+        .signature-section {
+            margin-top: 10mm;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20mm;
+        }
+        
+        .signature-box {
+            text-align: center;
+        }
+        
+        .signature-box p {
+            margin: 2mm 0;
+        }
+        
+    .signature-line {
+        margin-top: 15mm;
+        font-style: italic;
+        font-size: 10pt;
+    }
+}
