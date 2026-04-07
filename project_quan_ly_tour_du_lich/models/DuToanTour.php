@@ -9,14 +9,23 @@ class DuToanTour
     }
     
     // Lấy tất cả dự toán
-    public function getAll() {
+    public function getAll($limit = null, $offset = 0) {
         $sql = "SELECT dt.*, t.ten_tour, nd.ho_ten as nguoi_tao
                 FROM du_toan_tour dt
                 JOIN tour t ON dt.tour_id = t.tour_id
                 LEFT JOIN nguoi_dung nd ON dt.nguoi_tao_id = nd.id
                 ORDER BY dt.ngay_tao DESC";
+        if ($limit !== null) {
+            $sql .= " LIMIT ? OFFSET ?";
+        }
         $stmt = $this->conn->prepare($sql);
-        $stmt->execute();
+        if ($limit !== null) {
+            $stmt->bindValue(1, (int)$limit, PDO::PARAM_INT);
+            $stmt->bindValue(2, max(0, (int)$offset), PDO::PARAM_INT);
+            $stmt->execute();
+        } else {
+            $stmt->execute();
+        }
         return $stmt->fetchAll();
     }
     
@@ -171,7 +180,7 @@ class DuToanTour
         $sql = "SELECT * FROM v_so_sanh_du_toan_thuc_te 
                 WHERE CONVERT(canh_bao USING utf8mb4) COLLATE utf8mb4_unicode_ci IN ('VuotDuToan', 'GanVuot')
                 ORDER BY 
-                    CASE canh_bao 
+                    CASE CONVERT(canh_bao USING utf8mb4) COLLATE utf8mb4_unicode_ci
                         WHEN 'VuotDuToan' THEN 1
                         WHEN 'GanVuot' THEN 2
                     END";

@@ -1,42 +1,95 @@
+<?php
+$paymentNotificationCount = 0;
+$reviewNotificationCount = 0;
+$dashboardNotificationCount = 0;
+$soundNotificationEnabled = true;
+
+
+?>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-global-token" content="<?php echo htmlspecialchars(csrfToken('global_form'), ENT_QUOTES, 'UTF-8'); ?>">
     <title><?php echo isset($pageTitle) ? $pageTitle . ' - ' : ''; ?>AVENTURA - Life's A Journey</title>
-    <link rel="stylesheet" href="<?php echo BASE_URL; ?>public/css/aventura.css">
+    <link rel="stylesheet" href="<?php echo BASE_URL; ?>public/css/aventura.css?v=<?php echo rawurlencode(ASSET_VERSION); ?>">
+    <link rel="icon" href="<?php echo BASE_URL; ?>public/images/momo.png" type="image/png">
+    <link rel="stylesheet" href="<?php echo BASE_URL; ?>public/vendor/bootstrap-icons/bootstrap-icons.css?v=<?php echo rawurlencode(ASSET_VERSION); ?>">
     <?php if (isset($additionalCSS)): ?>
         <?php foreach ($additionalCSS as $css): ?>
             <link rel="stylesheet" href="<?php echo $css; ?>">
         <?php endforeach; ?>
     <?php endif; ?>
 </head>
-<body>
+<body class="<?php echo isset($currentPage) ? 'page-' . htmlspecialchars($currentPage) : ''; ?>">
     <div class="container">
         <!-- Sidebar -->
-        <aside class="sidebar">
+        <aside class="sidebar" id="sidebar">
             <div class="logo">AVENTURA</div>
             <div class="logo-subtitle">LIFE'S A JOURNEY</div>
-
+            <div class="sidebar-utility">
+                <button type="button" class="sidebar-toggle" id="sidebarToggle" title="Thu gọn/mở rộng sidebar" aria-label="Thu gọn/mở rộng sidebar"><i class="bi bi-chevron-left"></i></button>
+                <button type="button" class="sidebar-theme" id="sidebarTheme" title="Chuyển chế độ sáng/tối" aria-label="Chuyển chế độ sáng/tối"><i class="bi bi-moon-stars"></i></button>
+            </div>
+            <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'Admin'): ?>
+                <div id="realtimeStatus" class="realtime-status is-connecting" title="Trạng thái kết nối thông báo realtime">
+                    <span id="realtimeStatusDot" class="realtime-status-dot"></span>
+                    <span id="realtimeStatusText">Đang kết nối realtime...</span>
+                </div>
+            <?php endif; ?>
             <ul class="nav">
+                <li class="nav-group-label">NAVIGATION</li>
                 <?php if (isset($_SESSION['role'])): ?>
                     <?php if ($_SESSION['role'] === 'Admin'): ?>
-                        <li><a href="index.php?act=admin/dashboard" class="<?php echo (isset($currentPage) && $currentPage === 'dashboard') ? 'active' : ''; ?>">Trang chủ</a></li>
                         <li>
-                            <a href="#" class="nav-toggle">Quản lý tour <span class="expand-icon">+</span></a>
-                            <ul class="dropdown-menu" id="toursmenu">
-                                <li><a href="index.php?act=admin/quanLyTour">Danh sách tour</a></li>
-                                <li><a href="index.php?act=tour/create">Tạo tour mới</a></li>
-                                <li><a href="index.php?act=lichKhoiHanh/index">Lịch khởi hành</a></li>
-                            </ul>
+                            <a href="index.php?act=admin/dashboard" class="<?php echo (isset($currentPage) && $currentPage === 'dashboard') ? 'active' : ''; ?>" title="Trang chủ">
+                                <span class="nav-icon-bg"><i class="bi bi-house-door"></i></span> <span class="nav-text">Dashboard</span>
+                                <span id="dashboardNavBadge" class="nav-badge" title="Có <?php echo $dashboardNotificationCount; ?> thông báo mới"<?php if ($dashboardNotificationCount <= 0): ?> style="display:none"<?php endif; ?>><?php echo $dashboardNotificationCount; ?></span>
+                            </a>
                         </li>
-                        <li><a href="index.php?act=admin/quanLyBooking" class="<?php echo (isset($currentPage) && $currentPage === 'booking') ? 'active' : ''; ?>">Booking</a></li>
-                        <li><a href="index.php?act=lichKhoiHanh/index" class="<?php echo (isset($currentPage) && $currentPage === 'lichKhoiHanh') ? 'active' : ''; ?>">Quản lý lịch khởi hành</a></li>
-                        <li><a href="index.php?act=admin/nhanSu" class="<?php echo (isset($currentPage) && $currentPage === 'nhanSu') ? 'active' : ''; ?>">Quản lý nhân sự</a></li>
-                        <li><a href="index.php?act=admin/quanLyNguoiDung" class="<?php echo (isset($currentPage) && $currentPage === 'nguoiDung') ? 'active' : ''; ?>">Quản lý người dùng</a></li>
-                        <li><a href="index.php?act=admin/nhaCungCap" class="<?php echo (isset($currentPage) && $currentPage === 'nhaCungCap') ? 'active' : ''; ?>">Nhà cung cấp</a></li>
-                        <li><a href="index.php?act=admin/baoCaoTaiChinh" class="<?php echo (isset($currentPage) && $currentPage === 'baoCaoTaiChinh') ? 'active' : ''; ?>">Báo cáo tài chính</a></li>
-                        <li><a href="index.php?act=admin/danhGia" class="<?php echo (isset($currentPage) && $currentPage === 'danhGia') ? 'active' : ''; ?>">Đánh giá & Phản hồi</a></li>
+                        <li>
+                            <a href="index.php?act=admin/quanLyLuongThuong" class="<?php echo (isset($currentPage) && $currentPage === 'luongThuong') ? 'active' : ''; ?>" title="Lương thưởng">
+                                <span class="nav-icon-bg"><i class="bi bi-cash-coin"></i></span> <span class="nav-text">Lương thưởng</span>
+                            </a>
+                        </li>
+                        <li class="nav-parent">
+                            <a href="#" class="nav-toggle" title="Quản lý tour"><span class="nav-icon-bg"><i class="bi bi-geo-alt"></i></span> <span class="nav-text">Quản lý tour</span> <span class="expand-icon">&#9662;</span></a>
+                            <div class="nav-child-menu" hidden>
+                                <a href="index.php?act=admin/quanLyTour" title="Danh sách tour"><span class="nav-child-bar"></span>- Danh sách tour</a>
+                                <a href="index.php?act=tour/create" title="Tạo tour mới"><span class="nav-child-bar"></span>- Tạo tour mới</a>
+                                <a href="index.php?act=lichKhoiHanh/index" title="Lịch khởi hành"><span class="nav-child-bar"></span>- Lịch khởi hành</a>
+                            </div>
+                        </li>
+                        <li class="nav-parent">
+                            <a href="#" class="nav-toggle <?php echo (isset($currentPage) && $currentPage === 'booking') ? 'active' : ''; ?>" title="Quản lý Booking"><span class="nav-icon-bg"><i class="bi bi-journal-bookmark"></i></span> <span class="nav-text">Quản lý Booking</span> <span class="expand-icon">&#9662;</span></a>
+                            <div class="nav-child-menu" hidden>
+                                <a href="index.php?act=admin/quanLyBooking" title="Danh sách booking"><span class="nav-child-bar"></span>- Danh sách booking</a>
+                                <a href="index.php?act=admin/quanLyYeuCauTour" title="Yêu cầu đặt tour"><span class="nav-child-bar"></span>- Yêu cầu đặt tour</a>
+                                <a href="index.php?act=booking/datTourChoKhach" title="Đặt tour cho khách"><span class="nav-child-bar"></span>- Đặt tour cho khách</a>
+                                <a href="index.php?act=admin/lichSuXoaBooking" title="Lịch sử xóa booking"><span class="nav-child-bar"></span>- Lịch sử xóa booking</a>
+                            </div>
+                        </li>
+                        <li><a href="index.php?act=lichKhoiHanh/index" class="<?php echo (isset($currentPage) && $currentPage === 'lichKhoiHanh') ? 'active' : ''; ?>" title="Quản lý lịch khởi hành"><span class="nav-icon-bg"><i class="bi bi-calendar3"></i></span> <span class="nav-text">Quản lý lịch khởi hành</span></a></li>
+                        <li><a href="index.php?act=admin/nhanSu" class="<?php echo (isset($currentPage) && $currentPage === 'nhanSu') ? 'active' : ''; ?>" title="Quản lý nhân sự"><span class="nav-icon-bg"><i class="bi bi-people"></i></span> <span class="nav-text">Quản lý nhân sự</span></a></li>
+                        <li><a href="index.php?act=admin/quanLyNguoiDung" class="<?php echo (isset($currentPage) && $currentPage === 'nguoiDung') ? 'active' : ''; ?>" title="Quản lý người dùng"><span class="nav-icon-bg"><i class="bi bi-person-lines-fill"></i></span> <span class="nav-text">Quản lý người dùng</span></a></li>
+                        <li><a href="index.php?act=admin/nhaCungCap" class="<?php echo (isset($currentPage) && $currentPage === 'nhaCungCap') ? 'active' : ''; ?>" title="Nhà cung cấp"><span class="nav-icon-bg"><i class="bi bi-truck"></i></span> <span class="nav-text">Nhà cung cấp</span></a></li>
+                        <li class="nav-group-label">ADMIN PANEL</li>
+                           <li><a href="index.php?act=admin/invoices" class="<?php echo (isset($currentPage) && $currentPage === 'invoices') ? 'active' : ''; ?>" title="Quản lý hóa đơn"><span class="nav-icon-bg"><i class="bi bi-receipt"></i></span> <span class="nav-text">Quản lý hóa đơn</span></a></li>
+                           <li><a href="index.php?act=admin/payments" class="<?php echo (isset($currentPage) && $currentPage === 'payments') ? 'active' : ''; ?>" title="Quản lý thanh toán"><span class="nav-icon-bg"><i class="bi bi-credit-card"></i></span> <span class="nav-text">Quản lý thanh toán</span><span id="paymentNavBadge" class="nav-badge" title="Có <?php echo $paymentNotificationCount; ?> thanh toán mới"<?php if ($paymentNotificationCount <= 0): ?> style="display:none"<?php endif; ?>><?php echo $paymentNotificationCount; ?></span></a></li>
+                        <li class="nav-parent">
+                            <a href="#" class="nav-toggle <?php echo (isset($currentPage) && $currentPage === 'baoCaoTaiChinh') ? 'active' : ''; ?>" title="Báo cáo tài chính"><span class="nav-icon-bg"><i class="bi bi-bar-chart"></i></span> <span class="nav-text">Báo cáo tài chính</span> <span class="expand-icon">&#9662;</span></a>
+                            <div class="nav-child-menu" hidden>
+                                <a href="index.php?act=admin/lichSuGiaoDich" title="Lịch sử giao dịch"><span class="nav-child-bar"></span>- Lịch sử giao dịch</a>
+                                <a href="index.php?act=admin/thuChiTour" title="Thu chi từng tour"><span class="nav-child-bar"></span>- Thu chi từng tour</a>
+                                <a href="index.php?act=admin/congNo" title="Công nợ"><span class="nav-child-bar"></span>- Công nợ</a>
+                                <a href="index.php?act=admin/laiLoTour" title="Lãi lỗ từng tour"><span class="nav-child-bar"></span>- Lãi lỗ từng tour</a>
+                                <a href="index.php?act=admin/duToanTour" title="Dự toán tour"><span class="nav-child-bar"></span>- Dự toán tour</a>
+                                <a href="index.php?act=admin/soSanhDuToan" title="So sánh dự toán"><span class="nav-child-bar"></span>- So sánh dự toán</a>
+                            </div>
+                        </li>
+                        <li><a href="index.php?act=admin/danhGia" class="<?php echo (isset($currentPage) && ($currentPage === 'danhGia' || $currentPage === 'danh_gia')) ? 'active' : ''; ?>" title="Đánh giá & Phản hồi"><span class="nav-icon-bg"><i class="bi bi-chat-dots"></i></span> <span class="nav-text">Đánh giá & Phản hồi</span><span id="reviewNavBadge" class="nav-badge" title="Có <?php echo $reviewNotificationCount; ?> đánh giá mới"<?php if ($reviewNotificationCount <= 0): ?> style="display:none"<?php endif; ?>><?php echo $reviewNotificationCount; ?></span></a></li>
+                        <li><a href="index.php?act=admin/notificationSettings" class="<?php echo (isset($currentPage) && $currentPage === 'notificationSettings') ? 'active' : ''; ?>" title="Cài đặt thông báo"><span class="nav-icon-bg"><i class="bi bi-bell"></i></span> <span class="nav-text">Cài đặt thông báo</span></a></li>
                     <?php elseif ($_SESSION['role'] === 'HDV'): ?>
                         <li><a href="index.php?act=hdv/dashboard" class="<?php echo (isset($currentPage) && $currentPage === 'dashboard') ? 'active' : ''; ?>">Trang chủ</a></li>
                         <li><a href="index.php?act=hdv/lichLamViec" class="<?php echo (isset($currentPage) && $currentPage === 'lichLamViec') ? 'active' : ''; ?>">Lịch làm việc</a></li>
@@ -49,6 +102,7 @@
                         <li><a href="index.php?act=khachHang/traCuu" class="<?php echo (isset($currentPage) && $currentPage === 'traCuu') ? 'active' : ''; ?>">Tra cứu booking</a></li>
                         <li><a href="index.php?act=khachHang/yeuCauTour" class="<?php echo (isset($currentPage) && $currentPage === 'yeuCauTour') ? 'active' : ''; ?>">Yêu cầu tour</a></li>
                     <?php endif; ?>
+                    
                     <li><a href="index.php?act=auth/logout">Đăng xuất</a></li>
                 <?php else: ?>
                     <li><a href="index.php?act=tour/index">Trang chủ</a></li>
@@ -112,32 +166,380 @@
     </div>
 
     <script>
-        // Toggle dropdown menus
-        document.querySelectorAll('.nav-toggle').forEach(toggle => {
+    document.addEventListener('DOMContentLoaded', function() {
+        const csrfMeta = document.querySelector('meta[name="csrf-global-token"]');
+        const csrfGlobalToken = csrfMeta ? csrfMeta.getAttribute('content') : '';
+
+        if (csrfGlobalToken) {
+            document.querySelectorAll('form[method="post"], form[method="POST"]').forEach(function(form) {
+                if (form.querySelector('input[name="_csrf_global"]')) {
+                    return;
+                }
+
+                const hidden = document.createElement('input');
+                hidden.type = 'hidden';
+                hidden.name = '_csrf_global';
+                hidden.value = csrfGlobalToken;
+                form.appendChild(hidden);
+            });
+        }
+
+        const isAdminUser = <?php echo (isset($_SESSION['role']) && $_SESSION['role'] === 'Admin') ? 'true' : 'false'; ?>;
+        const soundEnabledOnServer = <?php echo $soundNotificationEnabled ? 'true' : 'false'; ?>;
+        const STORAGE_KEYS = {
+            sidebarCollapsed: 'aventura_sidebar_collapsed',
+            lightThemeLegacy: 'aventura_theme_light',
+            themeMode: 'aventura_theme_mode',
+        };
+
+        const sidebar = document.getElementById('sidebar');
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        const sidebarTheme = document.getElementById('sidebarTheme');
+        const realtimeStatus = document.getElementById('realtimeStatus');
+        const realtimeStatusText = document.getElementById('realtimeStatusText');
+        const dashboardNavBadge = document.getElementById('dashboardNavBadge');
+        const paymentNavBadge = document.getElementById('paymentNavBadge');
+        const reviewNavBadge = document.getElementById('reviewNavBadge');
+        const THEME_MODES = ['dark', 'business-dark', 'soft-light'];
+        const streamReconnectDelay = 5000;
+        let notificationEventSource = null;
+        let streamReconnectTimer = null;
+        let previousPaymentCount = Number.parseInt(paymentNavBadge ? paymentNavBadge.textContent : '0', 10) || 0;
+        let previousReviewCount = Number.parseInt(reviewNavBadge ? reviewNavBadge.textContent : '0', 10) || 0;
+        let previousDashboardCount = Number.parseInt(dashboardNavBadge ? dashboardNavBadge.textContent : '0', 10) || 0;
+        let soundNotificationEnabled = soundEnabledOnServer;
+        let audioContext = null;
+
+        function ensureAudioContext() {
+            if (!audioContext) {
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                if (AudioContextClass) {
+                    audioContext = new AudioContextClass();
+                }
+            }
+            if (audioContext && audioContext.state === 'suspended') {
+                audioContext.resume().catch(() => {});
+            }
+        }
+
+        function playNotificationSound() {
+            try {
+                ensureAudioContext();
+                if (!audioContext || audioContext.state !== 'running') return;
+
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                const currentTime = audioContext.currentTime;
+
+                oscillator.type = 'triangle';
+                oscillator.frequency.setValueAtTime(920, currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(1240, currentTime + 0.11);
+                gainNode.gain.setValueAtTime(0.0001, currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.032, currentTime + 0.02);
+                gainNode.gain.exponentialRampToValueAtTime(0.0001, currentTime + 0.17);
+
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                oscillator.start(currentTime);
+                oscillator.stop(currentTime + 0.18);
+            } catch (error) {
+                // Bỏ qua nếu trình duyệt chặn âm thanh tự động.
+            }
+        }
+
+        function pulseBadge(element) {
+            if (!element) return;
+            element.classList.remove('is-pulse');
+            // Force reflow để animation chạy lại kể cả cùng class.
+            void element.offsetWidth;
+            element.classList.add('is-pulse');
+            setTimeout(function() {
+                element.classList.remove('is-pulse');
+            }, 700);
+        }
+
+        function renderBadge(element, count, label) {
+            if (!element) return;
+            const safeCount = Number.isFinite(count) ? Math.max(0, Math.floor(count)) : 0;
+            const tooltip = 'Có ' + safeCount + ' ' + label + ' mới';
+            element.title = tooltip;
+            element.setAttribute('aria-label', tooltip);
+            if (safeCount > 0) {
+                element.textContent = safeCount;
+                element.style.display = 'inline-flex';
+            } else {
+                element.textContent = '0';
+                element.style.display = 'none';
+            }
+        }
+
+        function setRealtimeConnectionState(state) {
+            if (!realtimeStatus || !realtimeStatusText) return;
+            realtimeStatus.classList.remove('is-connecting', 'is-connected', 'is-reconnecting', 'is-polling');
+
+            if (state === 'connected') {
+                realtimeStatus.classList.add('is-connected');
+                realtimeStatusText.textContent = 'Realtime: Đã kết nối';
+                return;
+            }
+            if (state === 'reconnecting') {
+                realtimeStatus.classList.add('is-reconnecting');
+                realtimeStatusText.textContent = 'Realtime: Mất kết nối, đang thử lại...';
+                return;
+            }
+            if (state === 'polling') {
+                realtimeStatus.classList.add('is-polling');
+                realtimeStatusText.textContent = 'Realtime: Fallback polling';
+                return;
+            }
+
+            realtimeStatus.classList.add('is-connecting');
+            realtimeStatusText.textContent = 'Realtime: Đang kết nối...';
+        }
+
+        function applyNotificationPayload(data) {
+            if (!data || data.success !== true) return;
+
+            const nextPaymentCount = Number(data.payments || 0);
+            const nextReviewCount = Number(data.reviews || 0);
+            const nextDashboardCount = Number(data.dashboard || 0);
+            if (Object.prototype.hasOwnProperty.call(data, 'sound_enabled')) {
+                soundNotificationEnabled = Number(data.sound_enabled) === 1;
+            }
+
+            const hasIncrease =
+                (nextPaymentCount > previousPaymentCount) ||
+                (nextReviewCount > previousReviewCount) ||
+                (nextDashboardCount > previousDashboardCount);
+
+            if (nextPaymentCount > previousPaymentCount) {
+                pulseBadge(paymentNavBadge);
+            }
+            if (nextReviewCount > previousReviewCount) {
+                pulseBadge(reviewNavBadge);
+            }
+            if (nextDashboardCount > previousDashboardCount) {
+                pulseBadge(dashboardNavBadge);
+            }
+            if (hasIncrease && soundNotificationEnabled) {
+                playNotificationSound();
+            }
+
+            renderBadge(dashboardNavBadge, nextDashboardCount, 'thông báo');
+            renderBadge(paymentNavBadge, nextPaymentCount, 'thanh toán');
+            renderBadge(reviewNavBadge, nextReviewCount, 'đánh giá');
+
+            previousDashboardCount = nextDashboardCount;
+            previousPaymentCount = nextPaymentCount;
+            previousReviewCount = nextReviewCount;
+        }
+
+        async function fetchNotificationSnapshot() {
+            if (!isAdminUser) return;
+            try {
+                const response = await fetch(
+                    'index.php?act=admin/notificationCounts&_ts=' + Date.now(),
+                    {
+                        method: 'GET',
+                        credentials: 'same-origin',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    }
+                );
+                if (!response.ok) return;
+                const data = await response.json();
+                applyNotificationPayload(data);
+            } catch (error) {
+                // Bỏ qua lỗi mạng tạm thời để không ảnh hưởng trải nghiệm.
+            }
+        }
+
+        function clearStreamReconnectTimer() {
+            if (!streamReconnectTimer) return;
+            clearTimeout(streamReconnectTimer);
+            streamReconnectTimer = null;
+        }
+
+        function scheduleStreamReconnect() {
+            if (streamReconnectTimer) return;
+            setRealtimeConnectionState('reconnecting');
+            streamReconnectTimer = setTimeout(function() {
+                streamReconnectTimer = null;
+                openNotificationStream();
+            }, streamReconnectDelay);
+        }
+
+        function openNotificationStream() {
+            if (!isAdminUser || typeof EventSource === 'undefined') return;
+
+            clearStreamReconnectTimer();
+            setRealtimeConnectionState('connecting');
+            if (notificationEventSource) {
+                notificationEventSource.close();
+                notificationEventSource = null;
+            }
+
+            notificationEventSource = new EventSource('index.php?act=admin/notificationStream');
+
+            notificationEventSource.onopen = function() {
+                setRealtimeConnectionState('connected');
+            };
+
+            notificationEventSource.addEventListener('notification', function(event) {
+                try {
+                    const payload = JSON.parse(event.data);
+                    applyNotificationPayload(payload);
+                    setRealtimeConnectionState('connected');
+                } catch (error) {
+                    // Bỏ qua payload không hợp lệ.
+                }
+            });
+
+            notificationEventSource.addEventListener('close', function() {
+                if (notificationEventSource) {
+                    notificationEventSource.close();
+                    notificationEventSource = null;
+                }
+                scheduleStreamReconnect();
+            });
+
+            notificationEventSource.onerror = function() {
+                if (notificationEventSource) {
+                    notificationEventSource.close();
+                    notificationEventSource = null;
+                }
+                scheduleStreamReconnect();
+            };
+        }
+
+        function setSidebarIcon() {
+            if (!sidebar || !sidebarToggle) return;
+            const icon = sidebarToggle.querySelector('i');
+            if (!icon) return;
+            if (sidebar.classList.contains('collapsed')) {
+                icon.classList.remove('bi-chevron-left');
+                icon.classList.add('bi-chevron-right');
+            } else {
+                icon.classList.remove('bi-chevron-right');
+                icon.classList.add('bi-chevron-left');
+            }
+        }
+
+        function applyThemeMode(mode) {
+            const safeMode = THEME_MODES.includes(mode) ? mode : 'dark';
+            document.body.classList.remove('theme-light', 'theme-business-dark');
+            if (safeMode === 'soft-light') {
+                document.body.classList.add('theme-light');
+            }
+            if (safeMode === 'business-dark') {
+                document.body.classList.add('theme-business-dark');
+            }
+            return safeMode;
+        }
+
+        function setThemeIcon(mode) {
+            if (!sidebarTheme) return;
+            const icon = sidebarTheme.querySelector('i');
+            if (!icon) return;
+            sidebarTheme.classList.remove('is-business');
+            icon.className = 'bi';
+
+            if (mode === 'soft-light') {
+                icon.classList.add('bi-brightness-high');
+                sidebarTheme.title = 'Chế độ hiện tại: Soft Light';
+            } else if (mode === 'business-dark') {
+                icon.classList.add('bi-circle-half');
+                sidebarTheme.classList.add('is-business');
+                sidebarTheme.title = 'Chế độ hiện tại: Business Dark';
+            } else {
+                icon.classList.add('bi-moon-stars');
+                sidebarTheme.title = 'Chế độ hiện tại: Dark';
+            }
+        }
+
+        function getCurrentThemeMode() {
+            if (document.body.classList.contains('theme-light')) return 'soft-light';
+            if (document.body.classList.contains('theme-business-dark')) return 'business-dark';
+            return 'dark';
+        }
+
+        if (sidebar && localStorage.getItem(STORAGE_KEYS.sidebarCollapsed) === '1') {
+            sidebar.classList.add('collapsed');
+        }
+        let savedThemeMode = localStorage.getItem(STORAGE_KEYS.themeMode);
+        if (!savedThemeMode) {
+            savedThemeMode = localStorage.getItem(STORAGE_KEYS.lightThemeLegacy) === '1' ? 'soft-light' : 'dark';
+        }
+        const appliedTheme = applyThemeMode(savedThemeMode);
+        localStorage.setItem(STORAGE_KEYS.themeMode, appliedTheme);
+        setSidebarIcon();
+        setThemeIcon(appliedTheme);
+
+        // Nav parent-child: cho phép mở nhiều menu con cùng lúc
+        document.querySelectorAll('.nav-parent > .nav-toggle').forEach(toggle => {
             toggle.addEventListener('click', function(e) {
                 e.preventDefault();
-                const menu = this.nextElementSibling;
-                if (menu && menu.classList.contains('dropdown-menu')) {
-                    menu.classList.toggle('show');
-                    const icon = this.querySelector('.expand-icon');
-                    if (icon) {
-                        icon.textContent = menu.classList.contains('show') ? '−' : '+';
-                    }
+                const parent = this.closest('.nav-parent');
+                const menu = parent.querySelector('.nav-child-menu');
+                const isVisible = !menu.hasAttribute('hidden');
+                // Toggle menu hiện tại, không ảnh hưởng menu khác
+                if (isVisible) {
+                    menu.setAttribute('hidden', '');
+                } else {
+                    menu.removeAttribute('hidden');
                 }
             });
         });
 
-        // Close menus when clicking elsewhere
-        document.addEventListener('click', function(e) {
-            if (!e.target.closest('.nav')) {
-                document.querySelectorAll('.dropdown-menu').forEach(menu => {
-                    menu.classList.remove('show');
-                });
-                document.querySelectorAll('.expand-icon').forEach(icon => {
-                    icon.textContent = '+';
-                });
+        // Sidebar collapse/expand
+        if (sidebar && sidebarToggle) {
+            sidebarToggle.addEventListener('click', function() {
+                sidebar.classList.toggle('collapsed');
+                setSidebarIcon();
+                localStorage.setItem(STORAGE_KEYS.sidebarCollapsed, sidebar.classList.contains('collapsed') ? '1' : '0');
+                // Đóng tất cả menu cha khi thu gọn
+                if (sidebar.classList.contains('collapsed')) {
+                    document.querySelectorAll('.nav-parent').forEach(item => item.classList.remove('open'));
+                }
+            });
+        }
+
+        // Dark/Light mode toggle
+        if (sidebarTheme) {
+            sidebarTheme.addEventListener('click', function() {
+                const currentMode = getCurrentThemeMode();
+                const nextIndex = (THEME_MODES.indexOf(currentMode) + 1) % THEME_MODES.length;
+                const nextMode = applyThemeMode(THEME_MODES[nextIndex]);
+                setThemeIcon(nextMode);
+                localStorage.setItem(STORAGE_KEYS.themeMode, nextMode);
+            });
+        }
+
+        if (isAdminUser) {
+            ['pointerdown', 'keydown'].forEach(function(eventName) {
+                document.addEventListener(eventName, function() {
+                    // Defer AudioContext setup to keep input handler lightweight.
+                    window.requestAnimationFrame(function() {
+                        ensureAudioContext();
+                    });
+                }, { once: true, passive: true });
+            });
+            fetchNotificationSnapshot();
+            if (typeof EventSource !== 'undefined') {
+                openNotificationStream();
+            } else {
+                setRealtimeConnectionState('polling');
+                setInterval(fetchNotificationSnapshot, 5000);
             }
-        });
+            window.addEventListener('beforeunload', function() {
+                clearStreamReconnectTimer();
+                if (notificationEventSource) {
+                    notificationEventSource.close();
+                }
+            });
+        }
+    });
     </script>
     <?php if (isset($additionalJS)): ?>
         <?php foreach ($additionalJS as $js): ?>

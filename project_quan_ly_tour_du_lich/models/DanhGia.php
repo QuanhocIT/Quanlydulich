@@ -63,6 +63,25 @@ class DanhGia {
         $stmt->execute($params);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+
+    public function getTopReviews($minScore = 4, $limit = 3) {
+        $sql = "SELECT dg.*, 
+                       nd.ho_ten as ten_khach_hang,
+                       nd.email as email_khach_hang,
+                       t.ten_tour
+                FROM danh_gia dg
+                LEFT JOIN khach_hang k ON dg.khach_hang_id = k.khach_hang_id
+                LEFT JOIN nguoi_dung nd ON k.nguoi_dung_id = nd.id
+                LEFT JOIN tour t ON dg.tour_id = t.tour_id
+                WHERE dg.diem >= ?
+                ORDER BY dg.diem DESC, dg.ngay_danh_gia DESC
+                LIMIT ?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindValue(1, (int)$minScore, PDO::PARAM_INT);
+        $stmt->bindValue(2, max(1, (int)$limit), PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
     
     // Thống kê tổng quan
     public function getStatistics() {
@@ -78,6 +97,28 @@ class DanhGia {
         
         $stmt = $this->conn->query($sql);
         return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    // Thống kê bucket điểm đánh giá tour cho dashboard.
+    public function getTourFeedbackBuckets() {
+        $sql = "SELECT
+                    COALESCE(SUM(CASE WHEN diem >= 5 THEN 1 ELSE 0 END), 0) AS rat_hai_long,
+                    COALESCE(SUM(CASE WHEN diem = 4 THEN 1 ELSE 0 END), 0) AS hai_long,
+                    COALESCE(SUM(CASE WHEN diem = 3 THEN 1 ELSE 0 END), 0) AS trung_binh,
+                    COALESCE(SUM(CASE WHEN diem = 2 THEN 1 ELSE 0 END), 0) AS khong_hai_long,
+                    COALESCE(SUM(CASE WHEN diem <= 1 THEN 1 ELSE 0 END), 0) AS rat_khong_hai_long
+                FROM danh_gia
+                WHERE loai_danh_gia = 'Tour'";
+        $stmt = $this->conn->query($sql);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+
+        return [
+            'Rất hài lòng' => (int)($row['rat_hai_long'] ?? 0),
+            'Hài lòng' => (int)($row['hai_long'] ?? 0),
+            'Trung bình' => (int)($row['trung_binh'] ?? 0),
+            'Không hài lòng' => (int)($row['khong_hai_long'] ?? 0),
+            'Rất không hài lòng' => (int)($row['rat_khong_hai_long'] ?? 0),
+        ];
     }
     
     // Báo cáo theo tour

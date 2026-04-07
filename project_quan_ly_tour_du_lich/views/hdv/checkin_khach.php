@@ -6,6 +6,7 @@
     <title>Điểm danh khách - HDV</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="<?php echo BASE_URL; ?>public/css/hdv.css">
     <style>
         :root {
             --primary-color: #667eea;
@@ -89,7 +90,9 @@
         .text-primary { color: var(--primary-color) !important; }
     </style>
 </head>
-<body>
+<body class="hdv-body">
+<?php include __DIR__ . '/partials/hdv_nav.php'; ?>
+
     <div class="page-header">
         <div class="container">
             <div class="d-flex justify-content-between align-items-center">
@@ -234,9 +237,10 @@
                 <p>Không tìm thấy lịch khởi hành bạn chọn.</p>
             <?php endif; ?>
         <?php else: ?>
-            <p>Bạn chưa được phân công lịch khởi hành nào.</p>
+            <p>B?n chua du?c ph?n c?ng l?ch kh?i h?nh n?o.</p>
         <?php endif; ?>
     </div>
 </body>
 </html>
+
 

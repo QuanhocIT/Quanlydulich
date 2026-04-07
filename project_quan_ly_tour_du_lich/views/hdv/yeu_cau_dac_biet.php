@@ -6,6 +6,7 @@
     <title>Yêu cầu đặc biệt - HDV</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="<?php echo BASE_URL; ?>public/css/hdv.css">
     <style>
         :root {
             --primary-color: #667eea;
@@ -66,7 +67,9 @@
         }
     </style>
 </head>
-<body class="bg-light">
+<body class="bg-light hdv-body">
+<?php include __DIR__ . '/partials/hdv_nav.php'; ?>
+
     <div class="page-header">
         <div class="container">
             <div class="d-flex justify-content-between align-items-center">
@@ -260,11 +263,14 @@
                                         onclick="editRequest(<?php echo htmlspecialchars(json_encode($yc), ENT_QUOTES, 'UTF-8'); ?>)">
                                     <i class="bi bi-pencil"></i>
                                 </button>
-                                <a href="index.php?act=hdv/delete_yeu_cau&id=<?php echo $yc['id']; ?>&tour_id=<?php echo $_GET['tour_id'] ?? 0; ?>" 
-                                   class="btn btn-outline-danger"
-                                   onclick="return confirm('Xóa yêu cầu này?')">
-                                    <i class="bi bi-trash"></i>
-                                </a>
+                                <form method="POST" action="index.php?act=hdv/delete_yeu_cau" onsubmit="return confirm('Xóa yêu cầu này?');" class="d-inline">
+                                    <?php echo csrfField('hdv_form'); ?>
+                                    <input type="hidden" name="id" value="<?php echo $yc['id']; ?>">
+                                    <input type="hidden" name="tour_id" value="<?php echo $_GET['tour_id'] ?? 0; ?>">
+                                    <button type="submit" class="btn btn-outline-danger">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
                             </div>
                         </div>
                         
@@ -350,7 +356,7 @@
                                 <select class="form-select" name="loai_yeu_cau" id="loai_yeu_cau" required>
                                     <option value="an_uong">🍽️ Ăn uống (ăn chay, dị ứng...)</option>
                                     <option value="suc_khoe">💊 Sức khỏe (bệnh lý, thuốc...)</option>
-                                    <option value="di_chuyen">🚗 Di chuyển (xe lăn, chậm chân...)</option>
+                                    <option value="di_chuyen">?? Di chuy?n (xe lan, ch?m ch?n...)</option>
                                     <option value="phong_o">🏨 Phòng ở (tầng thấp, gần thang máy...)</option>
                                     <option value="hoat_dong">🎯 Hoạt động (không leo núi, không bơi...)</option>
                                     <option value="khac">📌 Khác</option>
@@ -436,3 +442,4 @@
     </script>
 </body>
 </html>
+

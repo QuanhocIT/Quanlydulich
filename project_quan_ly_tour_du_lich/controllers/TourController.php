@@ -9,8 +9,26 @@ class TourController {
     }
     
     public function index() {
-        $tours = $this->model->getAll();
-        require 'views/auth/login.php';
+        $role = $_SESSION['role'] ?? null;
+        if ($role === 'Admin') {
+            header('Location: index.php?act=admin/dashboard');
+            exit();
+        }
+        if ($role === 'HDV') {
+            header('Location: index.php?act=hdv/dashboard');
+            exit();
+        }
+        if ($role === 'KhachHang') {
+            header('Location: index.php?act=khachHang/dashboard');
+            exit();
+        }
+        if ($role === 'NhaCungCap') {
+            header('Location: index.php?act=nhaCungCap/dashboard');
+            exit();
+        }
+
+        header('Location: index.php?act=auth/login');
+        exit();
     }
     
     public function show() {
@@ -247,7 +265,20 @@ class TourController {
     
     public function delete() {
         // requireRole('Admin');
-        $id = isset($_GET['id']) ? (int)$_GET['id'] : null;
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+            header('Location: index.php?act=admin/quanLyTour');
+            exit();
+        }
+
+        if (!verifyCsrfToken($_POST['_csrf_token'] ?? '', 'tour_delete')
+            && !verifyCsrfToken($_POST['_csrf_global'] ?? '', 'global_form')) {
+            setValidationErrors(['_csrf_token' => 'invalid'], 'Yeu cau khong hop le (CSRF).');
+            $_SESSION['error'] = 'Yeu cau khong hop le (CSRF). Vui long thu lai.';
+            header('Location: index.php?act=admin/quanLyTour');
+            exit();
+        }
+
+        $id = isset($_POST['id']) ? (int)$_POST['id'] : null;
         if ($id) {
             try {
                 $tour = $this->model->findById($id);
@@ -643,9 +674,22 @@ class TourController {
 
     // Xóa phân bổ nhân sự
     public function deleteNhanSuLichKhoiHanh() {
-        $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-        $lichKhoiHanhId = isset($_GET['lich_khoi_hanh_id']) ? (int)$_GET['lich_khoi_hanh_id'] : 0;
-        $tourId = isset($_GET['tour_id']) ? (int)$_GET['tour_id'] : 0;
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+            header('Location: index.php?act=admin/quanLyTour');
+            exit();
+        }
+
+        if (!verifyCsrfToken($_POST['_csrf_token'] ?? '', 'tour_delete')
+            && !verifyCsrfToken($_POST['_csrf_global'] ?? '', 'global_form')) {
+            setValidationErrors(['_csrf_token' => 'invalid'], 'Yeu cau khong hop le (CSRF).');
+            $_SESSION['error'] = 'Yeu cau khong hop le (CSRF). Vui long thu lai.';
+            header('Location: index.php?act=admin/quanLyTour');
+            exit();
+        }
+
+        $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+        $lichKhoiHanhId = isset($_POST['lich_khoi_hanh_id']) ? (int)$_POST['lich_khoi_hanh_id'] : 0;
+        $tourId = isset($_POST['tour_id']) ? (int)$_POST['tour_id'] : 0;
         
         if ($id > 0) {
             require_once 'models/PhanBoNhanSu.php';
@@ -664,9 +708,22 @@ class TourController {
 
     // Xóa phân bổ dịch vụ
     public function deleteDichVuLichKhoiHanh() {
-        $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-        $lichKhoiHanhId = isset($_GET['lich_khoi_hanh_id']) ? (int)$_GET['lich_khoi_hanh_id'] : 0;
-        $tourId = isset($_GET['tour_id']) ? (int)$_GET['tour_id'] : 0;
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+            header('Location: index.php?act=admin/quanLyTour');
+            exit();
+        }
+
+        if (!verifyCsrfToken($_POST['_csrf_token'] ?? '', 'tour_delete')
+            && !verifyCsrfToken($_POST['_csrf_global'] ?? '', 'global_form')) {
+            setValidationErrors(['_csrf_token' => 'invalid'], 'Yeu cau khong hop le (CSRF).');
+            $_SESSION['error'] = 'Yeu cau khong hop le (CSRF). Vui long thu lai.';
+            header('Location: index.php?act=admin/quanLyTour');
+            exit();
+        }
+
+        $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+        $lichKhoiHanhId = isset($_POST['lich_khoi_hanh_id']) ? (int)$_POST['lich_khoi_hanh_id'] : 0;
+        $tourId = isset($_POST['tour_id']) ? (int)$_POST['tour_id'] : 0;
         
         if ($id > 0) {
             require_once 'models/PhanBoDichVu.php';

@@ -372,14 +372,27 @@
                     <?php echo $error; ?>
                 </div>
             <?php endif; ?>
+
+            <?php $validationPayload = getValidationErrors(); ?>
+            <?php if (!isset($error) && !empty($validationPayload['message'])): ?>
+                <div class="alert">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <?php echo htmlspecialchars((string)$validationPayload['message']); ?>
+                </div>
+            <?php endif; ?>
+            <?php $validationErrors = $validationPayload['errors'] ?? []; ?>
             
             <form method="POST" action="index.php?act=auth/login">
+                <?php echo csrfField('auth_login'); ?>
                 <div class="form-group">
                     <label><i class="bi bi-person"></i> Tên đăng nhập / Email</label>
                     <div class="input-wrapper">
                         <i class="bi bi-person-circle input-icon"></i>
                         <input type="text" name="username" class="form-control" placeholder="Nhập tên đăng nhập hoặc email" required>
                     </div>
+                    <?php if (!empty($validationErrors['username']) || !empty($validationErrors['credentials'])): ?>
+                        <small style="color:#ffb4b4;display:block;margin-top:6px;">Vui lòng nhập đúng tên đăng nhập/email.</small>
+                    <?php endif; ?>
                 </div>
                 
                 <div class="form-group">
@@ -388,6 +401,9 @@
                         <i class="bi bi-shield-lock input-icon"></i>
                         <input type="password" name="password" class="form-control" placeholder="Nhập mật khẩu" required>
                     </div>
+                    <?php if (!empty($validationErrors['password']) || !empty($validationErrors['credentials'])): ?>
+                        <small style="color:#ffb4b4;display:block;margin-top:6px;">Mật khẩu không hợp lệ.</small>
+                    <?php endif; ?>
                 </div>
                 
                 <button type="submit" class="btn-login">
@@ -406,6 +422,9 @@
                     <i class="bi bi-person-plus"></i> Chưa có tài khoản? Đăng ký ngay
                 </a>
             </div>
+            <div class="text-center mt-3">
+                    <a href="google_login.php" class="btn btn-danger w-100"><i class="bi bi-google me-1"></i> Đăng nhập bằng Google</a>
+                </div>
         </div>
     </div>
     

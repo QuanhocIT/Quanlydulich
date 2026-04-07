@@ -6,6 +6,7 @@ require_once 'models/NguoiDung.php';
 require_once 'models/BookingHistory.php';
 require_once 'models/BookingDeletionHistory.php';
 require_once 'models/LichKhoiHanh.php';
+require_once __DIR__ . '/../commons/mail.php';
 
 if (file_exists(__DIR__ . '/../vendor/autoload.php')) {
     require_once __DIR__ . '/../vendor/autoload.php';
@@ -34,9 +35,15 @@ class BookingController {
     }
     
     public function create() {
-        // requireLogin();
+        requireRole('KhachHang');
         
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            if (!verifyCsrfToken($_POST['_csrf_token'] ?? '', 'booking_create')) {
+                $_SESSION['error'] = 'Phiên làm việc không hợp lệ.';
+                header('Location: index.php?act=tour/index');
+                exit();
+            }
+
             $khachHangId = $_SESSION['khach_hang_id'] ?? null;
             if (!$khachHangId && isset($_SESSION['user_id'])) {
                 $khachHang = $this->khachHangModel->findByNguoiDungId($_SESSION['user_id']);
@@ -51,28 +58,32 @@ class BookingController {
                 exit();
             }
 
-            $tourId = isset($_POST['tour_id']) ? (int)$_POST['tour_id'] : 0;
+            $tourId = validateId($_POST['tour_id'] ?? null) ?? 0;
             $tour = $tourId > 0 ? $this->tourModel->findById($tourId) : null;
             if ($tourId <= 0 || !$tour) {
                 header('Location: index.php?act=tour/index');
                 exit();
             }
 
-        $ngayKhoiHanh = $_POST['ngay_khoi_hanh'] ?? '';
-        $ngayKetThuc = $_POST['ngay_ket_thuc'] ?? $ngayKhoiHanh;
+            $ngayKhoiHanh = validateDateYmd($_POST['ngay_khoi_hanh'] ?? '') ?? '';
+            $ngayKetThuc = validateDateYmd($_POST['ngay_ket_thuc'] ?? '') ?? $ngayKhoiHanh;
+            $soNguoi = validateId($_POST['so_nguoi'] ?? 1) ?? 1;
 
-            $tienCoc = isset($_POST['tien_coc']) ? (float)$_POST['tien_coc'] : 0;
+            $tienCoc = validateMoney($_POST['tien_coc'] ?? 0, 0) ?? 0;
+            $tongTienInput = validateMoney($_POST['tong_tien'] ?? null, 0);
+            $tongTien = $tongTienInput ?? ((float)($tour['gia_co_ban'] ?? 0) * $soNguoi);
+
             $data = [
                 'tour_id' => $tourId,
                 'khach_hang_id' => $khachHangId,
                 'ngay_dat' => date('Y-m-d'),
-                'so_nguoi' => isset($_POST['so_nguoi']) ? (int)$_POST['so_nguoi'] : 1,
+                'so_nguoi' => $soNguoi,
                 'ngay_khoi_hanh' => $ngayKhoiHanh,
                 'ngay_ket_thuc' => $ngayKetThuc,
-                'tong_tien' => isset($_POST['tong_tien']) ? (float)$_POST['tong_tien'] : (float)($tour['gia_co_ban'] ?? 0) * (isset($_POST['so_nguoi']) ? (int)$_POST['so_nguoi'] : 1),
+                'tong_tien' => $tongTien,
                 'tien_coc' => $tienCoc,
                 'trang_thai' => 'ChoXacNhan',
-                'ghi_chu' => $_POST['ghi_chu'] ?? null
+                'ghi_chu' => requestString('ghi_chu', '', 'POST')
             ];
             
             $bookingId = $this->bookingModel->insert($data);
@@ -112,7 +123,7 @@ class BookingController {
                 exit();
             }
         } else {
-            $tourId = isset($_GET['tour_id']) ? (int)$_GET['tour_id'] : 0;
+            $tourId = validateId($_GET['tour_id'] ?? null) ?? 0;
             $tour = $this->tourModel->findById($tourId);
             if (!$tour) {
                 header('Location: index.php?act=tour/index');
@@ -124,7 +135,7 @@ class BookingController {
     
     public function show() {
         // requireLogin();
-        $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+        $id = validateId($_GET['id'] ?? null) ?? 0;
         $booking = $this->bookingModel->findById($id);
         
         $khachHangId = $_SESSION['khach_hang_id'] ?? null;
@@ -146,7 +157,7 @@ class BookingController {
     
     public function index() {
         // requireLogin();
-        $conditions = [];
+        $filters = [];
         
         if (isset($_SESSION['role']) && $_SESSION['role'] === 'KhachHang') {
             $khachHangId = $_SESSION['khach_hang_id'] ?? null;
@@ -157,20 +168,43 @@ class BookingController {
                     $_SESSION['khach_hang_id'] = $khachHangId;
                 }
             }
+            // Customer role gets filtered by their own customer ID
             if ($khachHangId) {
-                $conditions['khach_hang_id'] = $khachHangId;
+                // For customer role, use find() with single customer ID
+                $conditions = ['khach_hang_id' => $khachHangId];
+                if (isset($_GET['trang_thai']) && !empty($_GET['trang_thai'])) {
+                    $conditions['trang_thai'] = $_GET['trang_thai'];
+                }
+                $bookings = $this->bookingModel->find($conditions);
+                $totalBookings = count($bookings);
+                $pageNumber = 1;
+                $totalPages = 1;
+            } else {
+                // No customer ID, show empty
+                $bookings = [];
+                $totalBookings = 0;
+                $pageNumber = 1;
+                $totalPages = 0;
             }
-        }
-        
-        // Lọc theo trạng thái nếu có
-        if (isset($_GET['trang_thai']) && !empty($_GET['trang_thai'])) {
-            $conditions['trang_thai'] = $_GET['trang_thai'];
-        }
-        
-        if (!empty($conditions)) {
-        $bookings = $this->bookingModel->find($conditions);
         } else {
-            $bookings = $this->bookingModel->getAllWithDetails();
+            // Admin view with pagination
+            if (isset($_GET['trang_thai']) && !empty($_GET['trang_thai'])) {
+                $filters['trang_thai'] = $_GET['trang_thai'];
+            }
+            if (isset($_GET['search']) && !empty($_GET['search'])) {
+                $filters['search'] = $_GET['search'];
+            }
+            if (isset($_GET['co_yeu_cau_tour']) && $_GET['co_yeu_cau_tour'] !== '') {
+                $filters['co_yeu_cau_tour'] = $_GET['co_yeu_cau_tour'];
+            }
+
+            $perPage = 50;
+            $pageNumber = max(1, (int)($_GET['page'] ?? 1));
+            $offset = ($pageNumber - 1) * $perPage;
+
+            $totalBookings = $this->bookingModel->countAllWithDetailsFiltered($filters);
+            $bookings = $this->bookingModel->getAllWithDetailsFiltered($filters, $perPage, $offset);
+            $totalPages = (int)ceil($totalBookings / $perPage);
         }
         
         require 'views/admin/quan_ly_booking.php';
@@ -179,9 +213,9 @@ class BookingController {
     // Cập nhật trạng thái booking
     public function updateTrangThai() {
         // requireLogin();
-        $bookingId = isset($_POST['booking_id']) ? (int)$_POST['booking_id'] : 0;
-        $trangThaiMoi = $_POST['trang_thai'] ?? '';
-        $ghiChu = trim($_POST['ghi_chu'] ?? '');
+        $bookingId = validateId($_POST['booking_id'] ?? null) ?? 0;
+        $trangThaiMoi = requestString('trang_thai', '', 'POST');
+        $ghiChu = requestString('ghi_chu', '', 'POST');
         $nguoiThayDoiId = $_SESSION['user_id'] ?? null;
         
         // Kiểm tra quyền
@@ -236,7 +270,7 @@ class BookingController {
     // Cập nhật tiền cọc
     public function updateTienCoc() {
         // requireLogin();
-        $bookingId = isset($_POST['booking_id']) ? (int)$_POST['booking_id'] : 0;
+        $bookingId = validateId($_POST['booking_id'] ?? null) ?? 0;
         
         if ($bookingId <= 0) {
             $_SESSION['error'] = 'ID booking không hợp lệ.';
@@ -251,9 +285,9 @@ class BookingController {
             exit();
         }
         
-        $tienCoc = isset($_POST['tien_coc']) ? (float)$_POST['tien_coc'] : 0;
-        $trangThaiCoc = $_POST['trang_thai_coc'] ?? 'ChuaCoc';
-        $ghiChuCoc = trim($_POST['ghi_chu_coc'] ?? '');
+        $tienCoc = validateMoney($_POST['tien_coc'] ?? 0, 0) ?? 0;
+        $trangThaiCoc = requestString('trang_thai_coc', 'ChuaCoc', 'POST');
+        $ghiChuCoc = requestString('ghi_chu_coc', '', 'POST');
         // Tính số tiền còn lại
         $soTienConLai = 0;
         
@@ -297,14 +331,12 @@ class BookingController {
         $conn = connectDB();
         try {
             // Kiểm tra xem các cột có tồn tại không
-            $checkColumns = $conn->query("SHOW COLUMNS FROM booking LIKE 'tien_coc'");
-            $hasTienCoc = $checkColumns->rowCount() > 0;
+            $hasTienCoc = dbColumnExists('booking', 'tien_coc', $conn);
             
             if ($hasTienCoc) {
                 // Cập nhật với các trường mới
                 // Kiểm tra cột so_tien_con_lai
-                $checkSoTienConLai = $conn->query("SHOW COLUMNS FROM booking LIKE 'so_tien_con_lai'");
-                $hasSoTienConLai = $checkSoTienConLai->rowCount() > 0;
+                $hasSoTienConLai = dbColumnExists('booking', 'so_tien_con_lai', $conn);
                 $soTienConLai = $tongTien - $tienCoc;
                 if ($soTienConLai < 0) $soTienConLai = 0;
                 if ($hasSoTienConLai) {
@@ -417,9 +449,17 @@ class BookingController {
     // Cập nhật thông tin booking
     public function update() {
         // requireLogin();
-        $id = isset($_POST['booking_id']) ? (int)$_POST['booking_id'] : 0;
+        if (!verifyCsrfToken($_POST['_csrf_token'] ?? '', 'booking_update')) {
+            setValidationErrors(['_csrf_token' => 'invalid'], 'Phien lam viec khong hop le.');
+            $_SESSION['error'] = 'Phiên làm việc không hợp lệ.';
+            header('Location: index.php?act=admin/quanLyBooking');
+            exit();
+        }
+
+        $id = validateId($_POST['booking_id'] ?? null) ?? 0;
         
         if ($id <= 0) {
+            setValidationErrors(['booking_id' => 'invalid'], 'ID booking khong hop le.');
             $_SESSION['error'] = 'ID booking không hợp lệ.';
             header('Location: index.php?act=admin/quanLyBooking');
             exit();
@@ -427,16 +467,35 @@ class BookingController {
         
         // Kiểm tra quyền
         if (!$this->checkPermissionToUpdate($id)) {
+            setValidationErrors(['permission' => 'denied'], 'Ban khong co quyen cap nhat booking nay.');
             $_SESSION['error'] = 'Bạn không có quyền cập nhật booking này.';
             header('Location: index.php?act=admin/quanLyBooking');
             exit();
         }
         
-        $ngayKhoiHanh = $_POST['ngay_khoi_hanh'] ?? null;
-        $ngayKetThuc = $_POST['ngay_ket_thuc'] ?? $ngayKhoiHanh;
+        $ngayKhoiHanh = validateDateYmd($_POST['ngay_khoi_hanh'] ?? '') ?? null;
+        $ngayKetThuc = validateDateYmd($_POST['ngay_ket_thuc'] ?? '') ?? $ngayKhoiHanh;
         
-        $tongTien = isset($_POST['tong_tien']) ? (float)$_POST['tong_tien'] : 0;
-        $tienCoc = isset($_POST['tien_coc']) ? (float)$_POST['tien_coc'] : 0;
+        $tongTien = validateMoney($_POST['tong_tien'] ?? null, 0);
+        $tienCoc = validateMoney($_POST['tien_coc'] ?? 0, 0);
+        if ($tongTien === null || $tienCoc === null) {
+            setValidationErrors([
+                'tong_tien' => $tongTien === null ? 'invalid' : null,
+                'tien_coc' => $tienCoc === null ? 'invalid' : null,
+            ], 'So tien khong hop le.');
+            $_SESSION['error'] = 'Số tiền không hợp lệ.';
+            header('Location: index.php?act=booking/chiTiet&id=' . $id);
+            exit();
+        }
+
+        if ($tienCoc > $tongTien) {
+            setValidationErrors([
+                'tien_coc' => 'gt:tong_tien'
+            ], 'Tien coc khong duoc lon hon tong tien.');
+            $_SESSION['error'] = 'Tiền cọc không được lớn hơn tổng tiền.';
+            header('Location: index.php?act=booking/chiTiet&id=' . $id);
+            exit();
+        }
         
         // Lấy thông tin booking hiện tại
         $booking = $this->bookingModel->findById($id);
@@ -481,14 +540,14 @@ class BookingController {
         }
         
         $data = [
-            'so_nguoi' => isset($_POST['so_nguoi']) ? (int)$_POST['so_nguoi'] : 1,
+            'so_nguoi' => validateId($_POST['so_nguoi'] ?? 1) ?? 1,
             'ngay_khoi_hanh' => $ngayKhoiHanh,
             'ngay_ket_thuc' => $ngayKetThuc,
             'tong_tien' => $tongTien,
             'tien_coc' => $tienCoc,
             'trang_thai_coc' => $trangThaiCoc,
             'trang_thai' => $trangThaiMoi,
-            'ghi_chu' => $_POST['ghi_chu'] ?? null
+            'ghi_chu' => requestString('ghi_chu', '', 'POST')
         ];
         
         // Kiểm tra có thay đổi gì không
@@ -615,8 +674,14 @@ class BookingController {
         
         // POST: Xác nhận mật khẩu và xóa
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $matKhau = $_POST['mat_khau'] ?? '';
-            $lyDoXoa = $_POST['ly_do_xoa'] ?? '';
+            if (!verifyCsrfToken($_POST['_csrf_token'] ?? '', 'booking_delete')) {
+                $_SESSION['error'] = 'Phiên làm việc không hợp lệ.';
+                header('Location: index.php?act=booking/delete&id=' . $id);
+                exit();
+            }
+
+            $matKhau = (string)($_POST['mat_khau'] ?? '');
+            $lyDoXoa = requestString('ly_do_xoa', '', 'POST');
             
             // Kiểm tra mật khẩu admin
             $adminId = $_SESSION['user_id'] ?? 0;
@@ -732,20 +797,33 @@ class BookingController {
         
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             try {
+                if (!verifyCsrfToken($_POST['_csrf_token'] ?? '', 'booking_staff_create')) {
+                    throw new Exception('Phiên làm việc không hợp lệ.');
+                }
+
                 // Lấy thông tin từ form
-                $tourId = isset($_POST['tour_id']) ? (int)$_POST['tour_id'] : 0;
-                $hoTen = trim($_POST['ho_ten'] ?? '');
-                $email = trim($_POST['email'] ?? '');
-                $soDienThoai = trim($_POST['so_dien_thoai'] ?? '');
-                $diaChi = trim($_POST['dia_chi'] ?? '');
-                $gioiTinh = $_POST['gioi_tinh'] ?? null;
-                $ngaySinh = $_POST['ngay_sinh'] ?? null;
-                $soNguoi = isset($_POST['so_nguoi']) ? (int)$_POST['so_nguoi'] : 1;
-                $ngayKhoiHanh = $_POST['ngay_khoi_hanh'] ?? '';
-                $loaiKhach = $_POST['loai_khach'] ?? 'le'; // le hoặc doan
-                $tenCongTy = trim($_POST['ten_cong_ty'] ?? '');
-                $ghiChu = trim($_POST['ghi_chu'] ?? '');
-                $yeuCauDacBiet = trim($_POST['yeu_cau_dac_biet'] ?? '');
+                $tourId = validateId($_POST['tour_id'] ?? null) ?? 0;
+                $hoTen = requestString('ho_ten', '', 'POST');
+                $email = validateEmail($_POST['email'] ?? '');
+                $soDienThoai = validatePhone($_POST['so_dien_thoai'] ?? '');
+                $diaChi = requestString('dia_chi', '', 'POST');
+                $gioiTinh = requestString('gioi_tinh', '', 'POST');
+                $ngaySinh = validateDateYmd($_POST['ngay_sinh'] ?? '') ?? null;
+                $soNguoi = validateId($_POST['so_nguoi'] ?? 1) ?? 1;
+                $ngayKhoiHanh = validateDateYmd($_POST['ngay_khoi_hanh'] ?? '') ?? '';
+                $ngayKetThucForm = validateDateYmd($_POST['ngay_ket_thuc'] ?? '') ?? $ngayKhoiHanh;
+                $loaiKhach = requestString('loai_khach', 'le', 'POST'); // le hoặc doan
+                $tenCongTy = requestString('ten_cong_ty', '', 'POST');
+                $ghiChu = requestString('ghi_chu', '', 'POST');
+                $yeuCauDacBiet = requestString('yeu_cau_dac_biet', '', 'POST');
+
+                if (!in_array($gioiTinh, ['', 'Nam', 'Nu', 'Khac'], true)) {
+                    $gioiTinh = null;
+                }
+
+                if (!in_array($loaiKhach, ['le', 'doan'], true)) {
+                    $loaiKhach = 'le';
+                }
 
                 // Validation
                 if (empty($hoTen)) {
@@ -754,8 +832,17 @@ class BookingController {
                 if (empty($email) && empty($soDienThoai)) {
                     throw new Exception('Vui lòng nhập email hoặc số điện thoại.');
                 }
+                if (!empty($_POST['email']) && $email === null) {
+                    throw new Exception('Email không hợp lệ.');
+                }
+                if (!empty($_POST['so_dien_thoai']) && $soDienThoai === null) {
+                    throw new Exception('Số điện thoại không hợp lệ.');
+                }
                 // Ngày sinh: nếu nhập thì phải đủ 18 tuổi trở lên
-                if (!empty($ngaySinh)) {
+                if (!empty($_POST['ngay_sinh'])) {
+                    if ($ngaySinh === null) {
+                        throw new Exception('Ngày sinh không hợp lệ.');
+                    }
                     $dob = DateTime::createFromFormat('Y-m-d', $ngaySinh);
                     if (!$dob) {
                         throw new Exception('Ngày sinh không hợp lệ.');
@@ -815,7 +902,7 @@ class BookingController {
                     'khach_hang_id' => $khachHang['khach_hang_id'],
                     'ngay_dat' => date('Y-m-d'),
                     'ngay_khoi_hanh' => $ngayKhoiHanh,
-                    'ngay_ket_thuc' => !empty($_POST['ngay_ket_thuc']) ? $_POST['ngay_ket_thuc'] : $ngayKhoiHanh,
+                    'ngay_ket_thuc' => $ngayKetThucForm,
                     'so_nguoi' => $soNguoi,
                     'tong_tien' => $tongTien,
                     'trang_thai' => 'ChoXacNhan',
@@ -829,7 +916,7 @@ class BookingController {
 
                 // Tự động tạo lịch khởi hành nếu chưa có
                 if (!empty($ngayKhoiHanh) && !empty($tourId)) {
-                    $ngayKetThuc = !empty($_POST['ngay_ket_thuc']) ? $_POST['ngay_ket_thuc'] : $ngayKhoiHanh;
+                    $ngayKetThuc = $ngayKetThucForm;
                     $lichKhoiHanh = $this->lichKhoiHanhModel->findByTourAndNgayKhoiHanh($tourId, $ngayKhoiHanh);
                     if (!$lichKhoiHanh) {
                         // Tạo lịch khởi hành mới
@@ -859,6 +946,7 @@ class BookingController {
                 exit();
             } catch (Exception $e) {
                 $_SESSION['error'] = $e->getMessage();
+                setValidationErrors(['general' => $e->getMessage()], 'Thong tin dat tour khong hop le.');
                 // Giữ lại dữ liệu form để hiển thị lại
                 $_SESSION['form_data'] = $_POST;
                 header('Location: index.php?act=booking/datTourChoKhach');
@@ -1079,16 +1167,6 @@ class BookingController {
 
     // Function gửi HTML email
     private function sendHTMLEmail($to, $subject, $htmlContent, $toName = '') {
-        $from = 'info@dulichabc.vn';
-        $fromName = 'Công ty Du lịch ABC';
-        
-        $headers = "MIME-Version: 1.0" . "\r\n";
-        $headers .= "Content-type:text/html;charset=UTF-8" . "\r\n";
-        $headers .= "From: $fromName <$from>" . "\r\n";
-        $headers .= "Reply-To: $from" . "\r\n";
-        $headers .= "X-Mailer: PHP/" . phpversion();
-        
-        // Email body
         $message = '
         <!DOCTYPE html>
         <html lang="vi">
@@ -1127,9 +1205,10 @@ class BookingController {
             </div>
         </body>
         </html>';
-        
-        // Gửi email
-        return mail($to, $subject, $message, $headers);
+
+        return sendHtmlEmail($to, $subject, $message, '', [
+            'from_name' => 'Công ty Du lịch ABC',
+        ]);
     }
 
     /**

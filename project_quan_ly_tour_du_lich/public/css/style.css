@@ -52,7 +52,7 @@ body {
 
 /* Background cho trang auth */
 body.auth-page {
-  background-image: url("/tunganh/du_an_1/project_quan_ly_tour_du_lich/public/images/logos/hinh-nen-viet-nam-4k10.jpg");
+  background-image: url("/du_an_1-main/project_quan_ly_tour_du_lich/public/images/logos/hinh-nen-viet-nam-4k10.jpg");
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -305,4 +305,11 @@ a:hover {
     border-radius: 12px;
     border: 1px solid rgba(15, 23, 42, 0.12);
     padding: 8px 14px;
+}
+.table td {
+    color: var(--text-light);
+    font-size: 13px;
+}
+.table tr:hover {
+  background: rgba(255, 255, 255, 0.05);
 }

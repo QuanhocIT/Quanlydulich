@@ -82,7 +82,7 @@ class NguoiDung
      * Lấy danh sách người dùng có kèm tìm kiếm và lọc.
      * Đây là hàm được sửa để sử dụng $this->conn thay vì $this->db
      */
-    public function getFilteredUsers($search = '', $role = '') {
+    public function getFilteredUsers($search = '', $role = '', $status = '') {
         // Kiểm tra kết nối trước khi sử dụng
         if ($this->conn === null) {
              // Có thể ném ngoại lệ hoặc trả về mảng rỗng nếu kết nối thất bại
@@ -92,15 +92,18 @@ class NguoiDung
         $sql = "SELECT * FROM nguoi_dung WHERE 1=1";
         $params = [];
         if (!empty($search)) {
-            $sql .= " AND (ten_dang_nhap LIKE :search OR ho_ten LIKE :search OR email LIKE :search)";
+            $sql .= " AND (ten_dang_nhap LIKE :search OR ho_ten LIKE :search OR email LIKE :search OR so_dien_thoai LIKE :search)";
             $params[':search'] = '%' . $search . '%';
         }
         if (!empty($role)) {
             $sql .= " AND vai_tro = :role";
             $params[':role'] = $role;
         }
+        if (!empty($status)) {
+            $sql .= " AND trang_thai = :status";
+            $params[':status'] = $status;
+        }
         $sql .= " ORDER BY id DESC";
-        error_log('DEBUG: SQL = ' . $sql . ' | Params = ' . json_encode($params));
 
         try {
             // SỬA LỖI: Sử dụng $this->conn thay vì $this->db
@@ -111,6 +114,78 @@ class NguoiDung
             // Xử lý lỗi DB tại đây (nên dùng error_log)
             return []; 
         }
+    }
+
+    public function getUserStats($search = '', $role = '', $status = '') {
+        if ($this->conn === null) {
+            return [
+                'total' => 0,
+                'active' => 0,
+                'locked' => 0,
+                'roles' => [
+                    'Admin' => 0,
+                    'HDV' => 0,
+                    'KhachHang' => 0,
+                    'NhaCungCap' => 0,
+                ],
+            ];
+        }
+
+        $sql = "SELECT vai_tro, trang_thai, COUNT(*) AS total FROM nguoi_dung WHERE 1=1";
+        $params = [];
+
+        if (!empty($search)) {
+            $sql .= " AND (ten_dang_nhap LIKE :search OR ho_ten LIKE :search OR email LIKE :search OR so_dien_thoai LIKE :search)";
+            $params[':search'] = '%' . $search . '%';
+        }
+        if (!empty($role)) {
+            $sql .= " AND vai_tro = :role";
+            $params[':role'] = $role;
+        }
+        if (!empty($status)) {
+            $sql .= " AND trang_thai = :status";
+            $params[':status'] = $status;
+        }
+
+        $sql .= " GROUP BY vai_tro, trang_thai";
+
+        $stats = [
+            'total' => 0,
+            'active' => 0,
+            'locked' => 0,
+            'roles' => [
+                'Admin' => 0,
+                'HDV' => 0,
+                'KhachHang' => 0,
+                'NhaCungCap' => 0,
+            ],
+        ];
+
+        try {
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute($params);
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            foreach ($rows as $row) {
+                $count = (int)($row['total'] ?? 0);
+                $vaiTro = $row['vai_tro'] ?? '';
+                $trangThai = $row['trang_thai'] ?? '';
+
+                $stats['total'] += $count;
+                if ($trangThai === 'HoatDong') {
+                    $stats['active'] += $count;
+                } elseif ($trangThai === 'BiKhoa') {
+                    $stats['locked'] += $count;
+                }
+
+                if (isset($stats['roles'][$vaiTro])) {
+                    $stats['roles'][$vaiTro] += $count;
+                }
+            }
+        } catch (PDOException $e) {
+            return $stats;
+        }
+
+        return $stats;
     }
 
     // Tìm người dùng theo điều kiện
@@ -199,6 +274,16 @@ class NguoiDung
         $sql = "UPDATE nguoi_dung SET mat_khau = ? WHERE id = ?";
         $stmt = $this->conn->prepare($sql);
         return $stmt->execute([$hashedPassword, $id]);
+    }
+
+    public function updateStatus($id, $status) {
+        $allowedStatus = ['HoatDong', 'BiKhoa'];
+        if (!in_array($status, $allowedStatus, true)) {
+            return false;
+        }
+        $sql = "UPDATE nguoi_dung SET trang_thai = ? WHERE id = ?";
+        $stmt = $this->conn->prepare($sql);
+        return $stmt->execute([$status, $id]);
     }
 
     // Xóa người dùng

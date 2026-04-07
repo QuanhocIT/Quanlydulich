@@ -3,10 +3,42 @@
 class Booking 
 {
     public $conn;
+    private static $columnExistsCache = [];
+    private static $tableColumnsCache = [];
     
     public function __construct()
     {
         $this->conn = connectDB();
+    }
+
+    private function hasColumn($tableName, $columnName) {
+        $key = $tableName . '.' . $columnName;
+        if (array_key_exists($key, self::$columnExistsCache)) {
+            return self::$columnExistsCache[$key];
+        }
+
+        if (!array_key_exists($tableName, self::$tableColumnsCache)) {
+            $sql = "SELECT COLUMN_NAME
+                    FROM INFORMATION_SCHEMA.COLUMNS
+                    WHERE TABLE_SCHEMA = DATABASE()
+                      AND TABLE_NAME = ?";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute([$tableName]);
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $columnMap = [];
+            foreach ($rows as $row) {
+                $name = (string)($row['COLUMN_NAME'] ?? '');
+                if ($name !== '') {
+                    $columnMap[$name] = true;
+                }
+            }
+            self::$tableColumnsCache[$tableName] = $columnMap;
+        }
+
+        self::$columnExistsCache[$key] = isset(self::$tableColumnsCache[$tableName][$columnName]);
+
+        return self::$columnExistsCache[$key];
     }
 
     // Tìm booking theo tour_id và khach_hang_id (mã tour và mã khách hàng)
@@ -33,6 +65,24 @@ class Booking
         return $stmt->fetch();
     }
 
+    // Thống kê số lượng booking theo trạng thái.
+    public function getStatusCounts() {
+        $sql = "SELECT COALESCE(trang_thai, 'Khac') AS trang_thai, COUNT(*) AS total
+                FROM booking
+                GROUP BY COALESCE(trang_thai, 'Khac')";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute();
+        $rows = $stmt->fetchAll();
+
+        $result = [];
+        foreach ($rows as $row) {
+            $status = (string)($row['trang_thai'] ?? 'Khac');
+            $result[$status] = (int)($row['total'] ?? 0);
+        }
+
+        return $result;
+    }
+
     // Tìm booking theo điều kiện
     public function find($conditions = []) {
         $sql = "SELECT * FROM booking";
@@ -57,8 +107,7 @@ class Booking
     // Thêm booking mới
     public function insert($data) {
         // Kiểm tra cột so_tien_con_lai
-        $checkSoTienConLai = $this->conn->query("SHOW COLUMNS FROM booking LIKE 'so_tien_con_lai'");
-        $hasSoTienConLai = $checkSoTienConLai->rowCount() > 0;
+        $hasSoTienConLai = $this->hasColumn('booking', 'so_tien_con_lai');
             $soTienConLai = 0; // Khởi tạo biến số tiền còn lại
         if ($hasSoTienConLai) {
             // Nếu có cột, tính số tiền còn lại = tổng tiền - tiền cọc (nếu có), mặc định là tổng tiền nếu chưa cọc
@@ -109,15 +158,12 @@ class Booking
     // Cập nhật booking
     public function update($id, $data) {
         // Kiểm tra xem cột tien_coc và trang_thai_coc có tồn tại không
-        $checkTienCoc = $this->conn->query("SHOW COLUMNS FROM booking LIKE 'tien_coc'");
-        $hasTienCoc = $checkTienCoc->rowCount() > 0;
+        $hasTienCoc = $this->hasColumn('booking', 'tien_coc');
         
-        $checkTrangThaiCoc = $this->conn->query("SHOW COLUMNS FROM booking LIKE 'trang_thai_coc'");
-        $hasTrangThaiCoc = $checkTrangThaiCoc->rowCount() > 0;
+        $hasTrangThaiCoc = $this->hasColumn('booking', 'trang_thai_coc');
         
             // Kiểm tra cột so_tien_con_lai
-            $checkSoTienConLai = $this->conn->query("SHOW COLUMNS FROM booking LIKE 'so_tien_con_lai'");
-            $hasSoTienConLai = $checkSoTienConLai->rowCount() > 0;
+            $hasSoTienConLai = $this->hasColumn('booking', 'so_tien_con_lai');
             if ($hasTienCoc && $hasSoTienConLai && isset($data['tien_coc'])) {
                 // Tính số tiền còn lại nếu chưa truyền vào
                     if (isset($data['tong_tien']) && isset($data['so_tien_coc'])) {
@@ -205,10 +251,10 @@ class Booking
 
     // Lấy booking với đầy đủ thông tin để hiển thị
     public function getAllWithDetails() {
-        $sql = "SELECT b.*, 
+        $sql = "SELECT b.*,
                 t.ten_tour, t.gia_co_ban, t.loai_tour,
                 kh.khach_hang_id, kh.dia_chi,
-                nd.ho_ten, nd.email, nd.so_dien_thoai
+                nd.id AS nguoi_dung_id, nd.ho_ten, nd.email, nd.so_dien_thoai
                 FROM booking b
                 LEFT JOIN tour t ON b.tour_id = t.tour_id
                 LEFT JOIN khach_hang kh ON b.khach_hang_id = kh.khach_hang_id
@@ -216,6 +262,123 @@ class Booking
                 ORDER BY b.ngay_dat DESC, b.booking_id DESC";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    // Lấy danh sách booking gần đây cho dropdown tạo yêu cầu đặc biệt.
+    public function getRecentOptionsForSpecialRequests($limit = 300) {
+        $limit = max(1, (int)$limit);
+        $sql = "SELECT
+                    b.booking_id,
+                    b.ngay_khoi_hanh,
+                    t.ten_tour,
+                    nd.ho_ten,
+                    nd.so_dien_thoai
+                FROM booking b
+                LEFT JOIN tour t ON b.tour_id = t.tour_id
+                LEFT JOIN khach_hang kh ON b.khach_hang_id = kh.khach_hang_id
+                LEFT JOIN nguoi_dung nd ON kh.nguoi_dung_id = nd.id
+                WHERE (b.trang_thai IS NULL OR b.trang_thai <> 'DaHuy')
+                ORDER BY b.ngay_dat DESC, b.booking_id DESC
+                LIMIT ?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindValue(1, $limit, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    // Lấy tổng số booking theo bộ lọc (dùng cho pagination).
+    public function countAllWithDetailsFiltered(array $filters) {
+        $where = [];
+        $params = [];
+
+        if (!empty($filters['trang_thai'])) {
+            $where[] = 'b.trang_thai = ?';
+            $params[] = $filters['trang_thai'];
+        }
+        if (!empty($filters['search'])) {
+            $where[] = '(nd.ho_ten LIKE ? OR nd.email LIKE ? OR b.booking_id LIKE ? OR t.ten_tour LIKE ?)';
+            $kw = '%' . $filters['search'] . '%';
+            array_push($params, $kw, $kw, $kw, $kw);
+        }
+        if (isset($filters['co_yeu_cau_tour']) && $filters['co_yeu_cau_tour'] !== '') {
+            if ((string)$filters['co_yeu_cau_tour'] === '1') {
+                $where[] = "EXISTS (
+                    SELECT 1 FROM thong_bao tb
+                    WHERE tb.nguoi_gui_id = nd.id
+                      AND tb.tieu_de = 'Yêu cầu tour theo mong muốn'
+                      AND tb.vai_tro_nhan = 'Admin'
+                )";
+            } else {
+                $where[] = "NOT EXISTS (
+                    SELECT 1 FROM thong_bao tb
+                    WHERE tb.nguoi_gui_id = nd.id
+                      AND tb.tieu_de = 'Yêu cầu tour theo mong muốn'
+                      AND tb.vai_tro_nhan = 'Admin'
+                )";
+            }
+        }
+
+        $whereClause = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
+        $sql = "SELECT COUNT(*)
+                FROM booking b
+                LEFT JOIN tour t ON b.tour_id = t.tour_id
+                LEFT JOIN khach_hang kh ON b.khach_hang_id = kh.khach_hang_id
+                LEFT JOIN nguoi_dung nd ON kh.nguoi_dung_id = nd.id
+                $whereClause";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute($params);
+        return (int)$stmt->fetchColumn();
+    }
+
+    // Lấy danh sách booking có lọc và phân trang, tránh load toàn bộ bảng.
+    public function getAllWithDetailsFiltered(array $filters, int $limit, int $offset) {
+        $where = [];
+        $params = [];
+
+        if (!empty($filters['trang_thai'])) {
+            $where[] = 'b.trang_thai = ?';
+            $params[] = $filters['trang_thai'];
+        }
+        if (!empty($filters['search'])) {
+            $where[] = '(nd.ho_ten LIKE ? OR nd.email LIKE ? OR b.booking_id LIKE ? OR t.ten_tour LIKE ?)';
+            $kw = '%' . $filters['search'] . '%';
+            array_push($params, $kw, $kw, $kw, $kw);
+        }
+        if (isset($filters['co_yeu_cau_tour']) && $filters['co_yeu_cau_tour'] !== '') {
+            if ((string)$filters['co_yeu_cau_tour'] === '1') {
+                $where[] = "EXISTS (
+                    SELECT 1 FROM thong_bao tb
+                    WHERE tb.nguoi_gui_id = nd.id
+                      AND tb.tieu_de = 'Yêu cầu tour theo mong muốn'
+                      AND tb.vai_tro_nhan = 'Admin'
+                )";
+            } else {
+                $where[] = "NOT EXISTS (
+                    SELECT 1 FROM thong_bao tb
+                    WHERE tb.nguoi_gui_id = nd.id
+                      AND tb.tieu_de = 'Yêu cầu tour theo mong muốn'
+                      AND tb.vai_tro_nhan = 'Admin'
+                )";
+            }
+        }
+
+        $whereClause = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
+        $sql = "SELECT b.*,
+                t.ten_tour, t.gia_co_ban, t.loai_tour,
+                kh.khach_hang_id, kh.dia_chi,
+                nd.id AS nguoi_dung_id, nd.ho_ten, nd.email, nd.so_dien_thoai
+                FROM booking b
+                LEFT JOIN tour t ON b.tour_id = t.tour_id
+                LEFT JOIN khach_hang kh ON b.khach_hang_id = kh.khach_hang_id
+                LEFT JOIN nguoi_dung nd ON kh.nguoi_dung_id = nd.id
+                $whereClause
+                ORDER BY b.ngay_dat DESC, b.booking_id DESC
+                LIMIT ? OFFSET ?";
+        $params[] = $limit;
+        $params[] = $offset;
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute($params);
         return $stmt->fetchAll();
     }
 
@@ -237,6 +400,33 @@ class Booking
         $stmt->execute([(int)$tourId, $ngayKhoiHanh]);
         $result = $stmt->fetch();
         return (int)($result['tong_nguoi'] ?? 0);
+    }
+
+    public function getSoNguoiDaDatTheoLich($tourId, $ngayKhoiHanh, $includeNullNgayKhoiHanh = false) {
+        $tourId = (int)$tourId;
+        $ngayKhoiHanh = trim((string)$ngayKhoiHanh);
+        if ($tourId <= 0 || $ngayKhoiHanh === '') {
+            return 0;
+        }
+
+        $sql = "SELECT COALESCE(SUM(so_nguoi), 0) AS tong_nguoi
+                FROM booking
+                WHERE tour_id = ?
+                  AND (
+                        DATE(ngay_khoi_hanh) = DATE(?)";
+
+        $params = [$tourId, $ngayKhoiHanh];
+
+        if ($includeNullNgayKhoiHanh) {
+            $sql .= " OR ngay_khoi_hanh IS NULL";
+        }
+
+        $sql .= ")
+                  AND (trang_thai IS NULL OR trang_thai NOT IN ('Huy', 'DaHuy', 'TuChoi'))";
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute($params);
+        return (int)$stmt->fetchColumn();
     }
 
     // Kiểm tra chỗ trống cho tour và ngày khởi hành
@@ -371,14 +561,94 @@ class Booking
                 FROM booking b
                 LEFT JOIN khach_hang kh ON b.khach_hang_id = kh.khach_hang_id
                 LEFT JOIN nguoi_dung nd ON kh.nguoi_dung_id = nd.id
-                INNER JOIN lich_khoi_hanh lkh ON b.tour_id = lkh.tour_id 
-                    AND DATE(b.ngay_khoi_hanh) = DATE(lkh.ngay_khoi_hanh)
-                WHERE lkh.id = ?
+                INNER JOIN lich_khoi_hanh lkh ON lkh.id = ?
+                WHERE b.tour_id = lkh.tour_id
+                    AND (
+                        DATE(b.ngay_khoi_hanh) = DATE(lkh.ngay_khoi_hanh)
+                        OR (
+                            b.ngay_khoi_hanh IS NULL
+                            AND (
+                                SELECT COUNT(*)
+                                FROM lich_khoi_hanh lkh2
+                                WHERE lkh2.tour_id = lkh.tour_id
+                            ) = 1
+                        )
+                    )
                     AND (b.trang_thai IS NULL OR b.trang_thai <> 'DaHuy')
                 ORDER BY b.ngay_dat ASC, b.booking_id ASC";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([(int)$lichKhoiHanhId]);
         return $stmt->fetchAll();
+    }
+
+    // Lấy khách theo nhiều lịch khởi hành trong một query, trả về map lich_id => danh sách booking.
+    public function getKhachByLichKhoiHanhIdsGrouped(array $lichKhoiHanhIds) {
+        $normalized = [];
+        foreach ($lichKhoiHanhIds as $lichId) {
+            $id = (int)$lichId;
+            if ($id > 0) {
+                $normalized[$id] = $id;
+            }
+        }
+
+        if (empty($normalized)) {
+            return [];
+        }
+
+        $idList = array_values($normalized);
+        $placeholders = implode(',', array_fill(0, count($idList), '?'));
+
+        $sql = "SELECT
+                    lkh.id AS lich_khoi_hanh_id,
+                    b.booking_id,
+                    b.khach_hang_id,
+                    b.so_nguoi,
+                    b.ngay_dat,
+                    b.ghi_chu as ghi_chu_booking,
+                    nd.ho_ten,
+                    nd.email,
+                    nd.so_dien_thoai,
+                    kh.dia_chi,
+                    (
+                        SELECT id
+                        FROM yeu_cau_dac_biet y
+                        WHERE y.booking_id = b.booking_id
+                        ORDER BY y.id DESC
+                        LIMIT 1
+                    ) as yeu_cau_id,
+                    (
+                        SELECT mo_ta
+                        FROM yeu_cau_dac_biet y
+                        WHERE y.booking_id = b.booking_id
+                        ORDER BY y.id DESC
+                        LIMIT 1
+                    ) as yeu_cau_dac_biet
+                FROM lich_khoi_hanh lkh
+                INNER JOIN booking b ON b.tour_id = lkh.tour_id
+                    AND DATE(b.ngay_khoi_hanh) = DATE(lkh.ngay_khoi_hanh)
+                LEFT JOIN khach_hang kh ON b.khach_hang_id = kh.khach_hang_id
+                LEFT JOIN nguoi_dung nd ON kh.nguoi_dung_id = nd.id
+                WHERE lkh.id IN ($placeholders)
+                    AND (b.trang_thai IS NULL OR b.trang_thai <> 'DaHuy')
+                ORDER BY lkh.id ASC, b.ngay_dat ASC, b.booking_id ASC";
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute($idList);
+        $rows = $stmt->fetchAll();
+
+        $grouped = [];
+        foreach ($rows as $row) {
+            $lichId = (int)($row['lich_khoi_hanh_id'] ?? 0);
+            if ($lichId <= 0) {
+                continue;
+            }
+            if (!isset($grouped[$lichId])) {
+                $grouped[$lichId] = [];
+            }
+            $grouped[$lichId][] = $row;
+        }
+
+        return $grouped;
     }
 
     // Lấy booking theo khách hàng ID

@@ -6,23 +6,57 @@ ob_start();
 
 <style>
     .page-header-section {
-        background: rgba(45, 45, 45, 0.5);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 2px;
-        padding: 40px;
-        margin-bottom: 40px;
-        backdrop-filter: blur(10px);
+        position: relative;
+        background: linear-gradient(90deg, #2d2d2d 0%, #3a2e13 100%);
+        border-radius: 8px;
+        padding: 24px 32px;
+        margin-bottom: 32px;
+        box-shadow: 0 2px 12px rgba(212,175,55,0.10);
+        display: flex;
+        align-items: center;
+        gap: 22px;
+        overflow: hidden;
     }
-
+    .page-header-glow {
+        position: absolute;
+        top: 0; left: -60%;
+        width: 60%; height: 100%;
+        background: linear-gradient(120deg, rgba(255,236,140,0.18) 0%, rgba(255,236,140,0.45) 50%, rgba(255,236,140,0.18) 100%);
+        filter: blur(2px);
+        animation: phglow 2.8s linear infinite;
+        z-index: 1;
+        pointer-events: none;
+    }
+    @keyframes phglow {
+        0% { left: -60%; }
+        100% { left: 100%; }
+    }
+    .page-header-avatar {
+        width: 64px; height: 64px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #d4af37 60%, #fffde7 100%);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 2.2rem;
+        box-shadow: 0 0 0 4px rgba(212,175,55,0.12);
+        z-index: 2;
+        flex-shrink: 0;
+    }
+    .page-header-body {
+        flex: 1;
+        z-index: 2;
+    }
     .page-header-section h1 {
-        font-size: 28px;
+        font-size: 1.7rem;
+        font-weight: 700;
         letter-spacing: 1px;
-        margin-bottom: 10px;
+        margin-bottom: 6px;
+        color: #ffe082;
+        text-shadow: 0 2px 8px #2d2d2d;
     }
-
     .page-header-section p {
-        color: var(--text-muted);
-        font-size: 14px;
+        color: #fffde7;
+        font-size: 1rem;
+        text-shadow: 0 1px 4px #2d2d2d;
     }
 
     .stats-grid {
@@ -34,60 +68,78 @@ ob_start();
 
     .stat-card {
         background: rgba(45, 45, 45, 0.5);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.08);
         border-left: 4px solid;
-        border-radius: 2px;
-        padding: 25px;
+        border-radius: 8px;
+        padding: 20px 24px;
         backdrop-filter: blur(10px);
         transition: all 0.3s;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
     }
 
     .stat-card:hover {
-        transform: translateX(4px);
-        border-color: var(--accent-gold);
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(212, 175, 55, 0.15);
     }
 
-    .stat-card.border-primary { border-left-color: #667eea; }
+    .stat-card.border-primary { border-left-color: var(--accent-gold); }
     .stat-card.border-info { border-left-color: #0dcaf0; }
-    .stat-card.border-success { border-left-color: #198754; }
+    .stat-card.border-success { border-left-color: #10b981; }
     .stat-card.border-secondary { border-left-color: #6c757d; }
-    .stat-card.border-warning { border-left-color: #ffc107; }
+    .stat-card.border-warning { border-left-color: var(--accent-gold); }
 
     .stat-icon {
-        width: 50px;
-        height: 50px;
-        border-radius: 2px;
+        width: 56px;
+        height: 56px;
+        border-radius: 8px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.5rem;
-        margin-bottom: 15px;
+        font-size: 1.7rem;
+        transition: all 0.3s;
+        flex-shrink: 0;
     }
 
-    .stat-icon.bg-primary { background: rgba(102, 126, 234, 0.2); color: #667eea; }
-    .stat-icon.bg-info { background: rgba(13, 202, 240, 0.2); color: #0dcaf0; }
-    .stat-icon.bg-success { background: rgba(25, 135, 84, 0.2); color: #198754; }
-    .stat-icon.bg-secondary { background: rgba(108, 117, 125, 0.2); color: #6c757d; }
-    .stat-icon.bg-warning { background: rgba(255, 193, 7, 0.2); color: #ffc107; }
+    .stat-card:hover .stat-icon {
+        transform: scale(1.1) rotate(5deg);
+    }
+
+    .stat-icon.bg-primary { background: rgba(212,175,55,0.13); color: var(--accent-gold); }
+    .stat-icon.bg-info { background: rgba(13,202,240,0.13); color: #0dcaf0; }
+    .stat-icon.bg-success { background: rgba(16,185,129,0.13); color: #10b981; }
+    .stat-icon.bg-secondary { background: rgba(108,117,125,0.13); color: #6c757d; }
+    .stat-icon.bg-warning { background: rgba(212,175,55,0.13); color: var(--accent-gold); }
+
+    .stat-card:hover .stat-icon.bg-primary { background: var(--accent-gold); color: var(--primary-dark); }
+    .stat-card:hover .stat-icon.bg-info { background: #0dcaf0; color: var(--primary-dark); }
+    .stat-card:hover .stat-icon.bg-success { background: #10b981; color: var(--primary-dark); }
+    .stat-card:hover .stat-icon.bg-warning { background: var(--accent-gold); color: var(--primary-dark); }
 
     .stat-value {
-        font-size: 32px;
+        font-size: 2.2rem;
         font-weight: 700;
-        margin-bottom: 5px;
+        margin-bottom: 6px;
+        color: #ffd700;
+        line-height: 1;
     }
 
     .stat-label {
-        font-size: 12px;
+        font-size: 11px;
         color: var(--text-muted);
-        letter-spacing: 0.5px;
+        letter-spacing: 0.8px;
+        text-transform: uppercase;
+        font-weight: 600;
     }
 
     .filter-section {
         background: rgba(45, 45, 45, 0.5);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 2px;
-        padding: 25px;
-        margin-bottom: 30px;
+        border: 1px solid rgba(212, 175, 55, 0.2);
+        border-radius: 8px;
+        padding: 22px 28px;
+        margin-bottom: 28px;
         backdrop-filter: blur(10px);
     }
 
@@ -269,14 +321,18 @@ ob_start();
 
 <!-- Page Header -->
 <div class="page-header-section">
-    <div style="display: flex; justify-content: space-between; align-items: center;">
-        <div>
-            <h1>✓ Quản lý Lịch Khởi Hành</h1>
-            <p>Theo dõi và quản lý tất cả các lịch khởi hành tour</p>
+    <div class="page-header-glow"></div>
+    <div class="page-header-avatar">✈️</div>
+    <div class="page-header-body">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;">
+            <div>
+                <h1>Quản lý Lịch Khởi Hành</h1>
+                <p>Theo dõi và quản lý tất cả các lịch khởi hành tour</p>
+            </div>
+            <a href="index.php?act=admin/dashboard" class="btn btn-secondary" style="z-index:2;">
+                ← Dashboard
+            </a>
         </div>
-        <a href="index.php?act=admin/dashboard" class="btn btn-secondary">
-            ← Dashboard
-        </a>
     </div>
 </div>
 
@@ -304,29 +360,24 @@ ob_start();
     ?>
     <div class="stats-grid">
         <div class="stat-card border-primary">
+            <div><div class="stat-value"><?php echo $totalSchedules; ?></div><div class="stat-label">Tổng số lịch</div></div>
             <div class="stat-icon bg-primary">📅</div>
-            <div class="stat-value"><?php echo $totalSchedules; ?></div>
-            <div class="stat-label">Tổng số lịch</div>
         </div>
         <div class="stat-card border-info">
+            <div><div class="stat-value" style="color:#0dcaf0"><?php echo $upcomingSchedules; ?></div><div class="stat-label">Sắp khởi hành</div></div>
             <div class="stat-icon bg-info">⏰</div>
-            <div class="stat-value"><?php echo $upcomingSchedules; ?></div>
-            <div class="stat-label">Sắp khởi hành</div>
         </div>
         <div class="stat-card border-success">
+            <div><div class="stat-value" style="color:#10b981"><?php echo $ongoingSchedules; ?></div><div class="stat-label">Đang chạy</div></div>
             <div class="stat-icon bg-success">▶</div>
-            <div class="stat-value"><?php echo $ongoingSchedules; ?></div>
-            <div class="stat-label">Đang chạy</div>
         </div>
         <div class="stat-card border-secondary">
+            <div><div class="stat-value" style="color:#adb5bd"><?php echo $completedSchedules; ?></div><div class="stat-label">Hoàn thành</div></div>
             <div class="stat-icon bg-secondary">✓</div>
-            <div class="stat-value"><?php echo $completedSchedules; ?></div>
-            <div class="stat-label">Hoàn thành</div>
         </div>
         <div class="stat-card border-warning">
+            <div><div class="stat-value" style="color:#ffd700"><?php echo $choPhanBo; ?></div><div class="stat-label">Đang chờ phân bổ</div></div>
             <div class="stat-icon bg-warning">⏳</div>
-            <div class="stat-value" style="color: #ffc107;"><?php echo $choPhanBo; ?></div>
-            <div class="stat-label">Đang chờ phân bổ</div>
         </div>
     </div>
 <?php endif; ?>

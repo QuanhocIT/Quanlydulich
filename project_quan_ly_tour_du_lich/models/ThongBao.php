@@ -287,6 +287,50 @@ class ThongBao
         return $stmt->fetchAll();
     }
 
+    public function getYeuCauTourByUserIds(array $userIds) {
+        $normalizedIds = [];
+        foreach ($userIds as $userId) {
+            $id = (int)$userId;
+            if ($id > 0) {
+                $normalizedIds[$id] = $id;
+            }
+        }
+
+        if (empty($normalizedIds)) {
+            return [];
+        }
+
+        $idList = array_values($normalizedIds);
+        $placeholders = implode(',', array_fill(0, count($idList), '?'));
+        $sql = "SELECT tb.*, 
+                       nd_gui.ho_ten as nguoi_gui_ten,
+                       nd_gui.email as nguoi_gui_email,
+                       nd_gui.so_dien_thoai as nguoi_gui_phone
+                FROM thong_bao tb
+                LEFT JOIN nguoi_dung nd_gui ON tb.nguoi_gui_id = nd_gui.id
+                INNER JOIN (
+                    SELECT nguoi_gui_id, MAX(id) AS latest_id
+                    FROM thong_bao
+                    WHERE tieu_de = 'YÃªu cáº§u tour theo mong muá»‘n'
+                      AND vai_tro_nhan = 'Admin'
+                      AND nguoi_gui_id IN ($placeholders)
+                    GROUP BY nguoi_gui_id
+                ) latest_tb ON latest_tb.latest_id = tb.id";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute($idList);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $result = [];
+        foreach ($rows as $row) {
+            $userId = (int)($row['nguoi_gui_id'] ?? 0);
+            if ($userId > 0) {
+                $result[$userId] = $row;
+            }
+        }
+
+        return $result;
+    }
+
     /**
      * Đếm yêu cầu tour chưa xử lý
      */

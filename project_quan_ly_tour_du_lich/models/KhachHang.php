@@ -8,10 +8,21 @@ class KhachHang
         $this->conn = connectDB();
     }
 
-    public function getAll() {
-        $sql = "SELECT * FROM khach_hang";
+    public function getAll($limit = null, $offset = 0) {
+        $sql = "SELECT * FROM khach_hang ORDER BY khach_hang_id DESC";
+        if ($limit !== null) {
+            $sql .= " LIMIT ? OFFSET ?";
+        }
+
         $stmt = $this->conn->prepare($sql);
-        $stmt->execute();
+        if ($limit !== null) {
+            $stmt->bindValue(1, (int)$limit, PDO::PARAM_INT);
+            $stmt->bindValue(2, max(0, (int)$offset), PDO::PARAM_INT);
+            $stmt->execute();
+        } else {
+            $stmt->execute();
+        }
+
         return $stmt->fetchAll();
     }
 
@@ -31,6 +42,31 @@ class KhachHang
 
     public function findByUserId($userId) {
         return $this->findByNguoiDungId($userId);
+    }
+
+    // Thống kê khách hàng mới theo tháng (dựa trên nguoi_dung.ngay_tao).
+    public function getNewCustomersByMonth($months = 12) {
+        $months = max(1, (int)$months);
+        $sql = "SELECT DATE_FORMAT(nd.ngay_tao, '%Y-%m') AS thang, COUNT(*) AS total
+                FROM khach_hang kh
+                INNER JOIN nguoi_dung nd ON kh.nguoi_dung_id = nd.id
+                WHERE nd.ngay_tao IS NOT NULL
+                  AND nd.ngay_tao >= DATE_SUB(CURDATE(), INTERVAL ? MONTH)
+                GROUP BY DATE_FORMAT(nd.ngay_tao, '%Y-%m')
+                ORDER BY DATE_FORMAT(nd.ngay_tao, '%Y-%m') ASC";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute([$months]);
+
+        $rows = $stmt->fetchAll();
+        $result = [];
+        foreach ($rows as $row) {
+            $month = (string)($row['thang'] ?? '');
+            if ($month !== '') {
+                $result[$month] = (int)($row['total'] ?? 0);
+            }
+        }
+
+        return $result;
     }
 
     public function insert($data) {

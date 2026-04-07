@@ -382,14 +382,27 @@
                     <?php echo htmlspecialchars($error); ?>
                 </div>
             <?php endif; ?>
+
+            <?php $validationPayload = getValidationErrors(); ?>
+            <?php if (empty($error) && !empty($validationPayload['message'])): ?>
+                <div class="alert">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <?php echo htmlspecialchars((string)$validationPayload['message']); ?>
+                </div>
+            <?php endif; ?>
+            <?php $validationErrors = $validationPayload['errors'] ?? []; ?>
             
             <form method="POST" action="index.php?act=auth/register">
+                <?php echo csrfField('auth_register'); ?>
                 <div class="form-group">
                     <label><i class="bi bi-person"></i> Họ và tên</label>
                     <div class="input-wrapper">
                         <i class="bi bi-person-circle input-icon"></i>
                         <input type="text" name="ho_ten" class="form-control" placeholder="Nhập họ và tên đầy đủ" required>
                     </div>
+                    <?php if (!empty($validationErrors['ho_ten'])): ?>
+                        <small style="color:#ffb4b4;display:block;margin-top:6px;">Họ tên không hợp lệ hoặc quá dài.</small>
+                    <?php endif; ?>
                 </div>
                 
                 <div class="form-group">
@@ -398,6 +411,9 @@
                         <i class="bi bi-envelope-fill input-icon"></i>
                         <input type="email" name="email" class="form-control" placeholder="your.email@example.com" required>
                     </div>
+                    <?php if (!empty($validationErrors['email'])): ?>
+                        <small style="color:#ffb4b4;display:block;margin-top:6px;">Email không hợp lệ.</small>
+                    <?php endif; ?>
                 </div>
                 
                 <div class="form-group">
@@ -406,6 +422,9 @@
                         <i class="bi bi-telephone-fill input-icon"></i>
                         <input type="tel" name="so_dien_thoai" class="form-control" placeholder="0912345678" required>
                     </div>
+                    <?php if (!empty($validationErrors['so_dien_thoai'])): ?>
+                        <small style="color:#ffb4b4;display:block;margin-top:6px;">Số điện thoại không hợp lệ.</small>
+                    <?php endif; ?>
                 </div>
                 
                 <div class="form-group">
@@ -414,6 +433,9 @@
                         <i class="bi bi-shield-lock input-icon"></i>
                         <input type="password" name="password" class="form-control" placeholder="Tạo mật khẩu mạnh" required>
                     </div>
+                    <?php if (!empty($validationErrors['password'])): ?>
+                        <small style="color:#ffb4b4;display:block;margin-top:6px;">Mật khẩu phải có ít nhất 6 ký tự.</small>
+                    <?php endif; ?>
                 </div>
                 
                 <button type="submit" class="btn-register">

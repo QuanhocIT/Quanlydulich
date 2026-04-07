@@ -200,6 +200,7 @@ ob_start();
         </div>
         
         <form method="POST" action="index.php?act=booking/delete&id=<?php echo $booking['booking_id']; ?>">
+            <?php echo csrfField('booking_delete'); ?>
             <div class="form-group">
                 <label>🔒 Nhập mật khẩu Admin để xác nhận <span style="color: #dc3545;">*</span></label>
                 <input type="password" name="mat_khau" class="input" required autofocus>

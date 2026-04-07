@@ -363,7 +363,7 @@ ob_start();
 
                             <div class="col-12">
                                 <label class="form-label">Mô tả tour</label>
-                                <textarea name="mo_ta" class="form-control" rows="4" 
+                                <textarea name="mo_ta" class="form-control" rows="4" style="width:100%" 
                                           placeholder="Giới thiệu ngắn gọn về tour..."><?php echo htmlspecialchars($tour['mo_ta'] ?? ''); ?></textarea>
                             </div>
 
@@ -398,63 +398,41 @@ ob_start();
                     </div>
 
                     <!-- Thông tin lộ trình -->
-                    <div class="form-section">
+                    <div class="form-section tour-create-form">
                         <div class="form-section-title">
                             <i class="bi bi-geo-alt"></i> Thông tin lộ trình
                         </div>
-                        
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label">Điểm khởi hành</label>
-                                <div class="input-group">
-                                    <span class="input-group-text"><i class="bi bi-pin-map"></i></span>
-                                    <input type="text" name="diem_khoi_hanh" class="form-control" 
-                                           value="<?php echo htmlspecialchars($tour['diem_khoi_hanh'] ?? ''); ?>" 
-                                           placeholder="VD: Hà Nội">
-                                </div>
-                            </div>
-
-                            <div class="col-md-6">
-                                <label class="form-label">Điểm đến</label>
-                                <div class="input-group">
-                                    <span class="input-group-text"><i class="bi bi-flag"></i></span>
-                                    <input type="text" name="diem_den" class="form-control" 
-                                           value="<?php echo htmlspecialchars($tour['diem_den'] ?? ''); ?>" 
-                                           placeholder="VD: Hạ Long, Quảng Ninh">
-                                </div>
-                            </div>
-
-                            <div class="col-md-4">
-                                <label class="form-label">Thời gian</label>
-                                <div class="input-group">
-                                    <span class="input-group-text"><i class="bi bi-clock"></i></span>
-                                    <input type="text" name="thoi_gian" class="form-control" 
-                                           value="<?php echo htmlspecialchars($tour['thoi_gian'] ?? ''); ?>" 
-                                           placeholder="VD: 3 ngày 2 đêm">
-                                </div>
-                            </div>
-
-                            <div class="col-md-4">
-                                <label class="form-label">Phương tiện</label>
-                                <select name="phuong_tien" class="form-select">
-                                    <?php $pt = $tour['phuong_tien'] ?? ''; ?>
-                                    <option value="">-- Chọn phương tiện --</option>
-                                    <option value="Xe" <?php echo $pt === 'Xe' ? 'selected' : ''; ?>>Xe ô tô</option>
-                                    <option value="MayBay" <?php echo $pt === 'MayBay' ? 'selected' : ''; ?>>Máy bay</option>
-                                    <option value="Tau" <?php echo $pt === 'Tau' ? 'selected' : ''; ?>>Tàu hỏa</option>
-                                    <option value="Khac" <?php echo $pt === 'Khac' ? 'selected' : ''; ?>>Khác</option>
-                                </select>
-                            </div>
-
-                            <div class="col-md-4">
-                                <label class="form-label">Số chỗ tối đa</label>
-                                <div class="input-group">
-                                    <span class="input-group-text"><i class="bi bi-people"></i></span>
-                                    <input type="number" name="so_cho_toi_da" class="form-control" 
-                                           min="1" value="<?php echo htmlspecialchars($tour['so_cho_toi_da'] ?? ''); ?>" 
-                                           placeholder="VD: 30">
-                                </div>
-                            </div>
+                        <div class="form-group">
+                            <label>Điểm khởi hành</label>
+                            <input type="text" name="diem_khoi_hanh" class="form-control" value="<?php echo htmlspecialchars($tour['diem_khoi_hanh'] ?? ''); ?>" placeholder="VD: Hà Nội">
+                        </div>
+                        <div class="form-group">
+                            <label>Điểm đến</label>
+                            <input type="text" name="diem_den" class="form-control" value="<?php echo htmlspecialchars($tour['diem_den'] ?? ''); ?>" placeholder="VD: Hạ Long, Quảng Ninh">
+                        </div>
+                        <div class="form-group">
+                            <label>Thời gian</label>
+                            <input type="text" name="thoi_gian" class="form-control" value="<?php echo htmlspecialchars($tour['thoi_gian'] ?? ''); ?>" placeholder="VD: 3 ngày 2 đêm">
+                        </div>
+                        <div class="form-group">
+                            <label>Phương tiện</label>
+                            <select name="phuong_tien" class="form-control">
+                                <?php $pt = $tour['phuong_tien'] ?? ''; ?>
+                                <option value="">-- Chọn phương tiện --</option>
+                                <option value="Xe" <?php echo $pt === 'Xe' ? 'selected' : ''; ?>>Xe ô tô</option>
+                                <option value="MayBay" <?php echo $pt === 'MayBay' ? 'selected' : ''; ?>>Máy bay</option>
+                                <option value="Tau" <?php echo $pt === 'Tau' ? 'selected' : ''; ?>>Tàu hỏa</option>
+                                <option value="Khac" <?php echo $pt === 'Khac' ? 'selected' : ''; ?>>Khác</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Số chỗ tối đa</label>
+                            <input type="number" name="so_cho_toi_da" class="form-control" min="1" value="<?php echo htmlspecialchars($tour['so_cho_toi_da'] ?? ''); ?>" placeholder="VD: 30">
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="aventura-btn aventura-btn-gold">Tạo tour mới</button>
+                            <button type="reset" class="aventura-btn aventura-btn-outline">Đặt lại</button>
+                            <button type="button" class="aventura-btn aventura-btn-outline" onclick="window.history.back()">Hủy bỏ</button>
                         </div>
                     </div>
 
@@ -490,7 +468,7 @@ ob_start();
                                             <div class="mb-0">
                                                 <label class="form-label small">Hoạt động</label>
                                                 <textarea name="lich_trinh[<?php echo $idx; ?>][hoat_dong]" 
-                                                          class="form-control" rows="3" 
+                                                          class="form-control" rows="3"
                                                           placeholder="Mô tả hoạt động trong ngày..."><?php echo htmlspecialchars($lt['hoat_dong'] ?? ''); ?></textarea>
                                             </div>
                                         </div>
@@ -513,25 +491,25 @@ ob_start();
                         <div class="row g-3">
                             <div class="col-12">
                                 <label class="form-label">Điều kiện hủy</label>
-                                <textarea name="dieu_kien_huy" class="form-control" rows="3" 
+                                <textarea name="dieu_kien_huy" class="form-control" rows="3" style="width:100%" 
                                           placeholder="VD: Hủy trước 7 ngày: Hoàn 100%, Hủy trước 3 ngày: Hoàn 50%..."><?php echo htmlspecialchars($tour['dieu_kien_huy'] ?? ''); ?></textarea>
                             </div>
 
                             <div class="col-12">
                                 <label class="form-label">Bao gồm</label>
-                                <textarea name="bao_gom" class="form-control" rows="3" 
+                                <textarea name="bao_gom" class="form-control" rows="3" style="width:100%" 
                                           placeholder="VD: Vé tham quan, Khách sạn 4*, Bữa ăn..."><?php echo htmlspecialchars($tour['bao_gom'] ?? ''); ?></textarea>
                             </div>
 
                             <div class="col-12">
                                 <label class="form-label">Không bao gồm</label>
-                                <textarea name="khong_bao_gom" class="form-control" rows="3" 
+                                <textarea name="khong_bao_gom" class="form-control" rows="3" style="width:100%" 
                                           placeholder="VD: Chi phí cá nhân, Bảo hiểm..."><?php echo htmlspecialchars($tour['khong_bao_gom'] ?? ''); ?></textarea>
                             </div>
 
                             <div class="col-12">
                                 <label class="form-label">Lưu ý</label>
-                                <textarea name="luu_y" class="form-control" rows="3" 
+                                <textarea name="luu_y" class="form-control" rows="3" style="width:100%" 
                                           placeholder="VD: Mang theo CMND/CCCD, Chuẩn bị đồ bơi..."><?php echo htmlspecialchars($tour['luu_y'] ?? ''); ?></textarea>
                             </div>
                         </div>

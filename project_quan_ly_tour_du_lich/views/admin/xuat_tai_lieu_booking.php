@@ -103,11 +103,24 @@ ob_start();
 </script>
 
 <style>
+        .export-page {
+            padding: 24px 18px;
+        }
+        .export-wrap {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .page-header-section {
+            padding: 18px 18px;
+            border-radius: 12px;
+            background: rgba(45, 45, 45, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+        }
         .document-card {
             background: rgba(45, 45, 45, 0.5);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 4px;
-            margin-bottom: 30px;
+            border-radius: 12px;
             backdrop-filter: blur(10px);
             transition: all 0.3s;
         }
@@ -141,17 +154,29 @@ ob_start();
             background: rgba(255, 193, 7, 0.3);
             color: #ffc107;
         }
+        .doc-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 18px;
+            margin-bottom: 18px;
+        }
         .action-buttons {
             display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
+            flex-direction: column;
+            gap: 10px;
+            align-items: stretch;
+            max-width: 220px;
+            margin: 0 auto;
+        }
+        .action-buttons .btn {
             justify-content: center;
+            width: 100%;
         }
         .preview-section {
             background: rgba(45, 45, 45, 0.5);
             border: 1px solid rgba(255, 255, 255, 0.1);
             padding: 2rem;
-            border-radius: 4px;
+            border-radius: 12px;
             backdrop-filter: blur(10px);
             color: var(--text-light);
         }
@@ -315,36 +340,39 @@ ob_start();
         .mx-auto { margin-left: auto; margin-right: auto; }
         .h-100 { height: 100%; }
         @media (max-width: 768px) {
-            .col-md-4 {
-                width: 100%;
-            }
+            .doc-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .document-card .card-body { padding: 1.5rem; }
+            .col-md-4 { width: 100%; }
+        }
+        @media (max-width: 520px) {
+            .doc-grid { grid-template-columns: 1fr; }
         }
     </style>
 
-<div style="padding: 20px;">
-    <div class="page-header-section no-print" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; margin-bottom: 30px;">
+<div class="export-page">
+<div class="export-wrap">
+    <div class="page-header-section no-print" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; margin-bottom: 18px;">
         <div>
             <h1 style="margin: 0 0 10px 0; font-size: 2rem; color: var(--text-light);">
                 <i class="bi bi-file-earmark-pdf-fill" style="color: var(--accent-gold);"></i> Xuất Tài Liệu
             </h1>
             <p style="margin: 0; opacity: 0.8; color: var(--text-light);">Booking #<?php echo $booking['booking_id']; ?> - <?php echo htmlspecialchars($booking['ho_ten']); ?></p>
         </div>
-        <a href="index.php?act=booking/chiTiet&id=<?php echo $booking['booking_id']; ?>" style="background: rgba(255, 255, 255, 0.1); color: var(--text-light); padding: 12px 24px; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; font-weight: 500; border: 1px solid rgba(255, 255, 255, 0.2);">
+        <a href="index.php?act=booking/chiTiet&id=<?php echo $booking['booking_id']; ?>" style="background: rgba(255, 255, 255, 0.08); color: var(--text-light); padding: 12px 16px; border-radius: 10px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; font-weight: 600; border: 1px solid rgba(255, 255, 255, 0.16);">
             <i class="bi bi-arrow-left"></i> Quay lại
         </a>
     </div>
 
     <!-- Document Type Selection -->
-    <div class="row g-4 mb-4 no-print">
-            <div class="col-md-4">
-                <div class="document-card card h-100">
+    <div class="doc-grid no-print">
+                <div class="document-card card">
                     <div class="card-body text-center">
                         <div class="document-icon bg-primary bg-opacity-10 text-primary mx-auto">
                             <i class="bi bi-file-earmark-text"></i>
                         </div>
                         <h4 class="mb-3">Báo Giá</h4>
                         <p class="text-muted mb-4">Tài liệu báo giá chi tiết gửi cho khách hàng</p>
-                        <div class="action-buttons justify-content-center">
+                        <div class="action-buttons">
                             <button onclick="showDocument('bao-gia')" class="btn btn-primary">
                                 <i class="bi bi-eye"></i> Xem trước
                             </button>
@@ -357,17 +385,15 @@ ob_start();
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="col-md-4">
-                <div class="document-card card h-100">
+                <div class="document-card card">
                     <div class="card-body text-center">
                         <div class="document-icon bg-success bg-opacity-10 text-success mx-auto">
                             <i class="bi bi-file-earmark-check"></i>
                         </div>
                         <h4 class="mb-3">Hợp Đồng</h4>
                         <p class="text-muted mb-4">Hợp đồng dịch vụ du lịch giữa hai bên</p>
-                        <div class="action-buttons justify-content-center">
+                        <div class="action-buttons">
                             <button onclick="showDocument('hop-dong')" class="btn btn-primary">
                                 <i class="bi bi-eye"></i> Xem trước
                             </button>
@@ -380,17 +406,15 @@ ob_start();
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="col-md-4">
-                <div class="document-card card h-100">
+                <div class="document-card card">
                     <div class="card-body text-center">
                         <div class="document-icon bg-warning bg-opacity-10 text-warning mx-auto">
                             <i class="bi bi-receipt"></i>
                         </div>
                         <h4 class="mb-3">Hóa Đơn</h4>
                         <p class="text-muted mb-4">Hóa đơn VAT thanh toán dịch vụ</p>
-                        <div class="action-buttons justify-content-center">
+                        <div class="action-buttons">
                             <button onclick="showDocument('hoa-don')" class="btn btn-primary">
                                 <i class="bi bi-eye"></i> Xem trước
                             </button>
@@ -403,7 +427,6 @@ ob_start();
                         </div>
                     </div>
                 </div>
-            </div>
         </div>
 
         <!-- Document Preview -->
@@ -451,6 +474,7 @@ ob_start();
             <i class="bi bi-printer"></i> In tài liệu
         </button>
     </div>
+</div>
 </div>
 
 <script>

@@ -6,80 +6,165 @@
     <title>Thông báo - HDV</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <style>
-        :root {
-            --primary-color: #667eea;
-            --secondary-color: #764ba2;
-        }
-        
-        .page-header {
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-            color: white;
-            padding: 2rem 0;
-            margin-bottom: 2rem;
-        }
-        
-        .notification-item {
-            background: white;
-            border-radius: 1rem;
-            padding: 1.5rem;
-            margin-bottom: 1rem;
-            box-shadow: 0 0.25rem 0.5rem rgba(0,0,0,0.05);
-            transition: all 0.3s;
-        }
-        
-        .notification-item:hover {
-            box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.1);
-        }
-        
-        .notification-item.unread {
-            border-left: 4px solid var(--primary-color);
-        }
-    </style>
+    <link rel="stylesheet" href="<?php echo BASE_URL; ?>public/css/hdv.css">
 </head>
-<body class="bg-light">
-    <div class="page-header">
-        <div class="container">
-            <div class="d-flex justify-content-between align-items-center">
+<body class="hdv-body">
+<?php include __DIR__ . '/partials/hdv_nav.php'; ?>
+<?php
+$notifications = $notifications ?? [];
+$totalNotifications = count($notifications);
+$unreadCount = 0;
+$latestNotificationDate = null;
+
+foreach ($notifications as $item) {
+    if (empty($item['da_xem'])) {
+        $unreadCount++;
+    }
+    if ($latestNotificationDate === null && !empty($item['ngay_gui'])) {
+        $latestNotificationDate = date('d/m/Y H:i', strtotime($item['ngay_gui']));
+    }
+}
+?>
+<div class="page-header">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div>
+                <h3 class="mb-1"><i class="bi bi-bell"></i> Thông báo</h3>
+                <p class="mb-0 opacity-75">Toàn bộ cập nhật liên quan đến phân công, vận hành tour và nhắc việc dành cho bạn được gom tại đây.</p>
+            </div>
+            <a href="index.php?act=hdv/dashboard" class="btn btn-light">
+                <i class="bi bi-arrow-left"></i> Trang chủ
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="container hdv-shell">
+    <div class="hdv-grid cols-3 mb-4">
+        <div class="hdv-card">
+            <div class="hdv-kpi">
+                <div class="hdv-kpi-icon"><i class="bi bi-inboxes"></i></div>
                 <div>
-                    <h3 class="mb-1">
-                        <i class="bi bi-bell"></i> Thông báo
-                    </h3>
-                    <p class="mb-0 opacity-75">Tất cả thông báo của bạn</p>
+                    <div class="hdv-kpi-label">Tổng thông báo</div>
+                    <div class="hdv-kpi-value"><?php echo $totalNotifications; ?></div>
+                    <div class="hdv-kpi-meta">Lịch sử cập nhật gần đây của bạn</div>
                 </div>
-                <a href="index.php?act=hdv/dashboard" class="btn btn-light">
-                    <i class="bi bi-arrow-left"></i> Trang chủ
-                </a>
+            </div>
+        </div>
+        <div class="hdv-card">
+            <div class="hdv-kpi">
+                <div class="hdv-kpi-icon"><i class="bi bi-envelope-open"></i></div>
+                <div>
+                    <div class="hdv-kpi-label">Chưa đọc trước khi mở trang</div>
+                    <div class="hdv-kpi-value"><?php echo $unreadCount; ?></div>
+                    <div class="hdv-kpi-meta">Trang này sẽ đánh dấu chúng là đã xem</div>
+                </div>
+            </div>
+        </div>
+        <div class="hdv-card">
+            <div class="hdv-kpi">
+                <div class="hdv-kpi-icon"><i class="bi bi-clock-history"></i></div>
+                <div>
+                    <div class="hdv-kpi-label">Cập nhật mới nhất</div>
+                    <div class="hdv-kpi-value" style="font-size:1.2rem"><?php echo $latestNotificationDate ?: 'Chưa có'; ?></div>
+                    <div class="hdv-kpi-meta">Mốc thời gian gần nhất hệ thống gửi tới bạn</div>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="container">
-        <?php if (!empty($notifications)): ?>
-            <?php foreach($notifications as $notif): ?>
-            <div class="notification-item <?php echo !$notif['da_xem'] ? 'unread' : ''; ?>">
-                <div class="d-flex justify-content-between align-items-start mb-2">
-                    <h5 class="mb-0">
-                        <?php echo htmlspecialchars($notif['tieu_de']); ?>
-                        <?php if (!$notif['da_xem']): ?>
-                        <span class="badge bg-danger">Mới</span>
-                        <?php endif; ?>
-                    </h5>
-                    <small class="text-muted">
-                        <i class="bi bi-clock"></i> 
-                        <?php echo date('d/m/Y H:i', strtotime($notif['ngay_gui'])); ?>
-                    </small>
+    <div class="hdv-grid cols-2">
+        <div class="hdv-card">
+            <div class="hdv-card-body hdv-hero">
+                <span class="hdv-hero-badge"><i class="bi bi-broadcast-pin"></i> Trung tâm cập nhật</span>
+                <h1 class="hdv-hero-title">Thông báo được trình bày theo dòng thời gian để bạn nắm việc nhanh và không bỏ sót điểm quan trọng.</h1>
+                <p class="hdv-hero-text">
+                    Ưu tiên xử lý trước các cập nhật về phân công tour, thay đổi lịch khởi hành, yêu cầu đặc biệt của khách và các nhắc việc vận hành trong ngày.
+                </p>
+                <div class="hdv-pill-list">
+                    <span class="hdv-pill"><i class="bi bi-check2-all"></i> Tự động đánh dấu đã xem</span>
+                    <span class="hdv-pill"><i class="bi bi-lightning-charge"></i> Ưu tiên việc gấp</span>
+                    <span class="hdv-pill"><i class="bi bi-journal-text"></i> Gắn với luồng làm việc HDV</span>
                 </div>
-                <p class="mb-0"><?php echo nl2br(htmlspecialchars($notif['noi_dung'])); ?></p>
             </div>
-            <?php endforeach; ?>
-        <?php else: ?>
-            <div class="alert alert-info">
-                <i class="bi bi-info-circle"></i> Bạn chưa có thông báo nào.
+        </div>
+
+        <div class="hdv-card">
+            <div class="hdv-card-header">
+                <div>
+                    <h4 class="hdv-card-title">Gợi ý xử lý</h4>
+                    <p class="hdv-card-subtitle">Ba nhóm nội dung nên ưu tiên khi đọc</p>
+                </div>
             </div>
-        <?php endif; ?>
+            <div class="hdv-card-body">
+                <div class="hdv-list">
+                    <div class="hdv-list-item">
+                        <h5 class="hdv-list-title">1. Xác nhận thay đổi lịch và phân công</h5>
+                        <p class="mb-0 hdv-muted">Kiểm tra các thông báo liên quan đến lịch khởi hành, tour mới được giao hoặc điều chỉnh nhân sự.</p>
+                    </div>
+                    <div class="hdv-list-item">
+                        <h5 class="hdv-list-title">2. Rà yêu cầu đặc biệt của khách</h5>
+                        <p class="mb-0 hdv-muted">Ưu tiên các yêu cầu ăn uống, sức khỏe, di chuyển hoặc lưu trú cần chuẩn bị trước ngày đi.</p>
+                    </div>
+                    <div class="hdv-list-item">
+                        <h5 class="hdv-list-title">3. Chốt việc sau tour</h5>
+                        <p class="mb-0 hdv-muted">Nếu có nhắc phản hồi, nhật ký tour hoặc công nợ, nên xử lý sớm để đội điều hành tổng hợp.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <div class="hdv-section-spacer"></div>
+
+    <div class="hdv-card">
+        <div class="hdv-card-header">
+            <div>
+                <h4 class="hdv-card-title">Dòng thời gian thông báo</h4>
+                <p class="hdv-card-subtitle">Sắp xếp theo thứ tự mới nhất để bạn theo dõi liên tục</p>
+            </div>
+            <span class="hdv-soft-badge primary"><i class="bi bi-bell-fill"></i> Live feed</span>
+        </div>
+        <div class="hdv-card-body">
+            <?php if (!empty($notifications)): ?>
+                <div class="hdv-timeline">
+                    <?php foreach ($notifications as $notif): ?>
+                        <?php $isUnread = empty($notif['da_xem']); ?>
+                        <div class="hdv-timeline-item">
+                            <div class="hdv-timeline-dot"><i class="bi bi-bell"></i></div>
+                            <div class="hdv-timeline-card">
+                                <div class="hdv-list-head">
+                                    <div>
+                                        <h5 class="hdv-list-title">
+                                            <?php echo htmlspecialchars($notif['tieu_de'] ?? 'Thông báo'); ?>
+                                        </h5>
+                                        <div class="hdv-list-meta mt-2">
+                                            <span><i class="bi bi-clock"></i> <?php echo !empty($notif['ngay_gui']) ? date('d/m/Y H:i', strtotime($notif['ngay_gui'])) : 'N/A'; ?></span>
+                                            <?php if (!empty($notif['loai_thong_bao'])): ?>
+                                                <span><i class="bi bi-tag"></i> <?php echo htmlspecialchars($notif['loai_thong_bao']); ?></span>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                    <span class="hdv-soft-badge <?php echo $isUnread ? 'warning' : 'neutral'; ?>">
+                                        <i class="bi bi-<?php echo $isUnread ? 'sparkles' : 'check2'; ?>"></i>
+                                        <?php echo $isUnread ? 'Vừa mở' : 'Đã xem'; ?>
+                                    </span>
+                                </div>
+                                <p class="mb-0 mt-3"><?php echo nl2br(htmlspecialchars($notif['noi_dung'] ?? '')); ?></p>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php else: ?>
+                <div class="hdv-empty">
+                    <i class="bi bi-bell-slash"></i>
+                    Hiện chưa có thông báo nào dành cho bạn.
+                </div>
+            <?php endif; ?>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

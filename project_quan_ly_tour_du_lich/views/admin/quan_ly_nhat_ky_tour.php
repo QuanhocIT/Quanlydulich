@@ -360,11 +360,15 @@ ob_start();
                                 <a href="index.php?act=admin/formNhatKyTour&id=<?php echo $entry['id']; ?>" class="btn btn-sm btn-primary">
                                     <i class="bi bi-pencil"></i> Sửa
                                 </a>
-                                <a href="index.php?act=admin/deleteNhatKyTour&id=<?php echo $entry['id']; ?>" 
-                                   class="btn btn-sm btn-danger"
-                                   onclick="return confirm('Bạn có chắc muốn xóa nhật ký này?');">
-                                    <i class="bi bi-trash"></i> Xóa
-                                </a>
+                                <form method="POST" action="index.php?act=admin/deleteNhatKyTour" style="display:inline; margin:0;">
+                                    <?php echo csrfField('admin_form'); ?>
+                                    <input type="hidden" name="id" value="<?php echo (int)$entry['id']; ?>">
+                                    <button type="submit"
+                                        class="btn btn-sm btn-danger"
+                                        onclick="return confirm('Bạn có chắc muốn xóa nhật ký này?');">
+                                        <i class="bi bi-trash"></i> Xóa
+                                    </button>
+                                </form>
                             </div>
                         </div>
                     <?php endforeach; ?>

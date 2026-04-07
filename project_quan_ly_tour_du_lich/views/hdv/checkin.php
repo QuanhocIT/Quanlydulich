@@ -6,6 +6,7 @@
     <title>Check-in & Điểm danh - HDV</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="<?php echo BASE_URL; ?>public/css/hdv.css">
     <style>
         :root {
             --primary-color: #667eea;
@@ -94,7 +95,9 @@
         }
     </style>
 </head>
-<body class="bg-light">
+<body class="bg-light hdv-body">
+<?php include __DIR__ . '/partials/hdv_nav.php'; ?>
+
     <div class="page-header">
         <div class="container">
             <div class="d-flex justify-content-between align-items-center">
@@ -194,10 +197,14 @@
                                         <?php endif; ?>
                                     </div>
                                     <div class="btn-group btn-group-sm">
-                                        <button class="btn btn-outline-danger" 
-                                                onclick="event.preventDefault(); if(confirm('Xóa điểm này?')) window.location.href='index.php?act=hdv/delete_diem_checkin&id=<?php echo $diem['id']; ?>&tour_id=<?php echo $_GET['tour_id']; ?>'">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
+                                        <form method="POST" action="index.php?act=hdv/delete_diem_checkin" onsubmit="return confirm('Xóa điểm này?');" class="d-inline">
+                                            <?php echo csrfField('hdv_form'); ?>
+                                            <input type="hidden" name="id" value="<?php echo $diem['id']; ?>">
+                                            <input type="hidden" name="tour_id" value="<?php echo $_GET['tour_id']; ?>">
+                                            <button type="submit" class="btn btn-outline-danger">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
                                     </div>
                                 </div>
                             </a>
@@ -445,3 +452,4 @@
     </script>
 </body>
 </html>
+

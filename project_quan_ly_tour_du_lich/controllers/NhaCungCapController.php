@@ -14,6 +14,21 @@ class NhaCungCapController {
         'BaoHiem',
         'Khac'
     ];
+
+    private function requirePostCsrf($redirectAct = 'nhaCungCap/dashboard') {
+        $scopedToken = $_POST['_csrf_token'] ?? '';
+        $globalToken = $_POST['_csrf_global'] ?? '';
+
+        $validScoped = verifyCsrfToken($scopedToken, 'supplier_form');
+        $validGlobal = verifyCsrfToken($globalToken, 'global_form');
+
+        if (!$validScoped && !$validGlobal) {
+            setValidationErrors(['_csrf_token' => 'invalid'], 'Yeu cau khong hop le (CSRF).');
+            $_SESSION['error'] = 'Yeu cau khong hop le (CSRF). Vui long thu lai.';
+            header('Location: index.php?act=' . urlencode($redirectAct));
+            exit();
+        }
+    }
     
     public function __construct() {
         requireRole('NhaCungCap');
@@ -101,6 +116,8 @@ class NhaCungCapController {
             header('Location: index.php?act=nhaCungCap/baoGia');
             exit();
         }
+
+        $this->requirePostCsrf('nhaCungCap/baoGia');
         
         $this->currentSupplier();
         
@@ -135,6 +152,8 @@ class NhaCungCapController {
             header('Location: index.php?act=nhaCungCap/baoGia');
             exit();
         }
+
+        $this->requirePostCsrf('nhaCungCap/baoGia');
         
         $this->currentSupplier();
         
@@ -174,6 +193,8 @@ class NhaCungCapController {
             exit();
         }
 
+        $this->requirePostCsrf('nhaCungCap/dichVu');
+
         $nhaCungCap = $this->currentSupplier();
         $nhaCungCapId = $nhaCungCap['id_nha_cung_cap'];
 
@@ -212,6 +233,8 @@ class NhaCungCapController {
             header('Location: index.php?act=nhaCungCap/dichVu');
             exit();
         }
+
+        $this->requirePostCsrf('nhaCungCap/dichVu');
 
         $nhaCungCap = $this->currentSupplier();
         $nhaCungCapId = $nhaCungCap['id_nha_cung_cap'];
@@ -266,6 +289,8 @@ class NhaCungCapController {
             exit();
         }
 
+        $this->requirePostCsrf('nhaCungCap/dichVu');
+
         $nhaCungCap = $this->currentSupplier();
         $nhaCungCapId = $nhaCungCap['id_nha_cung_cap'];
         $id = (int)($_POST['dich_vu_id'] ?? 0);
@@ -292,6 +317,8 @@ class NhaCungCapController {
             header('Location: index.php?act=nhaCungCap/baoGia');
             exit();
         }
+
+        $this->requirePostCsrf('nhaCungCap/baoGia');
 
         $nhaCungCap = $this->currentSupplier();
         $nhaCungCapId = $nhaCungCap['id_nha_cung_cap'];

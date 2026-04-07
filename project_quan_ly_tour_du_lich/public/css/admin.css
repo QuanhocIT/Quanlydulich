@@ -2,7 +2,6 @@
 .admin-container {
     max-width: 1400px;
     margin: 0 auto;
-    padding: 20px;
 }
 
 .admin-container h1 {
@@ -12,7 +11,6 @@
 
 .admin-container nav {
     background: #343a40;
-    padding: 15px;
     margin-bottom: 30px;
     border-radius: 4px;
 }
@@ -21,7 +19,6 @@
     color: white;
     text-decoration: none;
     margin-right: 15px;
-    padding: 8px 15px;
     border-radius: 4px;
     display: inline-block;
 }
@@ -58,5 +55,7 @@ table th {
 table tr:hover {
     background: #f8f9fa;
 }
+
+
 
 

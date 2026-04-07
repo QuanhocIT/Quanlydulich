@@ -285,6 +285,13 @@ class YeuCauDacBiet
         return $stmt->fetch();
     }
 
+    public function deleteById($id)
+    {
+        $sql = "DELETE FROM yeu_cau_dac_biet WHERE id = ?";
+        $stmt = $this->conn->prepare($sql);
+        return $stmt->execute([(int)$id]);
+    }
+
     private function insertHistory($yeuCauId, $hanhDong, $noiDung, $nguoiThucHienId)
     {
         $sql = "INSERT INTO lich_su_yeu_cau (yeu_cau_id, hanh_dong, noi_dung, nguoi_thuc_hien_id, ngay_thuc_hien)

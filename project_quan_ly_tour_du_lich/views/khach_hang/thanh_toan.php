@@ -45,36 +45,55 @@
                 <div class="col-md-8">
                     <div class="payment-card">
                         <h4 class="mb-4">Thông tin thanh toán</h4>
+                        <?php if (!empty($hasPendingPayment)): ?>
+                            <div class="alert alert-warning">
+                                <i class="bi bi-hourglass-split me-2"></i>
+                                Booking đang có giao dịch <strong>DangXuLy</strong>. Vui lòng chờ hệ thống xử lý xong trước khi tạo giao dịch mới.
+                            </div>
+                        <?php endif; ?>
+
+                        <div class="alert alert-info">
+                            <i class="bi bi-shield-lock me-2"></i>
+                            Hệ thống sẽ chuyển bạn tới cổng thanh toán online để hoàn tất giao dịch an toàn.
+                            <div class="small mt-1 text-muted">Chế độ hiện tại: <?php echo strtoupper((string)PAYMENT_MODE); ?></div>
+                        </div>
+
                         <form method="POST" action="index.php?act=khachHang/thanhToan&booking_id=<?php echo $booking['booking_id']; ?>">
                             <div class="mb-3">
-                                <label class="form-label">Số tiền thanh toán <span class="text-danger">*</span></label>
+                                <label class="form-label">Số tiền thanh toán</label>
                                 <div class="input-group">
-                                    <input type="number" class="form-control" name="so_tien" 
-                                           value="<?php echo $conNo > 0 ? $conNo : $booking['tong_tien']; ?>" 
-                                           min="10000" step="10000" max="<?php echo $conNo > 0 ? $conNo : $booking['tong_tien']; ?>" required>
+                                    <input type="text" class="form-control" value="<?php echo number_format((float)$booking['tong_tien']); ?>" readonly>
                                     <span class="input-group-text">VNĐ</span>
                                 </div>
-                                <small class="text-muted">Số tiền tối đa: <?php echo number_format($conNo > 0 ? $conNo : (float)$booking['tong_tien']); ?> VNĐ</small>
+                                <small class="text-muted">Hệ thống thanh toán theo tổng giá trị booking.</small>
                             </div>
 
                             <div class="mb-3">
-                                <label class="form-label">Phương thức thanh toán</label>
-                                <select class="form-select" name="phuong_thuc">
-                                    <option value="Online" selected>Thanh toán online (VNPay/MoMo)</option>
-                                    <option value="ChuyenKhoan">Chuyển khoản ngân hàng</option>
-                                    <option value="TienMat">Tiền mặt (tại văn phòng)</option>
+                                <label class="form-label">Cổng thanh toán</label>
+                                <select class="form-select" name="payment_method" required>
+                                    <option value="VNPay" <?php echo ($paymentMethod === 'VNPay') ? 'selected' : ''; ?>>VNPay (Khuyến nghị)</option>
+                                    <?php if (!in_array(PAYMENT_MODE, ['vnpay', 'manual_qr'], true)): ?>
+                                        <option value="Momo" <?php echo ($paymentMethod === 'Momo') ? 'selected' : ''; ?>>Momo</option>
+                                        <option value="Paypal" <?php echo ($paymentMethod === 'Paypal') ? 'selected' : ''; ?>>PayPal</option>
+                                    <?php endif; ?>
                                 </select>
-                            </div>
-
-                            <div class="alert alert-warning">
-                                <i class="bi bi-exclamation-triangle me-2"></i>
-                                <strong>Lưu ý:</strong> Hiện tại hệ thống chỉ ghi nhận giao dịch. Để tích hợp thanh toán thực tế qua VNPay/MoMo, cần cấu hình thêm payment gateway.
+                                <?php if (PAYMENT_MODE === 'vnpay'): ?>
+                                    <small class="text-muted">VNPay callback se cap nhat trang thai thanh toan tu dong khi giao dich thanh cong.</small>
+                                <?php elseif (PAYMENT_MODE === 'manual_qr'): ?>
+                                    <small class="text-muted">Che do MB QR dang bat, he thong cho admin xac nhan da nhan tien chuyen khoan.</small>
+                                <?php endif; ?>
                             </div>
 
                             <div class="text-end">
-                                <button type="submit" class="btn btn-primary btn-lg">
-                                    <i class="bi bi-credit-card me-2"></i>Xác nhận thanh toán
-                                </button>
+                                <?php if (!empty($hasPendingPayment)): ?>
+                                    <button type="button" class="btn btn-secondary btn-lg" disabled>
+                                        <i class="bi bi-hourglass-split me-2"></i>Đang xử lý giao dịch hiện tại
+                                    </button>
+                                <?php else: ?>
+                                    <button type="submit" class="btn btn-primary btn-lg">
+                                        <i class="bi bi-box-arrow-up-right me-2"></i>Tiếp tục đến cổng thanh toán
+                                    </button>
+                                <?php endif; ?>
                             </div>
                         </form>
                     </div>
@@ -100,19 +119,6 @@
                             <div class="d-flex justify-content-between mb-2">
                                 <span>Tổng tiền:</span>
                                 <strong><?php echo number_format((float)$booking['tong_tien']); ?> VNĐ</strong>
-                            </div>
-                            <?php if ($tongDaThanhToan > 0): ?>
-                                <div class="d-flex justify-content-between mb-2 text-success">
-                                    <span>Đã thanh toán:</span>
-                                    <strong>- <?php echo number_format($tongDaThanhToan); ?> VNĐ</strong>
-                                </div>
-                            <?php endif; ?>
-                            <hr>
-                            <div class="d-flex justify-content-between">
-                                <span><strong>Còn nợ:</strong></span>
-                                <strong class="<?php echo $conNo > 0 ? 'text-danger' : 'text-success'; ?>">
-                                    <?php echo number_format($conNo); ?> VNĐ
-                                </strong>
                             </div>
                         </div>
                     </div>

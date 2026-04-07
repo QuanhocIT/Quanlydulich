@@ -6,18 +6,117 @@ ob_start();
 
 <style>
     .page-header-section {
-        background: rgba(45, 45, 45, 0.5);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 2px;
-        padding: 40px;
-        margin-bottom: 40px;
+        position: relative;
+        background: linear-gradient(90deg, #2d2d2d 0%, #3a2e13 100%);
+        border-radius: 8px;
+        padding: 24px 32px;
+        margin-bottom: 28px;
+        box-shadow: 0 2px 12px rgba(212,175,55,0.10);
         backdrop-filter: blur(10px);
+        overflow: hidden;
+    }
+
+    .page-header-glow {
+        position: absolute;
+        top: 0;
+        left: -60%;
+        width: 60%;
+        height: 100%;
+        background: linear-gradient(120deg, rgba(255,236,140,0.18) 0%, rgba(255,236,140,0.45) 50%, rgba(255,236,140,0.18) 100%);
+        filter: blur(2px);
+        animation: dat-tour-header-glow-move 2.8s linear infinite;
+        z-index: 1;
+        pointer-events: none;
+    }
+
+    @keyframes dat-tour-header-glow-move {
+        0% { left: -60%; }
+        100% { left: 100%; }
+    }
+
+    .page-header-inner {
+        position: relative;
+        z-index: 2;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        flex-wrap: wrap;
+        gap: 20px;
+    }
+
+    .page-header-main {
+        display: flex;
+        align-items: flex-start;
+        gap: 16px;
+    }
+
+    .page-header-avatar {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #d4af37 60%, #fffde7 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.1rem;
+        box-shadow: 0 0 0 4px rgba(212,175,55,0.12);
+        flex-shrink: 0;
+    }
+
+    .page-header-title h1 {
+        font-size: 1.7rem;
+        font-weight: 700;
+        margin: 0;
+        color: #ffe082;
+        text-shadow: 0 2px 8px #2d2d2d;
+    }
+
+    .page-header-title p {
+        color: #fffde7;
+        margin: 6px 0 0;
+        font-size: 1rem;
+        text-shadow: 0 1px 4px #2d2d2d;
+    }
+
+    .booking-view-switch {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-bottom: 28px;
+    }
+
+    .view-switch-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 20px;
+        border-radius: 2px;
+        border: 2px solid rgba(255, 255, 255, 0.1);
+        background: rgba(45, 45, 45, 0.3);
+        color: var(--text-light);
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .view-switch-link:hover {
+        background: rgba(45, 45, 45, 0.5);
+        border-color: var(--accent-gold);
+        color: var(--accent-gold);
+    }
+
+    .view-switch-link.active {
+        border-color: var(--accent-gold);
+        background: rgba(212, 175, 55, 0.16);
+        color: var(--accent-gold);
     }
 
     .step-indicator {
         display: flex;
         justify-content: space-between;
-        margin-bottom: 40px;
+        margin-bottom: 28px;
         position: relative;
         padding: 0 20px;
     }
@@ -47,7 +146,7 @@ ob_start();
         height: 40px;
         border-radius: 50%;
         background: rgba(45, 45, 45, 0.5);
-        border: 3px solid rgba(255, 255, 255, 0.2);
+        border: 2px solid rgba(255, 255, 255, 0.2);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -76,10 +175,10 @@ ob_start();
 
     .form-section {
         background: rgba(45, 45, 45, 0.5);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 2px;
+        border: 1px solid rgba(212, 175, 55, 0.18);
+        border-radius: 8px;
         padding: 30px;
-        margin-bottom: 30px;
+        margin-bottom: 24px;
         backdrop-filter: blur(10px);
     }
 
@@ -92,15 +191,15 @@ ob_start();
     }
 
     .form-section-header .icon {
-        width: 50px;
-        height: 50px;
-        border-radius: 2px;
+        width: 56px;
+        height: 56px;
+        border-radius: 8px;
         background: rgba(212, 175, 55, 0.2);
         color: var(--accent-gold);
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 24px;
+        font-size: 26px;
         margin-right: 15px;
     }
 
@@ -143,30 +242,50 @@ ob_start();
         border: 1px solid rgba(13, 202, 240, 0.3);
     }
 
+
     .customer-type-card {
-        border: 2px solid rgba(255, 255, 255, 0.1);
-        border-radius: 2px;
-        padding: 25px;
+        border: 3px solid rgba(255, 255, 255, 0.18);
+        border-radius: 12px;
+        padding: 32px 20px 20px 20px;
         cursor: pointer;
-        transition: all 0.3s;
+        transition: all 0.2s;
         text-align: center;
-        background: rgba(45, 45, 45, 0.3);
+        background: rgba(45, 45, 45, 0.45);
+        box-shadow: 0 2px 12px 0 rgba(0,0,0,0.08);
+        min-width: 180px;
+        min-height: 170px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
     }
 
     .customer-type-card:hover {
         border-color: var(--accent-gold);
-        background: rgba(45, 45, 45, 0.5);
+        background: rgba(212, 175, 55, 0.08);
+        box-shadow: 0 4px 24px 0 rgba(212,175,55,0.08);
+        transform: translateY(-2px) scale(1.03);
     }
 
     .customer-type-card.active {
         border-color: var(--accent-gold);
-        background: rgba(212, 175, 55, 0.1);
+        background: rgba(212, 175, 55, 0.18);
+        color: #222;
+        box-shadow: 0 4px 32px 0 rgba(212,175,55,0.12);
     }
 
     .customer-type-card .icon {
-        font-size: 48px;
-        margin-bottom: 15px;
+        font-size: 56px;
+        margin-bottom: 18px;
         color: var(--accent-gold);
+        background: rgba(212,175,55,0.12);
+        border-radius: 50%;
+        width: 70px;
+        height: 70px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 8px 0 rgba(212,175,55,0.08);
     }
 
     .customer-type-card .title {
@@ -183,8 +302,8 @@ ob_start();
 
     .tour-summary-card {
         background: rgba(45, 45, 45, 0.5);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 2px;
+        border: 1px solid rgba(212, 175, 55, 0.18);
+        border-radius: 8px;
         padding: 25px;
         margin-bottom: 20px;
         backdrop-filter: blur(10px);
@@ -194,7 +313,7 @@ ob_start();
         background: rgba(212, 175, 55, 0.2);
         color: var(--accent-gold);
         padding: 15px;
-        border-radius: 2px;
+        border-radius: 8px 8px 0 0;
         margin: -25px -25px 20px -25px;
         font-weight: 600;
         font-size: 14px;
@@ -245,7 +364,7 @@ ob_start();
     .quick-tips {
         background: rgba(255, 193, 7, 0.1);
         border: 1px solid rgba(255, 193, 7, 0.3);
-        border-radius: 2px;
+        border-radius: 8px;
         padding: 20px;
     }
 
@@ -273,9 +392,9 @@ ob_start();
     .submit-section {
         background: rgba(45, 45, 45, 0.7);
         padding: 25px;
-        border-top: 2px solid rgba(255, 255, 255, 0.1);
+        border-top: 1px solid rgba(212, 175, 55, 0.2);
         margin: 30px -30px -30px -30px;
-        border-radius: 0 0 2px 2px;
+        border-radius: 0 0 8px 8px;
     }
 
     .form-group {
@@ -293,12 +412,12 @@ ob_start();
     .form-group .input,
     .form-group .select,
     .form-group textarea {
-        background: rgba(255, 255, 255, 0.1);
-        border: 1px solid rgba(255, 255, 255, 0.2);
+        background: rgba(0, 0, 0, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.15);
         color: var(--text-light);
-        padding: 12px 10px;
+        padding: 10px 12px;
         font-size: 13px;
-        border-radius: 2px;
+        border-radius: 4px;
         transition: all 0.3s;
         width: 100%;
         font-family: inherit;
@@ -318,8 +437,8 @@ ob_start();
     .form-group .select:focus,
     .form-group textarea:focus {
         outline: none;
-        background: rgba(255, 255, 255, 0.15);
         border-color: var(--accent-gold);
+        box-shadow: 0 0 0 2px rgba(212,175,55,0.15);
     }
 
     .form-group .select {
@@ -368,6 +487,22 @@ ob_start();
         }
     }
 
+    @media (max-width: 700px) {
+        .page-header-section {
+            padding: 20px;
+        }
+
+        .page-header-title h1 {
+            font-size: 1.35rem;
+        }
+
+        .page-header-avatar {
+            width: 54px;
+            height: 54px;
+            font-size: 1.8rem;
+        }
+    }
+
     .hidden {
         display: none !important;
     }
@@ -375,12 +510,14 @@ ob_start();
 
 <!-- Page Header -->
 <div class="page-header-section">
-    <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 20px;">
-        <div>
-            <h1 style="font-size: 28px; font-weight: 700; margin-bottom: 10px; color: var(--text-light);">
-                ➕ Đặt Tour Cho Khách Hàng
-            </h1>
-            <p style="color: var(--text-muted); margin: 0;">Tạo booking mới và quản lý thông tin đặt tour</p>
+    <div class="page-header-glow"></div>
+    <div class="page-header-inner">
+        <div class="page-header-main">
+            <div class="page-header-avatar">➕</div>
+            <div class="page-header-title">
+                <h1>Đặt Tour Cho Khách Hàng</h1>
+                <p>Tạo booking mới và quản lý thông tin đặt tour</p>
+            </div>
         </div>
         <div>
             <a href="index.php?act=admin/quanLyBooking" class="btn btn-secondary">
@@ -403,6 +540,22 @@ ob_start();
     </div>
 <?php endif; ?>
 
+<?php $validationPayload = getValidationErrors(); ?>
+<?php if (!empty($validationPayload['message'])): ?>
+    <div class="alert alert-danger">
+        ⚠ <?php echo htmlspecialchars((string)$validationPayload['message']); ?>
+    </div>
+<?php endif; ?>
+
+<div class="booking-view-switch">
+    <a href="index.php?act=admin/quanLyBooking" class="view-switch-link">
+        📋 Danh sách booking
+    </a>
+    <a href="index.php?act=booking/datTourChoKhach" class="view-switch-link active">
+        ➕ Đặt tour cho khách
+    </a>
+</div>
+
 <!-- Step Indicator -->
 <div class="step-indicator">
     <div class="step active" data-step="1">
@@ -423,6 +576,7 @@ ob_start();
     <!-- Main Form -->
     <div>
         <form method="POST" action="index.php?act=booking/datTourChoKhach" id="datTourForm">
+            <?php echo csrfField('booking_staff_create'); ?>
             <!-- Step 1: Chọn Tour -->
             <div class="form-section">
                 <div class="form-section-header">

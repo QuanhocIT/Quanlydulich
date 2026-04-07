@@ -22,6 +22,21 @@ class HDVController {
     private $khachHangModel;
     private $yeuCauDacBietModel;
     private $checkinKhachModel;
+
+    private function requirePostCsrf($redirectAct = 'hdv/dashboard') {
+        $scopedToken = $_POST['_csrf_token'] ?? '';
+        $globalToken = $_POST['_csrf_global'] ?? '';
+
+        $validScoped = verifyCsrfToken($scopedToken, 'hdv_form');
+        $validGlobal = verifyCsrfToken($globalToken, 'global_form');
+
+        if (!$validScoped && !$validGlobal) {
+            setValidationErrors(['_csrf_token' => 'invalid'], 'Yeu cau khong hop le (CSRF).');
+            $_SESSION['error'] = 'Yeu cau khong hop le (CSRF). Vui long thu lai.';
+            header('Location: index.php?act=' . urlencode($redirectAct));
+            exit();
+        }
+    }
     
     public function __construct() {
         requireRole('HDV');
@@ -71,15 +86,17 @@ class HDVController {
 
         // Lấy danh sách khách và yêu cầu đặc biệt cho từng lịch khởi hành
         $yeuCauDacBietTheoLich = [];
+        $lichIds = array_map(static function ($lich) {
+            return (int)($lich['id'] ?? 0);
+        }, $lichKhoiHanhList);
+        $khachByLich = $this->bookingModel->getKhachByLichKhoiHanhIdsGrouped($lichIds);
+
         foreach ($lichKhoiHanhList as $lich) {
             $lichId = (int)($lich['id'] ?? 0);
-            if ($lichId > 0) {
-                $danhSachKhach = $this->bookingModel->getKhachByTourAndNgayKhoiHanh(
-                    $lich['tour_id'],
-                    $lich['ngay_khoi_hanh']
-                );
-                $yeuCauDacBietTheoLich[$lichId] = $danhSachKhach;
+            if ($lichId <= 0) {
+                continue;
             }
+            $yeuCauDacBietTheoLich[$lichId] = $khachByLich[$lichId] ?? [];
         }
         
         require 'views/hdv/lich_lam_viec.php';
@@ -93,6 +110,7 @@ class HDVController {
         $allowedTourIds = array_map(fn($lich) => (int)$lich['tour_id'], $lichKhoiHanhList);
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $this->requirePostCsrf('hdv/nhatKyTour');
             $this->handleNhatKyPost($nhanSuId, $allowedTourIds);
             return;
         }
@@ -218,6 +236,8 @@ class HDVController {
             header('Location: index.php?act=hdv/checkInKhach');
             exit();
         }
+
+        $this->requirePostCsrf('hdv/checkInKhach');
 
         $nhanSu = $this->getCurrentHDV();
         $nhanSuId = $nhanSu['nhan_su_id'];
@@ -353,6 +373,8 @@ $stats = $this->yeuCauDacBietModel->getSummaryStatsForHDV($nhanSuId, $filters);
             header('Location: index.php?act=hdv/quanLyYeuCauDacBiet');
             exit();
         }
+
+        $this->requirePostCsrf('hdv/quanLyYeuCauDacBiet');
 
         $nhanSu = $this->getCurrentHDV();
         $nhanSuId = $nhanSu['nhan_su_id'];
@@ -1174,8 +1196,15 @@ $stats = $this->yeuCauDacBietModel->getSummaryStatsForHDV($nhanSuId, $filters);
      * Xóa điểm check-in
      */
     public function deleteDiemCheckin() {
-        $diem_id = $_GET['id'] ?? 0;
-        $tour_id = $_GET['tour_id'] ?? 0;
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+            header('Location: index.php?act=hdv/tours');
+            exit;
+        }
+
+        $this->requirePostCsrf('hdv/checkin');
+
+        $diem_id = $_POST['id'] ?? 0;
+        $tour_id = $_POST['tour_id'] ?? 0;
         
         try {
             $sql = "DELETE FROM diem_checkin WHERE id = ?";
@@ -1488,8 +1517,15 @@ $stats = $this->yeuCauDacBietModel->getSummaryStatsForHDV($nhanSuId, $filters);
      * Xóa yêu cầu đặc biệt
      */
     public function deleteYeuCauDacBiet() {
-        $yeu_cau_id = $_GET['id'] ?? 0;
-        $tour_id = $_GET['tour_id'] ?? 0;
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+            header('Location: index.php?act=hdv/yeu_cau_dac_biet');
+            exit;
+        }
+
+        $this->requirePostCsrf('hdv/yeu_cau_dac_biet');
+
+        $yeu_cau_id = $_POST['id'] ?? 0;
+        $tour_id = $_POST['tour_id'] ?? 0;
         
         try {
             $sql = "DELETE FROM yeu_cau_dac_biet WHERE id = ?";
@@ -1730,8 +1766,15 @@ $stats = $this->yeuCauDacBietModel->getSummaryStatsForHDV($nhanSuId, $filters);
      */
     public function deleteNhatKy() {
         $userId = $_SESSION['user_id'] ?? null;
-        $entry_id = $_GET['id'] ?? 0;
-        $tour_id = $_GET['tour_id'] ?? 0;
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+            header('Location: index.php?act=hdv/nhat_ky');
+            exit;
+        }
+
+        $this->requirePostCsrf('hdv/nhat_ky');
+
+        $entry_id = $_POST['id'] ?? 0;
+        $tour_id = $_POST['tour_id'] ?? 0;
         
         // Lấy nhan_su_id
         $sql = "SELECT nhan_su_id FROM nhan_su WHERE nguoi_dung_id = ? AND vai_tro = 'HDV' LIMIT 1";
@@ -2002,9 +2045,16 @@ $stats = $this->yeuCauDacBietModel->getSummaryStatsForHDV($nhanSuId, $filters);
             exit;
         }
         
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+            header('Location: index.php?act=hdv/phan_hoi');
+            exit;
+        }
+
+        $this->requirePostCsrf('hdv/phan_hoi');
+
         $nhanSuId = $nhanSu['nhan_su_id'];
-        $id = $_GET['id'] ?? 0;
-        $tour_id = $_GET['tour_id'] ?? 0;
+        $id = $_POST['id'] ?? 0;
+        $tour_id = $_POST['tour_id'] ?? 0;
         
         // Xóa ảnh trước
         $sql = "SELECT hinh_anh FROM phan_hoi_hdv WHERE id = ? AND hdv_id = ?";

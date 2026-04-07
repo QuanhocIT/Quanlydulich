@@ -80,18 +80,18 @@ ob_start();
                         <?php foreach($tours as $tour): ?>
                             <tr>
                                 <td><strong><?= htmlspecialchars($tour['ten_tour']) ?></strong></td>
-                                <td><?= number_format($tour['tong_thu']) ?>đ</td>
-                                <td><?= number_format($tour['tong_chi_thuc_te']) ?>đ</td>
-                                <td><?= number_format($tour['tong_du_toan']) ?>đ</td>
-                                <td style="color: <?= $tour['loi_nhuan'] >= 0 ? '#10b981' : '#ef4444' ?>; font-weight: 700;">
-                                    <?= number_format($tour['loi_nhuan']) ?>đ
+                                <td><?= number_format($tour['tong_thu'] ?? 0) ?>đ</td>
+                                <td><?= number_format($tour['tong_chi_thuc_te'] ?? 0) ?>đ</td>
+                                <td><?= number_format($tour['tong_du_toan'] ?? 0) ?>đ</td>
+                                <td style="color: <?= ($tour['loi_nhuan'] ?? 0) >= 0 ? '#10b981' : '#ef4444' ?>; font-weight: 700;">
+                                    <?= number_format($tour['loi_nhuan'] ?? 0) ?>đ
                                 </td>
                                 <td>
-                                    <?php if ($tour['status'] === 'VuotDuToan'): ?>
+                                    <?php if (($tour['status'] ?? '') === 'VuotDuToan'): ?>
                                         <span title="Chi phí thực tế đã vượt dự toán!" style="color:#d9534f;font-weight:bold">
                                             <i class="fas fa-exclamation-triangle"></i> Vượt dự toán
                                         </span>
-                                    <?php elseif ($tour['status'] === 'GanVuot'): ?>
+                                    <?php elseif (($tour['status'] ?? '') === 'GanVuot'): ?>
                                         <span title="Chi phí thực tế đã đạt 90% dự toán!" style="color:#f0ad4e;font-weight:bold">
                                             <i class="fas fa-exclamation-circle"></i> Gần vượt
                                         </span>

@@ -38,15 +38,10 @@
                         echo '<tr><td colspan="6" class="text-center text-muted">Không có công nợ nào</td></tr>';
                     } else {
                         foreach ($congNoKhachHang as $row) {
-                            // Join bảng người dùng
-                            $khach = null;
-                            if (!empty($row['khach_hang_id'])) {
-                                $khach = (new KhachHang())->getKhachHangWithNguoiDung($row['khach_hang_id']);
-                            }
                             echo '<tr>';
-                            echo '<td>' . htmlspecialchars($khach['ho_ten'] ?? $row['ten_khach_hang'] ?? 'N/A') . '</td>';
-                            echo '<td>' . htmlspecialchars($khach['email'] ?? '') . '</td>';
-                            echo '<td>' . htmlspecialchars($khach['so_dien_thoai'] ?? '') . '</td>';
+                            echo '<td>' . htmlspecialchars($row['ten_khach_hang'] ?? 'N/A') . '</td>';
+                            echo '<td>' . htmlspecialchars($row['email'] ?? '') . '</td>';
+                            echo '<td>' . htmlspecialchars($row['so_dien_thoai'] ?? '') . '</td>';
                             echo '<td>' . htmlspecialchars($row['ten_tour']) . '</td>';
                             echo '<td class="text-danger fw-bold">' . number_format($row['cong_no']) . 'đ</td>';
                             echo '<td>';

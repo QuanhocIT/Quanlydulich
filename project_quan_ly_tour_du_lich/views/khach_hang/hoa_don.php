@@ -30,9 +30,14 @@
     <div class="container py-5">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2><i class="bi bi-receipt me-2"></i>Hóa đơn & Thanh toán</h2>
-            <a href="index.php?act=khachHang/dashboard" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left me-2"></i>Quay lại
-            </a>
+            <div class="d-flex gap-2">
+                <a href="index.php?act=khachHang/lichSuThanhToan" class="btn btn-outline-primary">
+                    <i class="bi bi-clock-history me-2"></i>Lịch sử thanh toán
+                </a>
+                <a href="index.php?act=khachHang/dashboard" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-2"></i>Quay lại
+                </a>
+            </div>
         </div>
 
         <?php if (isset($_SESSION['success'])): ?>
@@ -119,6 +124,49 @@
                     </table>
                 </div>
 
+                <?php if (!empty($latestPayment)): ?>
+                    <?php
+                        $paymentStatus = $latestPayment['status'] ?? '';
+                        $paymentBadge = match($paymentStatus) {
+                            'ThanhCong' => 'success',
+                            'DangXuLy' => 'warning text-dark',
+                            'ThatBai' => 'danger',
+                            default => 'secondary'
+                        };
+                        $phoneDigits = preg_replace('/\D+/', '', (string)($booking['so_dien_thoai'] ?? ''));
+                        $transferNoteExact = 'BOOKING_' . (int)($booking['booking_id'] ?? 0) . '_' . $phoneDigits;
+                    ?>
+                    <div class="alert alert-light border mb-4">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                            <div>
+                                <strong>Thanh toán online mới nhất:</strong>
+                                #<?php echo (int)$latestPayment['payment_id']; ?>
+                                - <?php echo htmlspecialchars($latestPayment['payment_method'] ?? 'N/A'); ?>
+                                - <?php echo number_format((float)($latestPayment['amount'] ?? 0)); ?> VNĐ
+                            </div>
+                            <span class="badge bg-<?php echo $paymentBadge; ?> fs-6"><?php echo htmlspecialchars($paymentStatus); ?></span>
+                        </div>
+                        <div class="small text-muted mt-1">
+                            <?php echo !empty($latestPayment['payment_date']) ? date('d/m/Y H:i', strtotime($latestPayment['payment_date'])) : 'N/A'; ?>
+                        </div>
+                        <?php if ($paymentStatus === 'DangXuLy'): ?>
+                            <div class="small text-warning mt-1">
+                                He thong dang cho webhook/admin xac nhan da nhan tien. Trang se tu dong cap nhat sau 10 giay.
+                            </div>
+                            <div class="mt-3 p-3 rounded" style="background:#fff8db;border:1px dashed #f0ad4e;">
+                                <div class="fw-semibold mb-1"><i class="bi bi-info-circle me-1"></i>Noi dung chuyen khoan chinh xac cua ban:</div>
+                                <div class="d-flex flex-wrap align-items-center gap-2">
+                                    <span id="transferNoteExact" class="px-2 py-1 rounded" style="background:#fff;border:1px solid #e6e6e6;font-family:monospace;"><?php echo htmlspecialchars($transferNoteExact); ?></span>
+                                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="copyTransferNoteExact()">
+                                        <i class="bi bi-clipboard me-1"></i>Sao chep
+                                    </button>
+                                </div>
+                                <div class="small text-muted mt-1">Khach chi can copy dung chuoi nay de he thong doi soat tu dong nhanh hon.</div>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
+
                 <?php if (!empty($giaoDichList)): ?>
                     <h5 class="mb-3">Lịch sử thanh toán</h5>
                     <div class="table-responsive mb-4">
@@ -166,9 +214,16 @@
 
                 <?php if (in_array($booking['trang_thai'], ['ChoXacNhan', 'DaCoc'])): ?>
                     <div class="text-end">
-                        <a href="index.php?act=khachHang/thanhToan&booking_id=<?php echo $booking['booking_id']; ?>" class="btn btn-primary btn-lg">
-                            <i class="bi bi-credit-card me-2"></i>Thanh toán online
-                        </a>
+                        <?php $isPendingPayment = !empty($latestPayment) && (($latestPayment['status'] ?? '') === 'DangXuLy'); ?>
+                        <?php if ($isPendingPayment): ?>
+                            <button type="button" class="btn btn-secondary btn-lg" disabled>
+                                <i class="bi bi-hourglass-split me-2"></i>Đang xử lý thanh toán
+                            </button>
+                        <?php else: ?>
+                            <a href="index.php?act=khachHang/thanhToan&booking_id=<?php echo $booking['booking_id']; ?>" class="btn btn-primary btn-lg">
+                                <i class="bi bi-credit-card me-2"></i>Thanh toán qua cổng online
+                            </a>
+                        <?php endif; ?>
                     </div>
                 <?php endif; ?>
 
@@ -236,6 +291,31 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <?php if (!empty($latestPayment) && (($latestPayment['status'] ?? '') === 'DangXuLy')): ?>
+        <script>
+            function copyTransferNoteExact() {
+                var el = document.getElementById('transferNoteExact');
+                if (!el) return;
+                var text = (el.textContent || '').trim();
+                if (!text) return;
+
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(text);
+                } else {
+                    var ta = document.createElement('textarea');
+                    ta.value = text;
+                    document.body.appendChild(ta);
+                    ta.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(ta);
+                }
+            }
+
+            setTimeout(function () {
+                window.location.reload();
+            }, 10000);
+        </script>
+    <?php endif; ?>
 </body>
 </html>
 

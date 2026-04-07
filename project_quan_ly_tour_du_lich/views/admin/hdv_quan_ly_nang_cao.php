@@ -5,6 +5,164 @@ ob_start();
 ?>
 <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.9/index.global.min.css' rel='stylesheet' />
 <style>
+        .row {
+            display: flex;
+            flex-wrap: wrap;
+            margin-left: -8px;
+            margin-right: -8px;
+        }
+        .row > [class*="col-"] {
+            padding-left: 8px;
+            padding-right: 8px;
+            box-sizing: border-box;
+        }
+        .col-12 { width: 100%; }
+        .col-md-3 { width: 25%; }
+        .col-md-4 { width: 33.333333%; }
+        .col-md-6 { width: 50%; }
+        .col-lg-4 { width: 33.333333%; }
+
+        .d-flex { display: flex; }
+        .justify-content-between { justify-content: space-between; }
+        .align-items-center { align-items: center; }
+        .align-items-start { align-items: flex-start; }
+        .flex-wrap { flex-wrap: wrap; }
+        .flex-grow-1 { flex-grow: 1; }
+        .h-100 { height: 100%; }
+        .w-100 { width: 100%; }
+        .mb-0 { margin-bottom: 0; }
+        .mb-1 { margin-bottom: 0.25rem; }
+        .mb-2 { margin-bottom: 0.5rem; }
+        .mb-3 { margin-bottom: 1rem; }
+        .mb-4 { margin-bottom: 1.5rem; }
+        .ms-1 { margin-left: 0.25rem; }
+        .text-center { text-align: center; }
+
+        .hdv-advanced-wrap {
+            padding: 20px;
+            max-width: 1220px;
+            margin: 0 auto;
+        }
+
+        .section-space {
+            margin-bottom: 16px;
+        }
+        .page-header-section {
+            position: relative;
+            background: linear-gradient(90deg, #2d2d2d 0%, #3a2e13 100%);
+            border-radius: 8px;
+            padding: 24px 32px;
+            margin-bottom: 0;
+            box-shadow: 0 2px 12px rgba(212,175,55,0.10);
+            display: flex;
+            align-items: center;
+            gap: 22px;
+            overflow: hidden;
+        }
+        .page-header-glow {
+            position: absolute;
+            top: 0; left: -60%;
+            width: 60%; height: 100%;
+            background: linear-gradient(120deg, rgba(255,236,140,0.18) 0%, rgba(255,236,140,0.45) 50%, rgba(255,236,140,0.18) 100%);
+            filter: blur(2px);
+            animation: phglow 2.8s linear infinite;
+            z-index: 1;
+            pointer-events: none;
+        }
+        @keyframes phglow {
+            0% { left: -60%; }
+            100% { left: 100%; }
+        }
+        .page-header-avatar {
+            width: 64px; height: 64px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #d4af37 60%, #fffde7 100%);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 2.2rem;
+            box-shadow: 0 0 0 4px rgba(212,175,55,0.12);
+            z-index: 2;
+            flex-shrink: 0;
+        }
+        .page-header-layout {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 18px;
+            z-index: 2;
+        }
+        .page-header-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .page-header-title {
+            margin: 0;
+            font-size: 1.7rem;
+            font-weight: 700;
+            color: #ffe082;
+            text-shadow: 0 2px 8px #2d2d2d;
+            line-height: 1.2;
+        }
+        .page-header-desc {
+            margin: 0;
+            color: #fffde7;
+            font-size: 1rem;
+            text-shadow: 0 1px 4px #2d2d2d;
+        }
+        .filter-toolbar {
+            display: grid;
+            grid-template-columns: 220px 220px minmax(240px, 1fr);
+            gap: 12px;
+            margin-bottom: 14px;
+            align-items: center;
+        }
+        .filter-field {
+            position: relative;
+        }
+        .filter-field .form-control,
+        .filter-field .form-select {
+            min-height: 44px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            background: linear-gradient(165deg, rgba(60, 60, 60, 0.48), rgba(35, 35, 35, 0.62));
+            color: var(--text-light);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+        }
+        .filter-field .form-control {
+            padding-left: 38px;
+        }
+        .filter-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(255, 255, 255, 0.55);
+            pointer-events: none;
+            font-size: 0.92rem;
+        }
+        .filter-field .form-control::placeholder {
+            color: rgba(255, 255, 255, 0.46);
+        }
+        .quick-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .quick-actions .btn {
+            min-width: 180px;
+            justify-content: center;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
         .hdv-card {
             background: rgba(45, 45, 45, 0.5);
             border: 1px solid rgba(255, 255, 255, 0.1);
@@ -33,27 +191,74 @@ ob_start();
         
         .stat-card {
             background: rgba(45, 45, 45, 0.5);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            padding: 1.5rem;
-            margin-bottom: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-left: 4px solid var(--accent-gold);
+            border-radius: 8px;
+            padding: 20px 24px;
             backdrop-filter: blur(10px);
+            min-height: 96px;
+            transition: all 0.3s;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(212,175,55,0.15);
         }
         .stat-card.bg-success {
-            background: rgba(40, 167, 69, 0.3) !important;
+            background: rgba(45, 45, 45, 0.5) !important;
+            border-left-color: #10b981 !important;
         }
         .stat-card.bg-warning {
-            background: rgba(255, 193, 7, 0.3) !important;
+            background: rgba(45, 45, 45, 0.5) !important;
+            border-left-color: var(--accent-gold) !important;
         }
         .stat-card.bg-info {
-            background: rgba(0, 123, 255, 0.3) !important;
+            background: rgba(45, 45, 45, 0.5) !important;
+            border-left-color: var(--accent-gold) !important;
         }
         .stat-card.bg-primary {
-            background: rgba(13, 110, 253, 0.3) !important;
+            background: rgba(45, 45, 45, 0.5) !important;
+            border-left-color: var(--accent-gold) !important;
         }
         .stat-icon {
-            font-size: 2.5rem;
-            opacity: 0.8;
+            width: 56px; height: 56px;
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.8rem;
+            background: rgba(212,175,55,0.13);
+            color: var(--accent-gold);
+            transition: all 0.3s;
+            flex-shrink: 0;
+        }
+        .stat-card.bg-success .stat-icon {
+            background: rgba(16,185,129,0.13);
+            color: #10b981;
+        }
+        .stat-card:hover .stat-icon {
+            background: var(--accent-gold);
+            color: var(--primary-dark);
+            transform: scale(1.1) rotate(5deg);
+        }
+        .stat-card.bg-success:hover .stat-icon {
+            background: #10b981;
+        }
+        .stat-card h2 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            line-height: 1;
+            margin-top: 8px;
+            margin-bottom: 0;
+            color: #ffd700;
+        }
+        .stat-card.bg-success h2 {
+            color: #10b981;
+        }
+        .stat-card h6 {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--text-muted);
+            opacity: 1;
         }
         
         #calendar {
@@ -71,16 +276,34 @@ ob_start();
         }
         
         .nav-tabs {
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 12px;
         }
         .nav-tabs .nav-link {
             color: var(--text-muted);
-            border: 1px solid transparent;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 8px;
+            padding: 9px 12px;
+            cursor: pointer;
         }
         .nav-tabs .nav-link.active {
-            background: rgba(13, 110, 253, 0.3);
-            border-color: rgba(255, 255, 255, 0.1) rgba(255, 255, 255, 0.1) transparent;
-            color: var(--text-light);
+            background: rgba(212, 175, 55, 0.2);
+            border-color: var(--accent-gold);
+            color: var(--accent-gold);
+            font-weight: 600;
+        }
+        .tab-content {
+            margin-top: 6px;
+        }
+        .tab-pane {
+            display: none;
+        }
+        .tab-pane.active {
+            display: block;
         }
         .card {
             background: rgba(45, 45, 45, 0.5);
@@ -188,6 +411,15 @@ ob_start();
             padding: 6px 12px;
             font-size: 0.875rem;
         }
+        .btn-group {
+            display: flex;
+            gap: 6px;
+        }
+        .btn-group .btn {
+            flex: 1;
+            justify-content: center;
+            white-space: nowrap;
+        }
         .btn-outline-primary {
             background: transparent;
             color: #4da3ff;
@@ -222,23 +454,272 @@ ob_start();
             border: 1px solid rgba(255, 255, 255, 0.1);
             color: var(--text-light);
         }
+        .notification-panel {
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .notification-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+        .notification-header h5 {
+            margin: 0;
+            font-size: 1.9rem;
+            font-weight: 700;
+            color: var(--text-light);
+        }
+        .notification-counter {
+            color: var(--text-muted);
+            font-size: 0.92rem;
+            white-space: nowrap;
+        }
+        .notification-list {
+            display: grid;
+            gap: 10px;
+        }
+        .notification-item {
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            background: linear-gradient(145deg, rgba(52, 52, 52, 0.56), rgba(38, 38, 38, 0.42));
+            padding: 14px 14px 12px;
+        }
+        .notification-item.is-unread {
+            border-left: 4px solid #8f98a3;
+        }
+        .notification-item.is-read {
+            border-left: 4px solid #2f9d57;
+        }
+        .notification-row-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+        .notification-title {
+            margin: 0;
+            font-size: 1.04rem;
+            font-weight: 700;
+            color: var(--text-light);
+        }
+        .notification-body {
+            margin: 0 0 10px;
+            font-size: 1.05rem;
+            line-height: 1.55;
+            color: rgba(255, 255, 255, 0.92);
+        }
+        .notification-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+        .notification-meta .meta-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .priority-chip {
+            display: inline-flex;
+            align-items: center;
+            padding: 3px 9px;
+            border-radius: 999px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            border: 1px solid transparent;
+        }
+        .priority-chip.is-critical {
+            color: #ff8f8f;
+            background: rgba(220, 53, 69, 0.24);
+            border-color: rgba(220, 53, 69, 0.45);
+        }
+        .seen-chip {
+            min-width: 98px;
+            text-align: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.95rem;
+            border-radius: 8px;
+            padding: 9px 10px;
+        }
+        .notification-empty {
+            text-align: center;
+            color: var(--text-muted);
+            border: 1px dashed rgba(255, 255, 255, 0.16);
+            border-radius: 10px;
+            padding: 28px 16px;
+        }
         .modal-content {
             background: rgba(45, 45, 45, 0.95);
             border: 1px solid rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(10px);
+            border-radius: 12px;
+        }
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1055;
+            display: none;
+            width: 100%;
+            height: 100%;
+            overflow-x: hidden;
+            overflow-y: auto;
+            outline: 0;
+            background: rgba(0, 0, 0, 0.55);
+        }
+        .modal.show {
+            display: block;
+        }
+        .modal.fade {
+            transition: opacity 0.15s linear;
+        }
+        .modal.fade:not(.show) {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .modal.show .modal-dialog {
+            transform: translateY(0);
+        }
+        .modal-dialog {
+            max-width: 680px;
+            width: calc(100% - 24px);
+            margin: 24px auto;
+            transform: translateY(10px);
+            transition: transform 0.2s ease;
+        }
+        .modal-body {
+            display: grid;
+            gap: 12px;
+            padding: 18px;
+        }
+        .modal-grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .modal-form .form-label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: rgba(255, 255, 255, 0.92);
+        }
+        .modal-form .form-control,
+        .modal-form .form-select {
+            width: 100%;
+            min-height: 42px;
+            border-radius: 8px;
+            padding: 9px 12px;
+            line-height: 1.35;
+        }
+        .modal-form textarea.form-control {
+            min-height: 110px;
+            resize: vertical;
+        }
+        .modal-section-title {
+            margin: 2px 0 6px;
+            padding-bottom: 7px;
+            border-bottom: 1px dashed rgba(255, 255, 255, 0.15);
+            color: var(--text-light);
+            font-size: 0.92rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
+        }
+        .field-hint {
+            display: block;
+            margin-top: 5px;
+            color: rgba(255, 255, 255, 0.55);
+            font-size: 0.82rem;
         }
         .modal-header {
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 14px 18px;
         }
         .modal-title {
             color: var(--text-light);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 700;
+        }
+        .modal-footer {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 12px 18px 16px;
         }
         .btn-close {
             filter: invert(1);
         }
+        body.modal-open {
+            overflow: hidden;
+        }
+
+        @media (max-width: 1200px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+            .col-lg-4 { width: 50%; }
+        }
+
+        @media (max-width: 900px) {
+            .col-md-3,
+            .col-md-4,
+            .col-md-6,
+            .col-lg-4 {
+                width: 100%;
+            }
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            .btn-group {
+                flex-wrap: wrap;
+            }
+            .modal-grid-2 {
+                grid-template-columns: 1fr;
+            }
+            .hdv-advanced-wrap {
+                padding: 10px;
+            }
+            .page-header-section {
+                padding: 20px 18px;
+                min-height: 120px;
+            }
+            .page-header-title {
+                font-size: 2.15rem;
+            }
+            .page-header-desc {
+                font-size: 0.98rem;
+            }
+            .filter-toolbar {
+                grid-template-columns: 1fr;
+            }
+            .quick-actions {
+                width: 100%;
+            }
+            .quick-actions .btn {
+                min-width: 0;
+                flex: 1 1 100%;
+            }
+            .notification-header h5 {
+                font-size: 1.45rem;
+            }
+            .notification-row-top {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .seen-chip {
+                min-width: 0;
+            }
+        }
     </style>
 
-<div style="padding: 20px;">
+<div class="hdv-advanced-wrap">
     <?php if (!empty($_SESSION['flash'])): $f = $_SESSION['flash']; ?>
         <div class="alert alert-<?php echo htmlspecialchars($f['type']); ?>" style="display: flex; justify-content: space-between; align-items: center;">
             <span><?php echo htmlspecialchars($f['message']); ?></span>
@@ -246,12 +727,15 @@ ob_start();
         </div>
         <?php unset($_SESSION['flash']); endif; ?>
 
-    <div class="page-header-section" style="margin-bottom: 30px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
-            <h1 style="margin: 0; font-size: 2rem; color: var(--text-light);">
-                <i class="bi bi-person-badge" style="color: var(--accent-gold);"></i> Quản lý HDV Nâng cao
-            </h1>
-            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+    <div class="page-header-section section-space" style="margin-bottom: 18px;">
+        <div class="page-header-glow"></div>
+        <div class="page-header-avatar">🧭</div>
+        <div class="page-header-layout">
+            <div class="page-header-meta">
+                <h1 class="page-header-title">Quản lý HDV Nâng cao</h1>
+                <p class="page-header-desc">Theo dõi lịch, hiệu suất và thông báo cho hướng dẫn viên trong một màn hình.</p>
+            </div>
+            <div class="quick-actions">
                 <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addScheduleModal">
                     <i class="bi bi-calendar-check"></i> Phân công HDV
                 </button>
@@ -263,72 +747,64 @@ ob_start();
     </div>
 
         <!-- Thống kê tổng quan -->
-        <div class="row mb-4">
-            <div class="col-md-3">
-                <div class="stat-card bg-success text-white">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="mb-0">HDV Sẵn sàng</h6>
-                            <h2 class="mb-0"><?php echo $stats['san_sang'] ?? 0; ?></h2>
-                        </div>
-                        <i class="bi bi-check-circle stat-icon"></i>
+        <div class="stats-grid">
+            <div class="stat-card bg-success text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-0">HDV Sẵn sàng</h6>
+                        <h2 class="mb-0"><?php echo $stats['san_sang'] ?? 0; ?></h2>
                     </div>
+                    <div class="stat-icon"><i class="bi bi-check-circle"></i></div>
                 </div>
             </div>
-            <div class="col-md-3">
-                <div class="stat-card bg-warning text-white">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="mb-0">Đang làm việc</h6>
-                            <h2 class="mb-0"><?php echo $stats['dang_ban'] ?? 0; ?></h2>
-                        </div>
-                        <i class="bi bi-briefcase stat-icon"></i>
+            <div class="stat-card bg-warning text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-0">Đang làm việc</h6>
+                        <h2 class="mb-0"><?php echo $stats['dang_ban'] ?? 0; ?></h2>
                     </div>
+                    <div class="stat-icon"><i class="bi bi-briefcase"></i></div>
                 </div>
             </div>
-            <div class="col-md-3">
-                <div class="stat-card bg-info text-white">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="mb-0">Nghỉ phép</h6>
-                            <h2 class="mb-0"><?php echo $stats['nghi_phep'] ?? 0; ?></h2>
-                        </div>
-                        <i class="bi bi-calendar-x stat-icon"></i>
+            <div class="stat-card bg-info text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-0">Nghỉ phép</h6>
+                        <h2 class="mb-0"><?php echo $stats['nghi_phep'] ?? 0; ?></h2>
                     </div>
+                    <div class="stat-icon"><i class="bi bi-calendar-x"></i></div>
                 </div>
             </div>
-            <div class="col-md-3">
-                <div class="stat-card bg-primary text-white">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="mb-0">Tour tháng này</h6>
-                            <h2 class="mb-0"><?php echo $stats['tour_thang'] ?? 0; ?></h2>
-                        </div>
-                        <i class="bi bi-graph-up stat-icon"></i>
+            <div class="stat-card bg-primary text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-0">Tour tháng này</h6>
+                        <h2 class="mb-0"><?php echo $stats['tour_thang'] ?? 0; ?></h2>
                     </div>
+                    <div class="stat-icon"><i class="bi bi-graph-up"></i></div>
                 </div>
             </div>
         </div>
 
         <!-- Tabs -->
-        <ul class="nav nav-tabs mb-3" role="tablist">
+        <ul class="nav nav-tabs" role="tablist">
             <li class="nav-item">
-                <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-danh-sach">
+                <button type="button" class="nav-link active" data-tab-target="#tab-danh-sach" aria-selected="true">
                     <i class="bi bi-list-ul"></i> Danh sách HDV
                 </button>
             </li>
             <li class="nav-item">
-                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-lich">
+                <button type="button" class="nav-link" data-tab-target="#tab-lich" aria-selected="false">
                     <i class="bi bi-calendar3"></i> Lịch làm việc
                 </button>
             </li>
             <li class="nav-item">
-                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-hieu-suat">
+                <button type="button" class="nav-link" data-tab-target="#tab-hieu-suat" aria-selected="false">
                     <i class="bi bi-bar-chart"></i> Hiệu suất
                 </button>
             </li>
             <li class="nav-item">
-                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-thong-bao">
+                <button type="button" class="nav-link" data-tab-target="#tab-thong-bao" aria-selected="false">
                     <i class="bi bi-bell"></i> Thông báo
                 </button>
             </li>
@@ -336,9 +812,9 @@ ob_start();
 
         <div class="tab-content">
             <!-- Tab 1: Danh sách HDV -->
-            <div class="tab-pane fade show active" id="tab-danh-sach">
-                <div class="row mb-3">
-                    <div class="col-md-3">
+            <div class="tab-pane active" id="tab-danh-sach">
+                <div class="filter-toolbar">
+                    <div class="filter-field">
                         <select class="form-select" id="filterLoaiHDV">
                             <option value="">Tất cả loại HDV</option>
                             <option value="NoiDia">Nội địa</option>
@@ -348,7 +824,7 @@ ob_start();
                             <option value="TongHop">Tổng hợp</option>
                         </select>
                     </div>
-                    <div class="col-md-3">
+                    <div class="filter-field">
                         <select class="form-select" id="filterTrangThai">
                             <option value="">Tất cả trạng thái</option>
                             <option value="SanSang">Sẵn sàng</option>
@@ -357,8 +833,9 @@ ob_start();
                             <option value="TamNghi">Tạm nghỉ</option>
                         </select>
                     </div>
-                    <div class="col-md-6">
-                        <input type="text" class="form-control" id="searchHDV" placeholder="Tìm kiếm theo tên, chuyên tuyến...">
+                    <div class="filter-field">
+                        <i class="bi bi-search filter-icon"></i>
+                        <input type="text" class="form-control" id="searchHDV" placeholder="Tìm theo tên, tuyến, ngôn ngữ...">
                     </div>
                 </div>
 
@@ -441,7 +918,7 @@ ob_start();
             </div>
 
             <!-- Tab 2: Lịch làm việc -->
-            <div class="tab-pane fade" id="tab-lich">
+            <div class="tab-pane" id="tab-lich">
                 <div class="card">
                     <div class="card-header bg-light d-flex justify-content-between align-items-center">
                         <h5 class="mb-0"><i class="bi bi-calendar3"></i> Lịch làm việc HDV</h5>
@@ -463,7 +940,7 @@ ob_start();
                                 </select>
                             </div>
                             <div class="col-md-4">
-                                <select class="form-select" id="filterTrangThai" onchange="filterScheduleTable()">
+                                <select class="form-select" id="filterScheduleStatus" onchange="filterScheduleTable()">
                                     <option value="">Tất cả trạng thái</option>
                                     <option value="SapKhoiHanh">Sắp khởi hành</option>
                                     <option value="DangChay">Đang chạy</option>
@@ -526,7 +1003,7 @@ ob_start();
             </div>
 
             <!-- Tab 3: Hiệu suất -->
-            <div class="tab-pane fade" id="tab-hieu-suat">
+            <div class="tab-pane" id="tab-hieu-suat">
                 <div class="card">
                     <div class="card-body">
                         <h5 class="card-title mb-3">Bảng xếp hạng HDV</h5>
@@ -602,43 +1079,46 @@ ob_start();
             </div>
 
             <!-- Tab 4: Thông báo -->
-            <div class="tab-pane fade" id="tab-thong-bao">
-                <div class="card">
+            <div class="tab-pane" id="tab-thong-bao">
+                <div class="card notification-panel">
                     <div class="card-body">
-                        <h5 class="card-title mb-3">Lịch sử thông báo</h5>
-                        <div class="list-group">
+                        <div class="notification-header">
+                            <h5>Lịch sử thông báo</h5>
+                            <span class="notification-counter"><?php echo count($thong_bao_list ?? []); ?> thông báo</span>
+                        </div>
+                        <div class="notification-list">
                             <?php if (!empty($thong_bao_list)): foreach($thong_bao_list as $tb): ?>
-                            <div class="list-group-item">
-                                <div class="d-flex justify-content-between align-items-start">
+                            <div class="notification-item <?php echo !empty($tb['da_xem']) ? 'is-read' : 'is-unread'; ?>">
+                                <div class="notification-row-top">
                                     <div class="flex-grow-1">
-                                        <h6 class="mb-1">
-                                            <?php echo htmlspecialchars($tb['tieu_de']); ?>
-                                            <?php if ($tb['uu_tien'] === 'Cao' || $tb['uu_tien'] === 'KhanCap'): ?>
-                                                <span class="badge bg-danger">Quan trọng</span>
-                                            <?php endif; ?>
-                                        </h6>
-                                        <p class="mb-1"><?php echo htmlspecialchars($tb['noi_dung']); ?></p>
-                                        <small class="text-muted">
-                                            <i class="bi bi-clock"></i> 
-                                            <?php 
-                                            $date = new DateTime($tb['ngay_gui']);
-                                            echo $date->format('d/m/Y H:i');
-                                            ?>
-                                            <?php if (!empty($tb['ho_ten'])): ?>
-                                                | <i class="bi bi-person"></i> <?php echo htmlspecialchars($tb['ho_ten']); ?>
-                                            <?php else: ?>
-                                                | <i class="bi bi-people"></i> Tất cả HDV
-                                            <?php endif; ?>
-                                        </small>
+                                        <h6 class="notification-title"><?php echo htmlspecialchars($tb['tieu_de']); ?></h6>
+                                        <?php if ($tb['uu_tien'] === 'Cao' || $tb['uu_tien'] === 'KhanCap'): ?>
+                                            <span class="priority-chip is-critical">Quan trọng</span>
+                                        <?php endif; ?>
                                     </div>
-                                    <span class="badge <?php echo $tb['da_xem'] ? 'bg-success' : 'bg-secondary'; ?>">
+                                    <span class="badge seen-chip <?php echo $tb['da_xem'] ? 'bg-success' : 'bg-secondary'; ?>">
                                         <?php echo $tb['da_xem'] ? 'Đã xem' : 'Chưa xem'; ?>
+                                    </span>
+                                </div>
+                                <p class="notification-body"><?php echo htmlspecialchars($tb['noi_dung']); ?></p>
+                                <div class="notification-meta">
+                                    <span class="meta-item">
+                                        <i class="bi bi-clock"></i>
+                                        <?php 
+                                        $date = new DateTime($tb['ngay_gui']);
+                                        echo $date->format('d/m/Y H:i');
+                                        ?>
+                                    </span>
+                                    <span class="meta-item">
+                                        <i class="bi <?php echo !empty($tb['ho_ten']) ? 'bi-person' : 'bi-people'; ?>"></i>
+                                        <?php echo !empty($tb['ho_ten']) ? htmlspecialchars($tb['ho_ten']) : 'Tất cả HDV'; ?>
                                     </span>
                                 </div>
                             </div>
                             <?php endforeach; else: ?>
-                            <div class="list-group-item text-center text-muted">
-                                Chưa có thông báo nào
+                            <div class="notification-empty">
+                                <i class="bi bi-bell-slash" style="font-size: 1.25rem;"></i>
+                                <div style="margin-top: 8px;">Chưa có thông báo nào</div>
                             </div>
                             <?php endif; ?>
                         </div>
@@ -656,25 +1136,20 @@ ob_start();
                     <h5 class="modal-title">Phân công HDV cho Tour</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <form method="post" action="index.php?act=admin/hdv_add_schedule">
+                <form method="post" action="index.php?act=admin/hdv_add_schedule" class="modal-form">
                     <div class="modal-body">
+                        <div class="modal-section-title">Thông tin phân công</div>
                         <div class="mb-3">
                             <label class="form-label">Tour *</label>
                             <select name="tour_id" class="form-select" required>
                                 <option value="">-- Chọn Tour --</option>
-                                <?php 
-                                // Get list of tours
-                                require_once './models/Tour.php';
-                                $tourModel = new Tour();
-                                $tours = $tourModel->getAll();
-                                foreach($tours as $tour): 
-                                ?>
+                                <?php foreach (($tourOptions ?? []) as $tour): ?>
                                 <option value="<?php echo $tour['tour_id'] ?? $tour['id']; ?>">
-                                    <?php echo htmlspecialchars($tour['ten_tour']); ?> 
-                                    (<?php echo $tour['diem_khoi_hanh']; ?> - <?php echo $tour['diem_den']; ?>)
+                                    <?php echo htmlspecialchars((string)($tour['ten_tour'] ?? 'Tour')); ?>
                                 </option>
                                 <?php endforeach; ?>
                             </select>
+                            <small class="field-hint">Chọn tour cần phân công hướng dẫn viên.</small>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">HDV *</label>
@@ -689,26 +1164,31 @@ ob_start();
                                 </option>
                                 <?php endforeach; endif; ?>
                             </select>
+                            <small class="field-hint">Ưu tiên HDV phù hợp chuyên tuyến và lịch trống.</small>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Ngày khởi hành *</label>
-                            <input type="date" name="ngay_khoi_hanh" class="form-control" required>
+                        <div class="modal-grid-2">
+                            <div class="mb-3">
+                                <label class="form-label">Ngày khởi hành *</label>
+                                <input type="date" name="ngay_khoi_hanh" class="form-control" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Ngày kết thúc *</label>
+                                <input type="date" name="ngay_ket_thuc" class="form-control" required>
+                            </div>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Ngày kết thúc *</label>
-                            <input type="date" name="ngay_ket_thuc" class="form-control" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Điểm tập trung</label>
-                            <input type="text" name="diem_tap_trung" class="form-control" placeholder="Ví dụ: Bến xe Miền Đông">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Trạng thái *</label>
-                            <select name="trang_thai" class="form-select" required>
-                                <option value="DaXacNhan">Đã xác nhận</option>
-                                <option value="ChoXacNhan">Chờ xác nhận</option>
-                                <option value="Huy">Hủy</option>
-                            </select>
+                        <div class="modal-grid-2">
+                            <div class="mb-3">
+                                <label class="form-label">Điểm tập trung</label>
+                                <input type="text" name="diem_tap_trung" class="form-control" placeholder="Ví dụ: Bến xe Miền Đông">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Trạng thái *</label>
+                                <select name="trang_thai" class="form-select" required>
+                                    <option value="DaXacNhan">Đã xác nhận</option>
+                                    <option value="ChoXacNhan">Chờ xác nhận</option>
+                                    <option value="Huy">Hủy</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -730,8 +1210,9 @@ ob_start();
                     <h5 class="modal-title">Gửi thông báo</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <form method="post" action="index.php?act=admin/hdv_send_notification">
+                <form method="post" action="index.php?act=admin/hdv_send_notification" class="modal-form">
                     <div class="modal-body">
+                        <div class="modal-section-title">Đối tượng nhận</div>
                         <div class="mb-3">
                             <label class="form-label">Gửi đến</label>
                             <select name="nhan_su_id" class="form-select">
@@ -742,22 +1223,27 @@ ob_start();
                                 </option>
                                 <?php endforeach; endif; ?>
                             </select>
+                            <small class="field-hint">Để trống nếu muốn gửi cho toàn bộ HDV.</small>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Loại thông báo *</label>
-                            <select name="loai_thong_bao" class="form-select" required>
-                                <option value="ThongBao">Thông báo</option>
-                                <option value="NhacNho">Nhắc nhở</option>
-                                <option value="CanhBao">Cảnh báo</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Mức ưu tiên *</label>
-                            <select name="uu_tien" class="form-select" required>
-                                <option value="TrungBinh">Trung bình</option>
-                                <option value="Cao">Cao</option>
-                                <option value="KhanCap">Khẩn cấp</option>
-                            </select>
+
+                        <div class="modal-section-title">Nội dung thông báo</div>
+                        <div class="modal-grid-2">
+                            <div class="mb-3">
+                                <label class="form-label">Loại thông báo *</label>
+                                <select name="loai_thong_bao" class="form-select" required>
+                                    <option value="ThongBao">Thông báo</option>
+                                    <option value="NhacNho">Nhắc nhở</option>
+                                    <option value="CanhBao">Cảnh báo</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Mức ưu tiên *</label>
+                                <select name="uu_tien" class="form-select" required>
+                                    <option value="TrungBinh">Trung bình</option>
+                                    <option value="Cao">Cao</option>
+                                    <option value="KhanCap">Khẩn cấp</option>
+                                </select>
+                            </div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Tiêu đề *</label>
@@ -780,6 +1266,42 @@ ob_start();
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.9/index.global.min.js'></script>
     <script>
+        function initAdvancedTabs() {
+            const tabButtons = document.querySelectorAll('.nav-tabs .nav-link[data-tab-target]');
+            const tabPanes = document.querySelectorAll('.tab-content .tab-pane');
+
+            if (!tabButtons.length || !tabPanes.length) {
+                return;
+            }
+
+            function activateTab(button) {
+                const targetSelector = button.getAttribute('data-tab-target');
+                const targetPane = targetSelector ? document.querySelector(targetSelector) : null;
+                if (!targetPane) {
+                    return;
+                }
+
+                tabButtons.forEach(btn => {
+                    btn.classList.remove('active');
+                    btn.setAttribute('aria-selected', 'false');
+                });
+                tabPanes.forEach(pane => pane.classList.remove('active'));
+
+                button.classList.add('active');
+                button.setAttribute('aria-selected', 'true');
+                targetPane.classList.add('active');
+            }
+
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => activateTab(button));
+            });
+
+            const defaultTab = document.querySelector('.nav-tabs .nav-link.active[data-tab-target]') || tabButtons[0];
+            if (defaultTab) {
+                activateTab(defaultTab);
+            }
+        }
+
         // Filter HDV
         document.getElementById('filterLoaiHDV').addEventListener('change', filterHDV);
         document.getElementById('filterTrangThai').addEventListener('change', filterHDV);
@@ -805,6 +1327,8 @@ ob_start();
 
         // Calendar
         document.addEventListener('DOMContentLoaded', function() {
+            initAdvancedTabs();
+
             var calendarEl = document.getElementById('calendar');
             if (calendarEl) {
                 var calendar = new FullCalendar.Calendar(calendarEl, {
@@ -845,7 +1369,10 @@ ob_start();
 
         function openScheduleModal(hdvId) {
             const modal = new bootstrap.Modal(document.getElementById('addScheduleModal'));
-            document.querySelector('#addScheduleModal select[name="nhan_su_id"]').value = hdvId;
+            const hdvSelect = document.querySelector('#addScheduleModal select[name="hdv_id"]');
+            if (hdvSelect) {
+                hdvSelect.value = String(hdvId);
+            }
             modal.show();
         }
 
@@ -856,7 +1383,7 @@ ob_start();
         // Filter schedule table
         function filterScheduleTable() {
             const hdvFilter = document.getElementById('filterHDV').value;
-            const statusFilter = document.getElementById('filterTrangThai').value;
+            const statusFilter = document.getElementById('filterScheduleStatus').value;
             
             document.querySelectorAll('#scheduleTable tbody tr').forEach(row => {
                 const hdvId = row.dataset.hdv;

@@ -6,6 +6,7 @@
     <title>Quản lý Yêu cầu đặc biệt - HDV</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="<?php echo BASE_URL; ?>public/css/hdv.css">
     <style>
         body {
             background: #f5f7fb;
@@ -30,7 +31,9 @@
         }
     </style>
 </head>
-<body>
+<body class="hdv-body">
+<?php include __DIR__ . '/partials/hdv_nav.php'; ?>
+
 <?php
 $priorityMap = [
     'khan_cap' => ['label' => 'Khẩn cấp', 'badge' => 'danger'],
@@ -55,7 +58,7 @@ $bookingList = $bookingList ?? [];
         <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
             <div>
                 <h1 class="h3 mb-1">Quản lý yêu cầu đặc biệt</h1>
-                <p class="text-muted mb-0">Theo dõi và xử lý các yêu cầu cá nhân của khách hàng</p>
+                <p class="text-muted mb-0">Theo d?i v? x? l? c?c y?u c?u c? nh?n c?a kh?ch h?ng</p>
             </div>
             <div class="d-flex gap-2">
                 <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createRequestModal">
@@ -442,3 +445,4 @@ $bookingList = $bookingList ?? [];
     </script>
 </body>
 </html>
+

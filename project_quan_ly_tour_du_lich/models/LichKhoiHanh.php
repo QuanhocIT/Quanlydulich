@@ -33,7 +33,7 @@ class LichKhoiHanh
     }
 
     // Lấy tất cả lịch khởi hành
-    public function getAll() {
+    public function getAll($limit = null, $offset = 0) {
         $sql = "SELECT 
                     lk.*, 
                     t.ten_tour, 
@@ -44,8 +44,101 @@ class LichKhoiHanh
                 LEFT JOIN phan_bo_nhan_su pbn ON pbn.lich_khoi_hanh_id = lk.id
                 GROUP BY lk.id
                 ORDER BY lk.ngay_khoi_hanh DESC, lk.gio_xuat_phat DESC";
+        if ($limit !== null) {
+            $sql .= " LIMIT ? OFFSET ?";
+        }
+
         $stmt = $this->conn->prepare($sql);
+        if ($limit !== null) {
+            $stmt->bindValue(1, (int)$limit, PDO::PARAM_INT);
+            $stmt->bindValue(2, max(0, (int)$offset), PDO::PARAM_INT);
+            $stmt->execute();
+        } else {
+            $stmt->execute();
+        }
+        return $stmt->fetchAll();
+    }
+
+    public function getOptions($limit = null) {
+        $sql = "SELECT lk.id, lk.ngay_khoi_hanh, t.ten_tour
+                FROM lich_khoi_hanh lk
+                LEFT JOIN tour t ON lk.tour_id = t.tour_id
+                ORDER BY lk.ngay_khoi_hanh DESC, lk.id DESC";
+        if ($limit !== null) {
+            $sql .= " LIMIT ?";
+        }
+
+        $stmt = $this->conn->prepare($sql);
+        if ($limit !== null) {
+            $stmt->bindValue(1, (int)$limit, PDO::PARAM_INT);
+        }
         $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    // Lấy danh sách lịch khởi hành theo bộ lọc (thực hiện filter tại SQL).
+    public function getAllFiltered($filters = []) {
+        $sql = "SELECT
+                    lk.*,
+                    t.ten_tour,
+                    t.loai_tour,
+                    COUNT(DISTINCT pbn.id) AS so_nhan_su,
+                    COUNT(DISTINCT pbdv.id) AS so_dich_vu,
+                    GROUP_CONCAT(DISTINCT CASE WHEN pbn.vai_tro = 'HDV' THEN pbn.nhan_su_id END ORDER BY pbn.nhan_su_id SEPARATOR ',') AS hdv_ids
+                FROM lich_khoi_hanh lk
+                LEFT JOIN tour t ON lk.tour_id = t.tour_id
+                LEFT JOIN phan_bo_nhan_su pbn ON pbn.lich_khoi_hanh_id = lk.id
+                LEFT JOIN phan_bo_dich_vu pbdv ON pbdv.lich_khoi_hanh_id = lk.id";
+
+        $where = [];
+        $having = [];
+        $params = [];
+
+        $search = trim((string)($filters['search'] ?? ''));
+        if ($search !== '') {
+            $where[] = "(t.ten_tour LIKE ? OR lk.diem_tap_trung LIKE ?)";
+            $keyword = '%' . $search . '%';
+            $params[] = $keyword;
+            $params[] = $keyword;
+        }
+
+        $tuNgay = trim((string)($filters['tu_ngay'] ?? ''));
+        if ($tuNgay !== '') {
+            $where[] = "lk.ngay_khoi_hanh >= ?";
+            $params[] = $tuNgay;
+        }
+
+        $denNgay = trim((string)($filters['den_ngay'] ?? ''));
+        if ($denNgay !== '') {
+            $where[] = "lk.ngay_khoi_hanh <= ?";
+            $params[] = $denNgay;
+        }
+
+        if (!empty($where)) {
+            $sql .= ' WHERE ' . implode(' AND ', $where);
+        }
+
+        $sql .= ' GROUP BY lk.id';
+
+        $trangThai = trim((string)($filters['trang_thai'] ?? ''));
+        if ($trangThai !== '') {
+            if ($trangThai === 'ChoPhanBo') {
+                $having[] = 'COUNT(DISTINCT pbn.id) = 0';
+            } else {
+                $having[] = 'lk.trang_thai = ?';
+                $params[] = $trangThai;
+                $having[] = 'COUNT(DISTINCT pbn.id) > 0';
+            }
+        }
+
+        if (!empty($having)) {
+            $sql .= ' HAVING ' . implode(' AND ', $having);
+        }
+
+        $sql .= ' ORDER BY lk.ngay_khoi_hanh DESC, lk.gio_xuat_phat DESC';
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute($params);
         return $stmt->fetchAll();
     }
 
@@ -70,6 +163,30 @@ class LichKhoiHanh
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([(int)$tourId]);
         return $stmt->fetchAll();
+    }
+
+    // Thống kê số lịch khởi hành theo tháng cho dashboard.
+    public function getScheduleCountByMonth($months = 12) {
+        $months = max(1, (int)$months);
+        $sql = "SELECT DATE_FORMAT(ngay_khoi_hanh, '%Y-%m') AS thang, COUNT(*) AS total
+                FROM lich_khoi_hanh
+                WHERE ngay_khoi_hanh IS NOT NULL
+                  AND ngay_khoi_hanh >= DATE_SUB(CURDATE(), INTERVAL ? MONTH)
+                GROUP BY DATE_FORMAT(ngay_khoi_hanh, '%Y-%m')
+                ORDER BY DATE_FORMAT(ngay_khoi_hanh, '%Y-%m') ASC";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute([$months]);
+
+        $rows = $stmt->fetchAll();
+        $result = [];
+        foreach ($rows as $row) {
+            $month = (string)($row['thang'] ?? '');
+            if ($month !== '') {
+                $result[$month] = (int)($row['total'] ?? 0);
+            }
+        }
+
+        return $result;
     }
 
     // Tìm lịch khởi hành theo tour và ngày khởi hành (dùng để map từ booking)
@@ -128,6 +245,18 @@ class LichKhoiHanh
             $data['ghi_chu'] ?? null,
             $id
         ]);
+    }
+
+    // Cập nhật % hoa hồng HDV cho lịch khởi hành (cần cột lich_khoi_hanh.phan_tram_hoa_hong_hdv)
+    public function updatePhanTramHoaHongHDV($id, $phanTram) {
+        try {
+            $sql = "UPDATE lich_khoi_hanh SET phan_tram_hoa_hong_hdv = ? WHERE id = ?";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute([(float)$phanTram, (int)$id]);
+            return (int)$stmt->rowCount() > 0;
+        } catch (Exception $e) {
+            return false;
+        }
     }
 
     // Gán HDV chính cho lịch khởi hành

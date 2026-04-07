@@ -6,29 +6,81 @@ ob_start();
 
 <style>
     .page-header {
+        position: relative;
+        background: linear-gradient(90deg, #2d2d2d 0%, #3a2e13 100%);
+        border-radius: 8px;
+        padding: 24px 32px;
+        margin-bottom: 28px;
+        box-shadow: 0 2px 12px rgba(212,175,55,0.10);
         display: flex;
-        justify-content: space-between;
         align-items: center;
-        margin-bottom: 30px;
+        gap: 22px;
+        overflow: hidden;
+        flex-wrap: wrap;
+    }
+
+    .page-header-glow {
+        position: absolute;
+        top: 0;
+        left: -60%;
+        width: 60%;
+        height: 100%;
+        background: linear-gradient(120deg, rgba(255,236,140,0.18) 0%, rgba(255,236,140,0.45) 50%, rgba(255,236,140,0.18) 100%);
+        filter: blur(2px);
+        animation: page-header-glow-move 2.8s linear infinite;
+        z-index: 1;
+        pointer-events: none;
+    }
+
+    @keyframes page-header-glow-move {
+        0% { left: -60%; }
+        100% { left: 100%; }
+    }
+
+    .page-header-avatar {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #d4af37 60%, #fffde7 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.2rem;
+        box-shadow: 0 0 0 4px rgba(212,175,55,0.12);
+        z-index: 2;
+        flex-shrink: 0;
+    }
+
+    .page-header-body {
+        flex: 1;
+        z-index: 2;
     }
 
     .page-header h2 {
-        font-size: 24px;
+        font-size: 1.7rem;
         letter-spacing: 1px;
-        margin-bottom: 5px;
+        margin-bottom: 6px;
+        color: #ffe082;
+        font-weight: 700;
+        text-shadow: 0 2px 8px #2d2d2d;
     }
 
     .page-header p {
-        color: var(--text-muted);
-        font-size: 13px;
+        color: #fffde7;
+        font-size: 1rem;
+        text-shadow: 0 1px 4px #2d2d2d;
+    }
+
+    .page-header-actions {
+        z-index: 2;
     }
 
     .filter-section {
         background: rgba(45, 45, 45, 0.5);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 2px;
-        padding: 20px;
-        margin-bottom: 30px;
+        border: 1px solid rgba(212, 175, 55, 0.2);
+        border-radius: 8px;
+        padding: 22px 24px;
+        margin-bottom: 24px;
         backdrop-filter: blur(10px);
     }
 
@@ -39,10 +91,41 @@ ob_start();
         align-items: end;
     }
 
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        color: var(--text-muted);
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .form-group .input,
+    .form-group .select {
+        width: 100%;
+        background: rgba(0, 0, 0, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        color: var(--text-light);
+        border-radius: 4px;
+        padding: 10px 12px;
+        font-size: 13px;
+        transition: all 0.2s;
+    }
+
+    .form-group .input::placeholder {
+        color: rgba(255, 255, 255, 0.45);
+    }
+
+    .form-group .input:focus,
+    .form-group .select:focus {
+        outline: none;
+        border-color: var(--accent-gold);
+        box-shadow: 0 0 0 2px rgba(212,175,55,0.15);
+    }
+
     .table-wrapper {
         background: rgba(45, 45, 45, 0.5);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 2px;
+        border: 1px solid rgba(212, 175, 55, 0.18);
+        border-radius: 8px;
         overflow: hidden;
         backdrop-filter: blur(10px);
     }
@@ -83,6 +166,9 @@ ob_start();
         font-size: 11px;
         font-weight: 600;
         letter-spacing: 0.5px;
+        display: inline-flex;
+        align-items: center;
+        white-space: nowrap;
     }
 
     .badge-success {
@@ -157,16 +243,40 @@ ob_start();
         border-color: rgba(220, 53, 69, 0.3);
         color: #dc3545;
     }
+
+    @media (max-width: 1024px) {
+        .filter-row {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @media (max-width: 680px) {
+        .page-header {
+            padding: 20px;
+        }
+
+        .page-header h2 {
+            font-size: 1.4rem;
+        }
+
+        .filter-row {
+            grid-template-columns: 1fr;
+        }
+    }
 </style>
 
 <div class="page-header">
-    <div>
+    <div class="page-header-glow"></div>
+    <div class="page-header-avatar">🗺️</div>
+    <div class="page-header-body">
         <h2>Quản lý Tour</h2>
         <p>Quản lý thông tin các tour du lịch</p>
     </div>
-    <a href="<?php echo BASE_URL; ?>index.php?act=tour/create" class="btn btn-primary">
-        + Thêm tour mới
-    </a>
+    <div class="page-header-actions">
+        <a href="<?php echo BASE_URL; ?>index.php?act=tour/create" class="btn btn-primary">
+            + Thêm tour mới
+        </a>
+    </div>
 </div>
 
 <!-- Filter Section -->
@@ -175,7 +285,7 @@ ob_start();
         <input type="hidden" name="act" value="admin/quanLyTour">
         <div class="filter-row">
             <div class="form-group">
-                <label>Loại tour</label>
+                <label><i class="bi bi-globe2 me-1"></i>Loại tour</label>
                 <select name="loai_tour" class="form-group select">
                     <option value="">Tất cả</option>
                     <option value="TrongNuoc" <?php echo (isset($_GET['loai_tour']) && $_GET['loai_tour'] === 'TrongNuoc') ? 'selected' : ''; ?>>Trong nước</option>
@@ -184,7 +294,7 @@ ob_start();
                 </select>
             </div>
             <div class="form-group">
-                <label>Trạng thái</label>
+                <label><i class="bi bi-info-circle me-1"></i>Trạng thái</label>
                 <select name="trang_thai" class="form-group select">
                     <option value="">Tất cả</option>
                     <option value="HoatDong">Hoạt động</option>
@@ -192,7 +302,7 @@ ob_start();
                 </select>
             </div>
             <div class="form-group">
-                <label>Tìm kiếm</label>
+                <label><i class="bi bi-search me-1"></i>Tìm kiếm</label>
                 <input type="search" name="search" class="form-group input" placeholder="Tên tour, điểm đến..." value="<?php echo htmlspecialchars($_GET['search'] ?? ''); ?>">
             </div>
             <div class="form-group">
@@ -223,12 +333,12 @@ ob_start();
         <table class="table">
             <thead>
                 <tr>
-                    <th style="width: 80px;">ID</th>
-                    <th>Tên tour</th>
-                    <th style="width: 120px;">Loại tour</th>
-                    <th style="width: 150px; text-align: right;">Giá cơ bản</th>
-                    <th style="width: 120px; text-align: center;">Trạng thái</th>
-                    <th style="width: 400px; text-align: center;">Hành động</th>
+                    <th style="width: 80px;"><i class="bi bi-hash me-1"></i>ID</th>
+                    <th><i class="bi bi-card-text me-1"></i>Tên tour</th>
+                    <th style="width: 120px;"><i class="bi bi-globe2 me-1"></i>Loại tour</th>
+                    <th style="width: 150px; text-align: right;"><i class="bi bi-cash me-1"></i>Giá cơ bản</th>
+                    <th style="width: 120px; text-align: center;"><i class="bi bi-info-circle me-1"></i>Trạng thái</th>
+                    <th style="width: 400px; text-align: center;"><i class="bi bi-tools me-1"></i>Hành động</th>
                 </tr>
             </thead>
             <tbody>
@@ -246,9 +356,9 @@ ob_start();
                     <td>
                         <?php 
                         $loaiTourLabels = [
-                            'TrongNuoc' => ['Trong nước', 'badge-info'],
-                            'QuocTe' => ['Quốc tế', 'badge-warning'],
-                            'TheoYeuCau' => ['Theo yêu cầu', 'badge-secondary']
+                            'TrongNuoc' => ['<i class="bi bi-geo-alt-fill me-1"></i>Trong nước', 'badge-info'],
+                            'QuocTe' => ['<i class="bi bi-airplane-fill me-1"></i>Quốc tế', 'badge-warning'],
+                            'TheoYeuCau' => ['<i class="bi bi-stars me-1"></i>Theo yêu cầu', 'badge-secondary']
                         ];
                         $loai = $tour['loai_tour'] ?? 'TrongNuoc';
                         $label = $loaiTourLabels[$loai] ?? $loaiTourLabels['TrongNuoc'];
@@ -256,45 +366,50 @@ ob_start();
                         <span class="badge <?php echo $label[1]; ?>"><?php echo $label[0]; ?></span>
                     </td>
                     <td style="text-align: right;">
-                        <span style="font-weight: 600; color: var(--accent-gold);"><?php echo number_format((float)$tour['gia_co_ban'], 0, ',', '.'); ?>đ</span>
+                        <span style="font-weight: 600; color: var(--accent-gold);"><i class="bi bi-cash me-1"></i><?php echo number_format((float)$tour['gia_co_ban'], 0, ',', '.'); ?>đ</span>
                     </td>
                     <td style="text-align: center;">
                         <?php if ($tour['trang_thai'] === 'HoatDong'): ?>
-                            <span class="badge badge-success">Hoạt động</span>
+                            <span class="badge badge-success"><i class="bi bi-check-circle me-1"></i>Hoạt động</span>
                         <?php else: ?>
-                            <span class="badge badge-danger">Ngừng</span>
+                            <span class="badge badge-danger"><i class="bi bi-x-circle me-1"></i>Ngừng</span>
                         <?php endif; ?>
                     </td>
                     <td style="text-align: center;">
                         <div class="btn-group">
                             <a href="<?php echo BASE_URL; ?>index.php?act=tour/update&id=<?php echo urlencode($tour['tour_id']); ?>" 
                                class="btn btn-secondary btn-sm" title="Sửa tour">
-                                Sửa
+                                <i class="bi bi-pencil-square me-1"></i> Sửa
                             </a>
                             <a href="<?php echo BASE_URL; ?>index.php?act=admin/chiTietTour&id=<?php echo urlencode($tour['tour_id']); ?>" 
                                class="btn btn-secondary btn-sm" title="Chi tiết tour">
-                                Chi tiết
+                                <i class="bi bi-eye me-1"></i> Chi tiết
                             </a>
                             <a href="<?php echo BASE_URL; ?>index.php?act=tour/clone&id=<?php echo urlencode($tour['tour_id']); ?>" 
                                class="btn btn-secondary btn-sm" title="Sao chép tour" 
                                onclick="return confirm('Bạn có muốn sao chép tour này?');">
-                                Clone
+                                <i class="bi bi-files me-1"></i> Clone
                             </a>
                             <?php 
                             $qrPath = !empty($tour['qr_code_path']) ? BASE_URL . $tour['qr_code_path'] : null;
                             if ($qrPath): ?>
                                 <a href="<?php echo $qrPath; ?>" class="btn btn-secondary btn-sm" target="_blank" rel="noopener" title="Xem mã QR">
-                                    QR
+                                    <i class="bi bi-qr-code me-1"></i> QR
                                 </a>
                             <?php endif; ?>
                             <a href="<?php echo BASE_URL; ?>index.php?act=tour/generateQr&id=<?php echo urlencode($tour['tour_id']); ?>"
                                class="btn btn-secondary btn-sm" title="Tạo/Cập nhật mã QR">
-                                Tạo QR
+                                <i class="bi bi-qr-code me-1"></i> Tạo QR
                             </a>
-                            <button onclick="if(confirm('Bạn có chắc muốn xóa tour này?')) window.location.href='<?php echo BASE_URL; ?>index.php?act=tour/delete&id=<?php echo urlencode($tour['tour_id']); ?>'" 
-                                    class="btn btn-secondary btn-sm" style="background: rgba(220, 53, 69, 0.2); color: #dc3545; border-color: rgba(220, 53, 69, 0.3);" title="Xóa tour">
-                                Xóa
-                            </button>
+                            <form method="POST" action="<?php echo BASE_URL; ?>index.php?act=tour/delete" style="display:inline; margin:0;">
+                                <?php echo csrfField('tour_delete'); ?>
+                                <input type="hidden" name="id" value="<?php echo (int)$tour['tour_id']; ?>">
+                                <button type="submit"
+                                        onclick="return confirm('Bạn có chắc muốn xóa tour này?')"
+                                        class="btn btn-secondary btn-sm" style="background: rgba(220, 53, 69, 0.2); color: #dc3545; border-color: rgba(220, 53, 69, 0.3);" title="Xóa tour">
+                                    <i class="bi bi-trash me-1"></i> Xóa
+                                </button>
+                            </form>
                         </div>
                     </td>
                 </tr>
@@ -302,8 +417,34 @@ ob_start();
             </tbody>
         </table>
         <div style="padding: 15px 20px; border-top: 1px solid rgba(255, 255, 255, 0.1); color: var(--text-muted); font-size: 12px;">
-            Tổng số: <strong><?php echo count($tours); ?></strong> tour
+            Tổng số: <strong><?php echo $totalTours ?? count($tours); ?></strong> tour
         </div>
+        <?php $pageNumber = isset($pageNumber) ? (int)$pageNumber : max(1, (int)($_GET['page'] ?? 1)); ?>
+        <?php if (($totalPages ?? 1) > 1): ?>
+        <nav aria-label="Phân trang tour" style="padding: 12px 20px; border-top: 1px solid rgba(255,255,255,0.1);">
+            <ul class="pagination justify-content-center mb-0">
+                <?php if ($pageNumber > 1): ?>
+                <li class="page-item">
+                    <a class="page-link" href="?<?php echo http_build_query(array_merge($_GET, ['page' => $pageNumber - 1])); ?>">‹</a>
+                </li>
+                <?php endif; ?>
+                <?php
+                $pageStart = max(1, $pageNumber - 2);
+                $pageEnd   = min($totalPages, $pageNumber + 2);
+                for ($p = $pageStart; $p <= $pageEnd; $p++):
+                ?>
+                <li class="page-item <?php echo $p === $pageNumber ? 'active' : ''; ?>">
+                    <a class="page-link" href="?<?php echo http_build_query(array_merge($_GET, ['page' => $p])); ?>"><?php echo $p; ?></a>
+                </li>
+                <?php endfor; ?>
+                <?php if ($pageNumber < $totalPages): ?>
+                <li class="page-item">
+                    <a class="page-link" href="?<?php echo http_build_query(array_merge($_GET, ['page' => $pageNumber + 1])); ?>">›</a>
+                </li>
+                <?php endif; ?>
+            </ul>
+        </nav>
+        <?php endif; ?>
     </div>
 <?php else: ?>
     <div class="table-wrapper">

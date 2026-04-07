@@ -563,12 +563,17 @@ ob_start();
                                                        class="btn btn-warning" title="Phân phòng">
                                                         <i class="bi bi-building"></i>
                                                     </a>
-                                                    <a href="index.php?act=admin/xoaKhachLichKhoiHanh&booking_id=<?php echo $booking['booking_id']; ?>&lich_khoi_hanh_id=<?php echo $lichKhoiHanhId; ?>" 
-                                                       class="btn btn-danger" 
-                                                       onclick="return confirm('Bạn có chắc chắn muốn xóa booking này?');"
-                                                       title="Xóa">
-                                                        <i class="bi bi-trash"></i>
-                                                    </a>
+                                                    <form method="POST" action="index.php?act=admin/xoaKhachLichKhoiHanh" style="display:inline; margin:0;">
+                                                        <?php echo csrfField('admin_form'); ?>
+                                                        <input type="hidden" name="booking_id" value="<?php echo (int)$booking['booking_id']; ?>">
+                                                        <input type="hidden" name="lich_khoi_hanh_id" value="<?php echo (int)$lichKhoiHanhId; ?>">
+                                                        <button type="submit"
+                                                           class="btn btn-danger" 
+                                                           onclick="return confirm('Bạn có chắc chắn muốn xóa booking này?');"
+                                                           title="Xóa">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
+                                                    </form>
                                                 </div>
                                             </td>
                                         </tr>

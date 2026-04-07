@@ -5,6 +5,12 @@ ob_start();
 ?>
 
 <style>
+    .review-page-wrap {
+        max-width: 1240px;
+        margin: 0 auto;
+        padding: 18px;
+    }
+
     .page-header-section {
         background: rgba(45, 45, 45, 0.5);
         border: 1px solid rgba(255, 255, 255, 0.1);
@@ -100,6 +106,7 @@ ob_start();
         border-radius: 2px;
         margin-bottom: 30px;
         backdrop-filter: blur(10px);
+        overflow: hidden;
     }
 
     .section-header {
@@ -121,6 +128,8 @@ ob_start();
     .table-custom {
         width: 100%;
         border-collapse: collapse;
+        table-layout: fixed;
+        min-width: 1120px;
     }
 
     .table-custom thead th {
@@ -148,6 +157,62 @@ ob_start();
         padding: 15px;
         color: var(--text-light);
         font-size: 13px;
+        vertical-align: top;
+    }
+
+    .table-custom thead th:nth-child(1) { width: 86px; }
+    .table-custom thead th:nth-child(2) { width: 190px; }
+    .table-custom thead th:nth-child(3) { width: 120px; }
+    .table-custom thead th:nth-child(4) { width: 180px; }
+    .table-custom thead th:nth-child(5) { width: 90px; text-align: center; }
+    .table-custom thead th:nth-child(6) { width: 32%; }
+    .table-custom thead th:nth-child(7) { width: 140px; }
+    .table-custom thead th:nth-child(8) { width: 96px; text-align: center; }
+
+    .customer-name {
+        color: var(--text-light);
+        font-size: 16px;
+        font-weight: 600;
+        line-height: 1.2;
+        margin-bottom: 4px;
+        display: block;
+    }
+
+    .customer-mail {
+        color: var(--text-muted);
+        font-size: 12px;
+        display: block;
+    }
+
+    .content-snippet {
+        line-height: 1.55;
+        color: rgba(255, 255, 255, 0.94);
+        max-width: 100%;
+        word-break: break-word;
+    }
+
+    .score-cell {
+        text-align: center;
+    }
+
+    .score-pill {
+        min-width: 58px;
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .reply-cell {
+        white-space: nowrap;
+    }
+
+    .action-group {
+        display: inline-flex;
+        gap: 6px;
+        align-items: center;
+        justify-content: center;
+        white-space: nowrap;
     }
 
     .review-card {
@@ -349,8 +414,23 @@ ob_start();
         margin-bottom: 8px;
         display: block;
     }
+
+    @media (max-width: 900px) {
+        .review-page-wrap {
+            padding: 10px;
+        }
+        .page-header-section,
+        .filter-section {
+            padding: 18px;
+            margin-bottom: 18px;
+        }
+        .section-header {
+            padding: 14px 18px;
+        }
+    }
 </style>
 
+<div class="review-page-wrap">
 <!-- Header Section -->
 <div class="page-header-section">
     <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -524,8 +604,8 @@ ob_start();
                             <tr class="review-card" style="border-left-color: <?= $dg['diem'] >= 4 ? '#198754' : ($dg['diem'] <= 2 ? '#dc3545' : '#ffc107') ?>;">
                                 <td><?= date('d/m/Y', strtotime($dg['ngay_danh_gia'])) ?></td>
                                 <td>
-                                    <strong style="color: var(--text-light);"><?= htmlspecialchars($dg['ten_khach_hang'] ?? 'N/A') ?></strong><br>
-                                    <small style="color: var(--text-muted);"><?= htmlspecialchars($dg['email_khach_hang'] ?? '') ?></small>
+                                    <span class="customer-name"><?= htmlspecialchars($dg['ten_khach_hang'] ?? 'N/A') ?></span>
+                                    <span class="customer-mail"><?= htmlspecialchars($dg['email_khach_hang'] ?? '') ?></span>
                                 </td>
                                 <td>
                                     <?php
@@ -553,18 +633,18 @@ ob_start();
                                         Nhân sự #<?= $dg['nhan_su_id'] ?? 'N/A' ?>
                                     <?php endif; ?>
                                 </td>
-                                <td>
-                                    <span class="badge-custom badge-<?= $dg['diem'] >= 4 ? 'success-custom' : ($dg['diem'] <= 2 ? 'danger-custom' : 'warning-custom') ?>">
+                                <td class="score-cell">
+                                    <span class="badge-custom score-pill badge-<?= $dg['diem'] >= 4 ? 'success-custom' : ($dg['diem'] <= 2 ? 'danger-custom' : 'warning-custom') ?>">
                                         <?= $dg['diem'] ?> <i class="bi bi-star-fill"></i>
                                     </span>
                                 </td>
                                 <td>
-                                    <div style="max-width: 300px;">
+                                    <div class="content-snippet">
                                         <?= htmlspecialchars(mb_substr($dg['noi_dung'] ?? '', 0, 100)) ?>
                                         <?= mb_strlen($dg['noi_dung'] ?? '') > 100 ? '...' : '' ?>
                                     </div>
                                 </td>
-                                <td>
+                                <td class="reply-cell">
                                     <?php if (!empty($dg['phan_hoi_admin'])): ?>
                                         <span class="badge-custom badge-success-custom"><i class="bi bi-check-circle"></i> Đã trả lời</span>
                                     <?php else: ?>
@@ -572,16 +652,22 @@ ob_start();
                                     <?php endif; ?>
                                 </td>
                                 <td style="text-align: center;">
-                                    <a href="index.php?act=admin/danhGia/chiTiet&id=<?= $dg['danh_gia_id'] ?>" 
-                                       class="btn-action btn-primary-action" title="Chi tiết">
-                                        <i class="bi bi-eye"></i>
-                                    </a>
-                                    <a href="index.php?act=admin/danhGia/xoa&id=<?= $dg['danh_gia_id'] ?>" 
-                                       class="btn-action btn-danger-action"
-                                       onclick="return confirm('Bạn có chắc muốn xóa đánh giá này?')"
-                                       title="Xóa">
-                                        <i class="bi bi-trash"></i>
-                                    </a>
+                                    <div class="action-group">
+                                        <a href="index.php?act=admin/danhGia/chiTiet&id=<?= $dg['danh_gia_id'] ?>" 
+                                           class="btn-action btn-primary-action" title="Chi tiết">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <form method="POST" action="index.php?act=admin/danhGia/xoa" style="display:inline; margin:0;">
+                                            <?php echo csrfField('admin_form'); ?>
+                                            <input type="hidden" name="id" value="<?= (int)$dg['danh_gia_id'] ?>">
+                                            <button type="submit"
+                                                class="btn-action btn-danger-action"
+                                                onclick="return confirm('Bạn có chắc muốn xóa đánh giá này?')"
+                                                title="Xóa">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -591,6 +677,8 @@ ob_start();
         <?php endif; ?>
     </div>
 </div>
+
+ </div>
 
 <?php
 $content = ob_get_clean();

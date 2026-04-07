@@ -1,9 +1,12 @@
 <?php 
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
 
-
+$sessionDir = __DIR__ . '/storage/sessions';
+if (!is_dir($sessionDir)) {
+    @mkdir($sessionDir, 0777, true);
+}
+if (is_dir($sessionDir) && is_writable($sessionDir)) {
+    session_save_path($sessionDir);
+}
 
 session_start();
 
@@ -11,48 +14,141 @@ session_start();
 
 // Require file Common
 require_once __DIR__ . '/commons/env.php';
+require_once __DIR__ . '/commons/perf.php';
 require_once __DIR__ . '/commons/function.php';
 
-// Controllers
-require_once __DIR__ . '/controllers/AuthController.php';
-require_once __DIR__ . '/controllers/AdminController.php';
-require_once __DIR__ . '/controllers/TourController.php';
-require_once __DIR__ . '/controllers/BookingController.php';
-require_once __DIR__ . '/controllers/HDVController.php';
-require_once __DIR__ . '/controllers/KhachHangController.php';
-require_once __DIR__ . '/controllers/NhaCungCapController.php';
-require_once __DIR__ . '/controllers/LichKhoiHanhController.php';
-require_once __DIR__ . '/controllers/DanhGiaController.php';
-require_once __DIR__ . '/controllers/BaoCaoTaiChinhController.php';
+// Lazy load classes from controllers/models to avoid eager loading all files on every request.
+spl_autoload_register(function ($className) {
+    static $baseDirs = null;
+    if ($baseDirs === null) {
+        $baseDirs = [
+            __DIR__ . '/controllers/',
+            __DIR__ . '/models/',
+        ];
+    }
 
-// Models
-require_once __DIR__ . '/models/NguoiDung.php';
-require_once __DIR__ . '/models/Tour.php';
-require_once __DIR__ . '/models/Booking.php';
-require_once __DIR__ . '/models/BookingHistory.php';
-require_once __DIR__ . '/models/BookingDeletionHistory.php';
-require_once __DIR__ . '/models/SupplierDeletionHistory.php';
-require_once __DIR__ . '/models/KhachHang.php';
-require_once __DIR__ . '/models/HDV.php';
-require_once __DIR__ . '/models/NhaCungCap.php';
-require_once __DIR__ . '/models/GiaoDich.php';
-require_once __DIR__ . '/models/DanhGia.php';
-require_once __DIR__ . '/models/NhanSu.php';
-require_once __DIR__ . '/models/LichKhoiHanh.php';
-require_once __DIR__ . '/models/PhanBoNhanSu.php';
-require_once __DIR__ . '/models/PhanBoDichVu.php';
-require_once __DIR__ . '/models/HDVManagement.php';
-require_once __DIR__ . '/models/TourCheckin.php';
-require_once __DIR__ . '/models/HotelRoomAssignment.php';
-require_once __DIR__ . '/models/DichVuNhaCungCap.php';
-require_once __DIR__ . '/models/YeuCauDacBiet.php';
+    $safeClass = preg_replace('/[^A-Za-z0-9_]/', '', (string)$className);
+    if ($safeClass === '') {
+        return;
+    }
 
+    foreach ($baseDirs as $dir) {
+        $filePath = $dir . $safeClass . '.php';
+        if (is_file($filePath)) {
+            require_once $filePath;
+            return;
+        }
+    }
+});
+
+if (APP_ENV === 'production') {
+    ini_set('display_errors', '0');
+    ini_set('display_startup_errors', '0');
+    ini_set('log_errors', '1');
+    if (ini_get('error_log') === '') {
+        ini_set('error_log', __DIR__ . '/storage/php_error.log');
+    }
+    error_reporting(E_ALL);
+} else {
+    ini_set('display_errors', '1');
+    ini_set('display_startup_errors', '1');
+    error_reporting(E_ALL);
+}
 
 // Route
-$act = $_GET['act'] ?? 'auth/login';
+$conn = getPDOConnection();
+
+$_GET = whitelistRequestParams($_GET, [
+    'act',
+    'id',
+    'nhan_su_id',
+    'tour_id',
+    'booking_id',
+    'month',
+    'year',
+    'all',
+    'method',
+    'status',
+    'from_date',
+    'to_date',
+    'payment_status',
+    'reconcile_state',
+    'trang_thai',
+    'return_act',
+    'return_tour_id',
+    'webhook_secret'
+]);
+
+$allowedControllers = [
+    'invoice',
+    'tour',
+    'auth',
+    'booking',
+    'lichKhoiHanh',
+    'admin',
+    'hdv',
+    'nhaCungCap',
+    'khachHang',
+    'payment'
+];
+
+$act = requestString('act', 'auth/login', 'GET');
+if (!isValidRouteFormat($act)) {
+    die('Route khong hop le.');
+}
+
+// Normalize common route variants to canonical action names.
+$actAliases = [
+    'admin/quanlybooking' => 'admin/quanLyBooking',
+    'admin/quanlytour' => 'admin/quanLyTour',
+    'admin/lichsuxoabooking' => 'admin/lichSuXoaBooking',
+    'booking/dattourchokhach' => 'booking/datTourChoKhach',
+];
+$actLookup = strtolower($act);
+if (isset($actAliases[$actLookup]) && $actAliases[$actLookup] !== $act) {
+    $normalizedAct = $actAliases[$actLookup];
+    $queryParams = $_GET;
+    $queryParams['act'] = $normalizedAct;
+    header('Location: index.php?' . http_build_query($queryParams));
+    exit();
+}
+
+[$controller] = explode('/', $act, 2);
+if (!in_array($controller, $allowedControllers, true)) {
+    die('Controller khong duoc phep truy cap.');
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $csrfExemptActs = [
+        'payment/bankWebhook',
+        // These actions already perform scoped CSRF verification in their controllers.
+        'auth/login',
+        'auth/register',
+        'booking/create',
+        'booking/update',
+        'booking/delete',
+        'booking/datTourChoKhach',
+        'admin/confirm_payment_received',
+        'admin/confirm_gateway_payment',
+        'admin/query_vnpay_status',
+        'admin/paymentReconcile',
+    ];
+
+    if (!in_array($act, $csrfExemptActs, true)) {
+        $csrfGlobalToken = $_POST['_csrf_global'] ?? '';
+        if (!verifyCsrfToken($csrfGlobalToken, 'global_form')) {
+            $_SESSION['error'] = 'Yeu cau khong hop le (CSRF). Vui long thu lai.';
+            $backAct = requestString('act', 'tour/index', 'GET');
+            header('Location: index.php?act=' . urlencode($backAct));
+            exit();
+        }
+    }
+}
 
 // Để đảm bảo tính chất chỉ gọi 1 hàm Controller để xử lý request thì mình sử dụng match
 match ($act) {
+    'invoice/sendMail' => SendInvoiceMailController::send($conn, $_GET['id'] ?? null),
+    'invoice/exportPDF' => InvoicePDFController::export($conn, $_GET['id'] ?? null),
     // Trang chủ - Tour
     'tour/index' => (new TourController())->index(),
     'tour/show' => (new TourController())->show(),
@@ -103,6 +199,7 @@ match ($act) {
     'lichKhoiHanh/edit' => (new LichKhoiHanhController())->edit(),
     'lichKhoiHanh/update' => (new LichKhoiHanhController())->update(),
     'lichKhoiHanh/phanBoNhanSu' => (new LichKhoiHanhController())->phanBoNhanSu(),
+    'lichKhoiHanh/capNhatHoaHongHDV' => (new LichKhoiHanhController())->capNhatHoaHongHDV(),
     'lichKhoiHanh/tuDongPhanBoNhanSu' => (new LichKhoiHanhController())->tuDongPhanBoNhanSu(),
     'lichKhoiHanh/checkConflict' => (new LichKhoiHanhController())->checkConflict(),
     'lichKhoiHanh/updateTrangThaiNhanSu' => (new LichKhoiHanhController())->updateTrangThaiNhanSu(),
@@ -137,6 +234,21 @@ match ($act) {
     'admin/deleteNhatKyTour' => (new AdminController())->deleteNhatKyTour(),
     'admin/addNhacungcap' => (new AdminController())->addNhacungcap(),
     'admin/quanLyNguoiDung' => (new AdminController())->quanLyNguoiDung(),
+    'admin/capNhatTrangThaiNguoiDung' => (new AdminController())->capNhatTrangThaiNguoiDung(),
+    'admin/quanLyLuongThuong' => (new AdminController())->quanLyLuongThuong(),
+    'admin/chiTietLuong' => (new AdminController())->chiTietLuong(),
+    'admin/ajaxChiTietLuong' => (new AdminController())->ajaxChiTietLuong(),
+    'admin/taoLuongThuong' => (new AdminController())->taoLuongThuong(),
+    'admin/capNhatLuongThuong' => (new AdminController())->capNhatLuongThuong(),
+    'admin/duyetLuongNhanSu' => (new AdminController())->duyetLuongNhanSu(),
+    'admin/thanhToanLuongNhanSu' => (new AdminController())->thanhToanLuongNhanSu(),
+    'admin/tinhLaiLuongNhanSu' => (new AdminController())->tinhLaiLuongNhanSu(),
+    'admin/capNhatLuongCoBan' => (new AdminController())->capNhatLuongCoBan(),
+    'admin/notificationCounts' => (new AdminController())->notificationCounts(),
+    'admin/notificationStream' => (new AdminController())->notificationStream(),
+    'admin/notificationSettings' => (new AdminController())->notificationSettings(),
+    'admin/saveNotificationSettings' => (new AdminController())->saveNotificationSettings(),
+    'admin/markNotificationsReadAll' => (new AdminController())->markNotificationsReadAll(),
     // Báo cáo tài chính
     'admin/baoCaoTaiChinh' => (new BaoCaoTaiChinhController())->dashboard(),
     'admin/lichSuGiaoDich' => (new BaoCaoTaiChinhController())->lichSuGiaoDich(),
@@ -179,7 +291,6 @@ match ($act) {
     'hdv/danh_gia' => (new HDVController())->danhGia(),
     'hdv/notifications' => (new HDVController())->notifications(),
     'hdv/lichLamViec' => (new HDVController())->lichLamViec(),
-    'hdv/lich_trinh_chi_tiet' => (new HDVController())->lichTrinhChiTiet(),
     'hdv/nhatKyTour' => (new HDVController())->nhatKyTour(),
     'hdv/danhSachKhach' => (new HDVController())->danhSachKhach(),
     'hdv/checkInKhach' => (new HDVController())->checkInKhach(),
@@ -239,6 +350,7 @@ match ($act) {
     'khachHang/guiDanhGia' => (new KhachHangController())->guiDanhGia(),
     'khachHang/traCuu' => (new KhachHangController())->traCuu(),
     'khachHang/hoaDon' => (new KhachHangController())->hoaDon(),
+    'khachHang/lichSuThanhToan' => (new KhachHangController())->lichSuThanhToan(),
     'khachHang/lichTrinhTour' => (new KhachHangController())->lichTrinhTour(),
     'khachHang/thongBao' => (new KhachHangController())->thongBao(),
     'khachHang/capNhatThongTin' => (new KhachHangController())->capNhatThongTin(),
@@ -247,6 +359,8 @@ match ($act) {
     'khachHang/yeuCauTour' => (new KhachHangController())->guiYeuCauTour(),
     'khachHang/thanhToan' => (new KhachHangController())->thanhToan(),
     'khachHang/thanhToanTour' => (new KhachHangController())->thanhToanTour(),
+    'khachHang/nhapThongTinThamGia' => (new KhachHangController())->nhapThongTinThamGia(),
+    'khachHang/paymentStatus' => (new KhachHangController())->paymentStatus(),
 
     // Nhân sự
     'admin/nhanSu' => (new AdminController())->nhanSu(),
@@ -271,6 +385,23 @@ match ($act) {
     'admin/danhGia/xoa' => (new DanhGiaController())->xoa(),
     'admin/danhGia/baoCao' => (new DanhGiaController())->baoCao(),
     'admin/danhGia/export' => (new DanhGiaController())->export(),
+
+        // Quản lý hóa đơn & thanh toán
+        'admin/invoices' => InvoiceController::index($conn),
+        'admin/show_invoice' => InvoiceController::show($conn, $_GET['id'] ?? null),
+        'admin/payments' => PaymentController::index($conn),
+        'admin/paymentReconcile' => PaymentController::reconcile($conn),
+        'admin/show_payment' => PaymentController::show($conn, $_GET['id'] ?? null),
+        'admin/confirm_payment_received' => PaymentController::confirmReceived($conn, $_GET['id'] ?? null),
+        'admin/confirm_gateway_payment' => PaymentController::confirmGatewayPayment($conn, $_GET['id'] ?? null),
+        'admin/query_vnpay_status' => PaymentGatewayController::queryVnpayStatus($conn, $_GET['id'] ?? null),
+
+            // Thanh toán online booking
+            'admin/thanhToanBooking' => PaymentGatewayController::pay($conn, $_GET['id'] ?? null),
+            'payment/redirect' => PaymentGatewayController::redirect($conn, $_GET['booking_id'] ?? null, $_GET['method'] ?? 'VNPay'),
+            'payment/callback' => PaymentGatewayController::callback($conn, $_GET['booking_id'] ?? null, $_GET['method'] ?? '', $_GET['status'] ?? ''),
+            'payment/vnpayIpn' => PaymentGatewayController::vnpayIpn($conn),
+            'payment/bankWebhook' => BankWebhookController::receive($conn),
     
     // Default
     default => die("Route không tồn tại: $act")

@@ -96,8 +96,20 @@ class DanhGiaController {
     // Xóa đánh giá
     public function xoa() {
         requireRole('Admin');
-        
-        $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+            header('Location: index.php?act=admin/danhGia');
+            exit();
+        }
+
+        if (!verifyCsrfToken($_POST['_csrf_global'] ?? '', 'global_form')
+            && !verifyCsrfToken($_POST['_csrf_token'] ?? '', 'admin_form')) {
+            $_SESSION['error'] = 'Yeu cau khong hop le (CSRF).';
+            header('Location: index.php?act=admin/danhGia');
+            exit();
+        }
+
+        $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
         
         if ($this->model->delete($id)) {
             $_SESSION['success'] = 'Đã xóa đánh giá';

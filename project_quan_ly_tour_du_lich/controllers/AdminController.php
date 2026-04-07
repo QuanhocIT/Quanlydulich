@@ -1,6 +1,517 @@
 <?php
-
 class AdminController {
+    private function requirePostCsrf($redirectAct = 'admin/dashboard') {
+        $scopedToken = $_POST['_csrf_token'] ?? '';
+        $globalToken = $_POST['_csrf_global'] ?? '';
+
+        $validScoped = verifyCsrfToken($scopedToken, 'admin_form');
+        $validGlobal = verifyCsrfToken($globalToken, 'global_form');
+
+        if (!$validScoped && !$validGlobal) {
+            setValidationErrors(['_csrf_token' => 'invalid'], 'Yeu cau khong hop le (CSRF).');
+            $_SESSION['error'] = 'Yeu cau khong hop le (CSRF). Vui long thu lai.';
+            header('Location: index.php?act=' . urlencode($redirectAct));
+            exit;
+        }
+    }
+
+    private function optionalPostString($key) {
+        $value = requestString($key, '', 'POST');
+        return $value === '' ? null : $value;
+    }
+
+    private function optionalPostEmail($key) {
+        if (!isset($_POST[$key])) {
+            return null;
+        }
+
+        $rawValue = sanitizeText($_POST[$key]);
+        if ($rawValue === '') {
+            return null;
+        }
+
+        return validateEmail($rawValue);
+    }
+
+    private function optionalPostPhone($key) {
+        if (!isset($_POST[$key])) {
+            return null;
+        }
+
+        $rawValue = sanitizeText($_POST[$key]);
+        if ($rawValue === '') {
+            return null;
+        }
+
+        return validatePhone($rawValue);
+    }
+
+    private function optionalPostDate($key) {
+        if (!isset($_POST[$key])) {
+            return null;
+        }
+
+        $rawValue = sanitizeText($_POST[$key]);
+        if ($rawValue === '') {
+            return null;
+        }
+
+        return validateDateYmd($rawValue);
+    }
+
+    private function optionalPostId($key) {
+        return validateId($_POST[$key] ?? null);
+    }
+
+    private function tinhLuong($loaiLuong, $soTienCoDinh, $phanTramHoaHong, $doanhThu) {
+        $loaiLuong = in_array($loaiLuong, ['CoDinh', 'PhanTram', 'KetHop'], true) ? $loaiLuong : 'CoDinh';
+        $soTienCoDinh = max(0, (float)$soTienCoDinh);
+        $phanTramHoaHong = max(0, min(100, (float)$phanTramHoaHong));
+        $doanhThu = max(0, (float)$doanhThu);
+
+        $tienHoaHong = 0;
+        $tongLuong = 0;
+
+        if ($loaiLuong === 'CoDinh') {
+            $tongLuong = $soTienCoDinh;
+        } elseif ($loaiLuong === 'PhanTram') {
+            $tienHoaHong = round($doanhThu * $phanTramHoaHong / 100, 2);
+            $tongLuong = $tienHoaHong;
+        } else { // KetHop
+            $tienHoaHong = round($doanhThu * $phanTramHoaHong / 100, 2);
+            $tongLuong = $soTienCoDinh + $tienHoaHong;
+        }
+
+        return [
+            'loai_luong' => $loaiLuong,
+            'so_tien_co_dinh' => $soTienCoDinh,
+            'phan_tram_hoa_hong' => $phanTramHoaHong,
+            'tien_hoa_hong' => $tienHoaHong,
+            'tong_luong' => $tongLuong,
+        ];
+    }
+        // Hiển thị chi tiết lương cho nhân sự
+        public function capNhatLuongCoBan() {
+            if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+                header('Location: index.php?act=admin/quanLyLuongThuong');
+                exit;
+            }
+            $this->requirePostCsrf('admin/quanLyLuongThuong');
+
+            require_once __DIR__ . '/../models/NhanSu.php';
+            $nhanSuModel = new NhanSu();
+
+            $nhanSuId = (int)($_POST['nhan_su_id'] ?? 0);
+            $luongCoBan = (float)($_POST['luong_co_ban'] ?? 0);
+            if ($nhanSuId <= 0) {
+                $_SESSION['error'] = 'Thiếu nhân_sự_id.';
+                header('Location: index.php?act=admin/quanLyLuongThuong');
+                exit;
+            }
+
+            $ok = $nhanSuModel->updateLuongCoBan($nhanSuId, $luongCoBan);
+            $_SESSION[$ok ? 'success' : 'error'] = $ok ? 'Đã cập nhật lương cơ bản.' : 'Không thể cập nhật lương cơ bản (hãy đảm bảo đã thêm cột luong_co_ban).';
+
+            $redirect = $_POST['redirect'] ?? null;
+            header('Location: ' . (!empty($redirect) ? $redirect : 'index.php?act=admin/chiTietLuong&nhan_su_id=' . $nhanSuId));
+            exit;
+        }
+
+        public function chiTietLuong() {
+            $nhanSuId = $_GET['nhan_su_id'] ?? null;
+            if (empty($nhanSuId)) {
+                $_SESSION['error'] = 'Thiếu nhân_sự_id.';
+                header('Location: index.php?act=admin/quanLyLuongThuong');
+                exit;
+            }
+            $month = $_GET['month'] ?? '';
+            $year = $_GET['year'] ?? '';
+            $showAll = (($_GET['all'] ?? '') === '1');
+            if (!$showAll) {
+                if ($month === '') $month = (int)date('n');
+                if ($year === '') $year = (int)date('Y');
+            }
+            require_once __DIR__ . '/../models/PhanBoNhanSu.php';
+            require_once __DIR__ . '/../models/NhanSu.php';
+            $phanBoNhanSuModel = new PhanBoNhanSu();
+            $nhanSuModel = new NhanSu();
+            // Lấy thông tin nhân sự
+            $nhanSu = $nhanSuModel->findById($nhanSuId);
+            if (!$nhanSu) {
+                $_SESSION['error'] = 'Nhân sự không tồn tại.';
+                header('Location: index.php?act=admin/quanLyLuongThuong');
+                exit;
+            }
+            // Lấy thông tin lương/thưởng của nhân sự theo tháng/năm (giả sử có hàm getLuongByNhanSuThangNam)
+            $filters = ['nhan_su_id' => $nhanSuId];
+            if (!$showAll) {
+                $filters['month'] = $month;
+                $filters['year'] = $year;
+            }
+            $luongChiTiet = $phanBoNhanSuModel->getAllLuong($filters);
+
+            $tongCoDinh = 0;
+            $tongHoaHong = 0;
+            $tongLuong = 0;
+            foreach ($luongChiTiet as $row) {
+                $tongCoDinh += (float)($row['so_tien_co_dinh'] ?? 0);
+                $tongHoaHong += (float)($row['tien_hoa_hong'] ?? 0);
+                $tongLuong += (float)($row['tong_luong'] ?? 0);
+            }
+
+            if (($nhanSu['vai_tro'] ?? '') === 'HDV' && !$showAll && $month !== '' && $year !== '') {
+                $luongCoBan = (float)($nhanSu['luong_co_ban'] ?? 0);
+                $tongCoDinh = $luongCoBan;
+                $tongLuong = $luongCoBan + $tongHoaHong;
+            }
+
+            $pageTitle = 'Chi tiết lương nhân sự';
+            $currentPage = 'luongThuong';
+            require 'views/admin/chi_tiet_luong.php';
+        }
+    // Quản lý lương thưởng nhân sự
+    public function quanLyLuongThuong() {
+        // Chỉ render view, logic filter đã nằm trong view
+        require_once __DIR__ . '/../models/PhanBoNhanSu.php';
+        require_once __DIR__ . '/../models/NhanSu.php';
+        require_once __DIR__ . '/../models/LichKhoiHanh.php';
+        require_once __DIR__ . '/../models/Tour.php';
+
+        $phanBoNhanSuModel = new PhanBoNhanSu();
+        $nhanSuModel = new NhanSu();
+        $lichKhoiHanhModel = new LichKhoiHanh();
+        $tourModel = new Tour();
+
+        $filterNhanSu = $_GET['nhan_su_id'] ?? '';
+        $filterTour = $_GET['tour_id'] ?? '';
+        $filterMonth = $_GET['month'] ?? '';
+        $filterYear = $_GET['year'] ?? '';
+        $filterTrangThaiLuong = $_GET['trang_thai_luong'] ?? '';
+        $showAll = (($_GET['all'] ?? '') === '1');
+
+        $allLuongTongHop = $phanBoNhanSuModel->getLuongTongHop([
+            'nhan_su_id' => $filterNhanSu,
+            'tour_id' => $filterTour,
+            'month' => $filterMonth,
+            'year' => $filterYear,
+            'trang_thai_luong' => $filterTrangThaiLuong,
+        ]);
+
+        // Quy tắc lương HDV: lương cơ bản (theo tháng) + tổng hoa hồng các tour trong kỳ
+        if (!$showAll && $filterMonth !== '' && $filterYear !== '') {
+            foreach ($allLuongTongHop as &$row) {
+                if (($row['vai_tro'] ?? '') === 'HDV') {
+                    $luongCoBan = (float)($row['luong_co_ban'] ?? 0);
+                    $tongHoaHong = (float)($row['tong_hoa_hong'] ?? 0);
+                    $row['tong_co_dinh'] = $luongCoBan;
+                    $row['tong_luong'] = $luongCoBan + $tongHoaHong;
+                }
+            }
+            unset($row);
+        }
+
+        $nhanSuList = $nhanSuModel->getOptions();
+        $tourList = $tourModel->getOptions();
+        $lichKhoiHanhList = $lichKhoiHanhModel->getOptions();
+
+        $pageTitle = 'Quản lý lương thưởng nhân sự';
+        $currentPage = 'luongThuong';
+
+        require 'views/admin/quan_ly_luong_thuong.php';
+    }
+
+    public function ajaxChiTietLuong() {
+        $nhanSuId = $_GET['nhan_su_id'] ?? null;
+        if (empty($nhanSuId)) {
+            http_response_code(400);
+            echo 'Thiếu nhân_sự_id.';
+            exit;
+        }
+
+        $month = $_GET['month'] ?? '';
+        $year = $_GET['year'] ?? '';
+        $showAll = (($_GET['all'] ?? '') === '1');
+
+        if (!$showAll) {
+            if ($month === '') $month = (int)date('n');
+            if ($year === '') $year = (int)date('Y');
+        }
+
+        require_once __DIR__ . '/../models/PhanBoNhanSu.php';
+        require_once __DIR__ . '/../models/NhanSu.php';
+        $phanBoNhanSuModel = new PhanBoNhanSu();
+        $nhanSuModel = new NhanSu();
+
+        $nhanSu = $nhanSuModel->findById($nhanSuId);
+        if (!$nhanSu) {
+            http_response_code(404);
+            echo 'Nhân sự không tồn tại.';
+            exit;
+        }
+
+        $filters = ['nhan_su_id' => $nhanSuId];
+        if (!$showAll) {
+            $filters['month'] = $month;
+            $filters['year'] = $year;
+        }
+        $luongChiTiet = $phanBoNhanSuModel->getAllLuong($filters);
+
+        $tongLuong = 0;
+        $tongHoaHong = 0;
+        foreach ($luongChiTiet as $row) {
+            $tongLuong += (float)($row['tong_luong'] ?? 0);
+            $tongHoaHong += (float)($row['tien_hoa_hong'] ?? 0);
+        }
+        if (($nhanSu['vai_tro'] ?? '') === 'HDV' && !$showAll && $month !== '' && $year !== '') {
+            $tongLuong = (float)($nhanSu['luong_co_ban'] ?? 0) + $tongHoaHong;
+        }
+
+        require 'views/admin/ajax_chi_tiet_luong.php';
+        exit;
+    }
+
+    public function taoLuongThuong() {
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+            header('Location: index.php?act=admin/quanLyLuongThuong');
+            exit;
+        }
+        $this->requirePostCsrf('admin/quanLyLuongThuong');
+
+        require_once __DIR__ . '/../models/PhanBoNhanSu.php';
+        require_once __DIR__ . '/../models/NhanSu.php';
+        require_once __DIR__ . '/../models/LichKhoiHanh.php';
+
+        $phanBoNhanSuModel = new PhanBoNhanSu();
+        $nhanSuModel = new NhanSu();
+        $lichKhoiHanhModel = new LichKhoiHanh();
+
+        $nhanSuId = (int)($_POST['nhan_su_id'] ?? 0);
+        $lichKhoiHanhId = (int)($_POST['lich_khoi_hanh_id'] ?? 0);
+        $loaiLuong = $_POST['loai_luong'] ?? 'CoDinh';
+        $soTienCoDinh = $_POST['so_tien_co_dinh'] ?? 0;
+        $phanTramHoaHong = $_POST['phan_tram_hoa_hong'] ?? 0;
+        $ghiChu = trim($_POST['ghi_chu'] ?? '');
+
+        if ($nhanSuId <= 0 || $lichKhoiHanhId <= 0) {
+            $_SESSION['error'] = 'Vui lòng chọn nhân sự và lịch khởi hành.';
+            header('Location: index.php?act=admin/quanLyLuongThuong');
+            exit;
+        }
+
+        $nhanSu = $nhanSuModel->findById($nhanSuId);
+        if (!$nhanSu) {
+            $_SESSION['error'] = 'Nhân sự không tồn tại.';
+            header('Location: index.php?act=admin/quanLyLuongThuong');
+            exit;
+        }
+
+        $lich = $lichKhoiHanhModel->findById($lichKhoiHanhId);
+        if (!$lich) {
+            $_SESSION['error'] = 'Lịch khởi hành không tồn tại.';
+            header('Location: index.php?act=admin/quanLyLuongThuong');
+            exit;
+        }
+
+        $doanhThu = $phanBoNhanSuModel->getDoanhThuByLichKhoiHanh($lichKhoiHanhId);
+        $tinh = $this->tinhLuong($loaiLuong, $soTienCoDinh, $phanTramHoaHong, $doanhThu);
+
+        $existing = $phanBoNhanSuModel->findByLichKhoiHanhAndNhanSu($lichKhoiHanhId, $nhanSuId);
+        if ($existing) {
+            $phanBoNhanSuModel->updateLuongFull(
+                $existing['id'],
+                array_merge($tinh, [
+                    'trang_thai_luong' => 'ChoDuyet',
+                    'ghi_chu' => $ghiChu,
+                ])
+            );
+            $_SESSION['success'] = 'Đã cập nhật lương/thưởng.';
+        } else {
+            $id = $phanBoNhanSuModel->insert(array_merge([
+                'lich_khoi_hanh_id' => $lichKhoiHanhId,
+                'nhan_su_id' => $nhanSuId,
+                'vai_tro' => $nhanSu['vai_tro'] ?? 'Khac',
+                'ghi_chu' => $ghiChu,
+                'trang_thai' => 'DaXacNhan',
+            ], $tinh, [
+                'trang_thai_luong' => 'ChoDuyet',
+                'ngay_tao_luong' => date('Y-m-d H:i:s'),
+                'ngay_cap_nhat_luong' => date('Y-m-d H:i:s'),
+            ]));
+            if ($id) {
+                $phanBoNhanSuModel->updateTrangThai($id, 'DaXacNhan');
+                $_SESSION['success'] = 'Đã tạo lương/thưởng mới.';
+            } else {
+                $_SESSION['error'] = 'Không thể tạo lương/thưởng.';
+            }
+        }
+
+        $m = !empty($lich['ngay_khoi_hanh']) ? (int)date('n', strtotime($lich['ngay_khoi_hanh'])) : '';
+        $y = !empty($lich['ngay_khoi_hanh']) ? (int)date('Y', strtotime($lich['ngay_khoi_hanh'])) : '';
+        header('Location: index.php?act=admin/quanLyLuongThuong&month=' . urlencode((string)$m) . '&year=' . urlencode((string)$y));
+        exit;
+    }
+
+    public function capNhatLuongThuong() {
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+            header('Location: index.php?act=admin/quanLyLuongThuong');
+            exit;
+        }
+        $this->requirePostCsrf('admin/quanLyLuongThuong');
+
+        require_once __DIR__ . '/../models/PhanBoNhanSu.php';
+        $phanBoNhanSuModel = new PhanBoNhanSu();
+
+        $id = (int)($_POST['id'] ?? 0);
+        if ($id <= 0) {
+            $_SESSION['error'] = 'Thiếu id phân bổ.';
+            header('Location: index.php?act=admin/quanLyLuongThuong');
+            exit;
+        }
+
+        $row = $phanBoNhanSuModel->findById($id);
+        if (!$row) {
+            $_SESSION['error'] = 'Bản ghi không tồn tại.';
+            header('Location: index.php?act=admin/quanLyLuongThuong');
+            exit;
+        }
+
+        if (($row['trang_thai_luong'] ?? '') === 'DaThanhToan') {
+            $_SESSION['error'] = 'Dòng lương đã thanh toán, không thể chỉnh sửa.';
+            $redirect = $_POST['redirect'] ?? null;
+            header('Location: ' . (!empty($redirect) ? $redirect : 'index.php?act=admin/quanLyLuongThuong'));
+            exit;
+        }
+
+        $loaiLuong = $_POST['loai_luong'] ?? ($row['loai_luong'] ?? 'CoDinh');
+        $soTienCoDinh = $_POST['so_tien_co_dinh'] ?? ($row['so_tien_co_dinh'] ?? 0);
+        $phanTramHoaHong = $_POST['phan_tram_hoa_hong'] ?? ($row['phan_tram_hoa_hong'] ?? 0);
+        $trangThaiLuong = $_POST['trang_thai_luong'] ?? ($row['trang_thai_luong'] ?? 'ChoDuyet');
+        $ghiChu = trim($_POST['ghi_chu'] ?? ($row['ghi_chu'] ?? ''));
+
+        if (!in_array($trangThaiLuong, ['ChoDuyet', 'DaDuyet', 'DaThanhToan'], true)) {
+            $trangThaiLuong = 'ChoDuyet';
+        }
+
+        $doanhThu = $phanBoNhanSuModel->getDoanhThuByLichKhoiHanh((int)($row['lich_khoi_hanh_id'] ?? 0));
+        $tinh = $this->tinhLuong($loaiLuong, $soTienCoDinh, $phanTramHoaHong, $doanhThu);
+
+        $ok = $phanBoNhanSuModel->updateLuongFull(
+            $id,
+            array_merge($tinh, [
+                'trang_thai_luong' => $trangThaiLuong,
+                'ghi_chu' => $ghiChu,
+            ])
+        );
+
+        $_SESSION[$ok ? 'success' : 'error'] = $ok ? 'Đã cập nhật lương/thưởng.' : 'Cập nhật thất bại.';
+
+        $redirect = $_POST['redirect'] ?? null;
+        header('Location: ' . (!empty($redirect) ? $redirect : 'index.php?act=admin/quanLyLuongThuong'));
+        exit;
+    }
+
+    public function duyetLuongNhanSu() {
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+            header('Location: index.php?act=admin/quanLyLuongThuong');
+            exit;
+        }
+        $this->requirePostCsrf('admin/quanLyLuongThuong');
+
+        require_once __DIR__ . '/../models/PhanBoNhanSu.php';
+        $phanBoNhanSuModel = new PhanBoNhanSu();
+
+        $nhanSuId = (int)($_POST['nhan_su_id'] ?? 0);
+        $month = (int)($_POST['month'] ?? 0);
+        $year = (int)($_POST['year'] ?? 0);
+        if ($nhanSuId <= 0 || $month <= 0 || $year <= 0) {
+            $_SESSION['error'] = 'Thiếu tham số duyệt lương.';
+            header('Location: index.php?act=admin/quanLyLuongThuong');
+            exit;
+        }
+
+        $affected = $phanBoNhanSuModel->updateTrangThaiLuongByNhanSuThangNam($nhanSuId, $month, $year, 'DaDuyet');
+        $_SESSION[$affected > 0 ? 'success' : 'error'] = $affected > 0 ? 'Đã duyệt lương tháng này.' : 'Không có dòng nào để duyệt (có thể đã thanh toán hết).';
+
+        $redirect = $_POST['redirect'] ?? null;
+        header('Location: ' . (!empty($redirect) ? $redirect : 'index.php?act=admin/chiTietLuong&nhan_su_id=' . $nhanSuId . '&month=' . $month . '&year=' . $year));
+        exit;
+    }
+
+    public function thanhToanLuongNhanSu() {
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+            header('Location: index.php?act=admin/quanLyLuongThuong');
+            exit;
+        }
+        $this->requirePostCsrf('admin/quanLyLuongThuong');
+
+        require_once __DIR__ . '/../models/PhanBoNhanSu.php';
+        $phanBoNhanSuModel = new PhanBoNhanSu();
+
+        $nhanSuId = (int)($_POST['nhan_su_id'] ?? 0);
+        $month = (int)($_POST['month'] ?? 0);
+        $year = (int)($_POST['year'] ?? 0);
+        if ($nhanSuId <= 0 || $month <= 0 || $year <= 0) {
+            $_SESSION['error'] = 'Thiếu tham số thanh toán lương.';
+            header('Location: index.php?act=admin/quanLyLuongThuong');
+            exit;
+        }
+
+        // Chỉ thanh toán khi tất cả dòng trong kỳ đã được duyệt (không còn ChoDuyet)
+        $rows = $phanBoNhanSuModel->getAllLuong([
+            'nhan_su_id' => $nhanSuId,
+            'month' => $month,
+            'year' => $year,
+        ]);
+        $hasChoDuyet = false;
+        foreach ($rows as $r) {
+            if (($r['trang_thai_luong'] ?? '') === 'ChoDuyet') {
+                $hasChoDuyet = true;
+                break;
+            }
+        }
+        if ($hasChoDuyet) {
+            $_SESSION['error'] = 'Còn dòng lương Chờ duyệt. Hãy duyệt trước khi thanh toán.';
+            $redirect = $_POST['redirect'] ?? null;
+            header('Location: ' . (!empty($redirect) ? $redirect : 'index.php?act=admin/chiTietLuong&nhan_su_id=' . $nhanSuId . '&month=' . $month . '&year=' . $year));
+            exit;
+        }
+
+        $affected = $phanBoNhanSuModel->updateTrangThaiLuongByNhanSuThangNam($nhanSuId, $month, $year, 'DaThanhToan');
+        $_SESSION[$affected > 0 ? 'success' : 'error'] = $affected > 0 ? 'Đã đánh dấu đã thanh toán.' : 'Không có dòng nào được thanh toán (cần ở trạng thái Đã duyệt).';
+
+        $redirect = $_POST['redirect'] ?? null;
+        header('Location: ' . (!empty($redirect) ? $redirect : 'index.php?act=admin/chiTietLuong&nhan_su_id=' . $nhanSuId . '&month=' . $month . '&year=' . $year));
+        exit;
+    }
+
+    public function tinhLaiLuongNhanSu() {
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+            header('Location: index.php?act=admin/quanLyLuongThuong');
+            exit;
+        }
+        $this->requirePostCsrf('admin/quanLyLuongThuong');
+
+        require_once __DIR__ . '/../models/PhanBoNhanSu.php';
+        $phanBoNhanSuModel = new PhanBoNhanSu();
+
+        $nhanSuId = (int)($_POST['nhan_su_id'] ?? 0);
+        $month = (int)($_POST['month'] ?? 0);
+        $year = (int)($_POST['year'] ?? 0);
+        if ($nhanSuId <= 0 || $month <= 0 || $year <= 0) {
+            $_SESSION['error'] = 'Thiếu tham số tính lại lương.';
+            header('Location: index.php?act=admin/quanLyLuongThuong');
+            exit;
+        }
+
+        $updated = $phanBoNhanSuModel->recalcLuongByNhanSuThangNam($nhanSuId, $month, $year);
+        $_SESSION[$updated > 0 ? 'success' : 'error'] = $updated > 0
+            ? "Đã tính lại lương/hoa hồng ({$updated} dòng)."
+            : 'Không có dòng nào được tính lại (có thể đã thanh toán hết).';
+
+        $redirect = $_POST['redirect'] ?? null;
+        header('Location: ' . (!empty($redirect) ? $redirect : 'index.php?act=admin/chiTietLuong&nhan_su_id=' . $nhanSuId . '&month=' . $month . '&year=' . $year));
+        exit;
+    }
     
     public function __construct() {
         requireRole('Admin');
@@ -8,57 +519,90 @@ class AdminController {
     }
     
     public function dashboard() {
-        // Lấy dữ liệu tài chính các tour
+        try {
+            $this->markAdminDashboardNotificationsSeen();
+        } catch (Throwable $e) {
+            $this->initAdminNotificationState();
+        }
+
         require_once __DIR__ . '/../models/GiaoDich.php';
+        require_once __DIR__ . '/../models/Booking.php';
+        require_once __DIR__ . '/../models/KhachHang.php';
         $tourModel = new Tour();
         $giaoDichModel = new GiaoDich();
-        $toursRaw = $tourModel->getAll();
+        $bookingModel = new Booking();
+        $khachHangModel = new KhachHang();
+        $toursRaw = $tourModel->getDashboardTourStats();
+
+        $tourIds = array_map(static function ($tour) {
+            return (int)($tour['tour_id'] ?? 0);
+        }, $toursRaw);
+        $tongThuChiMap = $giaoDichModel->getTongThuChiByTourIds($tourIds);
+
         $tours = [];
         foreach ($toursRaw as $tour) {
-            $tongThu = $giaoDichModel->getTongThuByTourId($tour['tour_id']);
-            $tongChi = $giaoDichModel->getTongChiByTourId($tour['tour_id']);
+            $tourId = (int)($tour['tour_id'] ?? 0);
+            $tongThu = (float)($tongThuChiMap[$tourId]['tong_thu'] ?? 0);
+            $tongChi = (float)($tongThuChiMap[$tourId]['tong_chi'] ?? 0);
             $loiNhuan = $tongThu - $tongChi;
             $tours[] = [
                 'ten_tour' => $tour['ten_tour'],
                 'tong_thu' => $tongThu,
                 'tong_chi_thuc_te' => $tongChi,
-                'tong_du_toan' => $tour['gia_co_ban'], // hoặc trường dự toán phù hợp
+                'tong_du_toan' => $tour['gia_co_ban'],
                 'loi_nhuan' => $loiNhuan
             ];
         }
-        // Lấy doanh thu từng tháng (12 tháng gần nhất)
         $doanhThuTheoThang = $giaoDichModel->getTongThuTheoThang(12);
+
+        // 1. Trạng thái booking
+        $bookingStatusStats = $bookingModel->getStatusCounts();
+
+        // 2. Khách hàng mới theo tháng
+        $khachHangMoiTheoThang = $khachHangModel->getNewCustomersByMonth(12);
+
+        // 3. Trạng thái tour
+        $tourStatusStats = [];
+        foreach ($toursRaw as $tour) {
+            $status = $tour['trang_thai'] ?? 'Khác';
+            $tourStatusStats[$status] = ($tourStatusStats[$status] ?? 0) + 1;
+        }
+
+        // 4. Đánh giá phản hồi
+        require_once __DIR__ . '/../models/DanhGia.php';
+        $danhGiaModel = new DanhGia();
+        $feedbackStats = $danhGiaModel->getTourFeedbackBuckets();
+
+        // 5. Quản lý Booking (thống kê số lượng booking theo trạng thái)
+        $bookingManageStats = $bookingStatusStats;
+
+        // 6. Quản lý Lịch khởi hành (thống kê số lượng theo tháng)
+        require_once __DIR__ . '/../models/LichKhoiHanh.php';
+        $lichKhoiHanhModel = new LichKhoiHanh();
+        $lichKhoiHanhStats = $lichKhoiHanhModel->getScheduleCountByMonth(12);
+
         require 'views/admin/dashboard.php';
     }
     
     public function quanLyTour() {
         $tourModel = new Tour();
-        
-        // Lọc theo loại tour
+
         $loaiTour = $_GET['loai_tour'] ?? '';
         $trangThai = $_GET['trang_thai'] ?? '';
         $search = trim($_GET['search'] ?? '');
-        
-        if (!empty($loaiTour) || !empty($trangThai) || !empty($search)) {
-            $conditions = [];
-            if (!empty($loaiTour)) {
-                $conditions['loai_tour'] = $loaiTour;
-            }
-            if (!empty($trangThai)) {
-                $conditions['trang_thai'] = $trangThai;
-            }
-            $tours = $tourModel->find($conditions);
-            
-            // Lọc theo tìm kiếm nếu có
-            if (!empty($search)) {
-                $tours = array_filter($tours, function($tour) use ($search) {
-                    return stripos($tour['ten_tour'] ?? '', $search) !== false;
-                });
-            }
-        } else {
-        $tours = $tourModel->getAll();
-        }
-        
+
+        $conditions = [];
+        if (!empty($loaiTour)) $conditions['loai_tour'] = $loaiTour;
+        if (!empty($trangThai)) $conditions['trang_thai'] = $trangThai;
+
+        $perPage = 20;
+        $pageNumber = max(1, (int)($_GET['page'] ?? 1));
+        $offset = ($pageNumber - 1) * $perPage;
+
+        $totalTours = $tourModel->countFiltered($conditions, $search);
+        $tours = $tourModel->getAllPaginated($conditions, $search, $perPage, $offset);
+        $totalPages = (int)ceil($totalTours / $perPage);
+
         require 'views/admin/quan_ly_tour.php';
     }
     
@@ -95,16 +639,17 @@ class AdminController {
     public function quanLyNguoiDung() {
     // 1. Lấy tham số tìm kiếm và lọc từ URL (GET)
     // Các tên biến PHẢI khớp với tên trong form của View: name="search" và name="role"
-    $search = $_GET['search'] ?? '';
+    $search = trim($_GET['search'] ?? '');
     $role = $_GET['role'] ?? '';
-    error_log('DEBUG: role param = ' . $role);
+    $status = $_GET['status'] ?? '';
     
     // 2. Load Model và gọi phương thức lọc
         require_once __DIR__ . '/../models/NguoiDung.php';
     $nguoiDungModel = new NguoiDung();
     
     // Phương thức này cần được bạn tạo trong NguoiDung.php
-    $users = $nguoiDungModel->getFilteredUsers($search, $role);
+    $users = $nguoiDungModel->getFilteredUsers($search, $role, $status);
+    $userStats = $nguoiDungModel->getUserStats($search, $role, $status);
     
     // 3. Truyền các biến cần thiết xuống View
     // View của bạn cần $users, $search, và $role để hiển thị dữ liệu và giữ trạng thái form.
@@ -117,85 +662,104 @@ class AdminController {
     // 4. Load View
         require __DIR__ . '/../views/admin/quan_ly_nguoi_dung.php';
     }
+
+    public function capNhatTrangThaiNguoiDung() {
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+            header('Location: index.php?act=admin/quanLyNguoiDung');
+            exit;
+        }
+        $this->requirePostCsrf('admin/quanLyNguoiDung');
+
+        require_once __DIR__ . '/../models/NguoiDung.php';
+        $nguoiDungModel = new NguoiDung();
+
+        $userId = requestInt('user_id', 0, 'POST');
+        $status = requestString('status', '', 'POST');
+        $adminId = (int)($_SESSION['user_id'] ?? 0);
+
+        $allowedStatus = ['HoatDong', 'BiKhoa'];
+        if ($userId <= 0 || !in_array($status, $allowedStatus, true)) {
+            $_SESSION['flash'] = [
+                'type' => 'error',
+                'message' => 'Dữ liệu cập nhật không hợp lệ.',
+            ];
+            header('Location: index.php?act=admin/quanLyNguoiDung');
+            exit;
+        }
+
+        if ($userId === $adminId && $status === 'BiKhoa') {
+            $_SESSION['flash'] = [
+                'type' => 'error',
+                'message' => 'Không thể tự khóa tài khoản đang đăng nhập.',
+            ];
+            header('Location: index.php?act=admin/quanLyNguoiDung');
+            exit;
+        }
+
+        $targetUser = $nguoiDungModel->findById($userId);
+        if (!$targetUser) {
+            $_SESSION['flash'] = [
+                'type' => 'error',
+                'message' => 'Người dùng không tồn tại.',
+            ];
+            header('Location: index.php?act=admin/quanLyNguoiDung');
+            exit;
+        }
+
+        $isUpdated = $nguoiDungModel->updateStatus($userId, $status);
+        $_SESSION['flash'] = [
+            'type' => $isUpdated ? 'success' : 'error',
+            'message' => $isUpdated
+                ? 'Đã cập nhật trạng thái tài khoản.'
+                : 'Không thể cập nhật trạng thái tài khoản.',
+        ];
+
+        $query = [
+            'act=admin/quanLyNguoiDung',
+            'search=' . urlencode(requestString('search', '', 'POST')),
+            'role=' . urlencode(requestString('role', '', 'POST')),
+            'status=' . urlencode(requestString('status_filter', '', 'POST')),
+        ];
+
+        header('Location: index.php?' . implode('&', $query));
+        exit;
+    }
 // ... các code khác ...
     
     public function quanLyBooking() {
         $bookingModel = new Booking();
-        
-        // Luôn dùng getAllWithDetails để có đầy đủ thông tin khách hàng
-        $bookings = $bookingModel->getAllWithDetails();
-        
-        // Lọc theo trạng thái nếu có
-        if (isset($_GET['trang_thai']) && !empty($_GET['trang_thai'])) {
-            $bookings = array_filter($bookings, function($booking) {
-                return $booking['trang_thai'] == $_GET['trang_thai'];
-            });
-            $bookings = array_values($bookings);
-        }
-        
-        // Lấy yêu cầu tour cho mỗi booking
+
+        $perPage = 20;
+        $pageNumber = max(1, (int)($_GET['page'] ?? 1));
+        $offset = ($pageNumber - 1) * $perPage;
+
+        $filters = [
+            'trang_thai' => $_GET['trang_thai'] ?? '',
+            'search'     => trim($_GET['search'] ?? ''),
+            'co_yeu_cau_tour' => isset($_GET['co_yeu_cau_tour']) ? (string)$_GET['co_yeu_cau_tour'] : '',
+        ];
+
+        $totalBookings = $bookingModel->countAllWithDetailsFiltered($filters);
+        $bookings      = $bookingModel->getAllWithDetailsFiltered($filters, $perPage, $offset);
+        $totalPages    = (int)ceil($totalBookings / $perPage);
+
+        // Gắn yêu cầu tour vào mỗi booking (dùng nguoi_dung_id đã có trong SELECT)
         try {
-            require_once 'models/ThongBao.php';
-            require_once 'models/KhachHang.php';
-            
             $thongBaoModel = new ThongBao();
-            $khachHangModel = new KhachHang();
-            
-            // Lấy tất cả yêu cầu tour
-            $yeuCauList = $thongBaoModel->getYeuCauTour(['limit' => 1000]);
-            
-            // Tạo map: nguoi_dung_id => yêu_cau_tour (lấy yêu cầu mới nhất)
-            $yeuCauMap = [];
-            if (!empty($yeuCauList)) {
-                foreach ($yeuCauList as $yc) {
-                    if (!empty($yc['nguoi_gui_id'])) {
-                        if (!isset($yeuCauMap[$yc['nguoi_gui_id']])) {
-                            $yeuCauMap[$yc['nguoi_gui_id']] = $yc;
-                        }
-                    }
-                }
-            }
-            
-            // Tạo map khach_hang_id => nguoi_dung_id để tối ưu
-            $khachHangMap = [];
-            $khachHangIds = array_filter(array_unique(array_column($bookings, 'khach_hang_id')));
-            if (!empty($khachHangIds)) {
-                foreach ($khachHangIds as $khId) {
-                    if (!empty($khId)) {
-                        $kh = $khachHangModel->findById($khId);
-                        if ($kh && !empty($kh['nguoi_dung_id'])) {
-                            $khachHangMap[$khId] = $kh['nguoi_dung_id'];
-                        }
-                    }
-                }
-            }
-            
-            // Gắn yêu cầu tour vào mỗi booking
+            $yeuCauMap = $thongBaoModel->getYeuCauTourByUserIds(array_column($bookings, 'nguoi_dung_id'));
+
             foreach ($bookings as &$booking) {
-                $booking['yeu_cau_tour'] = null;
-                if (!empty($booking['khach_hang_id']) && isset($khachHangMap[$booking['khach_hang_id']])) {
-                    $nguoiDungId = $khachHangMap[$booking['khach_hang_id']];
-                    $booking['yeu_cau_tour'] = $yeuCauMap[$nguoiDungId] ?? null;
-                }
+                $ndId = (int)($booking['nguoi_dung_id'] ?? 0);
+                $booking['yeu_cau_tour'] = $ndId > 0 ? ($yeuCauMap[$ndId] ?? null) : null;
             }
-            unset($booking); // Unset reference
+            unset($booking);
         } catch (Exception $e) {
-            // Nếu có lỗi, đặt yeu_cau_tour = null cho tất cả booking
             foreach ($bookings as &$booking) {
                 $booking['yeu_cau_tour'] = null;
             }
             unset($booking);
         }
-        
-        // Lọc theo yêu cầu tour nếu có
-        if (isset($_GET['co_yeu_cau_tour']) && $_GET['co_yeu_cau_tour'] !== '') {
-            $coYeuCau = $_GET['co_yeu_cau_tour'] == '1';
-            $bookings = array_filter($bookings, function($booking) use ($coYeuCau) {
-                return $coYeuCau ? !empty($booking['yeu_cau_tour']) : empty($booking['yeu_cau_tour']);
-            });
-            $bookings = array_values($bookings); // Re-index array
-        }
-        
+
         require 'views/admin/quan_ly_booking.php';
     }
 
@@ -220,11 +784,11 @@ class AdminController {
         $histories = $yeuCauModel->getHistoriesByRequestIds(array_column($requests, 'id'));
 
         $tourModel = new Tour();
-        $tourList = $tourModel->getAll();
+        $tourList = $tourModel->getOptions(500);
 
         // Danh sách booking để admin có thể chọn khi tạo yêu cầu mới
         $bookingModel = new Booking();
-        $bookingList = $bookingModel->getAllWithDetails();
+        $bookingList = $bookingModel->getRecentOptionsForSpecialRequests(500);
 
         require 'views/admin/quan_ly_yeu_cau_dac_biet.php';
     }
@@ -318,22 +882,24 @@ class AdminController {
         $nguoiDungModel = new NguoiDung();
         
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $nguoiDungId = isset($_POST['nguoi_dung_id']) && $_POST['nguoi_dung_id'] !== '' 
-                ? (int)$_POST['nguoi_dung_id'] 
-                : null;
-            $tenDonVi = trim($_POST['ten_don_vi'] ?? '');
-            $loaiDichVu = $_POST['loai_dich_vu'] ?? null;
-            $diaChi = $_POST['dia_chi'] ?? null;
-            $lienHe = $_POST['lien_he'] ?? null;
-            $moTa = $_POST['mo_ta'] ?? null;
+            $this->requirePostCsrf('admin/nhaCungCap');
+            $allowedServiceTypes = ['KhachSan', 'NhaHang', 'Xe', 'Ve', 'Visa', 'BaoHiem', 'Khac'];
+            $nguoiDungId = $this->optionalPostId('nguoi_dung_id');
+            $tenDonVi = requestString('ten_don_vi', '', 'POST');
+            $loaiDichVu = requestString('loai_dich_vu', '', 'POST');
+            $diaChi = $this->optionalPostString('dia_chi');
+            $lienHe = $this->optionalPostString('lien_he');
+            $moTa = $this->optionalPostString('mo_ta');
             
             if ($tenDonVi === '') {
                 $_SESSION['error'] = 'Tên đơn vị không được để trống';
+            } elseif ($loaiDichVu !== '' && !in_array($loaiDichVu, $allowedServiceTypes, true)) {
+                $_SESSION['error'] = 'Loại dịch vụ không hợp lệ';
             } else {
                 try {
                     $data = [
                         'ten_don_vi'   => $tenDonVi,
-                        'loai_dich_vu' => $loaiDichVu,
+                        'loai_dich_vu' => $loaiDichVu !== '' ? $loaiDichVu : null,
                         'nguoi_dung_id'=> $nguoiDungId,
                         'dia_chi'      => $diaChi,
                         'lien_he'      => $lienHe,
@@ -370,7 +936,8 @@ class AdminController {
                     FROM nguoi_dung nd
                     LEFT JOIN nha_cung_cap ncc ON nd.id = ncc.nguoi_dung_id
                     WHERE ncc.id_nha_cung_cap IS NULL
-                    ORDER BY nd.ngay_tao DESC";
+                    ORDER BY nd.ngay_tao DESC
+                    LIMIT 500";
             $stmt = $nguoiDungModel->conn->prepare($sql);
             $stmt->execute();
             $supplierUsers = $stmt->fetchAll();
@@ -403,22 +970,26 @@ class AdminController {
         $nhaCungCapModel = new NhaCungCap();
         
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $id = $_POST['id_nha_cung_cap'] ?? 0;
-            $tenDonVi = $_POST['ten_don_vi'] ?? '';
-            $loaiDichVu = $_POST['loai_dich_vu'] ?? null;
-            $diaChi = $_POST['dia_chi'] ?? null;
-            $lienHe = $_POST['lien_he'] ?? null;
-            $moTa = $_POST['mo_ta'] ?? null;
+            $this->requirePostCsrf('admin/nhaCungCap');
+            $allowedServiceTypes = ['KhachSan', 'NhaHang', 'Xe', 'Ve', 'Visa', 'BaoHiem', 'Khac'];
+            $id = requestInt('id_nha_cung_cap', 0, 'POST');
+            $tenDonVi = requestString('ten_don_vi', '', 'POST');
+            $loaiDichVu = requestString('loai_dich_vu', '', 'POST');
+            $diaChi = $this->optionalPostString('dia_chi');
+            $lienHe = $this->optionalPostString('lien_he');
+            $moTa = $this->optionalPostString('mo_ta');
             
             if ($id <= 0) {
                 $_SESSION['error'] = 'ID nhà cung cấp không hợp lệ';
-            } elseif (empty($tenDonVi)) {
+            } elseif ($tenDonVi === '') {
                 $_SESSION['error'] = 'Tên đơn vị không được để trống';
+            } elseif ($loaiDichVu !== '' && !in_array($loaiDichVu, $allowedServiceTypes, true)) {
+                $_SESSION['error'] = 'Loại dịch vụ không hợp lệ';
             } else {
                 try {
                     $data = [
                         'ten_don_vi' => $tenDonVi,
-                        'loai_dich_vu' => $loaiDichVu,
+                        'loai_dich_vu' => $loaiDichVu !== '' ? $loaiDichVu : null,
                         'dia_chi' => $diaChi,
                         'lien_he' => $lienHe,
                         'mo_ta' => $moTa
@@ -442,6 +1013,7 @@ class AdminController {
         $deletionHistoryModel = new SupplierDeletionHistory();
         
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $this->requirePostCsrf('admin/nhaCungCap');
             $id = $_POST['id_nha_cung_cap'] ?? 0;
             $matKhau = $_POST['mat_khau'] ?? '';
             $lyDoXoa = $_POST['ly_do_xoa'] ?? '';
@@ -556,6 +1128,7 @@ class AdminController {
             header('Location: index.php?act=admin/nhaCungCap');
             exit();
         }
+        $this->requirePostCsrf('admin/nhaCungCap');
 
         $serviceId = (int)($_POST['dich_vu_id'] ?? 0);
         $action = $_POST['action'] ?? '';
@@ -607,22 +1180,32 @@ class AdminController {
         exit();
     }
     public function danhGia() {
+        try {
+            $this->markAdminReviewNotificationsSeen();
+        } catch (Throwable $e) {
+            $this->initAdminNotificationState();
+        }
+
         require 'views/admin/danh_gia.php';
     }
     public function nhanSu() {
         $nhanSuModel = new NhanSu();
         $q = isset($_GET['q']) ? trim($_GET['q']) : '';
         $role = isset($_GET['role']) ? trim($_GET['role']) : '';
-        // load available roles for tabs
-        $roles = $nhanSuModel->getRoles();
-        
-        // build data grouped by role (for tabs)
+        $allNhanSu = $nhanSuModel->getAll();
         $data_by_role = [];
-        if (!empty($roles)) {
-            foreach ($roles as $r) {
-                $data_by_role[$r] = $nhanSuModel->getByRole($r);
+        foreach ($allNhanSu as $item) {
+            $itemRole = trim((string)($item['vai_tro'] ?? ''));
+            if ($itemRole === '') {
+                $itemRole = 'Khac';
             }
+            if (!isset($data_by_role[$itemRole])) {
+                $data_by_role[$itemRole] = [];
+            }
+            $data_by_role[$itemRole][] = $item;
         }
+        $roles = array_keys($data_by_role);
+        sort($roles);
         
         // apply filters: if search query, search across all; if role filter, use that role's data
         if ($q !== '') {
@@ -632,7 +1215,7 @@ class AdminController {
             $nhan_su_list = $data_by_role[$role];
             $active_role = $role;
         } else {
-            $nhan_su_list = $nhanSuModel->getAll();
+            $nhan_su_list = $allNhanSu;
             $active_role = null;
         }
         
@@ -665,20 +1248,51 @@ class AdminController {
 
     public function quanLyHDVCreate() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $this->requirePostCsrf('admin/quanLyHDV');
             $model = new HDV();
+            $hoTen = requestString('ho_ten', '', 'POST');
+            $ngaySinh = $this->optionalPostDate('ngay_sinh');
+            $soDienThoai = $this->optionalPostPhone('so_dien_thoai');
+            $email = $this->optionalPostEmail('email');
+            $groupId = $this->optionalPostId('group_id');
+
+            if ($hoTen === '') {
+                $_SESSION['flash'] = ['type' => 'danger', 'message' => 'Họ tên HDV không được để trống.'];
+                header('Location: index.php?act=admin/quanLyHDV');
+                exit;
+            }
+
+            if (isset($_POST['ngay_sinh']) && sanitizeText($_POST['ngay_sinh']) !== '' && $ngaySinh === null) {
+                $_SESSION['flash'] = ['type' => 'danger', 'message' => 'Ngày sinh không hợp lệ.'];
+                header('Location: index.php?act=admin/quanLyHDV');
+                exit;
+            }
+
+            if (isset($_POST['so_dien_thoai']) && sanitizeText($_POST['so_dien_thoai']) !== '' && $soDienThoai === null) {
+                $_SESSION['flash'] = ['type' => 'danger', 'message' => 'Số điện thoại không hợp lệ.'];
+                header('Location: index.php?act=admin/quanLyHDV');
+                exit;
+            }
+
+            if (isset($_POST['email']) && sanitizeText($_POST['email']) !== '' && $email === null) {
+                $_SESSION['flash'] = ['type' => 'danger', 'message' => 'Email không hợp lệ.'];
+                header('Location: index.php?act=admin/quanLyHDV');
+                exit;
+            }
+
             $data = [
-                'ho_ten' => $_POST['ho_ten'] ?? '',
-                'ngay_sinh' => $_POST['ngay_sinh'] ?? null,
-                'anh' => $_POST['anh'] ?? null,
-                'so_dien_thoai' => $_POST['so_dien_thoai'] ?? null,
-                'email' => $_POST['email'] ?? null,
-                'dia_chi' => $_POST['dia_chi'] ?? null,
-                'chung_chi' => $_POST['chung_chi'] ?? null,
-                'ngon_ngu' => $_POST['ngon_ngu'] ?? null,
-                'kinh_nghiem' => $_POST['kinh_nghiem'] ?? null,
-                'suc_khoe' => $_POST['suc_khoe'] ?? null,
-                'group_id' => $_POST['group_id'] ?? null,
-                'note' => $_POST['note'] ?? null,
+                'ho_ten' => $hoTen,
+                'ngay_sinh' => $ngaySinh,
+                'anh' => $this->optionalPostString('anh'),
+                'so_dien_thoai' => $soDienThoai,
+                'email' => $email,
+                'dia_chi' => $this->optionalPostString('dia_chi'),
+                'chung_chi' => $this->optionalPostString('chung_chi'),
+                'ngon_ngu' => $this->optionalPostString('ngon_ngu'),
+                'kinh_nghiem' => $this->optionalPostString('kinh_nghiem'),
+                'suc_khoe' => $this->optionalPostString('suc_khoe'),
+                'group_id' => $groupId,
+                'note' => $this->optionalPostString('note'),
             ];
             $ok = $model->insert($data);
             $_SESSION['flash'] = $ok ? ['type'=>'success','message'=>'Thêm HDV thành công'] : ['type'=>'danger','message'=>'Thêm HDV thất bại'];
@@ -688,23 +1302,54 @@ class AdminController {
 
     public function quanLyHDVUpdate() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $this->requirePostCsrf('admin/quanLyHDV');
             $model = new HDV();
-            $id = isset($_POST['nhan_su_id']) ? (int)$_POST['nhan_su_id'] : 0;
+            $id = requestInt('nhan_su_id', 0, 'POST');
             if ($id > 0) {
+                $hoTen = requestString('ho_ten', '', 'POST');
+                $ngaySinh = $this->optionalPostDate('ngay_sinh');
+                $soDienThoai = $this->optionalPostPhone('so_dien_thoai');
+                $email = $this->optionalPostEmail('email');
+                $groupId = $this->optionalPostId('group_id');
+
+                if ($hoTen === '') {
+                    $_SESSION['flash'] = ['type' => 'danger', 'message' => 'Họ tên HDV không được để trống.'];
+                    header('Location: index.php?act=admin/quanLyHDV');
+                    exit;
+                }
+
+                if (isset($_POST['ngay_sinh']) && sanitizeText($_POST['ngay_sinh']) !== '' && $ngaySinh === null) {
+                    $_SESSION['flash'] = ['type' => 'danger', 'message' => 'Ngày sinh không hợp lệ.'];
+                    header('Location: index.php?act=admin/quanLyHDV');
+                    exit;
+                }
+
+                if (isset($_POST['so_dien_thoai']) && sanitizeText($_POST['so_dien_thoai']) !== '' && $soDienThoai === null) {
+                    $_SESSION['flash'] = ['type' => 'danger', 'message' => 'Số điện thoại không hợp lệ.'];
+                    header('Location: index.php?act=admin/quanLyHDV');
+                    exit;
+                }
+
+                if (isset($_POST['email']) && sanitizeText($_POST['email']) !== '' && $email === null) {
+                    $_SESSION['flash'] = ['type' => 'danger', 'message' => 'Email không hợp lệ.'];
+                    header('Location: index.php?act=admin/quanLyHDV');
+                    exit;
+                }
+
                 $data = [
-                    'ho_ten' => $_POST['ho_ten'] ?? '',
-                    'ngay_sinh' => $_POST['ngay_sinh'] ?? null,
-                    'anh' => $_POST['anh'] ?? null,
-                    'so_dien_thoai' => $_POST['so_dien_thoai'] ?? null,
-                    'email' => $_POST['email'] ?? null,
-                    'dia_chi' => $_POST['dia_chi'] ?? null,
-                    'chung_chi' => $_POST['chung_chi'] ?? null,
-                    'ngon_ngu' => $_POST['ngon_ngu'] ?? null,
-                    'kinh_nghiem' => $_POST['kinh_nghiem'] ?? null,
-                    'suc_khoe' => $_POST['suc_khoe'] ?? null,
-                    'group_id' => $_POST['group_id'] ?? null,
+                    'ho_ten' => $hoTen,
+                    'ngay_sinh' => $ngaySinh,
+                    'anh' => $this->optionalPostString('anh'),
+                    'so_dien_thoai' => $soDienThoai,
+                    'email' => $email,
+                    'dia_chi' => $this->optionalPostString('dia_chi'),
+                    'chung_chi' => $this->optionalPostString('chung_chi'),
+                    'ngon_ngu' => $this->optionalPostString('ngon_ngu'),
+                    'kinh_nghiem' => $this->optionalPostString('kinh_nghiem'),
+                    'suc_khoe' => $this->optionalPostString('suc_khoe'),
+                    'group_id' => $groupId,
                     'is_available' => isset($_POST['is_available']) ? 1 : 0,
-                    'note' => $_POST['note'] ?? null,
+                    'note' => $this->optionalPostString('note'),
                 ];
                 $ok = $model->update($id, $data);
                 $_SESSION['flash'] = $ok ? ['type'=>'success','message'=>'Cập nhật HDV thành công'] : ['type'=>'danger','message'=>'Cập nhật HDV thất bại'];
@@ -820,14 +1465,24 @@ class AdminController {
 
     public function nhanSuCreate() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $this->requirePostCsrf('admin/nhanSu');
             $model = new NhanSu();
+
+            $allowedRoles = ['HDV', 'DieuHanh', 'NhaCungCap', 'Khac'];
+            $nguoiDungId = requestInt('nguoi_dung_id', 0, 'POST');
+            $vaiTro = requestString('vai_tro', 'Khac', 'POST');
+
+            if (!in_array($vaiTro, $allowedRoles, true)) {
+                $vaiTro = 'Khac';
+            }
+
             $data = [
-                    'nguoi_dung_id' => $_POST['nguoi_dung_id'] ?? null,
-                    'vai_tro' => $_POST['vai_tro'] ?? 'Khac',
-                'chung_chi' => $_POST['chung_chi'] ?? '',
-                'ngon_ngu' => $_POST['ngon_ngu'] ?? '',
-                'kinh_nghiem' => $_POST['kinh_nghiem'] ?? '',
-                'suc_khoe' => $_POST['suc_khoe'] ?? '',
+                    'nguoi_dung_id' => $nguoiDungId > 0 ? $nguoiDungId : null,
+                    'vai_tro' => $vaiTro,
+                'chung_chi' => $this->optionalPostString('chung_chi'),
+                'ngon_ngu' => $this->optionalPostString('ngon_ngu'),
+                'kinh_nghiem' => $this->optionalPostString('kinh_nghiem'),
+                'suc_khoe' => $this->optionalPostString('suc_khoe'),
             ];
             
                 // Validate: người dùng phải được chọn
@@ -857,19 +1512,28 @@ class AdminController {
 
     public function nhanSuUpdate() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $this->requirePostCsrf('admin/nhanSu');
             $model = new NhanSu();
-            $id = isset($_POST['nhan_su_id']) ? (int)$_POST['nhan_su_id'] : 0;
+            $allowedRoles = ['HDV', 'DieuHanh', 'NhaCungCap', 'Khac'];
+
+            $id = requestInt('nhan_su_id', 0, 'POST');
             if ($id <= 0) {
                 $_SESSION['flash'] = ['type' => 'danger', 'message' => 'ID nhân sự không hợp lệ.'];
                 header('Location: index.php?act=admin/nhanSu');
                 exit;
             }
+
+            $vaiTro = requestString('vai_tro', 'Khac', 'POST');
+            if (!in_array($vaiTro, $allowedRoles, true)) {
+                $vaiTro = 'Khac';
+            }
+
             $data = [
-                'vai_tro' => $_POST['vai_tro'] ?? 'Khac',
-                'chung_chi' => $_POST['chung_chi'] ?? '',
-                'ngon_ngu' => $_POST['ngon_ngu'] ?? '',
-                'kinh_nghiem' => $_POST['kinh_nghiem'] ?? '',
-                'suc_khoe' => $_POST['suc_khoe'] ?? '',
+                'vai_tro' => $vaiTro,
+                'chung_chi' => $this->optionalPostString('chung_chi'),
+                'ngon_ngu' => $this->optionalPostString('ngon_ngu'),
+                'kinh_nghiem' => $this->optionalPostString('kinh_nghiem'),
+                'suc_khoe' => $this->optionalPostString('suc_khoe'),
             ];
             $ok = $model->update($id, $data);
             if ($ok) {
@@ -883,8 +1547,15 @@ class AdminController {
     }
 
     public function nhanSuDelete() {
-        $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-        $delete_user = isset($_GET['delete_user']) && $_GET['delete_user'] === '1' ? true : false;
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+            header('Location: index.php?act=admin/nhanSu');
+            exit;
+        }
+
+        $this->requirePostCsrf('admin/nhanSu');
+
+        $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+        $delete_user = isset($_POST['delete_user']) && $_POST['delete_user'] === '1' ? true : false;
         
         if ($id > 0) {
             $model = new NhanSu();
@@ -959,6 +1630,7 @@ class AdminController {
         $hieu_suat_list = $hdvMgmt->getBaoCaoHieuSuat();
         $thong_bao_list = $hdvMgmt->getThongBao(null, 20);
         $lich_lam_viec = $hdvMgmt->getAllLichLamViec(); // Lấy tất cả lịch làm việc
+        $tourOptions = (new Tour())->getOptions(300);
         
         require 'views/admin/hdv_quan_ly_nang_cao.php';
     }
@@ -1361,11 +2033,11 @@ class AdminController {
         
         // Lấy danh sách tour cho filter
         $tourModel = new Tour();
-        $tours = $tourModel->getAll();
+        $tours = $tourModel->getOptions(500);
         
         // Lấy danh sách HDV cho filter
-        $hdvModel = new HDV();
-        $hdvList = $hdvModel->getAll();
+        $nhanSuModel = new NhanSu();
+        $hdvList = $nhanSuModel->getOptions('HDV', 500);
         
         require 'views/admin/quan_ly_nhat_ky_tour.php';
     }
@@ -1392,11 +2064,11 @@ class AdminController {
         
         // Lấy danh sách tour
         $tourModel = new Tour();
-        $tours = $tourModel->getAll();
+        $tours = $tourModel->getOptions(500);
         
         // Lấy danh sách HDV
-        $hdvModel = new HDV();
-        $hdvList = $hdvModel->getAll();
+        $nhanSuModel = new NhanSu();
+        $hdvList = $nhanSuModel->getOptions('HDV', 500);
         
         require 'views/admin/form_nhat_ky_tour.php';
     }
@@ -1440,6 +2112,12 @@ class AdminController {
      * Lưu nhật ký tour - Admin
      */
     public function saveNhatKyTour() {
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+            header('Location: index.php?act=admin/quanLyNhatKyTour');
+            exit;
+        }
+        $this->requirePostCsrf('admin/quanLyNhatKyTour');
+
         $conn = connectDB();
         $id = $_POST['id'] ?? 0;
         
@@ -1547,8 +2225,15 @@ class AdminController {
      * Xóa nhật ký tour - Admin
      */
     public function deleteNhatKyTour() {
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+            header('Location: index.php?act=admin/quanLyNhatKyTour');
+            exit;
+        }
+
+        $this->requirePostCsrf('admin/quanLyNhatKyTour');
+
         $conn = connectDB();
-        $id = $_GET['id'] ?? 0;
+        $id = $_POST['id'] ?? 0;
         
         if ($id <= 0) {
             $_SESSION['error'] = 'Thiếu ID nhật ký';
@@ -1602,10 +2287,15 @@ class AdminController {
         $lichKhoiHanhId = isset($_GET['lich_khoi_hanh_id']) ? (int)$_GET['lich_khoi_hanh_id'] : 0;
         
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $this->requirePostCsrf('admin/themKhachLichKhoiHanh');
+
+            $lichKhoiHanhId = requestInt('lich_khoi_hanh_id', $lichKhoiHanhId, 'POST');
             $lichKhoiHanhModel = new LichKhoiHanh();
             $bookingModel = new Booking();
             $khachHangModel = new KhachHang();
             $nguoiDungModel = new NguoiDung();
+
+            $allowedBookingStatus = ['ChoXacNhan', 'DaXacNhan', 'TuChoi', 'Huy', 'HoanTat'];
             
             $lichKhoiHanh = $lichKhoiHanhModel->findById($lichKhoiHanhId);
             if (!$lichKhoiHanh) {
@@ -1615,14 +2305,50 @@ class AdminController {
             }
             
             // Tìm hoặc tạo người dùng
-            $email = trim($_POST['email'] ?? '');
-            $hoTen = trim($_POST['ho_ten'] ?? '');
-            $soDienThoai = trim($_POST['so_dien_thoai'] ?? '');
+            $emailRaw = requestString('email', '', 'POST');
+            $email = validateEmail($emailRaw);
+            $hoTen = requestString('ho_ten', '', 'POST');
+            $soDienThoai = $this->optionalPostPhone('so_dien_thoai');
+            $diaChi = $this->optionalPostString('dia_chi');
+            $gioiTinh = $this->optionalPostString('gioi_tinh');
+            $ngaySinh = $this->optionalPostDate('ngay_sinh');
+            $soNguoi = requestInt('so_nguoi', 1, 'POST');
+            $tongTien = requestFloat('tong_tien', 0, 'POST');
+            $trangThai = requestString('trang_thai', 'ChoXacNhan', 'POST');
+            $ghiChu = $this->optionalPostString('ghi_chu');
             
-            if (empty($email) || empty($hoTen)) {
+            if ($email === null || $hoTen === '') {
                 $_SESSION['error'] = 'Vui lòng nhập đầy đủ thông tin khách hàng.';
                 header('Location: index.php?act=admin/themKhachLichKhoiHanh&lich_khoi_hanh_id=' . $lichKhoiHanhId);
                 exit();
+            }
+
+            if (isset($_POST['so_dien_thoai']) && sanitizeText($_POST['so_dien_thoai']) !== '' && $soDienThoai === null) {
+                $_SESSION['error'] = 'Số điện thoại không hợp lệ.';
+                header('Location: index.php?act=admin/themKhachLichKhoiHanh&lich_khoi_hanh_id=' . $lichKhoiHanhId);
+                exit();
+            }
+
+            if (isset($_POST['ngay_sinh']) && sanitizeText($_POST['ngay_sinh']) !== '' && $ngaySinh === null) {
+                $_SESSION['error'] = 'Ngày sinh không hợp lệ.';
+                header('Location: index.php?act=admin/themKhachLichKhoiHanh&lich_khoi_hanh_id=' . $lichKhoiHanhId);
+                exit();
+            }
+
+            if ($soNguoi <= 0) {
+                $_SESSION['error'] = 'Số người phải lớn hơn 0.';
+                header('Location: index.php?act=admin/themKhachLichKhoiHanh&lich_khoi_hanh_id=' . $lichKhoiHanhId);
+                exit();
+            }
+
+            if ($tongTien < 0) {
+                $_SESSION['error'] = 'Tổng tiền không hợp lệ.';
+                header('Location: index.php?act=admin/themKhachLichKhoiHanh&lich_khoi_hanh_id=' . $lichKhoiHanhId);
+                exit();
+            }
+
+            if (!in_array($trangThai, $allowedBookingStatus, true)) {
+                $trangThai = 'ChoXacNhan';
             }
             
             // Tìm người dùng theo email
@@ -1642,9 +2368,9 @@ class AdminController {
             // Tìm hoặc tạo khách hàng
             $khachHang = $khachHangModel->findOrCreateByNguoiDungInfo(
                 $nguoiDung['id'],
-                $_POST['dia_chi'] ?? null,
-                $_POST['gioi_tinh'] ?? null,
-                $_POST['ngay_sinh'] ?? null
+                $diaChi,
+                $gioiTinh,
+                $ngaySinh
             );
             
             // Tạo booking
@@ -1654,10 +2380,10 @@ class AdminController {
                 'ngay_dat' => date('Y-m-d'),
                 'ngay_khoi_hanh' => $lichKhoiHanh['ngay_khoi_hanh'],
                 'ngay_ket_thuc' => $lichKhoiHanh['ngay_ket_thuc'],
-                'so_nguoi' => (int)($_POST['so_nguoi'] ?? 1),
-                'tong_tien' => (float)($_POST['tong_tien'] ?? 0),
-                'trang_thai' => $_POST['trang_thai'] ?? 'ChoXacNhan',
-                'ghi_chu' => $_POST['ghi_chu'] ?? null
+                'so_nguoi' => $soNguoi,
+                'tong_tien' => $tongTien,
+                'trang_thai' => $trangThai,
+                'ghi_chu' => $ghiChu
             ];
             
             $bookingId = $bookingModel->insert($bookingData);
@@ -1680,7 +2406,7 @@ class AdminController {
         if (!$lichKhoiHanh) {
             $_SESSION['error'] = 'Lịch khởi hành không tồn tại.';
             header('Location: index.php?act=admin/danhSachKhachTheoTour');
-            exit();
+            exit;
         }
         
         $tour = $tourModel->findById($lichKhoiHanh['tour_id']);
@@ -1695,20 +2421,46 @@ class AdminController {
         $lichKhoiHanhId = isset($_GET['lich_khoi_hanh_id']) ? (int)$_GET['lich_khoi_hanh_id'] : 0;
         
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $this->requirePostCsrf('admin/suaKhachLichKhoiHanh');
+
+            $bookingId = requestInt('booking_id', $bookingId, 'POST');
+            $lichKhoiHanhId = requestInt('lich_khoi_hanh_id', $lichKhoiHanhId, 'POST');
             $bookingModel = new Booking();
+            $allowedBookingStatus = ['ChoXacNhan', 'DaXacNhan', 'TuChoi', 'Huy', 'HoanTat'];
             
             $booking = $bookingModel->findById($bookingId);
             if (!$booking) {
                 $_SESSION['error'] = 'Booking không tồn tại.';
                 header('Location: index.php?act=admin/danhSachKhachTheoTour&lich_khoi_hanh_id=' . $lichKhoiHanhId);
-                exit();
+                exit;
             }
             
+            $soNguoi = requestInt('so_nguoi', 1, 'POST');
+            $tongTien = requestFloat('tong_tien', 0, 'POST');
+            $trangThai = requestString('trang_thai', 'ChoXacNhan', 'POST');
+            $ghiChu = $this->optionalPostString('ghi_chu');
+
+            if ($soNguoi <= 0) {
+                $_SESSION['error'] = 'Số người phải lớn hơn 0.';
+                header('Location: index.php?act=admin/danhSachKhachTheoTour&lich_khoi_hanh_id=' . $lichKhoiHanhId);
+                exit;
+            }
+
+            if ($tongTien < 0) {
+                $_SESSION['error'] = 'Tổng tiền không hợp lệ.';
+                header('Location: index.php?act=admin/danhSachKhachTheoTour&lich_khoi_hanh_id=' . $lichKhoiHanhId);
+                exit;
+            }
+
+            if (!in_array($trangThai, $allowedBookingStatus, true)) {
+                $trangThai = 'ChoXacNhan';
+            }
+
             $data = [
-                'so_nguoi' => (int)($_POST['so_nguoi'] ?? 1),
-                'tong_tien' => (float)($_POST['tong_tien'] ?? 0),
-                'trang_thai' => $_POST['trang_thai'] ?? 'ChoXacNhan',
-                'ghi_chu' => $_POST['ghi_chu'] ?? null
+                'so_nguoi' => $soNguoi,
+                'tong_tien' => $tongTien,
+                'trang_thai' => $trangThai,
+                'ghi_chu' => $ghiChu
             ];
             
             $result = $bookingModel->update($bookingId, $data);
@@ -1719,7 +2471,7 @@ class AdminController {
             }
             
             header('Location: index.php?act=admin/danhSachKhachTheoTour&lich_khoi_hanh_id=' . $lichKhoiHanhId);
-            exit();
+            exit;
         }
         
         // GET: hiển thị form
@@ -1731,7 +2483,7 @@ class AdminController {
         if (!$booking) {
             $_SESSION['error'] = 'Booking không tồn tại.';
             header('Location: index.php?act=admin/danhSachKhachTheoTour&lich_khoi_hanh_id=' . $lichKhoiHanhId);
-            exit();
+            exit;
         }
         
         $lichKhoiHanh = $lichKhoiHanhModel->findById($lichKhoiHanhId);
@@ -1742,8 +2494,15 @@ class AdminController {
     
     // Xóa khách khỏi lịch khởi hành
     public function xoaKhachLichKhoiHanh() {
-        $bookingId = isset($_GET['booking_id']) ? (int)$_GET['booking_id'] : 0;
-        $lichKhoiHanhId = isset($_GET['lich_khoi_hanh_id']) ? (int)$_GET['lich_khoi_hanh_id'] : 0;
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+            header('Location: index.php?act=admin/quanLyBooking');
+            exit;
+        }
+
+        $this->requirePostCsrf('admin/quanLyBooking');
+
+        $bookingId = isset($_POST['booking_id']) ? (int)$_POST['booking_id'] : 0;
+        $lichKhoiHanhId = isset($_POST['lich_khoi_hanh_id']) ? (int)$_POST['lich_khoi_hanh_id'] : 0;
         
         $bookingModel = new Booking();
         $booking = $bookingModel->findById($bookingId);
@@ -1768,7 +2527,7 @@ class AdminController {
         }
         
         header('Location: index.php?act=admin/danhSachKhachTheoTour&lich_khoi_hanh_id=' . $lichKhoiHanhId);
-        exit();
+        exit;
     }
 
     // Hiển thị lịch sử xóa booking
@@ -1850,7 +2609,7 @@ class AdminController {
         if ($id <= 0) {
             $_SESSION['error'] = 'ID yêu cầu không hợp lệ.';
             header('Location: index.php?act=admin/quanLyYeuCauTour');
-            exit();
+            exit;
         }
         
         $thongBaoModel = new ThongBao();
@@ -1859,7 +2618,7 @@ class AdminController {
         if (!$yeuCau || $yeuCau['tieu_de'] !== 'Yêu cầu tour theo mong muốn') {
             $_SESSION['error'] = 'Yêu cầu không tồn tại.';
             header('Location: index.php?act=admin/quanLyYeuCauTour');
-            exit();
+            exit;
         }
         
         // Parse thông tin từ nội dung
@@ -1873,7 +2632,7 @@ class AdminController {
         
         // Lấy danh sách tour để admin có thể gợi ý
         $tourModel = new Tour();
-        $tourList = $tourModel->getAll();
+        $tourList = $tourModel->getAll(200, 0);
         
         require 'views/admin/chi_tiet_yeu_cau_tour.php';
     }
@@ -1884,7 +2643,7 @@ class AdminController {
     public function phanHoiYeuCauTour() {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header('Location: index.php?act=admin/quanLyYeuCauTour');
-            exit();
+            exit;
         }
         
         require_once 'models/ThongBao.php';
@@ -1897,13 +2656,13 @@ class AdminController {
         if ($yeuCauId <= 0) {
             $_SESSION['error'] = 'ID yêu cầu không hợp lệ.';
             header('Location: index.php?act=admin/quanLyYeuCauTour');
-            exit();
+            exit;
         }
         
         if (empty($phanHoi)) {
             $_SESSION['error'] = 'Vui lòng nhập nội dung phản hồi.';
             header('Location: index.php?act=admin/chiTietYeuCauTour&id=' . $yeuCauId);
-            exit();
+            exit;
         }
         
         $thongBaoModel = new ThongBao();
@@ -1921,16 +2680,241 @@ class AdminController {
         }
         
         header('Location: index.php?act=admin/chiTietYeuCauTour&id=' . $yeuCauId);
-        exit();
+        exit;
     }
     
+    private function initAdminNotificationState($conn = null) {
+        $userId = (int)($_SESSION['user_id'] ?? 0);
+        $state = getAdminNotificationState($userId, $conn);
+        $_SESSION['admin_notifications'] = $state;
+        return $state;
+    }
+
+    private function persistAdminNotificationState(array $updates, $conn = null) {
+        $userId = (int)($_SESSION['user_id'] ?? 0);
+        $state = saveAdminNotificationState($userId, $updates, $conn);
+        $_SESSION['admin_notifications'] = $state;
+        return $state;
+    }
+
+    private function markAdminPaymentNotificationsSeen($conn = null) {
+        $pdo = $conn instanceof PDO ? $conn : connectDB();
+        $maxPaymentId = (int)$pdo->query("SELECT COALESCE(MAX(payment_id), 0) FROM payments")->fetchColumn();
+        return $this->persistAdminNotificationState([
+            'payments_last_seen_id' => $maxPaymentId,
+        ], $pdo);
+    }
+
+    private function markAdminReviewNotificationsSeen($conn = null) {
+        $pdo = $conn instanceof PDO ? $conn : connectDB();
+        $maxReviewId = (int)$pdo->query("SELECT COALESCE(MAX(danh_gia_id), 0) FROM danh_gia")->fetchColumn();
+        return $this->persistAdminNotificationState([
+            'reviews_last_seen_id' => $maxReviewId,
+        ], $pdo);
+    }
+
+    private function markAdminDashboardNotificationsSeen($conn = null) {
+        $pdo = $conn instanceof PDO ? $conn : connectDB();
+        $baseline = getAdminNotificationBaseline($pdo);
+        return $this->persistAdminNotificationState([
+            'payments_last_seen_id' => $baseline['payments_last_seen_id'],
+            'reviews_last_seen_id' => $baseline['reviews_last_seen_id'],
+        ], $pdo);
+    }
+
+    private function getAdminNotificationPayload($conn) {
+        $state = $this->initAdminNotificationState($conn);
+
+        $paymentsLastSeenId = (int)($state['payments_last_seen_id'] ?? 0);
+        $reviewsLastSeenId = (int)($state['reviews_last_seen_id'] ?? 0);
+
+        $paymentStmt = $conn->prepare("SELECT COUNT(*) FROM payments WHERE payment_id > ?");
+        $paymentStmt->execute([$paymentsLastSeenId]);
+        $paymentCount = (int)$paymentStmt->fetchColumn();
+
+        $reviewStmt = $conn->prepare("SELECT COUNT(*) FROM danh_gia WHERE danh_gia_id > ?");
+        $reviewStmt->execute([$reviewsLastSeenId]);
+        $reviewCount = (int)$reviewStmt->fetchColumn();
+
+        return [
+            'success' => true,
+            'payments' => $paymentCount,
+            'reviews' => $reviewCount,
+            'dashboard' => $paymentCount + $reviewCount,
+            'sound_enabled' => ((int)($state['sound_enabled'] ?? 1) === 1) ? 1 : 0,
+        ];
+    }
+
+    public function notificationSettings() {
+        requireRole('Admin');
+        $state = $this->initAdminNotificationState();
+
+        $pageTitle = 'Cài đặt thông báo';
+        $currentPage = 'notificationSettings';
+        $soundEnabled = ((int)($state['sound_enabled'] ?? 1) === 1);
+
+        require 'views/admin/notification_settings.php';
+    }
+
+    public function saveNotificationSettings() {
+        requireRole('Admin');
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+            header('Location: index.php?act=admin/notificationSettings');
+            exit;
+        }
+        $this->requirePostCsrf('admin/notificationSettings');
+
+        $soundEnabled = isset($_POST['sound_enabled']) ? 1 : 0;
+        $this->persistAdminNotificationState(['sound_enabled' => $soundEnabled]);
+        $_SESSION['success'] = 'Đã cập nhật cài đặt thông báo.';
+
+        header('Location: index.php?act=admin/notificationSettings');
+        exit;
+    }
+
+    public function markNotificationsReadAll() {
+        requireRole('Admin');
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+            header('Location: index.php?act=admin/notificationSettings');
+            exit;
+        }
+        $this->requirePostCsrf('admin/notificationSettings');
+
+        try {
+            $conn = connectDB();
+            $this->markAdminDashboardNotificationsSeen($conn);
+        } catch (Throwable $e) {
+            $this->initAdminNotificationState();
+        }
+
+        if ((string)($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'XMLHttpRequest') {
+            header('Content-Type: application/json; charset=utf-8');
+            try {
+                $conn = connectDB();
+                echo json_encode($this->getAdminNotificationPayload($conn), JSON_UNESCAPED_UNICODE);
+                exit;
+            } catch (Throwable $e) {
+                echo json_encode([
+                    'success' => true,
+                    'payments' => 0,
+                    'reviews' => 0,
+                    'dashboard' => 0,
+                    'sound_enabled' => ((int)($_SESSION['admin_notifications']['sound_enabled'] ?? 1) === 1) ? 1 : 0,
+                ], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+        }
+
+        $_SESSION['success'] = 'Đã đánh dấu tất cả thông báo là đã xem.';
+        header('Location: index.php?act=admin/notificationSettings');
+        exit;
+    }
+
+    public function notificationCounts() {
+        requireRole('Admin');
+        header('Content-Type: application/json; charset=utf-8');
+
+        try {
+            $conn = connectDB();
+            echo json_encode($this->getAdminNotificationPayload($conn), JSON_UNESCAPED_UNICODE);
+            exit;
+        } catch (Throwable $e) {
+            echo json_encode([
+                'success' => false,
+                'payments' => 0,
+                'reviews' => 0,
+                'dashboard' => 0,
+                'sound_enabled' => ((int)($_SESSION['admin_notifications']['sound_enabled'] ?? 1) === 1) ? 1 : 0,
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+    }
+
+    public function notificationStream() {
+        requireRole('Admin');
+        @set_time_limit(0);
+        @ignore_user_abort(true);
+
+        while (ob_get_level() > 0) {
+            @ob_end_flush();
+        }
+
+        header('Content-Type: text/event-stream');
+        header('Cache-Control: no-cache, no-transform');
+        header('Connection: keep-alive');
+        header('X-Accel-Buffering: no');
+
+        $this->initAdminNotificationState();
+
+        try {
+            $conn = connectDB();
+            $startedAt = time();
+            $lastPayloadHash = '';
+            $lastMetaHash = '';
+            $cachedPayload = [
+                'success' => true,
+                'payments' => 0,
+                'reviews' => 0,
+                'dashboard' => 0,
+                'sound_enabled' => ((int)($_SESSION['admin_notifications']['sound_enabled'] ?? 1) === 1) ? 1 : 0,
+            ];
+
+            while (!connection_aborted()) {
+                if ((time() - $startedAt) > 300) {
+                    echo "event: close\n";
+                    echo "data: {}\n\n";
+                    @ob_flush();
+                    @flush();
+                    break;
+                }
+
+                $metaStmt = $conn->query("SELECT
+                    (SELECT COALESCE(MAX(payment_id), 0) FROM payments) AS payment_max,
+                    (SELECT COALESCE(MAX(danh_gia_id), 0) FROM danh_gia) AS review_max");
+                $meta = $metaStmt->fetch(PDO::FETCH_ASSOC) ?: [];
+                $metaHash = md5((string)($meta['payment_max'] ?? '') . '|' . (string)($meta['review_max'] ?? '') . '|' . (string)($_SESSION['admin_notifications']['sound_enabled'] ?? 1));
+
+                if ($metaHash !== $lastMetaHash) {
+                    $cachedPayload = $this->getAdminNotificationPayload($conn);
+                    $lastMetaHash = $metaHash;
+                }
+
+                $payloadHash = md5(json_encode($cachedPayload, JSON_UNESCAPED_UNICODE));
+                if ($payloadHash !== $lastPayloadHash) {
+                    echo "event: notification\n";
+                    echo 'data: ' . json_encode($cachedPayload, JSON_UNESCAPED_UNICODE) . "\n\n";
+                    $lastPayloadHash = $payloadHash;
+                } else {
+                    echo ": ping\n\n";
+                }
+
+                @ob_flush();
+                @flush();
+                sleep(2);
+            }
+            exit;
+        } catch (Throwable $e) {
+            echo "event: notification\n";
+            echo 'data: ' . json_encode([
+                'success' => false,
+                'payments' => 0,
+                'reviews' => 0,
+                'dashboard' => 0,
+                'sound_enabled' => ((int)($_SESSION['admin_notifications']['sound_enabled'] ?? 1) === 1) ? 1 : 0,
+            ], JSON_UNESCAPED_UNICODE) . "\n\n";
+            @ob_flush();
+            @flush();
+            exit;
+        }
+    }
+
     /**
      * Tạo tour mới từ yêu cầu của khách hàng
      */
     public function taoTourTuYeuCau() {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header('Location: index.php?act=admin/quanLyYeuCauTour');
-            exit();
+            exit;
         }
         
         require_once 'models/ThongBao.php';
@@ -1941,7 +2925,7 @@ class AdminController {
         if ($yeuCauId <= 0) {
             $_SESSION['error'] = 'ID yêu cầu không hợp lệ.';
             header('Location: index.php?act=admin/quanLyYeuCauTour');
-            exit();
+            exit;
         }
         
         $thongBaoModel = new ThongBao();
@@ -1950,7 +2934,7 @@ class AdminController {
         if (!$yeuCau) {
             $_SESSION['error'] = 'Yêu cầu không tồn tại.';
             header('Location: index.php?act=admin/quanLyYeuCauTour');
-            exit();
+            exit;
         }
         
         // Parse thông tin từ yêu cầu
@@ -1989,11 +2973,12 @@ class AdminController {
             
             $_SESSION['success'] = 'Đã tạo tour mới và thông báo cho khách hàng!';
             header('Location: index.php?act=admin/chiTietTour&id=' . $tourId);
-            exit();
+            exit;
         } else {
             $_SESSION['error'] = 'Không thể tạo tour mới.';
             header('Location: index.php?act=admin/chiTietYeuCauTour&id=' . $yeuCauId);
-            exit();
+            exit;
         }
     }
 }
+

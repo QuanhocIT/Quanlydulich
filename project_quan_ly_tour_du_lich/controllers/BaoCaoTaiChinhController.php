@@ -10,13 +10,19 @@ require_once __DIR__ . '/../models/ChiPhiThucTe.php';
 class BaoCaoTaiChinhController {
         // Hiển thị thu chi từng tour
         public function thuChiTour() {
-            // Lấy danh sách tour
-            $tours = $this->tourModel->getAll();
-            // Lấy tổng thu chi từng tour
+            // Lấy tổng thu chi theo tour bằng truy vấn gộp để tránh N+1 query.
+            $tourStats = $this->giaoDichModel->getThuChiTatCaTour();
             $thuChiTours = [];
-            foreach ($tours as $tour) {
-                $tongThu = $this->giaoDichModel->getTongThuByTourId($tour['tour_id']);
-                $tongChi = $this->giaoDichModel->getTongChiByTourId($tour['tour_id']);
+            foreach ($tourStats as $stat) {
+                $tongThu = (float)($stat['tong_thu'] ?? 0);
+                $tongChi = (float)($stat['tong_chi'] ?? 0);
+
+                $tour = [
+                    'tour_id' => $stat['tour_id'] ?? null,
+                    'ten_tour' => $stat['ten_tour'] ?? '',
+                    'loai_tour' => $stat['loai_tour'] ?? '',
+                ];
+
                 $thuChiTours[] = [
                     'tour' => $tour,
                     'tong_thu' => $tongThu,
@@ -94,25 +100,24 @@ class BaoCaoTaiChinhController {
         
         // Xóa các filter rỗng
         $filters = array_filter($filters);
-        
-        // Lấy danh sách giao dịch
-        // Chưa có hàm search, chỉ dùng getAll
-        $giaoDichs = $this->giaoDichModel->getAll();
-        
-        // Tính tổng thu, tổng chi
-        $tongThu = 0;
-        $tongChi = 0;
-        foreach ($giaoDichs as $gd) {
-            if ($gd['loai'] == 'Thu') {
-                $tongThu += $gd['so_tien'];
-            } else {
-                $tongChi += $gd['so_tien'];
-            }
-        }
-        
-        // Lấy danh sách tours và khách hàng cho filter
-        $tours = $this->tourModel->getAll();
-        $khachHangs = $this->khachHangModel->getAll();
+
+        $perPage = 30;
+        $currentPageNumber = max(1, (int)($_GET['page'] ?? 1));
+        $offset = ($currentPageNumber - 1) * $perPage;
+
+        $giaoDichs = $this->giaoDichModel->getFiltered($filters, $perPage, $offset);
+        $tongSoBanGhi = $this->giaoDichModel->countFiltered($filters);
+        $tongHop = $this->giaoDichModel->getTongThuChiFiltered($filters);
+        $tongThu = (float)$tongHop['tong_thu'];
+        $tongChi = (float)$tongHop['tong_chi'];
+        $totalPages = max(1, (int)ceil($tongSoBanGhi / $perPage));
+
+        $pagination = [
+            'currentPage' => $currentPageNumber,
+            'perPage' => $perPage,
+            'totalItems' => $tongSoBanGhi,
+            'totalPages' => $totalPages,
+        ];
         
         require __DIR__ . '/../views/admin/bao_cao_tai_chinh/lich_su_giao_dich.php';
     }
@@ -132,28 +137,273 @@ class BaoCaoTaiChinhController {
     
     // Báo cáo công nợ HDV
     public function congNo() {
-        // Công nợ HDV: lấy từ bảng công nợ HDV thực tế
-        $sql = "SELECT c.*, nd.ho_ten as ten_hdv, t.ten_tour FROM cong_no_hdv c JOIN nhan_su ns ON c.hdv_id = ns.nhan_su_id JOIN nguoi_dung nd ON ns.nguoi_dung_id = nd.id JOIN tour t ON c.tour_id = t.tour_id";
-        $stmt = $this->giaoDichModel->conn->prepare($sql);
-        $stmt->execute();
-        $rows = $stmt->fetchAll();
+        $conn = $this->giaoDichModel->conn;
+
+        $filters = [
+            'hdv_id' => isset($_GET['hdv_id']) ? (int)$_GET['hdv_id'] : 0,
+            'tour_id' => isset($_GET['tour_id']) ? (int)$_GET['tour_id'] : 0,
+            'status' => trim((string)($_GET['status'] ?? '')),
+            'keyword' => trim((string)($_GET['keyword'] ?? '')),
+        ];
+
+        // Ghi nhận thanh toán cho 1 công nợ HDV.
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cong_no_hdv_id'])) {
+            $congNoId = (int)($_POST['cong_no_hdv_id'] ?? 0);
+            $soTienThanhToan = (float)($_POST['so_tien_thanh_toan'] ?? 0);
+            $ngayThanhToan = trim((string)($_POST['ngay_thanh_toan'] ?? date('Y-m-d')));
+            $phuongThuc = trim((string)($_POST['phuong_thuc'] ?? 'ChuyenKhoan'));
+            $ghiChu = trim((string)($_POST['ghi_chu'] ?? ''));
+
+            if ($congNoId <= 0 || $soTienThanhToan <= 0) {
+                $_SESSION['error'] = 'Thong tin thanh toan khong hop le.';
+            } else {
+                if (!in_array($phuongThuc, ['TienMat', 'ChuyenKhoan', 'Khac'], true)) {
+                    $phuongThuc = 'ChuyenKhoan';
+                }
+
+                try {
+                    $stmtDebt = $conn->prepare("SELECT id, so_tien, han_thanh_toan FROM cong_no_hdv WHERE id = ? LIMIT 1");
+                    $stmtDebt->execute([$congNoId]);
+                    $debtRow = $stmtDebt->fetch(PDO::FETCH_ASSOC);
+
+                    if (!$debtRow) {
+                        throw new RuntimeException('Khong tim thay cong no can thanh toan.');
+                    }
+
+                    $stmtPaid = $conn->prepare("SELECT COALESCE(SUM(so_tien),0) FROM lich_su_thanh_toan_hdv WHERE cong_no_hdv_id = ?");
+                    $stmtPaid->execute([$congNoId]);
+                    $daThanhToan = (float)$stmtPaid->fetchColumn();
+                    $conLai = max(0.0, (float)$debtRow['so_tien'] - $daThanhToan);
+
+                    if ($conLai <= 0) {
+                        throw new RuntimeException('Cong no nay da duoc thanh toan du.');
+                    }
+                    if ($soTienThanhToan > $conLai) {
+                        throw new RuntimeException('So tien thanh toan vuot qua cong no con lai (' . number_format($conLai) . ' VND).');
+                    }
+
+                    $conn->beginTransaction();
+
+                    $stmtInsert = $conn->prepare("INSERT INTO lich_su_thanh_toan_hdv (cong_no_hdv_id, ngay_thanh_toan, so_tien, phuong_thuc, ghi_chu) VALUES (?, ?, ?, ?, ?)");
+                    $stmtInsert->execute([$congNoId, $ngayThanhToan, $soTienThanhToan, $phuongThuc, $ghiChu]);
+
+                    $conLaiSauThanhToan = max(0.0, $conLai - $soTienThanhToan);
+                    $trangThaiMoi = 'ChoDuyet';
+                    if ($conLaiSauThanhToan <= 0.0001) {
+                        $trangThaiMoi = 'DaThanhToan';
+                    } elseif (!empty($debtRow['han_thanh_toan']) && $debtRow['han_thanh_toan'] < date('Y-m-d')) {
+                        $trangThaiMoi = 'QuaHan';
+                    }
+
+                    $stmtUpdate = $conn->prepare("UPDATE cong_no_hdv SET trang_thai = ? WHERE id = ?");
+                    $stmtUpdate->execute([$trangThaiMoi, $congNoId]);
+
+                    $conn->commit();
+                    $_SESSION['success'] = 'Da ghi nhan thanh toan cong no HDV thanh cong.';
+                } catch (Throwable $e) {
+                    if ($conn->inTransaction()) {
+                        $conn->rollBack();
+                    }
+                    $_SESSION['error'] = $e->getMessage();
+                }
+            }
+
+            $redirectQuery = ['act' => 'admin/congNo'];
+            if ($filters['hdv_id'] > 0) $redirectQuery['hdv_id'] = $filters['hdv_id'];
+            if ($filters['tour_id'] > 0) $redirectQuery['tour_id'] = $filters['tour_id'];
+            if ($filters['status'] !== '') $redirectQuery['status'] = $filters['status'];
+            if ($filters['keyword'] !== '') $redirectQuery['keyword'] = $filters['keyword'];
+            header('Location: index.php?' . http_build_query($redirectQuery));
+            exit;
+        }
+
+        $where = [];
+        $params = [];
+
+        if ($filters['hdv_id'] > 0) {
+            $where[] = 'c.hdv_id = ?';
+            $params[] = $filters['hdv_id'];
+        }
+        if ($filters['tour_id'] > 0) {
+            $where[] = 'c.tour_id = ?';
+            $params[] = $filters['tour_id'];
+        }
+        if ($filters['keyword'] !== '') {
+            $where[] = '(nd.ho_ten LIKE ? OR t.ten_tour LIKE ? OR c.ghi_chu LIKE ?)';
+            $kw = '%' . $filters['keyword'] . '%';
+            $params[] = $kw;
+            $params[] = $kw;
+            $params[] = $kw;
+        }
+
+        $sql = "SELECT c.id, c.tour_id, c.hdv_id, c.so_tien, c.loai_cong_no, c.han_thanh_toan, c.trang_thai, c.ghi_chu,
+                       nd.ho_ten AS ten_hdv,
+                       t.ten_tour,
+                       COALESCE(ls.tong_da_thanh_toan, 0) AS tong_da_thanh_toan,
+                       COALESCE(ls.so_lan_thanh_toan, 0) AS so_lan_thanh_toan,
+                       ls.lan_thanh_toan_cuoi
+                FROM cong_no_hdv c
+                JOIN nhan_su ns ON c.hdv_id = ns.nhan_su_id
+                JOIN nguoi_dung nd ON ns.nguoi_dung_id = nd.id
+                JOIN tour t ON c.tour_id = t.tour_id
+                LEFT JOIN (
+                    SELECT cong_no_hdv_id,
+                           COALESCE(SUM(so_tien), 0) AS tong_da_thanh_toan,
+                           COUNT(*) AS so_lan_thanh_toan,
+                           MAX(ngay_thanh_toan) AS lan_thanh_toan_cuoi
+                    FROM lich_su_thanh_toan_hdv
+                    GROUP BY cong_no_hdv_id
+                ) ls ON ls.cong_no_hdv_id = c.id";
+
+        if (!empty($where)) {
+            $sql .= ' WHERE ' . implode(' AND ', $where);
+        }
+
+        $sql .= ' ORDER BY c.updated_at DESC, c.id DESC';
+
+        $stmt = $conn->prepare($sql);
+        $stmt->execute($params);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
         $congNoHDV = [];
+        $summary = [
+            'tong_goc' => 0.0,
+            'tong_da_thanh_toan' => 0.0,
+            'tong_con_lai' => 0.0,
+            'so_cong_no' => 0,
+            'so_qua_han' => 0,
+            'so_da_thanh_toan' => 0,
+        ];
+
         foreach ($rows as $row) {
-            // Lịch sử thanh toán HDV
-            $sql2 = "SELECT ngay_thanh_toan as ngay, so_tien as so_tien FROM lich_su_thanh_toan_hdv WHERE cong_no_hdv_id = ? ORDER BY ngay_thanh_toan ASC";
-            $stmt2 = $this->giaoDichModel->conn->prepare($sql2);
-            $stmt2->execute([$row['id']]);
-            $lich_su = $stmt2->fetchAll();
+            $tongGoc = (float)($row['so_tien'] ?? 0);
+            $tongDaThanhToan = (float)($row['tong_da_thanh_toan'] ?? 0);
+            $conLai = max(0.0, $tongGoc - $tongDaThanhToan);
+            $isQuaHan = ($conLai > 0) && !empty($row['han_thanh_toan']) && ($row['han_thanh_toan'] < date('Y-m-d'));
+            $trangThaiHienThi = $conLai <= 0 ? 'DaThanhToan' : ($isQuaHan ? 'QuaHan' : 'ConNo');
+
+            if ($filters['status'] !== '' && $filters['status'] !== $trangThaiHienThi) {
+                continue;
+            }
+
+            $summary['tong_goc'] += $tongGoc;
+            $summary['tong_da_thanh_toan'] += $tongDaThanhToan;
+            $summary['tong_con_lai'] += $conLai;
+            $summary['so_cong_no']++;
+            if ($isQuaHan) $summary['so_qua_han']++;
+            if ($conLai <= 0) $summary['so_da_thanh_toan']++;
+
             $congNoHDV[] = [
+                'id' => (int)$row['id'],
+                'hdv_id' => (int)$row['hdv_id'],
+                'tour_id' => (int)$row['tour_id'],
                 'ten_hdv' => $row['ten_hdv'],
                 'ten_tour' => $row['ten_tour'],
-                'tong_thu' => $row['so_tien'],
-                'tong_chi' => 0,
-                'cong_no' => $row['so_tien'],
-                'lich_su_thanh_toan' => $lich_su
+                'loai_cong_no' => $row['loai_cong_no'],
+                'han_thanh_toan' => $row['han_thanh_toan'],
+                'ghi_chu' => $row['ghi_chu'],
+                'tong_goc' => $tongGoc,
+                'tong_da_thanh_toan' => $tongDaThanhToan,
+                'con_lai' => $conLai,
+                'so_lan_thanh_toan' => (int)($row['so_lan_thanh_toan'] ?? 0),
+                'lan_thanh_toan_cuoi' => $row['lan_thanh_toan_cuoi'],
+                'trang_thai_hien_thi' => $trangThaiHienThi,
             ];
         }
+
+        // Lấy lịch sử thanh toán theo danh sách công nợ hiện tại.
+        $historyMap = [];
+        if (!empty($congNoHDV)) {
+            $ids = array_column($congNoHDV, 'id');
+            $placeholders = implode(',', array_fill(0, count($ids), '?'));
+            $stmtLs = $conn->prepare("SELECT cong_no_hdv_id, ngay_thanh_toan, so_tien, phuong_thuc, ghi_chu
+                                     FROM lich_su_thanh_toan_hdv
+                                     WHERE cong_no_hdv_id IN ($placeholders)
+                                     ORDER BY ngay_thanh_toan DESC, id DESC");
+            $stmtLs->execute($ids);
+            $allLs = $stmtLs->fetchAll(PDO::FETCH_ASSOC);
+            foreach ($allLs as $ls) {
+                $cid = (int)$ls['cong_no_hdv_id'];
+                if (!isset($historyMap[$cid])) {
+                    $historyMap[$cid] = [];
+                }
+                $historyMap[$cid][] = $ls;
+            }
+        }
+
+        foreach ($congNoHDV as &$item) {
+            $cid = (int)$item['id'];
+            $item['lich_su_thanh_toan'] = $historyMap[$cid] ?? [];
+        }
+        unset($item);
+
+        if ((($_GET['export'] ?? '') === 'csv')) {
+            $this->exportCongNoHdvCsv($congNoHDV);
+            return;
+        }
+
+        $hdvOptionsStmt = $conn->prepare("SELECT ns.nhan_su_id AS hdv_id, nd.ho_ten AS ten_hdv
+                                          FROM nhan_su ns
+                                          JOIN nguoi_dung nd ON nd.id = ns.nguoi_dung_id
+                                          ORDER BY nd.ho_ten ASC");
+        $hdvOptionsStmt->execute();
+        $hdvOptions = $hdvOptionsStmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $tourOptionsStmt = $conn->prepare("SELECT tour_id, ten_tour FROM tour ORDER BY ten_tour ASC");
+        $tourOptionsStmt->execute();
+        $tourOptions = $tourOptionsStmt->fetchAll(PDO::FETCH_ASSOC);
+
         require __DIR__ . '/../views/admin/bao_cao_tai_chinh/cong_no_hdv.php';
+    }
+
+    private function exportCongNoHdvCsv(array $rows): void {
+        $fileName = 'cong-no-hdv-' . date('Ymd-His') . '.csv';
+
+        header('Content-Type: text/csv; charset=UTF-8');
+        header('Content-Disposition: attachment; filename="' . $fileName . '"');
+
+        $out = fopen('php://output', 'w');
+        if ($out === false) {
+            exit;
+        }
+
+        // UTF-8 BOM for Excel compatibility.
+        fwrite($out, "\xEF\xBB\xBF");
+
+        fputcsv($out, [
+            'ID',
+            'HDV',
+            'Tour',
+            'Loai cong no',
+            'Tong goc',
+            'Da thanh toan',
+            'Con lai',
+            'Han thanh toan',
+            'Trang thai',
+            'So lan thanh toan',
+            'Lan thanh toan cuoi',
+            'Ghi chu'
+        ]);
+
+        foreach ($rows as $row) {
+            fputcsv($out, [
+                (int)($row['id'] ?? 0),
+                (string)($row['ten_hdv'] ?? ''),
+                (string)($row['ten_tour'] ?? ''),
+                (string)($row['loai_cong_no'] ?? ''),
+                (float)($row['tong_goc'] ?? 0),
+                (float)($row['tong_da_thanh_toan'] ?? 0),
+                (float)($row['con_lai'] ?? 0),
+                (string)($row['han_thanh_toan'] ?? ''),
+                (string)($row['trang_thai_hien_thi'] ?? ''),
+                (int)($row['so_lan_thanh_toan'] ?? 0),
+                (string)($row['lan_thanh_toan_cuoi'] ?? ''),
+                (string)($row['ghi_chu'] ?? ''),
+            ]);
+        }
+
+        fclose($out);
+        exit;
     }
     
     // Báo cáo lãi lỗ từng tour
@@ -161,7 +411,7 @@ class BaoCaoTaiChinhController {
         $tuNgay = $_GET['tu_ngay'] ?? date('Y-m-01');
         $denNgay = $_GET['den_ngay'] ?? date('Y-m-t');
         
-        $tours = $this->tourModel->getAll();
+        $tours = $this->tourModel->getOptions(500);
         
         $baoCao = [];
         foreach ($tours as $tour) {
@@ -199,22 +449,25 @@ class BaoCaoTaiChinhController {
     
     // Helper: Lấy top tours theo doanh thu
     private function getTopToursByRevenue($limit = 5) {
-        $tours = $this->tourModel->getAll();
+        $stats = $this->giaoDichModel->getThuChiTatCaTour();
         $result = [];
-        
-        foreach ($tours as $tour) {
-            $doanhThu = $this->giaoDichModel->getTongThuByTour($tour['tour_id']);
+
+        foreach ($stats as $stat) {
             $result[] = [
-                'tour' => $tour,
-                'doanh_thu' => $doanhThu
+                'tour' => [
+                    'tour_id' => $stat['tour_id'] ?? null,
+                    'ten_tour' => $stat['ten_tour'] ?? '',
+                    'loai_tour' => $stat['loai_tour'] ?? '',
+                ],
+                'doanh_thu' => (float)($stat['tong_thu'] ?? 0)
             ];
         }
-        
+
         usort($result, function($a, $b) {
-            return $b['doanh_thu'] - $a['doanh_thu'];
+            return $b['doanh_thu'] <=> $a['doanh_thu'];
         });
-        
-        return array_slice($result, 0, $limit);
+
+        return array_slice($result, 0, max(1, (int)$limit));
     }
     
     // ==================== QUẢN LÝ DỰ TOÁN TOUR ====================
@@ -234,8 +487,8 @@ class BaoCaoTaiChinhController {
             require __DIR__ . '/../views/admin/bao_cao_tai_chinh/du_toan_chi_tiet.php';
         } else {
             // Danh sách tất cả tour có dự toán
-            $duToans = $this->duToanModel->getAll();
-            $tours = $this->tourModel->getAll();
+            $duToans = $this->duToanModel->getAll(400, 0);
+            $tours = $this->tourModel->getOptions(500);
             require __DIR__ . '/../views/admin/bao_cao_tai_chinh/danh_sach_du_toan.php';
         }
     }
@@ -253,7 +506,7 @@ class BaoCaoTaiChinhController {
             $tour = $tourId ? $this->tourModel->findById($tourId) : null;
         }
         
-        $tours = $this->tourModel->getAll();
+        $tours = $this->tourModel->getOptions(500);
         require __DIR__ . '/../views/admin/bao_cao_tai_chinh/form_du_toan.php';
     }
     
@@ -315,7 +568,7 @@ class BaoCaoTaiChinhController {
             require __DIR__ . '/../views/admin/bao_cao_tai_chinh/chi_phi_chi_tiet.php';
         } else {
             // Danh sách tất cả chi phí
-            $chiPhis = $this->chiPhiModel->getAll();
+            $chiPhis = $this->chiPhiModel->getAll(500, 0);
             require __DIR__ . '/../views/admin/bao_cao_tai_chinh/danh_sach_chi_phi.php';
         }
     }
@@ -507,32 +760,55 @@ class BaoCaoTaiChinhController {
     public function nhacHanCongNo() {
         $today = date('Y-m-d');
         $nhacHanCongNo = [];
+        $conn = $this->giaoDichModel->conn;
 
         // Nhắc hạn công nợ khách hàng
-        $bookings = $this->bookingModel->getAll();
+        $sqlBookings = "SELECT
+                            b.booking_id,
+                            b.khach_hang_id,
+                            b.tour_id,
+                            b.han_thanh_toan,
+                            nd.ho_ten,
+                            t.ten_tour
+                        FROM booking b
+                        LEFT JOIN khach_hang kh ON b.khach_hang_id = kh.khach_hang_id
+                        LEFT JOIN nguoi_dung nd ON kh.nguoi_dung_id = nd.id
+                        LEFT JOIN tour t ON b.tour_id = t.tour_id
+                        WHERE b.han_thanh_toan IS NOT NULL
+                          AND b.han_thanh_toan <= DATE_ADD(CURDATE(), INTERVAL 3 DAY)
+                          AND (b.trang_thai IS NULL OR b.trang_thai <> 'DaHuy')";
+        $stmtBookings = $conn->prepare($sqlBookings);
+        $stmtBookings->execute();
+        $bookings = $stmtBookings->fetchAll(PDO::FETCH_ASSOC);
+
         foreach ($bookings as $booking) {
-            if (!empty($booking['han_thanh_toan'])) {
-                $is_qua_han = $today > $booking['han_thanh_toan'];
-                $is_sap_han = !$is_qua_han && (strtotime($booking['han_thanh_toan']) - strtotime($today) <= 3*24*3600);
-                if ($is_qua_han || $is_sap_han) {
-                    $khach = $this->khachHangModel->findById($booking['khach_hang_id']);
-                    $tour = $this->tourModel->findById($booking['tour_id']);
-                    $nhacHanCongNo[] = [
-                        'doi_tuong' => 'Khách hàng ' . ($khach['ho_ten'] ?? $booking['khach_hang_id']),
-                        'noi_dung' => 'Đến hạn thanh toán hợp đồng tour ' . ($tour['ten_tour'] ?? $booking['tour_id']),
-                        'han' => $booking['han_thanh_toan'],
-                        'is_qua_han' => $is_qua_han,
-                        'is_sap_han' => $is_sap_han
-                    ];
-                }
+            $hanThanhToan = $booking['han_thanh_toan'] ?? null;
+            if (empty($hanThanhToan)) {
+                continue;
             }
+            $is_qua_han = $today > $hanThanhToan;
+            $is_sap_han = !$is_qua_han && (strtotime($hanThanhToan) - strtotime($today) <= 3 * 24 * 3600);
+
+            $nhacHanCongNo[] = [
+                'doi_tuong' => 'Khách hàng ' . ($booking['ho_ten'] ?? $booking['khach_hang_id']),
+                'noi_dung' => 'Đến hạn thanh toán hợp đồng tour ' . ($booking['ten_tour'] ?? $booking['tour_id']),
+                'han' => $hanThanhToan,
+                'is_qua_han' => $is_qua_han,
+                'is_sap_han' => $is_sap_han
+            ];
         }
 
         // Nhắc hạn công nợ nhà cung cấp
-        $sqlNCC = "SELECT c.*, ncc.ten_don_vi FROM cong_no_nha_cung_cap c JOIN nha_cung_cap ncc ON c.nha_cung_cap_id = ncc.id_nha_cung_cap";
-        $stmtNCC = $this->giaoDichModel->conn->prepare($sqlNCC);
+        $sqlNCC = "SELECT
+                        c.*,
+                        ncc.ten_don_vi
+                    FROM cong_no_nha_cung_cap c
+                    JOIN nha_cung_cap ncc ON c.nha_cung_cap_id = ncc.id_nha_cung_cap
+                    WHERE c.han_thanh_toan IS NOT NULL
+                      AND c.han_thanh_toan <= DATE_ADD(CURDATE(), INTERVAL 3 DAY)";
+        $stmtNCC = $conn->prepare($sqlNCC);
         $stmtNCC->execute();
-        $rowsNCC = $stmtNCC->fetchAll();
+        $rowsNCC = $stmtNCC->fetchAll(PDO::FETCH_ASSOC);
         foreach ($rowsNCC as $row) {
             if (!empty($row['han_thanh_toan'])) {
                 $is_qua_han = $today > $row['han_thanh_toan'];
@@ -550,10 +826,17 @@ class BaoCaoTaiChinhController {
         }
 
         // Nhắc hạn công nợ HDV
-        $sqlHDV = "SELECT c.*, nd.ho_ten FROM cong_no_hdv c JOIN nhan_su h ON c.hdv_id = h.nhan_su_id JOIN nguoi_dung nd ON h.nguoi_dung_id = nd.id";
-        $stmtHDV = $this->giaoDichModel->conn->prepare($sqlHDV);
+        $sqlHDV = "SELECT
+                        c.*,
+                        nd.ho_ten
+                    FROM cong_no_hdv c
+                    JOIN nhan_su h ON c.hdv_id = h.nhan_su_id
+                    JOIN nguoi_dung nd ON h.nguoi_dung_id = nd.id
+                    WHERE c.han_thanh_toan IS NOT NULL
+                      AND c.han_thanh_toan <= DATE_ADD(CURDATE(), INTERVAL 3 DAY)";
+        $stmtHDV = $conn->prepare($sqlHDV);
         $stmtHDV->execute();
-        $rowsHDV = $stmtHDV->fetchAll();
+        $rowsHDV = $stmtHDV->fetchAll(PDO::FETCH_ASSOC);
         foreach ($rowsHDV as $row) {
             if (!empty($row['han_thanh_toan'])) {
                 $is_qua_han = $today > $row['han_thanh_toan'];
@@ -575,57 +858,147 @@ class BaoCaoTaiChinhController {
     
     // Hiển thị công nợ khách hàng
     public function congNoKhachHang() {
-        // Lấy danh sách booking
-        $bookings = $this->bookingModel->getAll();
+        $conn = $this->giaoDichModel->conn;
+
+        $sqlBookings = "SELECT
+                            b.booking_id,
+                            b.khach_hang_id,
+                            b.tour_id,
+                            b.tong_tien,
+                            nd.ho_ten AS ten_khach_hang,
+                            nd.email,
+                            nd.so_dien_thoai,
+                            t.ten_tour
+                        FROM booking b
+                        LEFT JOIN khach_hang kh ON b.khach_hang_id = kh.khach_hang_id
+                        LEFT JOIN nguoi_dung nd ON kh.nguoi_dung_id = nd.id
+                        LEFT JOIN tour t ON b.tour_id = t.tour_id
+                        WHERE (b.trang_thai IS NULL OR b.trang_thai <> 'DaHuy')
+                        ORDER BY b.ngay_dat DESC, b.booking_id DESC";
+        $stmtBookings = $conn->prepare($sqlBookings);
+        $stmtBookings->execute();
+        $bookings = $stmtBookings->fetchAll(PDO::FETCH_ASSOC);
+
+        $historyByBooking = [];
+        $paidByBooking = [];
+
+        if (!empty($bookings)) {
+            $bookingIds = array_map(static function ($row) {
+                return (int)($row['booking_id'] ?? 0);
+            }, $bookings);
+            $bookingIds = array_values(array_filter($bookingIds, static function ($id) {
+                return $id > 0;
+            }));
+
+            if (!empty($bookingIds)) {
+                $placeholders = implode(',', array_fill(0, count($bookingIds), '?'));
+                $sqlHistory = "SELECT
+                                    b.booking_id,
+                                    gdtc.ngay_giao_dich AS ngay,
+                                    gdtc.so_tien
+                               FROM booking b
+                               INNER JOIN giao_dich_tai_chinh gdtc ON gdtc.tour_id = b.tour_id
+                               WHERE b.booking_id IN ($placeholders)
+                                                                 AND gdtc.loai = 'Thu'
+                               ORDER BY b.booking_id ASC, gdtc.ngay_giao_dich ASC";
+                $stmtHistory = $conn->prepare($sqlHistory);
+                $stmtHistory->execute($bookingIds);
+                $historyRows = $stmtHistory->fetchAll(PDO::FETCH_ASSOC);
+
+                foreach ($historyRows as $row) {
+                    $bookingId = (int)($row['booking_id'] ?? 0);
+                    if ($bookingId <= 0) {
+                        continue;
+                    }
+                    if (!isset($historyByBooking[$bookingId])) {
+                        $historyByBooking[$bookingId] = [];
+                    }
+                    $historyByBooking[$bookingId][] = [
+                        'ngay' => $row['ngay'] ?? null,
+                        'so_tien' => (float)($row['so_tien'] ?? 0),
+                    ];
+                    $paidByBooking[$bookingId] = (float)($paidByBooking[$bookingId] ?? 0) + (float)($row['so_tien'] ?? 0);
+                }
+            }
+        }
+
         $congNoKhachHang = [];
         foreach ($bookings as $booking) {
-            $khach = $this->khachHangModel->findById($booking['khach_hang_id']);
-            $tour = $this->tourModel->findById($booking['tour_id']);
-            // Tổng số tiền đã thanh toán: lấy từ giao_dich_tai_chinh theo tour_id và loai = 'Thu', lọc theo khach_hang_id
-            $sql = "SELECT SUM(gdtc.so_tien) as da_thanh_toan FROM giao_dich_tai_chinh gdtc 
-                    INNER JOIN booking b ON gdtc.tour_id = b.tour_id 
-                    WHERE b.booking_id = ? AND gdtc.loai = 'Thu' AND b.khach_hang_id = ?";
-            $stmt = $this->giaoDichModel->conn->prepare($sql);
-            $stmt->execute([$booking['booking_id'], $booking['khach_hang_id']]);
-            $daThanhToan = (float)($stmt->fetch()['da_thanh_toan'] ?? 0);
-            $cong_no = max(0, (float)$booking['tong_tien'] - $daThanhToan);
-            // Lịch sử thanh toán: lấy từ giao_dich_tai_chinh theo tour_id, loai = 'Thu', lọc theo khach_hang_id
-            $sql2 = "SELECT gdtc.ngay_giao_dich as ngay, gdtc.so_tien FROM giao_dich_tai_chinh gdtc 
-                      INNER JOIN booking b ON gdtc.tour_id = b.tour_id 
-                      WHERE b.booking_id = ? AND gdtc.loai = 'Thu' AND b.khach_hang_id = ? 
-                      ORDER BY gdtc.ngay_giao_dich ASC";
-            $stmt2 = $this->giaoDichModel->conn->prepare($sql2);
-            $stmt2->execute([$booking['booking_id'], $booking['khach_hang_id']]);
-            $lich_su = $stmt2->fetchAll();
+            $bookingId = (int)($booking['booking_id'] ?? 0);
+            $tongTien = (float)($booking['tong_tien'] ?? 0);
+            $daThanhToan = (float)($paidByBooking[$bookingId] ?? 0);
+            $congNo = max(0.0, $tongTien - $daThanhToan);
+
             $congNoKhachHang[] = [
-                'ten_khach_hang' => $khach['ho_ten'] ?? 'N/A',
-                'ten_tour' => $tour['ten_tour'] ?? 'N/A',
-                'cong_no' => $cong_no,
-                'lich_su_thanh_toan' => $lich_su
+                'khach_hang_id' => (int)($booking['khach_hang_id'] ?? 0),
+                'ten_khach_hang' => $booking['ten_khach_hang'] ?? 'N/A',
+                'email' => $booking['email'] ?? '',
+                'so_dien_thoai' => $booking['so_dien_thoai'] ?? '',
+                'ten_tour' => $booking['ten_tour'] ?? 'N/A',
+                'cong_no' => $congNo,
+                'lich_su_thanh_toan' => $historyByBooking[$bookingId] ?? [],
             ];
         }
+
         require __DIR__ . '/../views/admin/bao_cao_tai_chinh/cong_no_khach_hang.php';
     }
 
     // Hiển thị công nợ nhà cung cấp
     public function congNoNhaCungCap() {
+        $conn = $this->giaoDichModel->conn;
+
         // Lấy danh sách công nợ NCC
         $sql = "SELECT c.*, ncc.ten_don_vi FROM cong_no_nha_cung_cap c JOIN nha_cung_cap ncc ON c.nha_cung_cap_id = ncc.id_nha_cung_cap";
-        $stmt = $this->giaoDichModel->conn->prepare($sql);
+        $stmt = $conn->prepare($sql);
         $stmt->execute();
-        $rows = $stmt->fetchAll();
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $lichSuByCongNoId = [];
+        if (!empty($rows)) {
+            $congNoIds = array_map(static function ($row) {
+                return (int)($row['id'] ?? 0);
+            }, $rows);
+            $congNoIds = array_values(array_filter($congNoIds, static function ($id) {
+                return $id > 0;
+            }));
+
+            if (!empty($congNoIds)) {
+                $placeholders = implode(',', array_fill(0, count($congNoIds), '?'));
+                $sqlLichSu = "SELECT
+                                  cong_no_ncc_id,
+                                  ngay_thanh_toan AS ngay,
+                                  so_tien_thanh_toan AS so_tien
+                              FROM lich_su_thanh_toan_ncc
+                              WHERE cong_no_ncc_id IN ($placeholders)
+                              ORDER BY cong_no_ncc_id ASC, ngay_thanh_toan ASC";
+                $stmtLichSu = $conn->prepare($sqlLichSu);
+                $stmtLichSu->execute($congNoIds);
+                $lichSuRows = $stmtLichSu->fetchAll(PDO::FETCH_ASSOC);
+
+                foreach ($lichSuRows as $item) {
+                    $congNoId = (int)($item['cong_no_ncc_id'] ?? 0);
+                    if ($congNoId <= 0) {
+                        continue;
+                    }
+                    if (!isset($lichSuByCongNoId[$congNoId])) {
+                        $lichSuByCongNoId[$congNoId] = [];
+                    }
+                    $lichSuByCongNoId[$congNoId][] = [
+                        'ngay' => $item['ngay'] ?? null,
+                        'so_tien' => (float)($item['so_tien'] ?? 0),
+                    ];
+                }
+            }
+        }
+
         $congNoNhaCungCap = [];
         foreach ($rows as $row) {
-            // Lịch sử thanh toán NCC
-            $sql2 = "SELECT ngay_thanh_toan as ngay, so_tien_thanh_toan as so_tien FROM lich_su_thanh_toan_ncc WHERE cong_no_ncc_id = ? ORDER BY ngay_thanh_toan ASC";
-            $stmt2 = $this->giaoDichModel->conn->prepare($sql2);
-            $stmt2->execute([$row['id']]);
-            $lich_su = $stmt2->fetchAll();
+            $congNoId = (int)($row['id'] ?? 0);
             $congNoNhaCungCap[] = [
                 'ten_nha_cung_cap' => $row['ten_don_vi'],
                 'ten_dich_vu' => $row['ghi_chu'] ?? '',
                 'cong_no' => $row['so_tien'],
-                'lich_su_thanh_toan' => $lich_su
+                'lich_su_thanh_toan' => $lichSuByCongNoId[$congNoId] ?? []
             ];
         }
         require __DIR__ . '/../views/admin/bao_cao_tai_chinh/cong_no.php';

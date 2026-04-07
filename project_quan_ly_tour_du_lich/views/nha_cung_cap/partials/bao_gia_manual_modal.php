@@ -1,4 +1,4 @@
-<div class="modal fade" id="modalBaoGiaThuCong" tabindex="-1" aria-hidden="true">
+<div class="modal fade supplier-modal" id="modalBaoGiaThuCong" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
@@ -6,10 +6,10 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form method="POST" action="index.php?act=nhaCungCap/storeBaoGiaThuCong">
+                <?php echo csrfField('supplier_form'); ?>
                 <div class="modal-body">
-                    <div class="alert alert-info">
-                        <i class="bi bi-info-circle"></i> Form này dùng khi bạn chủ động đề xuất dịch vụ cho một lịch khởi hành cụ thể.<br>
-                        <small> Sau khi gửi, yêu cầu sẽ chuyển sang điều hành để phê duyệt.</small>
+                    <div class="alert alert-info supplier-alert mb-4">
+                        <i class="bi bi-info-circle"></i> Dùng biểu mẫu này khi bạn chủ động đề xuất dịch vụ cho một lịch khởi hành cụ thể.
                     </div>
                     <div class="row g-3">
                         <div class="col-md-6">
@@ -24,7 +24,7 @@
                             </select>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Chọn từ danh mục có sẵn</label>
+                            <label class="form-label">Mẫu dịch vụ có sẵn</label>
                             <select id="catalogTemplateSelect" class="form-select">
                                 <option value="">-- Không chọn --</option>
                                 <?php foreach (($catalogServices ?? []) as $service): ?>
@@ -38,7 +38,6 @@
                                     </option>
                                 <?php endforeach; ?>
                             </select>
-                            <small class="text-muted">Chọn dịch vụ mẫu để tự động điền thông tin.</small>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Tên dịch vụ *</label>
@@ -79,7 +78,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
                     <button type="submit" class="btn btn-primary">Gửi báo giá</button>
                 </div>
             </form>

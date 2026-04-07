@@ -304,13 +304,16 @@ ob_start();
             </p>
         </div>
         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <a href="index.php?act=booking/xuatTaiLieu&id=<?php echo $booking['booking_id']; ?>" 
-               class="btn btn-primary" target="_blank">
-                📄 Xuất tài liệu
-            </a>
-            <a href="index.php?act=admin/quanLyBooking" class="btn btn-secondary">
-                ← Quay lại danh sách
-            </a>
+                <a href="index.php?act=booking/xuatTaiLieu&id=<?php echo $booking['booking_id']; ?>" 
+                   class="btn btn-primary" target="_blank">
+                    📄 Xuất tài liệu
+                </a>
+                <a href="index.php?act=admin/quanLyBooking" class="btn btn-secondary">
+                    ← Quay lại danh sách
+                </a>
+                <a href="index.php?act=admin/thanhToanBooking&id=<?php echo $booking['booking_id']; ?>" class="aventura-btn aventura-btn-gold" style="font-size:1.1em;">
+                    <i class="bi bi-credit-card"></i> Thanh toán
+                </a>
         </div>
     </div>
 </div>
@@ -327,6 +330,9 @@ ob_start();
         ⚠ <?php echo htmlspecialchars($_SESSION['error']); unset($_SESSION['error']); ?>
     </div>
 <?php endif; ?>
+
+<?php $validationPayload = getValidationErrors(); ?>
+<?php $validationErrors = $validationPayload['errors'] ?? []; ?>
 
 <div class="two-column-layout">
     <!-- Left Column - Booking Information -->
@@ -584,6 +590,7 @@ ob_start();
                 </div>
                 <div class="form-card-body">
                     <form method="POST" action="index.php?act=booking/update">
+                        <?php echo csrfField('booking_update'); ?>
                         <input type="hidden" name="booking_id" value="<?php echo $booking['booking_id']; ?>">
                         
                         <div class="form-row">
@@ -591,12 +598,18 @@ ob_start();
                                 <label>👥 Số lượng người <span style="color: #dc3545;">*</span></label>
                                 <input type="number" name="so_nguoi" class="input" 
                                        value="<?php echo $booking['so_nguoi']; ?>" min="1" required>
+                                <?php if (!empty($validationErrors['so_nguoi'])): ?>
+                                    <small style="color:#ffb4b4;display:block;margin-top:6px;">Số lượng người không hợp lệ.</small>
+                                <?php endif; ?>
                             </div>
 
                             <div class="form-group">
                                 <label>💰 Tổng tiền <span style="color: #dc3545;">*</span></label>
                                 <input type="number" name="tong_tien" id="tongTienInput" class="input" 
                                        value="<?php echo $booking['tong_tien']; ?>" step="1000" min="0" required>
+                                <?php if (!empty($validationErrors['tong_tien'])): ?>
+                                    <small style="color:#ffb4b4;display:block;margin-top:6px;">Tổng tiền không hợp lệ.</small>
+                                <?php endif; ?>
                             </div>
 
                             <div class="form-group">
@@ -621,6 +634,9 @@ ob_start();
                                 <small style="color: var(--text-muted); font-size: 11px; margin-top: 5px; display: block;">
                                     Để trống sẽ tự động tính 30% tổng tiền
                                 </small>
+                                <?php if (!empty($validationErrors['tien_coc'])): ?>
+                                    <small style="color:#ffb4b4;display:block;margin-top:6px;">Tiền cọc không hợp lệ hoặc lớn hơn tổng tiền.</small>
+                                <?php endif; ?>
                             </div>
 
                             <div class="form-group">

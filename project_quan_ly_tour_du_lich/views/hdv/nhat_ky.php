@@ -6,6 +6,7 @@
     <title>Nhật ký Tour - HDV</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="<?php echo BASE_URL; ?>public/css/hdv.css">
     <style>
         :root {
             --primary-color: #667eea;
@@ -128,7 +129,9 @@
         }
     </style>
 </head>
-<body class="bg-light">
+<body class="bg-light hdv-body">
+<?php include __DIR__ . '/partials/hdv_nav.php'; ?>
+
     <div class="page-header">
         <div class="container">
             <div class="d-flex justify-content-between align-items-center">
@@ -240,11 +243,14 @@
                                    class="btn btn-outline-primary">
                                     <i class="bi bi-pencil"></i>
                                 </a>
-                                <a href="index.php?act=hdv/delete_nhat_ky&id=<?php echo $entry['id']; ?>&tour_id=<?php echo $tour['id']; ?>" 
-                                   class="btn btn-outline-danger" 
-                                   onclick="return confirm('Bạn có chắc muốn xóa nhật ký này?')">
-                                    <i class="bi bi-trash"></i>
-                                </a>
+                                <form method="POST" action="index.php?act=hdv/delete_nhat_ky" onsubmit="return confirm('Bạn có chắc muốn xóa nhật ký này?');" class="d-inline">
+                                    <?php echo csrfField('hdv_form'); ?>
+                                    <input type="hidden" name="id" value="<?php echo $entry['id']; ?>">
+                                    <input type="hidden" name="tour_id" value="<?php echo $tour['id']; ?>">
+                                    <button type="submit" class="btn btn-outline-danger">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
                             </div>
                         </div>
                         
@@ -440,3 +446,4 @@
     </script>
 </body>
 </html>
+

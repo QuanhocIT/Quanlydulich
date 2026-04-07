@@ -18,6 +18,21 @@ class LichKhoiHanhController {
     private $nhaCungCapModel;
     private $bookingModel;
     private $dichVuCatalogModel;
+
+    private function requirePostCsrf($redirectAct = 'lichKhoiHanh/index') {
+        $scopedToken = $_POST['_csrf_token'] ?? '';
+        $globalToken = $_POST['_csrf_global'] ?? '';
+
+        $validScoped = verifyCsrfToken($scopedToken, 'lich_khoi_hanh_form');
+        $validGlobal = verifyCsrfToken($globalToken, 'global_form');
+
+        if (!$validScoped && !$validGlobal) {
+            setValidationErrors(['_csrf_token' => 'invalid'], 'Yeu cau khong hop le (CSRF).');
+            $_SESSION['error'] = 'Yeu cau khong hop le (CSRF). Vui long thu lai.';
+            header('Location: index.php?act=' . urlencode($redirectAct));
+            exit();
+        }
+    }
     
     public function __construct() {
         $this->lichKhoiHanhModel = new LichKhoiHanh();
@@ -32,88 +47,30 @@ class LichKhoiHanhController {
 
     // Danh sách lịch khởi hành
     public function index() {
-        // Tự động cập nhật trạng thái lịch khởi hành theo thời gian thực trước khi hiển thị
-        $this->lichKhoiHanhModel->autoUpdateTrangThai();
+        // Tránh UPDATE trạng thái toàn bảng cho mỗi lần reload trang.
+        $now = time();
+        $lastAutoUpdateAt = (int)($_SESSION['lich_khoi_hanh_auto_update_at'] ?? 0);
+        if ($lastAutoUpdateAt <= 0 || ($now - $lastAutoUpdateAt) >= 300) {
+            $this->lichKhoiHanhModel->autoUpdateTrangThai();
+            $_SESSION['lich_khoi_hanh_auto_update_at'] = $now;
+        }
 
-        $lichKhoiHanhList = $this->lichKhoiHanhModel->getAll();
-        
-        // Xử lý filter
-        $filters = [];
-        if (isset($_GET['search']) && !empty($_GET['search'])) {
-            $filters['search'] = trim($_GET['search']);
-            $searchTerm = '%' . $filters['search'] . '%';
-            $lichKhoiHanhList = array_filter($lichKhoiHanhList, function($lich) use ($searchTerm) {
-                return stripos($lich['ten_tour'] ?? '', $searchTerm) !== false ||
-                       stripos($lich['diem_tap_trung'] ?? '', $searchTerm) !== false;
-            });
-        }
-        
-        if (isset($_GET['trang_thai']) && !empty($_GET['trang_thai'])) {
-            $filters['trang_thai'] = $_GET['trang_thai'];
-            if ($filters['trang_thai'] === 'ChoPhanBo') {
-                // Lọc lịch chưa phân bổ nhân sự
-                $lichKhoiHanhList = array_filter($lichKhoiHanhList, function($lich) {
-                    return ($lich['so_nhan_su'] ?? 0) == 0;
-                });
-            } else {
-                // Lọc theo trạng thái thông thường
-                $lichKhoiHanhList = array_filter($lichKhoiHanhList, function($lich) use ($filters) {
-                    return $lich['trang_thai'] === $filters['trang_thai'] && ($lich['so_nhan_su'] ?? 0) > 0;
-                });
-            }
-        }
-        
-        if (isset($_GET['tu_ngay']) && !empty($_GET['tu_ngay'])) {
-            $filters['tu_ngay'] = $_GET['tu_ngay'];
-            $lichKhoiHanhList = array_filter($lichKhoiHanhList, function($lich) use ($filters) {
-                return $lich['ngay_khoi_hanh'] >= $filters['tu_ngay'];
-            });
-        }
-        
-        if (isset($_GET['den_ngay']) && !empty($_GET['den_ngay'])) {
-            $filters['den_ngay'] = $_GET['den_ngay'];
-            $lichKhoiHanhList = array_filter($lichKhoiHanhList, function($lich) use ($filters) {
-                return $lich['ngay_khoi_hanh'] <= $filters['den_ngay'];
-            });
-        }
-        
-        // Reset array keys sau khi filter
-        $lichKhoiHanhList = array_values($lichKhoiHanhList);
+        $filters = [
+            'search' => trim((string)($_GET['search'] ?? '')),
+            'trang_thai' => trim((string)($_GET['trang_thai'] ?? '')),
+            'tu_ngay' => trim((string)($_GET['tu_ngay'] ?? '')),
+            'den_ngay' => trim((string)($_GET['den_ngay'] ?? '')),
+        ];
 
-        // Kiểm tra trùng lịch HDV cho từng lịch khởi hành
+        $lichKhoiHanhList = $this->lichKhoiHanhModel->getAllFiltered($filters);
+        $conflictSummary = $this->phanBoNhanSuModel->getScheduleConflictSummary($lichKhoiHanhList);
+
         foreach ($lichKhoiHanhList as &$lich) {
-            $lich['coTrungLichHDV'] = false;
-            $lich['soLichTrungHDV'] = 0;
-            // Lấy danh sách HDV của lịch này
-            $hdvIds = [];
-            // Lấy từ hdv_id trực tiếp
-            if (!empty($lich['hdv_id'])) {
-                $hdvIds[] = (int)$lich['hdv_id'];
-            }
-            // Lấy từ phan_bo_nhan_su với vai_trò HDV
-            if (!empty($lich['hdv_ids'])) {
-                $idsFromPhanBo = explode(',', $lich['hdv_ids']);
-                foreach ($idsFromPhanBo as $id) {
-                    if (!empty($id)) {
-                        $hdvIds[] = (int)$id;
-                    }
-                }
-            }
-            // Loại bỏ trùng lặp
-            $hdvIds = array_unique($hdvIds);
-            // Kiểm tra conflict cho từng HDV
-            if (!empty($hdvIds) && !empty($lich['id'])) {
-                foreach ($hdvIds as $hdvId) {
-                    $conflicts = $this->phanBoNhanSuModel->getScheduleConflictsForStaff($lich['id'], $hdvId);
-                    if (!empty($conflicts)) {
-                        $lich['coTrungLichHDV'] = true;
-                        $lich['soLichTrungHDV'] = count($conflicts);
-                        break; // Chỉ cần một HDV có conflict là đủ để cảnh báo
-                    }
-                }
-            }
+            $soLichTrung = (int)($conflictSummary[(int)($lich['id'] ?? 0)] ?? 0);
+            $lich['coTrungLichHDV'] = $soLichTrung > 0;
+            $lich['soLichTrungHDV'] = $soLichTrung;
         }
-        unset($lich); // Unset reference
+        unset($lich);
         
         require 'views/admin/quan_ly_lich_khoi_hanh.php';
     }
@@ -182,49 +139,46 @@ class LichKhoiHanhController {
             );
         }
         
-        // Lấy nhật ký tour cho tour này
-        $nhatKyTourList = [];
-        if (!empty($lichKhoiHanh['tour_id'])) {
-            require_once 'models/NhatKyTour.php';
-            $nhatKyTourModel = new NhatKyTour();
-            // Lấy tất cả nhật ký của tour này (không giới hạn theo HDV)
-            $conn = connectDB();
-            $sql = "SELECT nkt.*, t.ten_tour, nd.ho_ten as hdv_ten
-                    FROM nhat_ky_tour nkt
-                    LEFT JOIN tour t ON nkt.tour_id = t.tour_id
-                    LEFT JOIN nhan_su ns ON nkt.nhan_su_id = ns.nhan_su_id
-                    LEFT JOIN nguoi_dung nd ON ns.nguoi_dung_id = nd.id
-                    WHERE nkt.tour_id = ?
-                    ORDER BY nkt.ngay_ghi DESC, nkt.id DESC";
-            $stmt = $conn->prepare($sql);
-            $stmt->execute([(int)$lichKhoiHanh['tour_id']]);
-            $nhatKyTourList = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        }
-        
         // Lấy danh sách booking và khách chi tiết cho lịch khởi hành
         $bookingList = [];
         $danhSachKhachChiTiet = [];
+        $allCheckinRows = [];
         if (!empty($lichKhoiHanh['tour_id']) && !empty($lichKhoiHanh['ngay_khoi_hanh'])) {
             // 1. Lấy danh sách nhóm booking theo tour + ngày khởi hành
-            $bookingList = $this->bookingModel->getKhachByTourAndNgayKhoiHanh(
-                $lichKhoiHanh['tour_id'],
-                $lichKhoiHanh['ngay_khoi_hanh']
-            );
+            $bookingList = $this->bookingModel->getKhachByLichKhoiHanhId($id);
             
             // 2. Lấy danh sách khách chi tiết từ tour_checkin
             require_once 'models/CheckinKhach.php';
             $checkinModel = new CheckinKhach();
 
             if (!empty($bookingList)) {
-                // Có booking: map từng booking -> danh sách khách trong tour_checkin
-            foreach ($bookingList as $booking) {
-                $khachList = $checkinModel->getByBookingId($booking['booking_id']);
-                $danhSachKhachChiTiet[$booking['booking_id']] = $khachList;
-            }
+                // Có booking: lấy checkin theo batch để tránh query theo từng booking.
+                $bookingIds = array_map(static function ($booking) {
+                    return (int)($booking['booking_id'] ?? 0);
+                }, $bookingList);
+                $checkinGrouped = $checkinModel->getByBookingIdsGrouped($bookingIds);
+
+                foreach ($bookingList as $booking) {
+                    $bookingId = (int)($booking['booking_id'] ?? 0);
+                    if ($bookingId <= 0) {
+                        continue;
+                    }
+                    $danhSachKhachChiTiet[$bookingId] = $checkinGrouped[$bookingId] ?? [];
+                }
+
+                // Build flattened list for admin table from grouped rows.
+                foreach ($danhSachKhachChiTiet as $rows) {
+                    if (is_array($rows) && !empty($rows)) {
+                        foreach ($rows as $row) {
+                            $allCheckinRows[] = $row;
+                        }
+                    }
+                }
             } else {
                 // Không có booking nhưng HDV đã có danh sách khách trong tour_checkin
                 // => đọc trực tiếp theo lich_khoi_hanh_id để admin vẫn xem được giống HDV
                 $checkinRows = $checkinModel->getByLichKhoiHanh($id);
+                $allCheckinRows = $checkinRows;
 
                 if (!empty($checkinRows)) {
                     $bookingGrouped = [];
@@ -277,27 +231,12 @@ class LichKhoiHanhController {
             }
             $lichKhoiHanh['tong_nguoi_dat'] = $tongNguoi;
         }
-        
 
-// Lấy nhật ký tour (theo tour_id) để hiển thị trong tab "Nhật ký tour"
-$nhatKyTourList = [];
-if (!empty($lichKhoiHanh['tour_id'])) {
-    // Lấy từ model Tour (trong Tour::getNhatKyTourByTourId)
-    $nhatKyTourList = $this->tourModel->getNhatKyTourByTourId($lichKhoiHanh['tour_id']);
-
-
-    // Nếu bạn muốn chỉ lấy nhật ký đúng ngày khởi hành này (lọc theo ngày)
-    if (!empty($lichKhoiHanh['ngay_khoi_hanh'])) {
-        $ngayKH = date('Y-m-d', strtotime($lichKhoiHanh['ngay_khoi_hanh']));
-        $nhatKyTourList = array_values(array_filter($nhatKyTourList, function($n) use ($ngayKH) {
-            return isset($n['ngay_ghi']) && date('Y-m-d', strtotime($n['ngay_ghi'])) === $ngayKH;
-        }));
-    }
-
-    // (Tùy chọn) nếu muốn tên người ghi chép kèm theo, bạn có thể JOIN thêm bảng nhan_su/nguoi_dung
-    // hoặc post-process: lấy danh sách nhân sự map id->ho_ten và thêm vào từng entry.
-}
-
+        if (empty($allCheckinRows)) {
+            require_once 'models/CheckinKhach.php';
+            $checkinModel = new CheckinKhach();
+            $allCheckinRows = $checkinModel->getByLichKhoiHanh($id);
+        }
 // --- Bắt đầu: Lấy nhật ký tour (theo HDV nếu có) ---
 $nhatKyTourList = [];
 
@@ -563,15 +502,47 @@ if (!empty($lichKhoiHanh['tour_id'])) {
             $nhanSuId = isset($_POST['nhan_su_id']) ? (int)$_POST['nhan_su_id'] : 0;
             $vaiTro = $_POST['vai_tro'] ?? 'Khac';
             $ghiChu = $_POST['ghi_chu'] ?? null;
-            
+            // Lấy thông tin lương từ form
+            $loaiLuong = $_POST['loai_luong'] ?? 'CoDinh';
+            $soTienCoDinh = isset($_POST['so_tien_co_dinh']) ? (float)$_POST['so_tien_co_dinh'] : 0;
+            $phanTramHoaHong = isset($_POST['phan_tram_hoa_hong']) ? (float)$_POST['phan_tram_hoa_hong'] : 0;
+            $tienHoaHong = 0;
+            $tongLuong = 0;
+            $trangThaiLuong = 'ChoDuyet';
+            // Nếu có doanh thu tour, tính lương tự động
+            $lichKhoiHanh = $this->lichKhoiHanhModel->findById($lichKhoiHanhId);
+            $doanhThuTour = $this->phanBoNhanSuModel->getDoanhThuByLichKhoiHanh($lichKhoiHanhId);
+
+            // Quy tắc HDV: % hoa hồng lấy từ lịch khởi hành (admin cấu hình trước khi tour bắt đầu)
+            if ($vaiTro === 'HDV') {
+                $loaiLuong = 'PhanTram';
+                $soTienCoDinh = 0;
+                $phanTramHoaHong = (float)($lichKhoiHanh['phan_tram_hoa_hong_hdv'] ?? $phanTramHoaHong);
+            }
+            if ($loaiLuong === 'PhanTram' && $doanhThuTour > 0) {
+                $tienHoaHong = round($doanhThuTour * $phanTramHoaHong / 100, 2);
+                $tongLuong = $tienHoaHong;
+            } elseif ($loaiLuong === 'CoDinh') {
+                $tongLuong = $soTienCoDinh;
+            } elseif ($loaiLuong === 'KetHop' && $doanhThuTour > 0) {
+                $tienHoaHong = round($doanhThuTour * $phanTramHoaHong / 100, 2);
+                $tongLuong = $soTienCoDinh + $tienHoaHong;
+            } else {
+                $tongLuong = $soTienCoDinh;
+            }
             if ($lichKhoiHanhId > 0 && $nhanSuId > 0) {
                 $data = [
                     'lich_khoi_hanh_id' => $lichKhoiHanhId,
                     'nhan_su_id' => $nhanSuId,
                     'vai_tro' => $vaiTro,
-                    'ghi_chu' => $ghiChu
+                    'ghi_chu' => $ghiChu,
+                    'loai_luong' => $loaiLuong,
+                    'so_tien_co_dinh' => $soTienCoDinh,
+                    'phan_tram_hoa_hong' => $phanTramHoaHong,
+                    'tien_hoa_hong' => $tienHoaHong,
+                    'tong_luong' => $tongLuong,
+                    'trang_thai_luong' => $trangThaiLuong
                 ];
-                
                 // Nếu phân bổ HDV, kiểm tra xem nhân sự này có trùng lịch với tour khác không
                 if ($vaiTro === 'HDV') {
                     $conflicts = $this->phanBoNhanSuModel->getScheduleConflictsForStaff($lichKhoiHanhId, $nhanSuId);
@@ -598,7 +569,6 @@ if (!empty($lichKhoiHanh['tour_id'])) {
                             . '<strong>Vẫn cho phép phân bổ, nhưng HDV cần cân nhắc tránh quá tải.</strong>';
                     }
                 }
-
                 $result = $this->phanBoNhanSuModel->insert($data);
                 if ($result) {
                     $_SESSION['success'] = 'Phân bổ nhân sự thành công.';
@@ -608,10 +578,50 @@ if (!empty($lichKhoiHanh['tour_id'])) {
             } else {
                 $_SESSION['error'] = 'Thông tin không hợp lệ.';
             }
-            
             header('Location: index.php?act=lichKhoiHanh/chiTiet&id=' . $lichKhoiHanhId);
             exit();
         }
+    }
+
+    // Admin cập nhật % hoa hồng HDV trước khi tour bắt đầu
+    public function capNhatHoaHongHDV() {
+        requireRole('Admin');
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+            header('Location: index.php?act=lichKhoiHanh/index');
+            exit();
+        }
+
+        $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+        $phanTram = isset($_POST['phan_tram_hoa_hong_hdv']) ? (float)$_POST['phan_tram_hoa_hong_hdv'] : 0;
+        $phanTram = max(0, min(100, $phanTram));
+
+        if ($id <= 0) {
+            $_SESSION['error'] = 'ID lịch khởi hành không hợp lệ.';
+            header('Location: index.php?act=lichKhoiHanh/index');
+            exit();
+        }
+
+        $lich = $this->lichKhoiHanhModel->findById($id);
+        if (!$lich) {
+            $_SESSION['error'] = 'Lịch khởi hành không tồn tại.';
+            header('Location: index.php?act=lichKhoiHanh/index');
+            exit();
+        }
+
+        $trangThai = $lich['trang_thai'] ?? '';
+        if ($trangThai !== '' && $trangThai !== 'SapKhoiHanh') {
+            $_SESSION['error'] = 'Chỉ được chỉnh % hoa hồng khi tour chưa bắt đầu (trạng thái Sắp khởi hành).';
+            header('Location: index.php?act=lichKhoiHanh/chiTiet&id=' . $id);
+            exit();
+        }
+
+        $ok = $this->lichKhoiHanhModel->updatePhanTramHoaHongHDV($id, $phanTram);
+        $_SESSION[$ok ? 'success' : 'error'] = $ok
+            ? 'Đã cập nhật % hoa hồng HDV.'
+            : 'Không thể cập nhật (hãy đảm bảo đã thêm cột phan_tram_hoa_hong_hdv).';
+
+        header('Location: index.php?act=lichKhoiHanh/chiTiet&id=' . $id);
+        exit();
     }
 
     // API: Kiểm tra trùng lịch khi chọn nhân sự (AJAX)
@@ -767,8 +777,15 @@ if (!empty($lichKhoiHanh['tour_id'])) {
 
     // Xóa phân bổ nhân sự
     public function deleteNhanSu() {
-        $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-        $lichKhoiHanhId = isset($_GET['lich_khoi_hanh_id']) ? (int)$_GET['lich_khoi_hanh_id'] : 0;
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+            header('Location: index.php?act=lichKhoiHanh/index');
+            exit();
+        }
+
+        $this->requirePostCsrf('lichKhoiHanh/index');
+
+        $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+        $lichKhoiHanhId = isset($_POST['lich_khoi_hanh_id']) ? (int)$_POST['lich_khoi_hanh_id'] : 0;
         
         if ($id > 0) {
             $result = $this->phanBoNhanSuModel->delete($id);
@@ -785,8 +802,15 @@ if (!empty($lichKhoiHanh['tour_id'])) {
 
     // Xóa phân bổ dịch vụ
     public function deleteDichVu() {
-        $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-        $lichKhoiHanhId = isset($_GET['lich_khoi_hanh_id']) ? (int)$_GET['lich_khoi_hanh_id'] : 0;
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+            header('Location: index.php?act=lichKhoiHanh/index');
+            exit();
+        }
+
+        $this->requirePostCsrf('lichKhoiHanh/index');
+
+        $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+        $lichKhoiHanhId = isset($_POST['lich_khoi_hanh_id']) ? (int)$_POST['lich_khoi_hanh_id'] : 0;
         
         if ($id > 0) {
             $result = $this->phanBoDichVuModel->delete($id);
@@ -1022,10 +1046,51 @@ public function themYeuCauDacBiet() {
     exit();
 }
 
+    public function xoaYeuCauDacBiet() {
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+            header('Location: index.php?act=lichKhoiHanh/index');
+            exit();
+        }
+
+        $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+        $lichKhoiHanhId = isset($_POST['lich_khoi_hanh_id']) ? (int)$_POST['lich_khoi_hanh_id'] : 0;
+
+        $redirectAct = $lichKhoiHanhId > 0
+            ? 'lichKhoiHanh/chiTiet&id=' . $lichKhoiHanhId
+            : 'lichKhoiHanh/index';
+
+        $this->requirePostCsrf($redirectAct);
+
+        require_once 'models/YeuCauDacBiet.php';
+        $yeuCauModel = new YeuCauDacBiet();
+
+        $yeuCau = $yeuCauModel->findByIdWithRelations($id);
+        if (!$yeuCau) {
+            $_SESSION['error'] = 'Không tìm thấy yêu cầu đặc biệt.';
+        } else {
+            $result = $yeuCauModel->deleteById($id);
+            if ($result) {
+                $_SESSION['success'] = 'Xóa yêu cầu đặc biệt thành công.';
+            } else {
+                $_SESSION['error'] = 'Không thể xóa yêu cầu đặc biệt.';
+            }
+        }
+
+        header('Location: index.php?act=lichKhoiHanh/chiTiet&id=' . $lichKhoiHanhId);
+        exit();
+    }
+
     // Xóa khách chi tiết
     public function xoaKhachChiTiet() {
-        $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-        $lichKhoiHanhId = isset($_GET['lich_khoi_hanh_id']) ? (int)$_GET['lich_khoi_hanh_id'] : 0;
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+            header('Location: index.php?act=lichKhoiHanh/index');
+            exit();
+        }
+
+        $this->requirePostCsrf('lichKhoiHanh/index');
+
+        $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+        $lichKhoiHanhId = isset($_POST['lich_khoi_hanh_id']) ? (int)$_POST['lich_khoi_hanh_id'] : 0;
         
         require_once 'models/CheckinKhach.php';
         $checkinModel = new CheckinKhach();
@@ -1130,6 +1195,35 @@ public function themYeuCauDacBiet() {
         // Quay về chi tiết lịch khởi hành
         header('Location: index.php?act=lichKhoiHanh/chiTiet&id=' . $lichId);
         exit;
+    }
+
+    public function xoaNhatKy() {
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+            header('Location: index.php?act=lichKhoiHanh/index');
+            exit();
+        }
+
+        $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+        $lichKhoiHanhId = isset($_POST['lich_khoi_hanh_id']) ? (int)$_POST['lich_khoi_hanh_id'] : 0;
+
+        $redirectAct = $lichKhoiHanhId > 0
+            ? 'lichKhoiHanh/chiTiet&id=' . $lichKhoiHanhId
+            : 'lichKhoiHanh/index';
+
+        $this->requirePostCsrf($redirectAct);
+
+        require_once 'models/NhatKyTour.php';
+        $nhatKyModel = new NhatKyTour();
+
+        $result = $id > 0 ? $nhatKyModel->deleteById($id) : false;
+        if ($result) {
+            $_SESSION['success'] = 'Xóa nhật ký thành công.';
+        } else {
+            $_SESSION['error'] = 'Không thể xóa nhật ký.';
+        }
+
+        header('Location: index.php?act=lichKhoiHanh/chiTiet&id=' . $lichKhoiHanhId);
+        exit();
     }
 
     

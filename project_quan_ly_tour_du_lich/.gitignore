@@ -29,6 +29,14 @@ public/uploads/*
 storage/cache/*
 !storage/cache/.gitkeep
 
+# Sessions
+storage/sessions/*
+!storage/sessions/.gitkeep
+
+# Logs
+storage/mail_log.txt
+storage/perf.log
+
 # Backups
 storage/backups/*
 !storage/backups/.gitkeep

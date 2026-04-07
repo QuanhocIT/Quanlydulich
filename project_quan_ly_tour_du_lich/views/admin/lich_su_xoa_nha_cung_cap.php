@@ -138,14 +138,14 @@ ob_start();
                         <table class="table table-hover">
                             <thead class="table-light">
                                 <tr>
-                                    <th>STT</th>
-                                    <th>Nhà cung cấp ID</th>
-                                    <th>Tên đơn vị</th>
-                                    <th>Loại dịch vụ</th>
-                                    <th>Thông tin chi tiết</th>
-                                    <th>Người xóa</th>
-                                    <th>Lý do xóa</th>
-                                    <th>Thời gian xóa</th>
+                                    <th><i class="bi bi-list-ol me-1"></i>STT</th>
+                                    <th><i class="bi bi-building me-1"></i>Nhà cung cấp ID</th>
+                                    <th><i class="bi bi-briefcase me-1"></i>Tên đơn vị</th>
+                                    <th><i class="bi bi-box-seam me-1"></i>Loại dịch vụ</th>
+                                    <th><i class="bi bi-info-circle me-1"></i>Thông tin chi tiết</th>
+                                    <th><i class="bi bi-person-x me-1"></i>Người xóa</th>
+                                    <th><i class="bi bi-exclamation-triangle me-1"></i>Lý do xóa</th>
+                                    <th><i class="bi bi-calendar-x me-1"></i>Thời gian xóa</th>
                                     <th></th>
                                 </tr>
                             </thead>
@@ -170,11 +170,11 @@ ob_start();
                                             <?php 
                                             $thongTin = json_decode($item['thong_tin_nha_cung_cap'] ?? '{}', true);
                                             if ($thongTin && isset($thongTin['ten_don_vi'])): ?>
-                                                <strong><?php echo htmlspecialchars($thongTin['ten_don_vi']); ?></strong>
+                                                <strong><i class="bi bi-briefcase me-1"></i><?php echo htmlspecialchars($thongTin['ten_don_vi']); ?></strong>
                                             <?php elseif ($item['ten_nha_cung_cap']): ?>
-                                                <strong><?php echo htmlspecialchars($item['ten_nha_cung_cap']); ?></strong>
+                                                <strong><i class="bi bi-briefcase me-1"></i><?php echo htmlspecialchars($item['ten_nha_cung_cap']); ?></strong>
                                             <?php else: ?>
-                                                <span class="text-muted">Nhà cung cấp đã bị xóa</span>
+                                                <span class="text-muted"><i class="bi bi-x-circle me-1"></i>Nhà cung cấp đã bị xóa</span>
                                             <?php endif; ?>
                                         </td>
                                         <td>

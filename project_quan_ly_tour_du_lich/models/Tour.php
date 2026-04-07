@@ -10,11 +10,127 @@ class Tour
     }
 
     // Lấy tất cả tour
-    public function getAll() {
+    public function getAll($limit = null, $offset = 0) {
         $sql = "SELECT * FROM tour ORDER BY tour_id DESC";
+        if ($limit !== null) {
+            $sql .= " LIMIT ? OFFSET ?";
+        }
+
         $stmt = $this->conn->prepare($sql);
+        if ($limit !== null) {
+            $stmt->bindValue(1, (int)$limit, PDO::PARAM_INT);
+            $stmt->bindValue(2, max(0, (int)$offset), PDO::PARAM_INT);
+            $stmt->execute();
+        } else {
+            $stmt->execute();
+        }
+
+        return $stmt->fetchAll();
+    }
+
+    public function getLightweightList($limit = null, $offset = 0) {
+        $sql = "SELECT tour_id, ten_tour, loai_tour, mo_ta, gia_co_ban, trang_thai
+                FROM tour
+                ORDER BY tour_id DESC";
+        if ($limit !== null) {
+            $sql .= " LIMIT ? OFFSET ?";
+        }
+
+        $stmt = $this->conn->prepare($sql);
+        if ($limit !== null) {
+            $stmt->bindValue(1, (int)$limit, PDO::PARAM_INT);
+            $stmt->bindValue(2, max(0, (int)$offset), PDO::PARAM_INT);
+        }
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getOptions($limit = null) {
+        $sql = "SELECT tour_id, ten_tour FROM tour ORDER BY ten_tour ASC";
+        if ($limit !== null) {
+            $sql .= " LIMIT ?";
+        }
+
+        $stmt = $this->conn->prepare($sql);
+        if ($limit !== null) {
+            $stmt->bindValue(1, (int)$limit, PDO::PARAM_INT);
+        }
         $stmt->execute();
         return $stmt->fetchAll();
+    }
+
+    public function getPublicTours(array $filters = [], $limit = null, $offset = 0) {
+        $where = ["(trang_thai = 'HoatDong' OR trang_thai IS NULL)"];
+        $params = [];
+
+        if (!empty($filters['loai_tour'])) {
+            $where[] = 'loai_tour = ?';
+            $params[] = $filters['loai_tour'];
+        }
+
+        if (!empty($filters['search'])) {
+            $where[] = '(ten_tour LIKE ? OR mo_ta LIKE ?)';
+            $keyword = '%' . trim((string)$filters['search']) . '%';
+            array_push($params, $keyword, $keyword);
+        }
+
+        $sql = "SELECT tour_id, ten_tour, loai_tour, mo_ta, gia_co_ban, trang_thai
+                FROM tour
+                WHERE " . implode(' AND ', $where) . "
+                ORDER BY tour_id DESC";
+
+        if ($limit !== null) {
+            $sql .= " LIMIT ? OFFSET ?";
+        }
+
+        $stmt = $this->conn->prepare($sql);
+        $index = 1;
+        foreach ($params as $param) {
+            $stmt->bindValue($index++, $param);
+        }
+        if ($limit !== null) {
+            $stmt->bindValue($index++, (int)$limit, PDO::PARAM_INT);
+            $stmt->bindValue($index, max(0, (int)$offset), PDO::PARAM_INT);
+        }
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getRelatedToursByType($loaiTour, $excludeTourId, $limit = 6) {
+        $sql = "SELECT tour_id, ten_tour, loai_tour, mo_ta, gia_co_ban, trang_thai
+                FROM tour
+                WHERE loai_tour = ?
+                  AND tour_id <> ?
+                  AND (trang_thai = 'HoatDong' OR trang_thai IS NULL)
+                ORDER BY tour_id DESC
+                LIMIT ?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindValue(1, $loaiTour);
+        $stmt->bindValue(2, (int)$excludeTourId, PDO::PARAM_INT);
+        $stmt->bindValue(3, max(1, (int)$limit), PDO::PARAM_INT);
+        $stmt->execute();
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        if (empty($rows)) {
+            return [];
+        }
+
+        $thumbnailMap = $this->getThumbnailMapByTourIds(array_column($rows, 'tour_id'));
+        foreach ($rows as &$row) {
+            $row['hinh_anh'] = $thumbnailMap[(int)($row['tour_id'] ?? 0)] ?? null;
+        }
+        unset($row);
+
+        return $rows;
+    }
+
+    public function getDashboardTourStats() {
+        $sql = "SELECT tour_id, ten_tour, gia_co_ban, trang_thai
+                FROM tour
+                ORDER BY tour_id DESC";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     // Lấy tour theo ID
@@ -134,7 +250,7 @@ class Tour
 
     // Lấy danh sách lịch khởi hành theo tour_id
     public function getLichKhoiHanhByTourId($tourId) {
-        $sql = "SELECT ngay_khoi_hanh, ngay_ket_thuc, diem_tap_trung, trang_thai 
+        $sql = "SELECT ngay_khoi_hanh, ngay_ket_thuc, diem_tap_trung, so_cho, trang_thai 
                 FROM lich_khoi_hanh 
                 WHERE tour_id = ? 
                 ORDER BY ngay_khoi_hanh ASC";
@@ -181,6 +297,95 @@ class Tour
                 ORDER BY id ASC";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([(int)$tourId]);
+        return $stmt->fetchAll();
+    }
+
+    // Lấy ảnh đại diện (ảnh đầu tiên) cho nhiều tour cùng lúc để tránh N+1 query.
+    public function getThumbnailMapByTourIds(array $tourIds) {
+        $normalizedIds = [];
+        foreach ($tourIds as $tourId) {
+            $id = (int)$tourId;
+            if ($id > 0) {
+                $normalizedIds[$id] = $id;
+            }
+        }
+
+        if (empty($normalizedIds)) {
+            return [];
+        }
+
+        $idList = array_values($normalizedIds);
+        $placeholders = implode(',', array_fill(0, count($idList), '?'));
+
+        $sql = "SELECT ha.tour_id, ha.url_anh
+                FROM hinh_anh_tour ha
+                INNER JOIN (
+                    SELECT tour_id, MIN(id) AS first_id
+                    FROM hinh_anh_tour
+                    WHERE tour_id IN ($placeholders)
+                    GROUP BY tour_id
+                ) first_img
+                    ON first_img.tour_id = ha.tour_id
+                   AND first_img.first_id = ha.id";
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute($idList);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $result = [];
+        foreach ($rows as $row) {
+            $tourId = (int)($row['tour_id'] ?? 0);
+            if ($tourId > 0) {
+                $result[$tourId] = $row['url_anh'] ?? null;
+            }
+        }
+
+        return $result;
+    }
+
+    // Đếm tour theo bộ lọc (dùng cho phân trang)
+    public function countFiltered(array $conditions, string $search) {
+        $where = ['1=1'];
+        $params = [];
+        if (!empty($conditions['loai_tour'])) {
+            $where[] = 'loai_tour = ?';
+            $params[] = $conditions['loai_tour'];
+        }
+        if (!empty($conditions['trang_thai'])) {
+            $where[] = 'trang_thai = ?';
+            $params[] = $conditions['trang_thai'];
+        }
+        if ($search !== '') {
+            $where[] = 'ten_tour LIKE ?';
+            $params[] = '%' . $search . '%';
+        }
+        $sql = 'SELECT COUNT(*) FROM tour WHERE ' . implode(' AND ', $where);
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute($params);
+        return (int)$stmt->fetchColumn();
+    }
+
+    // Lấy tour có phân trang và bộ lọc SQL-side
+    public function getAllPaginated(array $conditions, string $search, int $limit, int $offset) {
+        $where = ['1=1'];
+        $params = [];
+        if (!empty($conditions['loai_tour'])) {
+            $where[] = 'loai_tour = ?';
+            $params[] = $conditions['loai_tour'];
+        }
+        if (!empty($conditions['trang_thai'])) {
+            $where[] = 'trang_thai = ?';
+            $params[] = $conditions['trang_thai'];
+        }
+        if ($search !== '') {
+            $where[] = 'ten_tour LIKE ?';
+            $params[] = '%' . $search . '%';
+        }
+        $sql = 'SELECT * FROM tour WHERE ' . implode(' AND ', $where) . ' ORDER BY tour_id DESC LIMIT ? OFFSET ?';
+        $params[] = $limit;
+        $params[] = $offset;
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute($params);
         return $stmt->fetchAll();
     }
 

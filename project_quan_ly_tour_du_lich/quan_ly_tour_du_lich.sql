@@ -37,6 +37,7 @@ CREATE TABLE `booking` (
   `so_nguoi` int(11) DEFAULT NULL,
   `tong_tien` decimal(15,2) DEFAULT NULL,
   `trang_thai` enum('ChoXacNhan','DaCoc','HoanTat','Huy') DEFAULT NULL,
+  `trang_thai_thanh_toan` enum('ChuaThanhToan','DaThanhToan','QuaHan') DEFAULT 'ChuaThanhToan',
   `ghi_chu` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -324,6 +325,67 @@ CREATE TABLE `cong_no_nha_cung_cap` (
 
 INSERT INTO `cong_no_nha_cung_cap` (`id`, `nha_cung_cap_id`, `tour_id`, `so_tien`, `han_thanh_toan`, `trang_thai`, `ghi_chu`, `created_at`, `updated_at`) VALUES
 (1, 2, 5, 30000000.00, '2025-12-05', 'ChoThanhToan', 'Công nợ khách sạn tour Nhật', '2025-11-27 05:00:00', '2025-11-27 05:00:00');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `payments`
+--
+CREATE TABLE `payments` (
+  `payment_id` int(11) NOT NULL AUTO_INCREMENT,
+  `booking_id` int(11) NOT NULL,
+  `amount` decimal(15,2) NOT NULL,
+  `payment_method` enum('ChuyenKhoan','TienMat','TheTinDung','ViDienTu') NOT NULL,
+  `payment_date` datetime NOT NULL DEFAULT current_timestamp(),
+  `status` enum('ThanhCong','ThatBai','DangXuLy') DEFAULT 'DangXuLy',
+  `note` text DEFAULT NULL,
+  PRIMARY KEY (`payment_id`),
+  KEY `booking_id` (`booking_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Table structure for table `invoices`
+--
+CREATE TABLE `invoices` (
+  `invoice_id` int(11) NOT NULL AUTO_INCREMENT,
+  `booking_id` int(11) NOT NULL,
+  `customer_id` int(11) NOT NULL,
+  `issue_date` date NOT NULL,
+  `due_date` date DEFAULT NULL,
+  `total_amount` decimal(15,2) NOT NULL,
+  `status` enum('ChuaThanhToan','DaThanhToan','QuaHan') DEFAULT 'ChuaThanhToan',
+  `note` text DEFAULT NULL,
+  PRIMARY KEY (`invoice_id`),
+  KEY `booking_id` (`booking_id`),
+  KEY `customer_id` (`customer_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Table structure for table `invoice_items`
+--
+CREATE TABLE `invoice_items` (
+  `item_id` int(11) NOT NULL AUTO_INCREMENT,
+  `invoice_id` int(11) NOT NULL,
+  `description` varchar(255) NOT NULL,
+  `quantity` int(11) NOT NULL DEFAULT 1,
+  `unit_price` decimal(15,2) NOT NULL,
+  `amount` decimal(15,2) NOT NULL,
+  PRIMARY KEY (`item_id`),
+  KEY `invoice_id` (`invoice_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Table structure for table `payment_logs`
+--
+CREATE TABLE `payment_logs` (
+  `log_id` int(11) NOT NULL AUTO_INCREMENT,
+  `payment_id` int(11) NOT NULL,
+  `action` varchar(100) NOT NULL,
+  `log_time` datetime NOT NULL DEFAULT current_timestamp(),
+  `note` text DEFAULT NULL,
+  PRIMARY KEY (`log_id`),
+  KEY `payment_id` (`payment_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -1120,6 +1182,7 @@ INSERT INTO `phan_bo_history` (`id`, `phan_bo_id`, `loai_phan_bo`, `thay_doi`, `
 -- Table structure for table `phan_bo_nhan_su`
 --
 
+
 CREATE TABLE `phan_bo_nhan_su` (
   `id` int(11) NOT NULL,
   `lich_khoi_hanh_id` int(11) NOT NULL,
@@ -1128,6 +1191,15 @@ CREATE TABLE `phan_bo_nhan_su` (
   `ghi_chu` text DEFAULT NULL,
   `trang_thai` enum('ChoXacNhan','DaXacNhan','TuChoi','Huy') DEFAULT 'ChoXacNhan',
   `thoi_gian_xac_nhan` datetime DEFAULT NULL,
+  -- Các trường lương linh hoạt
+  `loai_luong` enum('CoDinh','PhanTram','KetHop') DEFAULT 'CoDinh',
+  `so_tien_co_dinh` decimal(15,2) DEFAULT 0,
+  `phan_tram_hoa_hong` decimal(5,2) DEFAULT 0, -- ví dụ: 5.00 nghĩa là 5%
+  `tien_hoa_hong` decimal(15,2) DEFAULT 0, -- lưu giá trị thực tế nếu cần
+  `tong_luong` decimal(15,2) DEFAULT 0, -- tổng lương thực nhận
+  `trang_thai_luong` enum('ChoDuyet','DaDuyet','DaThanhToan') DEFAULT 'ChoDuyet',
+  `ngay_tao_luong` timestamp NULL DEFAULT NULL,
+  `ngay_cap_nhat_luong` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   `created_at` timestamp NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -2162,6 +2234,12 @@ ALTER TABLE `du_toan_tour`
 --
 -- Constraints for table `giao_dich_tai_chinh`
 --
+
+-- Xóa các bản ghi giao_dich_tai_chinh có tour_id không tồn tại ở bảng tour để tránh lỗi ràng buộc
+DELETE FROM `giao_dich_tai_chinh`
+WHERE `tour_id` IS NOT NULL
+  AND `tour_id` NOT IN (SELECT `tour_id` FROM `tour`);
+
 ALTER TABLE `giao_dich_tai_chinh`
   ADD CONSTRAINT `fk_gd_booking` FOREIGN KEY (`booking_id`) REFERENCES `booking` (`booking_id`) ON DELETE SET NULL,
   ADD CONSTRAINT `fk_gd_khach` FOREIGN KEY (`khach_hang_id`) REFERENCES `khach_hang` (`khach_hang_id`) ON DELETE SET NULL,

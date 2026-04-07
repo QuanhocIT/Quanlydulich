@@ -3,19 +3,82 @@
 class NhanSu 
 {
     public $conn;
+    private static $tableColumnsCache = [];
     
     public function __construct()
     {
         $this->conn = connectDB();
     }
 
+    private function hasColumn($tableName, $columnName) {
+        if (!array_key_exists($tableName, self::$tableColumnsCache)) {
+            $sql = "SELECT COLUMN_NAME
+                    FROM INFORMATION_SCHEMA.COLUMNS
+                    WHERE TABLE_SCHEMA = DATABASE()
+                      AND TABLE_NAME = ?";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute([$tableName]);
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $columnMap = [];
+            foreach ($rows as $row) {
+                $name = (string)($row['COLUMN_NAME'] ?? '');
+                if ($name !== '') {
+                    $columnMap[$name] = true;
+                }
+            }
+            self::$tableColumnsCache[$tableName] = $columnMap;
+        }
+
+        return isset(self::$tableColumnsCache[$tableName][$columnName]);
+    }
+
     // Lấy tất cả nhân sự (join với người dùng)
-    public function getAll() {
+    public function getAll($limit = null, $offset = 0) {
         $sql = "SELECT ns.*, nd.ho_ten, nd.email, nd.so_dien_thoai, nd.ten_dang_nhap, nd.id as nguoi_dung_id_full
                 FROM nhan_su AS ns
                 LEFT JOIN nguoi_dung AS nd ON ns.nguoi_dung_id = nd.id
                 ORDER BY nd.ho_ten ASC";
+        if ($limit !== null) {
+            $sql .= " LIMIT ? OFFSET ?";
+        }
+
         $stmt = $this->conn->prepare($sql);
+        if ($limit !== null) {
+            $stmt->bindValue(1, (int)$limit, PDO::PARAM_INT);
+            $stmt->bindValue(2, max(0, (int)$offset), PDO::PARAM_INT);
+            $stmt->execute();
+        } else {
+            $stmt->execute();
+        }
+
+        return $stmt->fetchAll();
+    }
+
+    public function getOptions($role = null, $limit = null) {
+        $sql = "SELECT ns.nhan_su_id, ns.vai_tro, nd.ho_ten
+                FROM nhan_su AS ns
+                LEFT JOIN nguoi_dung AS nd ON ns.nguoi_dung_id = nd.id";
+        $params = [];
+
+        if ($role !== null && $role !== '') {
+            $sql .= " WHERE ns.vai_tro = ?";
+            $params[] = $role;
+        }
+
+        $sql .= " ORDER BY nd.ho_ten ASC";
+        if ($limit !== null) {
+            $sql .= " LIMIT ?";
+        }
+
+        $stmt = $this->conn->prepare($sql);
+        $index = 1;
+        foreach ($params as $param) {
+            $stmt->bindValue($index++, $param);
+        }
+        if ($limit !== null) {
+            $stmt->bindValue($index, (int)$limit, PDO::PARAM_INT);
+        }
         $stmt->execute();
         return $stmt->fetchAll();
     }
@@ -56,6 +119,23 @@ class NhanSu
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([$id]);
         return $stmt->fetch();
+    }
+
+    // Cập nhật lương cơ bản (cần có cột nhan_su.luong_co_ban)
+    public function updateLuongCoBan($nhan_su_id, $luongCoBan) {
+        try {
+            // Check column exists (để tránh lỗi khi DB chưa migrate)
+            if (!$this->hasColumn('nhan_su', 'luong_co_ban')) {
+                return false;
+            }
+
+            $sql = "UPDATE nhan_su SET luong_co_ban = ? WHERE nhan_su_id = ?";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute([(float)$luongCoBan, (int)$nhan_su_id]);
+            return (int)$stmt->rowCount() > 0;
+        } catch (Exception $e) {
+            return false;
+        }
     }
 
     // Thêm nhân sự (gắn với tài khoản người dùng)

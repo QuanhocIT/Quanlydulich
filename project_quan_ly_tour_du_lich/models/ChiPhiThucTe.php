@@ -9,7 +9,7 @@ class ChiPhiThucTe
     }
     
     // Lấy tất cả chi phí
-    public function getAll() {
+    public function getAll($limit = null, $offset = 0) {
         $sql = "SELECT cp.*, 
                     t.ten_tour,
                     nd_ghi.ho_ten as nguoi_ghi_nhan,
@@ -19,8 +19,17 @@ class ChiPhiThucTe
                 JOIN nguoi_dung nd_ghi ON cp.nguoi_ghi_nhan_id = nd_ghi.id
                 LEFT JOIN nguoi_dung nd_duyet ON cp.nguoi_duyet_id = nd_duyet.id
                 ORDER BY cp.ngay_phat_sinh DESC, cp.created_at DESC";
+        if ($limit !== null) {
+            $sql .= " LIMIT ? OFFSET ?";
+        }
         $stmt = $this->conn->prepare($sql);
-        $stmt->execute();
+        if ($limit !== null) {
+            $stmt->bindValue(1, (int)$limit, PDO::PARAM_INT);
+            $stmt->bindValue(2, max(0, (int)$offset), PDO::PARAM_INT);
+            $stmt->execute();
+        } else {
+            $stmt->execute();
+        }
         return $stmt->fetchAll();
     }
     

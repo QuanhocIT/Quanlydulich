@@ -64,5 +64,12 @@ class NhatKyTour
             (int)$nhanSuId
         ]);
     }
+
+    public function deleteById($id)
+    {
+        $sql = "DELETE FROM nhat_ky_tour WHERE id = ?";
+        $stmt = $this->conn->prepare($sql);
+        return $stmt->execute([(int)$id]);
+    }
 }
 

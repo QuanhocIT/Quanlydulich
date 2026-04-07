@@ -6,12 +6,76 @@ ob_start();
 
 <style>
     .page-header-section {
-        background: rgba(45, 45, 45, 0.5);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 2px;
-        padding: 40px;
-        margin-bottom: 40px;
+        position: relative;
+        background: linear-gradient(90deg, #2d2d2d 0%, #3a2e13 100%);
+        border-radius: 8px;
+        padding: 24px 32px;
+        margin-bottom: 28px;
+        box-shadow: 0 2px 12px rgba(212,175,55,0.10);
         backdrop-filter: blur(10px);
+        overflow: hidden;
+    }
+
+    .page-header-glow {
+        position: absolute;
+        top: 0;
+        left: -60%;
+        width: 60%;
+        height: 100%;
+        background: linear-gradient(120deg, rgba(255,236,140,0.18) 0%, rgba(255,236,140,0.45) 50%, rgba(255,236,140,0.18) 100%);
+        filter: blur(2px);
+        animation: yeu-cau-header-glow-move 2.8s linear infinite;
+        z-index: 1;
+        pointer-events: none;
+    }
+
+    @keyframes yeu-cau-header-glow-move {
+        0% { left: -60%; }
+        100% { left: 100%; }
+    }
+
+    .page-header-inner {
+        position: relative;
+        z-index: 2;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        flex-wrap: wrap;
+        gap: 20px;
+    }
+
+    .page-header-main {
+        display: flex;
+        align-items: flex-start;
+        gap: 16px;
+    }
+
+    .page-header-avatar {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #d4af37 60%, #fffde7 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.1rem;
+        box-shadow: 0 0 0 4px rgba(212,175,55,0.12);
+        flex-shrink: 0;
+    }
+
+    .page-header-title h1 {
+        margin: 0;
+        color: #ffe082;
+        font-size: 1.7rem;
+        font-weight: 700;
+        text-shadow: 0 2px 8px #2d2d2d;
+    }
+
+    .page-header-title p {
+        color: #fffde7;
+        font-size: 1rem;
+        margin-top: 6px;
+        text-shadow: 0 1px 4px #2d2d2d;
     }
 
     .stats-grid {
@@ -23,16 +87,17 @@ ob_start();
 
     .stat-card {
         background: rgba(45, 45, 45, 0.5);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.08);
         border-left: 4px solid;
-        border-radius: 2px;
-        padding: 25px;
+        border-radius: 8px;
+        padding: 22px;
         backdrop-filter: blur(10px);
         transition: all 0.3s;
     }
 
     .stat-card:hover {
-        transform: translateY(-4px);
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(212,175,55,0.15);
     }
 
     .stat-card.border-primary { border-left-color: #0d6efd; }
@@ -48,20 +113,20 @@ ob_start();
     }
 
     .stat-value {
-        font-size: 32px;
+        font-size: 2.2rem;
         font-weight: 700;
-        color: var(--text-light);
+        color: #ffd700;
     }
 
     .stat-value.warning { color: #ffc107; }
-    .stat-value.success { color: #198754; }
+    .stat-value.success { color: #10b981; }
 
     .filter-section {
         background: rgba(45, 45, 45, 0.5);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 2px;
-        padding: 25px;
-        margin-bottom: 30px;
+        border: 1px solid rgba(212, 175, 55, 0.2);
+        border-radius: 8px;
+        padding: 22px 24px;
+        margin-bottom: 24px;
         backdrop-filter: blur(10px);
     }
 
@@ -74,8 +139,8 @@ ob_start();
 
     .table-wrapper {
         background: rgba(45, 45, 45, 0.5);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 2px;
+        border: 1px solid rgba(212, 175, 55, 0.18);
+        border-radius: 8px;
         overflow: hidden;
         backdrop-filter: blur(10px);
     }
@@ -158,12 +223,12 @@ ob_start();
 
     .form-group .input,
     .form-group .select {
-        background: rgba(255, 255, 255, 0.1);
-        border: 1px solid rgba(255, 255, 255, 0.2);
+        background: rgba(0, 0, 0, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.15);
         color: var(--text-light);
-        padding: 12px 10px;
+        padding: 10px 12px;
         font-size: 13px;
-        border-radius: 2px;
+        border-radius: 4px;
         transition: all 0.3s;
         width: 100%;
         font-family: inherit;
@@ -176,8 +241,8 @@ ob_start();
     .form-group .input:focus,
     .form-group .select:focus {
         outline: none;
-        background: rgba(255, 255, 255, 0.15);
         border-color: var(--accent-gold);
+        box-shadow: 0 0 0 2px rgba(212,175,55,0.15);
     }
 
     .form-group .select {
@@ -219,14 +284,28 @@ ob_start();
         margin-bottom: 20px;
         opacity: 0.3;
     }
+
+    @media (max-width: 700px) {
+        .page-header-section {
+            padding: 20px;
+        }
+
+        .page-header-title h1 {
+            font-size: 1.4rem;
+        }
+    }
 </style>
 
 <!-- Page Header -->
 <div class="page-header-section">
-    <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 20px;">
-        <div>
-            <h1>⭐ Quản lý Yêu cầu Tour từ Khách hàng</h1>
-            <p style="color: var(--text-muted); margin-top: 10px;">Xem và phản hồi các yêu cầu tour theo mong muốn</p>
+    <div class="page-header-glow"></div>
+    <div class="page-header-inner">
+        <div class="page-header-main">
+            <div class="page-header-avatar">⭐</div>
+            <div class="page-header-title">
+                <h1>Quản lý Yêu cầu Tour từ Khách hàng</h1>
+                <p>Xem và phản hồi các yêu cầu tour theo mong muốn</p>
+            </div>
         </div>
         <div>
             <a href="index.php?act=admin/dashboard" class="btn btn-secondary">

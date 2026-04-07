@@ -141,6 +141,30 @@ ob_start();
                 </tbody>
             </table>
     </div>
+
+    <?php if (!empty($pagination) && ($pagination['totalPages'] ?? 1) > 1): ?>
+        <?php
+        $currentPageNumber = (int)($pagination['currentPage'] ?? 1);
+        $totalPages = (int)($pagination['totalPages'] ?? 1);
+        $query = $_GET;
+        ?>
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:16px; margin:20px 0 0; flex-wrap:wrap;">
+            <div style="color:var(--text-muted); font-size:14px;">
+                Trang <?= $currentPageNumber ?> / <?= $totalPages ?>
+                (<?= number_format((int)($pagination['totalItems'] ?? 0)) ?> giao dịch)
+            </div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <?php if ($currentPageNumber > 1): ?>
+                    <?php $query['page'] = $currentPageNumber - 1; ?>
+                    <a class="btn" href="index.php?<?= htmlspecialchars(http_build_query($query)) ?>">Trang trước</a>
+                <?php endif; ?>
+                <?php if ($currentPageNumber < $totalPages): ?>
+                    <?php $query['page'] = $currentPageNumber + 1; ?>
+                    <a class="btn" href="index.php?<?= htmlspecialchars(http_build_query($query)) ?>">Trang sau</a>
+                <?php endif; ?>
+            </div>
+        </div>
+    <?php endif; ?>
 </div>
 <?php
 $content = ob_get_clean();

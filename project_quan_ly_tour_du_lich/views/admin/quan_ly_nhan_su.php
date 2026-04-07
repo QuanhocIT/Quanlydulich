@@ -5,13 +5,58 @@ ob_start();
 ?>
 
 <style>
-    .page-header-section {
-        background: rgba(45, 45, 45, 0.5);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 2px;
-        padding: 40px;
-        margin-bottom: 40px;
-        backdrop-filter: blur(10px);
+    .page-header-nhansu {
+        position: relative;
+        background: linear-gradient(90deg, #2d2d2d 0%, #3a2e13 100%);
+        border-radius: 8px;
+        padding: 24px 32px;
+        margin-bottom: 32px;
+        box-shadow: 0 2px 12px rgba(212,175,55,0.10);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+        overflow: hidden;
+        flex-wrap: wrap;
+    }
+    .page-header-nhansu .header-glow {
+        position: absolute;
+        top: 0; left: -60%;
+        width: 60%; height: 100%;
+        background: linear-gradient(120deg, rgba(255,236,140,0.18) 0%, rgba(255,236,140,0.45) 50%, rgba(255,236,140,0.18) 100%);
+        filter: blur(2px);
+        animation: header-glow-move 2.8s linear infinite;
+        z-index: 1;
+    }
+    @keyframes header-glow-move {
+        0% { left: -60%; }
+        100% { left: 100%; }
+    }
+    .page-header-nhansu .header-avatar {
+        width: 64px; height: 64px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #d4af37 60%, #fffde7 100%);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 2.2rem;
+        box-shadow: 0 0 0 4px rgba(212,175,55,0.12);
+        z-index: 2;
+        flex-shrink: 0;
+    }
+    .page-header-nhansu .header-text {
+        z-index: 2;
+        flex: 1;
+    }
+    .page-header-nhansu .header-title {
+        margin: 0; color: #ffe082; font-size: 1.7rem; font-weight: 700;
+        text-shadow: 0 2px 8px #2d2d2d;
+    }
+    .page-header-nhansu .header-desc {
+        color: #fffde7; font-size: 1rem; margin-top: 6px;
+        text-shadow: 0 1px 4px #2d2d2d;
+    }
+    .page-header-nhansu .header-actions {
+        z-index: 2;
+        display: flex; gap: 10px; flex-wrap: wrap;
     }
 
     .stats-grid {
@@ -23,62 +68,71 @@ ob_start();
 
     .stat-card {
         background: rgba(45, 45, 45, 0.5);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.08);
         border-left: 4px solid;
-        border-radius: 2px;
-        padding: 25px;
+        border-radius: 8px;
+        padding: 22px 24px;
         backdrop-filter: blur(10px);
         transition: all 0.3s;
     }
 
     .stat-card:hover {
-        transform: translateY(-4px);
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(212, 175, 55, 0.15);
     }
 
-    .stat-card.border-primary { border-left-color: #0d6efd; }
-    .stat-card.border-success { border-left-color: #198754; }
-    .stat-card.border-info { border-left-color: #0dcaf0; }
-    .stat-card.border-warning { border-left-color: #ffc107; }
+    .stat-card.border-primary { border-left-color: var(--accent-gold); }
+    .stat-card.border-success { border-left-color: #10b981; }
+    .stat-card.border-info { border-left-color: var(--accent-gold); }
+    .stat-card.border-warning { border-left-color: var(--accent-gold); }
 
     .stat-icon {
-        width: 50px;
-        height: 50px;
-        border-radius: 2px;
+        width: 60px;
+        height: 60px;
+        border-radius: 8px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 24px;
+        font-size: 28px;
+        background: rgba(212, 175, 55, 0.13);
+        color: var(--accent-gold);
+        transition: all 0.3s;
     }
 
-    .stat-icon.bg-primary { background: rgba(13, 110, 253, 0.2); color: #0d6efd; }
-    .stat-icon.bg-success { background: rgba(25, 135, 84, 0.2); color: #198754; }
-    .stat-icon.bg-info { background: rgba(13, 202, 240, 0.2); color: #0dcaf0; }
-    .stat-icon.bg-warning { background: rgba(255, 193, 7, 0.2); color: #ffc107; }
+    .stat-card:hover .stat-icon {
+        background: var(--accent-gold);
+        transform: scale(1.1) rotate(5deg);
+    }
+
+    .stat-icon.bg-primary { background: rgba(212, 175, 55, 0.13); }
+    .stat-icon.bg-success { background: rgba(16, 185, 129, 0.13); color: #10b981; }
+    .stat-icon.bg-info { background: rgba(212, 175, 55, 0.13); }
+    .stat-icon.bg-warning { background: rgba(212, 175, 55, 0.13); }
 
     .stat-label {
         font-size: 11px;
         color: var(--text-muted);
         text-transform: uppercase;
-        letter-spacing: 0.5px;
+        letter-spacing: 0.8px;
         margin-bottom: 8px;
     }
 
     .stat-value {
-        font-size: 32px;
+        font-size: 2.2rem;
         font-weight: 700;
-        color: var(--text-light);
+        color: #ffd700;
     }
 
-    .stat-value.success { color: #198754; }
-    .stat-value.info { color: #0dcaf0; }
-    .stat-value.warning { color: #ffc107; }
+    .stat-value.success { color: #10b981; }
+    .stat-value.info { color: #ffd700; }
+    .stat-value.warning { color: #ffd700; }
 
     .filter-section {
         background: rgba(45, 45, 45, 0.5);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 2px;
-        padding: 25px;
-        margin-bottom: 30px;
+        border: 1px solid rgba(212, 175, 55, 0.2);
+        border-radius: 8px;
+        padding: 22px 28px;
+        margin-bottom: 28px;
         backdrop-filter: blur(10px);
     }
 
@@ -116,8 +170,8 @@ ob_start();
 
     .table-wrapper {
         background: rgba(45, 45, 45, 0.5);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 2px;
+        border: 1px solid rgba(212, 175, 55, 0.18);
+        border-radius: 8px;
         overflow: hidden;
         backdrop-filter: blur(10px);
     }
@@ -153,16 +207,17 @@ ob_start();
     }
 
     .employee-avatar {
-        width: 50px;
-        height: 50px;
-        border-radius: 2px;
+        width: 44px;
+        height: 44px;
+        border-radius: 8px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 20px;
+        font-size: 18px;
         font-weight: bold;
         color: var(--primary-dark);
-        background: var(--accent-gold);
+        background: linear-gradient(135deg, #d4af37 60%, #fffde7 100%);
+        box-shadow: 0 2px 8px rgba(212,175,55,0.25);
     }
 
     .role-badge {
@@ -196,6 +251,37 @@ ob_start();
         background: rgba(108, 117, 125, 0.2);
         color: #6c757d;
         border: 1px solid rgba(108, 117, 125, 0.3);
+    }
+
+    .hdv-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 9px;
+        border-radius: 999px;
+        background: rgba(77, 163, 255, 0.16);
+        border: 1px solid rgba(77, 163, 255, 0.35);
+        color: #86c2ff;
+        font-size: 11px;
+        font-weight: 600;
+        margin-left: 8px;
+    }
+
+    .btn-action {
+        min-width: 34px;
+        justify-content: center;
+        font-size: 12px;
+    }
+
+    .btn-action.hdv-view {
+        background: rgba(77, 163, 255, 0.2);
+        color: #86c2ff;
+        border-color: rgba(77, 163, 255, 0.35);
+    }
+
+    .btn-action.hdv-view:hover {
+        background: rgba(77, 163, 255, 0.3);
+        color: #b5dbff;
     }
 
     .empty-state {
@@ -375,20 +461,20 @@ ob_start();
 </style>
 
 <!-- Page Header -->
-<div class="page-header-section">
-    <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 20px;">
-        <div>
-            <h1>👥 Quản Lý Nhân Sự</h1>
-            <p style="color: var(--text-muted); margin-top: 10px;">Quản lý thông tin nhân viên và hồ sơ cá nhân</p>
-        </div>
-        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <a href="index.php?act=admin/hdv_advanced" class="btn btn-secondary">
-                🎯 Quản lý HDV
-            </a>
-            <button id="btnAdd" class="btn btn-primary" onclick="document.getElementById('nhanSuModal').classList.add('show')">
-                ➕ Thêm nhân sự
-            </button>
-        </div>
+<div class="page-header-nhansu">
+    <div class="header-glow"></div>
+    <div class="header-avatar">👥</div>
+    <div class="header-text">
+        <h2 class="header-title">Quản Lý Nhân Sự</h2>
+        <div class="header-desc">Quản lý thông tin nhân viên và hồ sơ cá nhân</div>
+    </div>
+    <div class="header-actions">
+        <a href="index.php?act=admin/hdv_advanced" class="btn btn-secondary">
+            🎯 Quản lý HDV
+        </a>
+        <button id="btnAdd" class="btn btn-primary" onclick="document.getElementById('nhanSuModal').classList.add('show')">
+            ➕ Thêm nhân sự
+        </button>
     </div>
 </div>
 
@@ -528,6 +614,9 @@ $nhaCungCapCount = isset($data_by_role['NhaCungCap']) ? count($data_by_role['Nha
                         <td>
                             <div style="font-weight: 600; margin-bottom: 5px; color: var(--text-light);">
                                 <?php echo htmlspecialchars($nhan_su['ho_ten'] ?? ''); ?>
+                                <?php if (($nhan_su['vai_tro'] ?? '') === 'HDV'): ?>
+                                    <span class="hdv-chip"><i class="bi bi-compass"></i>Ho so HDV</span>
+                                <?php endif; ?>
                             </div>
                             <small style="color: var(--text-muted); font-size: 11px;">
                                 ID: #<?php echo htmlspecialchars($nhan_su['nhan_su_id']); ?>
@@ -557,20 +646,19 @@ $nhaCungCapCount = isset($data_by_role['NhaCungCap']) ? count($data_by_role['Nha
                         <td>
                             <div style="display: flex; gap: 5px; flex-wrap: wrap;">
                                 <a href="index.php?act=admin/nhanSu_chi_tiet&id=<?php echo $nhan_su['nhan_su_id']; ?>" 
-                                   class="btn btn-secondary btn-sm" 
+                                   class="btn btn-secondary btn-sm btn-action" 
                                    style="background: rgba(13, 202, 240, 0.2); color: #0dcaf0; border-color: rgba(13, 202, 240, 0.3);"
                                    title="Xem sơ yếu lý lịch">
-                                    👁️
+                                    <i class="bi bi-eye"></i>
                                 </a>
                                 <?php if ($nhan_su['vai_tro'] === 'HDV'): ?>
                                 <a href="index.php?act=admin/hdv_detail&id=<?php echo $nhan_su['nhan_su_id']; ?>" 
-                                   class="btn btn-secondary btn-sm" 
-                                   style="background: rgba(25, 135, 84, 0.2); color: #198754; border-color: rgba(25, 135, 84, 0.3);"
+                                   class="btn btn-secondary btn-sm btn-action hdv-view" 
                                    title="Quản lý HDV">
-                                    📅
+                                    <i class="bi bi-compass"></i>
                                 </a>
                                 <?php endif; ?>
-                                <button class="btn btn-secondary btn-sm btn-edit" 
+                                <button class="btn btn-secondary btn-sm btn-action btn-edit" 
                                     style="background: rgba(13, 110, 253, 0.2); color: #0d6efd; border-color: rgba(13, 110, 253, 0.3);"
                                     data-id="<?php echo $nhan_su['nhan_su_id']; ?>"
                                     data-vai_tro="<?php echo htmlspecialchars($nhan_su['vai_tro'] ?? ''); ?>"
@@ -580,22 +668,31 @@ $nhaCungCapCount = isset($data_by_role['NhaCungCap']) ? count($data_by_role['Nha
                                     data-suc_khoe="<?php echo htmlspecialchars($nhan_su['suc_khoe'] ?? ''); ?>"
                                     data-user_info="<?php echo htmlspecialchars(($nhan_su['ho_ten'] ?? '') . ' (' . ($nhan_su['ten_dang_nhap'] ?? '') . ')'); ?>"
                                     title="Sửa">
-                                    ✏️
+                                    <i class="bi bi-pencil"></i>
                                 </button>
-                                <a href="index.php?act=admin/nhanSu_delete&id=<?php echo $nhan_su['nhan_su_id']; ?>" 
-                                   class="btn btn-secondary btn-sm" 
-                                   style="background: rgba(255, 193, 7, 0.2); color: #ffc107; border-color: rgba(255, 193, 7, 0.3);"
-                                   onclick="return confirm('Xóa nhân sự này? (Tài khoản sẽ được giữ)');"
-                                   title="Xóa NV">
-                                    👤❌
-                                </a>
-                                <a href="index.php?act=admin/nhanSu_delete&id=<?php echo $nhan_su['nhan_su_id']; ?>&delete_user=1" 
-                                   class="btn btn-secondary btn-sm" 
-                                   style="background: rgba(220, 53, 69, 0.2); color: #dc3545; border-color: rgba(220, 53, 69, 0.3);"
-                                   onclick="return confirm('XÓA VĨ VIỄN: Nhân sự này và tài khoản liên kết sẽ bị xóa. Bạn chắc chắn?');"
-                                   title="Xóa All">
-                                    🗑️
-                                </a>
+                                <form method="POST" action="index.php?act=admin/nhanSu_delete" style="display:inline; margin:0;">
+                                    <?php echo csrfField('admin_form'); ?>
+                                    <input type="hidden" name="id" value="<?php echo (int)$nhan_su['nhan_su_id']; ?>">
+                                    <button type="submit"
+                                        class="btn btn-secondary btn-sm btn-action"
+                                        style="background: rgba(255, 193, 7, 0.2); color: #ffc107; border-color: rgba(255, 193, 7, 0.3);"
+                                        onclick="return confirm('Xóa nhân sự này? (Tài khoản sẽ được giữ)');"
+                                        title="Xóa NV">
+                                        <i class="bi bi-person-dash"></i>
+                                    </button>
+                                </form>
+                                <form method="POST" action="index.php?act=admin/nhanSu_delete" style="display:inline; margin:0;">
+                                    <?php echo csrfField('admin_form'); ?>
+                                    <input type="hidden" name="id" value="<?php echo (int)$nhan_su['nhan_su_id']; ?>">
+                                    <input type="hidden" name="delete_user" value="1">
+                                    <button type="submit"
+                                        class="btn btn-secondary btn-sm btn-action"
+                                        style="background: rgba(220, 53, 69, 0.2); color: #dc3545; border-color: rgba(220, 53, 69, 0.3);"
+                                        onclick="return confirm('XÓA VĨ VIỄN: Nhân sự này và tài khoản liên kết sẽ bị xóa. Bạn chắc chắn?');"
+                                        title="Xóa All">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
                             </div>
                         </td>
                     </tr>

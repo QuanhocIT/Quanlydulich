@@ -6,18 +6,82 @@ ob_start();
 
 <style>
     .page-header-section {
-        background: rgba(45, 45, 45, 0.5);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 2px;
-        padding: 40px;
-        margin-bottom: 40px;
+        position: relative;
+        background: linear-gradient(90deg, #2d2d2d 0%, #3a2e13 100%);
+        border-radius: 8px;
+        padding: 24px 32px;
+        margin-bottom: 28px;
+        box-shadow: 0 2px 12px rgba(212,175,55,0.10);
         backdrop-filter: blur(10px);
+        overflow: hidden;
+    }
+
+    .page-header-glow {
+        position: absolute;
+        top: 0;
+        left: -60%;
+        width: 60%;
+        height: 100%;
+        background: linear-gradient(120deg, rgba(255,236,140,0.18) 0%, rgba(255,236,140,0.45) 50%, rgba(255,236,140,0.18) 100%);
+        filter: blur(2px);
+        animation: lich-su-header-glow-move 2.8s linear infinite;
+        z-index: 1;
+        pointer-events: none;
+    }
+
+    @keyframes lich-su-header-glow-move {
+        0% { left: -60%; }
+        100% { left: 100%; }
+    }
+
+    .page-header-inner {
+        position: relative;
+        z-index: 2;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        flex-wrap: wrap;
+        gap: 20px;
+    }
+
+    .page-header-main {
+        display: flex;
+        align-items: flex-start;
+        gap: 16px;
+    }
+
+    .page-header-avatar {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #d4af37 60%, #fffde7 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.1rem;
+        box-shadow: 0 0 0 4px rgba(212,175,55,0.12);
+        flex-shrink: 0;
+    }
+
+    .page-header-title h1 {
+        margin: 0;
+        color: #ffe082;
+        font-size: 1.7rem;
+        font-weight: 700;
+        text-shadow: 0 2px 8px #2d2d2d;
+    }
+
+    .page-header-title p {
+        color: #fffde7;
+        font-size: 1rem;
+        margin-top: 6px;
+        text-shadow: 0 1px 4px #2d2d2d;
     }
 
     .table-wrapper {
         background: rgba(45, 45, 45, 0.5);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 2px;
+        border: 1px solid rgba(212, 175, 55, 0.18);
+        border-radius: 8px;
         overflow: hidden;
         backdrop-filter: blur(10px);
     }
@@ -97,6 +161,16 @@ ob_start();
         opacity: 0.3;
     }
 
+    @media (max-width: 700px) {
+        .page-header-section {
+            padding: 20px;
+        }
+
+        .page-header-title h1 {
+            font-size: 1.4rem;
+        }
+    }
+
     .booking-info {
         font-size: 12px;
         line-height: 1.6;
@@ -105,10 +179,14 @@ ob_start();
 
 <!-- Page Header -->
 <div class="page-header-section">
-    <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 20px;">
-        <div>
-            <h1>🕐 Lịch sử xóa booking</h1>
-            <p style="color: var(--text-muted); margin-top: 10px;">Xem lại các booking đã bị xóa</p>
+    <div class="page-header-glow"></div>
+    <div class="page-header-inner">
+        <div class="page-header-main">
+            <div class="page-header-avatar">🕐</div>
+            <div class="page-header-title">
+                <h1>Lịch sử xóa booking</h1>
+                <p>Xem lại các booking đã bị xóa</p>
+            </div>
         </div>
         <div>
             <a href="index.php?act=admin/quanLyBooking" class="btn btn-secondary">
