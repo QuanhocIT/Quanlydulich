@@ -12,6 +12,7 @@ class PaymentGatewayController {
      * Truy vấn trạng thái giao dịch VNPay để cập nhật payment bị kẹt ở DangXuLy.
      */
     public static function queryVnpayStatus($conn, $id) {
+        require_once __DIR__ . '/../models/Payment.php';
         require_once __DIR__ . '/../models/PaymentLog.php';
         self::ensurePaymentTables($conn);
 
@@ -57,7 +58,7 @@ class PaymentGatewayController {
                 exit;
             }
 
-            if (($payment['status'] ?? '') === 'ThanhCong') {
+            if (in_array(($payment['status'] ?? ''), [Payment::STATUS_THANH_CONG, Payment::STATUS_DA_DOI_SOAT], true)) {
                 $_SESSION['success'] = 'Giao dịch đã ở trạng thái ThanhCong.';
                 header('Location: index.php?act=admin/show_payment&id=' . $paymentId);
                 exit;
@@ -137,10 +138,15 @@ class PaymentGatewayController {
             if ($vnpResponseCode === '00' && $vnpTransactionStatus === '00') {
                 $conn->beginTransaction();
 
-                $stmtUp = $conn->prepare("UPDATE payments SET status = 'ThanhCong',
-                                          note = CONCAT(COALESCE(note,''), ' | VNPAY_QUERY_CONFIRM=', ?)
-                                          WHERE payment_id = ?");
+                $stmtUp = $conn->prepare("UPDATE payments SET note = CONCAT(COALESCE(note,''), ' | VNPAY_QUERY_CONFIRM=', ?) WHERE payment_id = ?");
                 $stmtUp->execute([date('Y-m-d H:i:s') . '; transNo=' . $vnpTransactionNo, $paymentId]);
+
+                $transition = Payment::transitionStatus($conn, $paymentId, Payment::STATUS_THANH_CONG, 'vnpay_query_confirm', [
+                    'transaction_no' => $vnpTransactionNo,
+                ]);
+                if (!$transition['ok']) {
+                    throw new RuntimeException((string)$transition['message']);
+                }
 
                 if (!in_array((string)($payment['booking_status'] ?? ''), ['DaCoc', 'HoanTat'], true)) {
                     $conn->prepare("UPDATE booking SET trang_thai = 'DaCoc' WHERE booking_id = ?")->execute([(int)$payment['booking_id']]);
@@ -166,9 +172,13 @@ class PaymentGatewayController {
                 $_SESSION['success'] = 'VNPay xác nhận giao dịch thành công! Payment #' . $paymentId . ' đã được cập nhật.';
             } elseif ($vnpResponseCode === '00') {
                 // Giao dịch tồn tại nhưng đang xử lý hoặc thất bại
-                $newStatus = ($vnpTransactionStatus === '02') ? 'ThatBai' : 'DangXuLy';
-                $conn->prepare("UPDATE payments SET status = ?, note = CONCAT(COALESCE(note,''), ' | VNPAY_QUERY=', ?) WHERE payment_id = ?")
-                    ->execute([$newStatus, 'transStatus=' . $vnpTransactionStatus, $paymentId]);
+                $newStatus = ($vnpTransactionStatus === '02') ? Payment::STATUS_THAT_BAI : Payment::STATUS_DANG_XU_LY;
+                $conn->prepare("UPDATE payments SET note = CONCAT(COALESCE(note,''), ' | VNPAY_QUERY=', ?) WHERE payment_id = ?")
+                    ->execute(['transStatus=' . $vnpTransactionStatus, $paymentId]);
+                Payment::transitionStatus($conn, $paymentId, $newStatus, 'vnpay_query_non_success', [
+                    'response_code' => $vnpResponseCode,
+                    'transaction_status' => $vnpTransactionStatus,
+                ]);
                 $_SESSION['error'] = 'VNPay trả về giao dịch chưa thành công (transStatus=' . $vnpTransactionStatus . '). Trạng thái: ' . $newStatus . '.';
             } else {
                 $_SESSION['error'] = 'VNPay không tìm thấy hoặc từ chối giao dịch (responseCode=' . $vnpResponseCode . '). Vui lòng kiểm tra lại hoặc xác nhận thủ công.';
@@ -190,6 +200,8 @@ class PaymentGatewayController {
      * Phải trả về JSON; không được redirect hay echo HTML.
      */
     public static function vnpayIpn($conn) {
+        require_once __DIR__ . '/../models/Payment.php';
+        require_once __DIR__ . '/../models/PaymentIdempotency.php';
         require_once __DIR__ . '/../models/PaymentLog.php';
         self::ensurePaymentTables($conn);
 
@@ -235,6 +247,23 @@ class PaymentGatewayController {
             exit;
         }
 
+        $idempotencyRawKey = implode('|', [
+            'txn_ref=' . $txnRef,
+            'gateway_ref=' . $gatewayRef,
+            'amount=' . $vnpAmount,
+            'resp=' . $responseCode,
+            'txn_status=' . $transactionStatus,
+        ]);
+        $idempotencyClaim = PaymentIdempotency::claim($conn, 'vnpay_ipn', $idempotencyRawKey, json_encode($params, JSON_UNESCAPED_UNICODE));
+        if (!$idempotencyClaim['owner']) {
+            if ($idempotencyClaim['status'] === PaymentIdempotency::STATUS_COMPLETED) {
+                echo json_encode(['RspCode' => '00', 'Message' => 'Duplicate completed']);
+                exit;
+            }
+            echo json_encode(['RspCode' => '00', 'Message' => 'Duplicate processing']);
+            exit;
+        }
+
         // 3. Lấy payment từ DB
         try {
             $stmt = $conn->prepare("SELECT p.payment_id, p.booking_id, p.amount, p.status, p.payment_method,
@@ -266,12 +295,14 @@ class PaymentGatewayController {
                 'note' => 'expected=' . $expectedAmount . ' received=' . $vnpAmount
             ]);
             @file_put_contents($logFile, date('c') . ' IPN_AMOUNT_MISMATCH expected=' . $expectedAmount . ' received=' . $vnpAmount . PHP_EOL, FILE_APPEND);
+            PaymentIdempotency::markCompleted($conn, 'vnpay_ipn', $idempotencyRawKey, 4, 'Invalid amount');
             echo json_encode(['RspCode' => '04', 'Message' => 'Invalid amount']);
             exit;
         }
 
         // 5. Idempotent: đã xử lý rồi thì báo OK ngay
-        if (($payment['status'] ?? '') === 'ThanhCong') {
+        if (in_array(($payment['status'] ?? ''), [Payment::STATUS_THANH_CONG, Payment::STATUS_DA_DOI_SOAT], true)) {
+            PaymentIdempotency::markCompleted($conn, 'vnpay_ipn', $idempotencyRawKey, 0, 'Already successful');
             echo json_encode(['RspCode' => '00', 'Message' => 'Confirm Success']);
             exit;
         }
@@ -282,11 +313,26 @@ class PaymentGatewayController {
         try {
             $conn->beginTransaction();
 
-            $newStatus = $isSuccess ? 'ThanhCong' : 'ThatBai';
-            $conn->prepare("UPDATE payments SET status = ?,
-                            note = CONCAT(COALESCE(note,''), ' | IPN=', ?, ' transStatus=', ?)
+            $lockedPayment = Payment::findForUpdate($conn, $paymentId);
+            if (!$lockedPayment) {
+                throw new RuntimeException('Payment not found while locking');
+            }
+
+            self::lockBookingRow($conn, (int)$lockedPayment['booking_id']);
+
+            $newStatus = $isSuccess ? Payment::STATUS_THANH_CONG : Payment::STATUS_THAT_BAI;
+            $conn->prepare("UPDATE payments SET note = CONCAT(COALESCE(note,''), ' | IPN=', ?, ' transStatus=', ?)
                             WHERE payment_id = ?")
-                ->execute([$newStatus, $gatewayRef, $transactionStatus, $paymentId]);
+                ->execute([$gatewayRef, $transactionStatus, $paymentId]);
+
+            $transition = Payment::transitionStatus($conn, $paymentId, $newStatus, 'vnpay_ipn', [
+                'response_code' => $responseCode,
+                'transaction_status' => $transactionStatus,
+                'gateway_ref' => $gatewayRef,
+            ]);
+            if (!$transition['ok']) {
+                throw new RuntimeException((string)$transition['message']);
+            }
 
             PaymentLog::create($conn, [
                 'payment_id' => $paymentId,
@@ -320,11 +366,13 @@ class PaymentGatewayController {
             }
 
             $conn->commit();
+            PaymentIdempotency::markCompleted($conn, 'vnpay_ipn', $idempotencyRawKey, 0, 'Processed');
             @file_put_contents($logFile, date('c') . ' IPN_PROCESSED paymentId=' . $paymentId . ' status=' . $newStatus . PHP_EOL, FILE_APPEND);
         } catch (Throwable $e) {
             if ($conn->inTransaction()) {
                 $conn->rollBack();
             }
+            PaymentIdempotency::markFailed($conn, 'vnpay_ipn', $idempotencyRawKey, 99, $e->getMessage());
             @file_put_contents($logFile, date('c') . ' IPN_COMMIT_ERROR ' . $e->getMessage() . PHP_EOL, FILE_APPEND);
             echo json_encode(['RspCode' => '99', 'Message' => 'System error']);
             exit;
@@ -341,6 +389,7 @@ class PaymentGatewayController {
     }
 
     public static function redirect($conn, $booking_id, $method) {
+        require_once __DIR__ . '/../models/Payment.php';
         self::ensurePaymentTables($conn);
 
         $bookingId = (int)$booking_id;
@@ -390,13 +439,18 @@ class PaymentGatewayController {
             exit;
         }
 
-        $paymentId = self::createPayment($conn, [
-            'booking_id' => $bookingId,
-            'amount' => $amount,
-            'payment_method' => $dbMethod,
-            'status' => 'DangXuLy',
-            'note' => 'Khoi tao thanh toan online | gateway=' . $method
-        ]);
+        $paymentId = self::findReusableInFlightPaymentId($conn, $bookingId, $dbMethod);
+        if ($paymentId > 0) {
+            self::createPaymentLog($conn, $paymentId, 'REUSE_INFLIGHT', 'Tai su dung payment dang xu ly do request gui lai');
+        } else {
+            $paymentId = self::createPayment($conn, [
+                'booking_id' => $bookingId,
+                'amount' => $amount,
+                'payment_method' => $dbMethod,
+                'status' => Payment::STATUS_TAO_MOI,
+                'note' => 'Khoi tao thanh toan online | gateway=' . $method
+            ]);
+        }
 
         if (!$paymentId) {
             $_SESSION['error'] = 'Không thể khởi tạo giao dịch thanh toán.';
@@ -408,14 +462,39 @@ class PaymentGatewayController {
             exit;
         }
 
-        self::createPaymentLog($conn, $paymentId, 'CREATE', 'Khoi tao giao dich online');
+        if ((int)self::countPaymentLogs($conn, $paymentId, 'CREATE') === 0) {
+            self::createPaymentLog($conn, $paymentId, 'CREATE', 'Khoi tao giao dich online');
+
+            $toProcessing = Payment::transitionStatus($conn, $paymentId, Payment::STATUS_DANG_XU_LY, 'redirect_gateway_start', [
+                'gateway_method' => $method,
+                'payment_mode' => PAYMENT_MODE,
+            ]);
+            if (!$toProcessing['ok']) {
+                $_SESSION['error'] = 'Khong the chuyen trang thai thanh toan sang DangXuLy.';
+                header('Location: index.php?act=' . $returnAct . '&booking_id=' . $bookingId);
+                exit;
+            }
+        } else {
+            $currentStatus = self::getPaymentStatus($conn, $paymentId);
+            if ($currentStatus === Payment::STATUS_TAO_MOI) {
+                $toProcessing = Payment::transitionStatus($conn, $paymentId, Payment::STATUS_DANG_XU_LY, 'redirect_gateway_retry_activate', [
+                    'gateway_method' => $method,
+                    'payment_mode' => PAYMENT_MODE,
+                ]);
+                if (!$toProcessing['ok']) {
+                    $_SESSION['error'] = 'Khong the chuyen trang thai thanh toan sang DangXuLy.';
+                    header('Location: index.php?act=' . $returnAct . '&booking_id=' . $bookingId);
+                    exit;
+                }
+            }
+        }
 
         $txnRef = self::buildTxnRef($bookingId, $paymentId);
         self::updatePaymentNote($conn, $paymentId, 'TXN_REF=' . $txnRef);
 
         if (PAYMENT_MODE === 'vnpay') {
             if (!self::isVnpayConfigured()) {
-                self::updatePaymentStatus($conn, $paymentId, 'ThatBai', 'Thieu cau hinh VNPay (TMN/HASH_SECRET)', '');
+                self::updatePaymentStatus($conn, $paymentId, Payment::STATUS_THAT_BAI, 'Thieu cau hinh VNPay (TMN/HASH_SECRET)', '');
                 self::createPaymentLog($conn, $paymentId, 'CONFIG_ERROR', 'VNPay mode dang bat nhung thieu VNPAY_TMN_CODE hoac VNPAY_HASH_SECRET');
                 $_SESSION['error'] = 'He thong chua cau hinh day du VNPay. Vui long lien he admin.';
                 $redirectUrl = 'index.php?act=' . $returnAct . '&booking_id=' . $bookingId;
@@ -476,6 +555,8 @@ class PaymentGatewayController {
     }
 
     public static function callback($conn, $booking_id, $method, $status) {
+        require_once __DIR__ . '/../models/Payment.php';
+        require_once __DIR__ . '/../models/PaymentIdempotency.php';
         self::ensurePaymentTables($conn);
 
         $returnAct = $_GET['return_act'] ?? 'admin/chiTietBooking';
@@ -517,8 +598,27 @@ class PaymentGatewayController {
             exit;
         }
 
+        $idempotencyRawKey = implode('|', [
+            'booking=' . $bookingId,
+            'payment=' . $paymentId,
+            'gateway_ref=' . (string)$gatewayRef,
+            'success=' . ($success ? '1' : '0'),
+            'status=' . $statusMessage,
+        ]);
+        $idempotencyClaim = PaymentIdempotency::claim($conn, 'gateway_callback', $idempotencyRawKey, json_encode($_GET, JSON_UNESCAPED_UNICODE));
+        if (!$idempotencyClaim['owner']) {
+            if ($idempotencyClaim['status'] === PaymentIdempotency::STATUS_COMPLETED) {
+                $_SESSION['success'] = 'Da bo qua callback trung lap.';
+            } else {
+                $_SESSION['error'] = 'Callback dang duoc xu ly, vui long thu lai sau.';
+            }
+            header('Location: index.php?act=khachHang/hoaDon&booking_id=' . $bookingId);
+            exit;
+        }
+
         $booking = self::findBooking($conn, $bookingId);
         if (!$booking) {
+            PaymentIdempotency::markFailed($conn, 'gateway_callback', $idempotencyRawKey, 404, 'Booking not found');
             $_SESSION['error'] = 'Booking khong ton tai khi callback.';
             header('Location: index.php?act=khachHang/dashboard');
             exit;
@@ -535,8 +635,11 @@ class PaymentGatewayController {
         try {
             $conn->beginTransaction();
 
+            self::lockBookingRow($conn, $bookingId);
+
             if ($paymentId > 0) {
-                $paymentStatus = $success ? 'ThanhCong' : 'ThatBai';
+                $paymentStatus = $success ? Payment::STATUS_THANH_CONG : Payment::STATUS_THAT_BAI;
+                Payment::findForUpdate($conn, $paymentId);
                 self::updatePaymentStatus($conn, $paymentId, $paymentStatus, $statusMessage, $gatewayRef);
                 self::createPaymentLog($conn, $paymentId, 'CALLBACK', $statusMessage . ($gatewayRef !== '' ? ' | gateway_ref=' . $gatewayRef : ''));
             }
@@ -567,10 +670,12 @@ class PaymentGatewayController {
             }
 
             $conn->commit();
+            PaymentIdempotency::markCompleted($conn, 'gateway_callback', $idempotencyRawKey, 0, 'Processed');
         } catch (Throwable $e) {
             if ($conn->inTransaction()) {
                 $conn->rollBack();
             }
+            PaymentIdempotency::markFailed($conn, 'gateway_callback', $idempotencyRawKey, 500, $e->getMessage());
             $_SESSION['error'] = 'Loi callback thanh toan: ' . $e->getMessage();
             header('Location: index.php?act=khachHang/hoaDon&booking_id=' . $bookingId);
             exit;
@@ -676,11 +781,13 @@ class PaymentGatewayController {
             amount DECIMAL(15,2) NOT NULL,
             payment_method ENUM('ChuyenKhoan','TienMat','TheTinDung','ViDienTu','VNPay','Momo','Paypal') NOT NULL DEFAULT 'VNPay',
             payment_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            status ENUM('ThanhCong','ThatBai','DangXuLy') DEFAULT 'DangXuLy',
+            status ENUM('TaoMoi','DangXuLy','ThanhCong','ThatBai','HetHan','DaDoiSoat') DEFAULT 'DangXuLy',
             note TEXT DEFAULT NULL,
             PRIMARY KEY (payment_id),
             KEY booking_id (booking_id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+        Payment::ensureStateMachineSchema($conn);
 
         $conn->exec("CREATE TABLE IF NOT EXISTS payment_logs (
             log_id INT(11) NOT NULL AUTO_INCREMENT,
@@ -691,6 +798,14 @@ class PaymentGatewayController {
             PRIMARY KEY (log_id),
             KEY payment_id (payment_id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+        require_once __DIR__ . '/../models/PaymentIdempotency.php';
+        PaymentIdempotency::ensureTable($conn);
+    }
+
+    private static function lockBookingRow($conn, $bookingId) {
+        $stmt = $conn->prepare('SELECT booking_id FROM booking WHERE booking_id = ? FOR UPDATE');
+        $stmt->execute([(int)$bookingId]);
     }
 
     private static function createPayment($conn, $data) {
@@ -723,12 +838,21 @@ class PaymentGatewayController {
     }
 
     private static function updatePaymentStatus($conn, $paymentId, $status, $note, $gatewayRef) {
+        require_once __DIR__ . '/../models/Payment.php';
         $fullNote = $note;
         if ($gatewayRef !== '') {
             $fullNote .= ' | gateway_ref=' . $gatewayRef;
         }
-        $stmt = $conn->prepare('UPDATE payments SET status = ?, note = ? WHERE payment_id = ?');
-        $stmt->execute([(string)$status, $fullNote, (int)$paymentId]);
+        $stmt = $conn->prepare('UPDATE payments SET note = ? WHERE payment_id = ?');
+        $stmt->execute([$fullNote, (int)$paymentId]);
+
+        $transition = Payment::transitionStatus($conn, (int)$paymentId, (string)$status, 'gateway_update_status', [
+            'gateway_ref' => (string)$gatewayRef,
+            'note' => (string)$note,
+        ]);
+        if (!$transition['ok']) {
+            throw new RuntimeException((string)$transition['message']);
+        }
     }
 
     private static function findLatestPendingPaymentId($conn, $bookingId, $method) {
@@ -736,6 +860,26 @@ class PaymentGatewayController {
         $stmt->execute([(int)$bookingId, (string)$method]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         return (int)($row['payment_id'] ?? 0);
+    }
+
+    private static function findReusableInFlightPaymentId($conn, $bookingId, $method) {
+        $stmt = $conn->prepare('SELECT payment_id FROM payments WHERE booking_id = ? AND payment_method = ? AND status IN (?, ?) ORDER BY payment_id DESC LIMIT 1');
+        $stmt->execute([(int)$bookingId, (string)$method, Payment::STATUS_TAO_MOI, Payment::STATUS_DANG_XU_LY]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return (int)($row['payment_id'] ?? 0);
+    }
+
+    private static function countPaymentLogs($conn, $paymentId, $action) {
+        $stmt = $conn->prepare('SELECT COUNT(*) AS c FROM payment_logs WHERE payment_id = ? AND action = ?');
+        $stmt->execute([(int)$paymentId, (string)$action]);
+        return (int)$stmt->fetchColumn();
+    }
+
+    private static function getPaymentStatus($conn, $paymentId) {
+        $stmt = $conn->prepare('SELECT status FROM payments WHERE payment_id = ? LIMIT 1');
+        $stmt->execute([(int)$paymentId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return (string)($row['status'] ?? '');
     }
 
     private static function existsPaymentFinanceTransaction($conn, $bookingId) {

@@ -64,7 +64,8 @@ class NguoiDung
         
         // Tạo mới nếu chưa có
         $tenDangNhap = !empty($email) ? $email : (!empty($soDienThoai) ? 'user_' . $soDienThoai : 'user_' . time());
-        $matKhau = password_hash('123456', PASSWORD_DEFAULT); // Mật khẩu mặc định
+        $matKhauTam = generateTemporaryPassword();
+        $matKhau = password_hash($matKhauTam, PASSWORD_DEFAULT);
         
         $nguoiDungId = $this->insert([
             'ten_dang_nhap' => $tenDangNhap,

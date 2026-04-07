@@ -582,7 +582,7 @@ ob_start();
 
     <!-- Right Column - Forms -->
     <div>
-        <?php if (isset($_SESSION['role']) && ($_SESSION['role'] === 'Admin' || $_SESSION['role'] === 'HDV')): ?>
+        <?php if (hasRole(['Admin', 'HDV'])): ?>
             <!-- Cập nhật thông tin Booking -->
             <div class="form-card">
                 <div class="form-card-header">

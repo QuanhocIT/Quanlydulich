@@ -118,9 +118,14 @@ ob_start();
                         <td><?= $hd['trang_thai'] ?></td>
                         <td><?= $hd['ngay_gui'] ?></td>
                         <td>
-                            <a href="index.php?act=admin/duyetHoaDon&id=<?= $hd['id'] ?>" class="btn btn-success btn-sm">Duyệt</a>
+                            <form method="POST" action="index.php?act=admin/duyetHoaDon" style="display:inline">
+                                <input type="hidden" name="id" value="<?= $hd['id'] ?>">
+                                <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars(csrfToken('cong_no_hdv_form'), ENT_QUOTES, 'UTF-8') ?>">
+                                <button type="submit" class="btn btn-success btn-sm">Duyệt</button>
+                            </form>
                             <form method="POST" action="index.php?act=admin/tuChoiHoaDon" style="display:inline">
                                 <input type="hidden" name="id" value="<?= $hd['id'] ?>">
+                                <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars(csrfToken('cong_no_hdv_form'), ENT_QUOTES, 'UTF-8') ?>">
                                 <input type="text" name="ly_do" placeholder="Lý do từ chối" class="form-control mb-1" required style="width: 150px; display: inline-block;">
                                 <button type="submit" class="btn btn-danger btn-sm">Từ chối</button>
                             </form>

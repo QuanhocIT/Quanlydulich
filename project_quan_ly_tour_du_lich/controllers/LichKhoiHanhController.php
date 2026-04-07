@@ -705,8 +705,7 @@ if (!empty($lichKhoiHanh['tour_id'])) {
             }
             
             // Redirect về trang phù hợp với vai trò
-            $role = $_SESSION['role'] ?? '';
-            if ($role === 'HDV') {
+            if (hasRole('HDV')) {
                 // HDV quay về trang lịch làm việc của mình
                 header('Location: index.php?act=hdv/lichLamViec');
             } else {

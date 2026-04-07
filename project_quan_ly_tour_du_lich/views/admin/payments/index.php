@@ -23,6 +23,27 @@ ob_start();
             gap: 8px;
             flex-wrap: wrap;
         }
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(6, minmax(120px, 1fr));
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        .summary-card {
+            background: rgba(255,255,255,.03);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 10px;
+        }
+        .summary-card .label {
+            color: var(--text-muted);
+            font-size: 12px;
+            margin-bottom: 4px;
+        }
+        .summary-card .value {
+            font-size: 20px;
+            font-weight: 700;
+        }
         .aventura-badge {
             display: inline-flex;
             align-items: center;
@@ -44,6 +65,12 @@ ob_start();
             color: #842029;
             background: #f8d7da;
         }
+        @media (max-width: 1100px) {
+            .summary-grid { grid-template-columns: repeat(3, minmax(120px, 1fr)); }
+        }
+        @media (max-width: 680px) {
+            .summary-grid { grid-template-columns: repeat(2, minmax(110px, 1fr)); }
+        }
     </style>
 
     <div class="aventura-header">
@@ -55,6 +82,15 @@ ob_start();
         <div class="payments-actions">
             <a href="index.php?act=admin/paymentReconcile" class="aventura-btn aventura-btn-gold"><i class="bi bi-clipboard-check"></i> Đối soát thanh toán</a>
         </div>
+    </div>
+
+    <div class="summary-grid">
+        <div class="summary-card"><div class="label">TaoMoi</div><div class="value"><?php echo (int)($statusSummary['TaoMoi'] ?? 0); ?></div></div>
+        <div class="summary-card"><div class="label">DangXuLy</div><div class="value"><?php echo (int)($statusSummary['DangXuLy'] ?? 0); ?></div></div>
+        <div class="summary-card"><div class="label">ThanhCong</div><div class="value"><?php echo (int)($statusSummary['ThanhCong'] ?? 0); ?></div></div>
+        <div class="summary-card"><div class="label">ThatBai</div><div class="value"><?php echo (int)($statusSummary['ThatBai'] ?? 0); ?></div></div>
+        <div class="summary-card"><div class="label">HetHan</div><div class="value"><?php echo (int)($statusSummary['HetHan'] ?? 0); ?></div></div>
+        <div class="summary-card"><div class="label">DaDoiSoat</div><div class="value"><?php echo (int)($statusSummary['DaDoiSoat'] ?? 0); ?></div></div>
     </div>
 
     <div class="aventura-table-wrapper">
@@ -87,14 +123,26 @@ ob_start();
                             $badgeClass = 'badge-warning';
                             $badgeText = 'Đang xử lý';
                             $badgeIcon = 'bi-hourglass-split';
-                            if ($status === 'ThanhCong') {
+                            if ($status === 'TaoMoi') {
+                                $badgeClass = 'badge-warning';
+                                $badgeText = 'Tạo mới';
+                                $badgeIcon = 'bi-plus-circle';
+                            } elseif ($status === 'ThanhCong') {
                                 $badgeClass = 'badge-success';
                                 $badgeText = 'Thành công';
                                 $badgeIcon = 'bi-check-circle';
+                            } elseif ($status === 'DaDoiSoat') {
+                                $badgeClass = 'badge-success';
+                                $badgeText = 'Đã đối soát';
+                                $badgeIcon = 'bi-patch-check';
                             } elseif ($status === 'ThatBai') {
                                 $badgeClass = 'badge-danger';
                                 $badgeText = 'Thất bại';
                                 $badgeIcon = 'bi-x-circle';
+                            } elseif ($status === 'HetHan') {
+                                $badgeClass = 'badge-danger';
+                                $badgeText = 'Hết hạn';
+                                $badgeIcon = 'bi-clock-history';
                             }
                         ?>
                         <tr>

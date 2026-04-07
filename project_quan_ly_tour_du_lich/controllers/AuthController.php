@@ -44,27 +44,44 @@ class AuthController {
                 $stored = $user['mat_khau'] ?? '';
                 $authenticated = false;
 
-                // Nếu mật khẩu đã hash (bcrypt,...), dùng password_verify
-                if (!empty($stored) && password_verify($password, $stored)) {
+                // Plaintext fallback is removed; only secure password hashes are accepted.
+                if (!isSecurePasswordHash($stored)) {
+                    recordFailedLoginAttempt($username, 'legacy_insecure_password_hash');
+                    setValidationErrors(['credentials' => 'legacy_insecure_password_hash'], 'Tai khoan can dat lai mat khau truoc khi dang nhap.');
+                    $error = 'Tai khoan can dat lai mat khau. Vui long lien he quan tri vien hoac su dung quy trinh cap lai mat khau.';
+                    require 'views/auth/login.php';
+                    return;
+                }
+
+                if (password_verify($password, $stored)) {
                     $authenticated = true;
-                } elseif ($stored === $password) {
-                    // Trường hợp dữ liệu mẫu cũ lưu mật khẩu plaintext
-                    $authenticated = true;
-                    // Cập nhật lại thành hash an toàn
-                    $newHash = password_hash($password, PASSWORD_DEFAULT);
-                    $this->model->updatePassword($user['id'], $newHash);
+                    if (password_needs_rehash($stored, PASSWORD_DEFAULT)) {
+                        $newHash = password_hash($password, PASSWORD_DEFAULT);
+                        $this->model->updatePassword($user['id'], $newHash);
+                        $stored = $newHash;
+                    }
                 }
 
                 if ($authenticated) {
-                    $_SESSION['user_id'] = $user['id'];
-                    $_SESSION['role'] = $user['vai_tro'];
-                    $_SESSION['user_name'] = $user['ho_ten'];
+                    $sessionData = [];
 
                     if ($user['vai_tro'] === 'KhachHang') {
                         $khachHang = $this->khachHangModel->findByNguoiDungId($user['id']);
                         if ($khachHang) {
-                            $_SESSION['khach_hang_id'] = $khachHang['khach_hang_id'];
+                            $sessionData['khach_hang_id'] = $khachHang['khach_hang_id'];
                         }
+                    }
+
+                    if (requiresPasswordChange($stored)) {
+                        $sessionData['force_password_change'] = 1;
+                    }
+
+                    completeUserLoginSession($user['id'], $user['vai_tro'], $user['ho_ten'], $sessionData);
+
+                    if (!empty($_SESSION['force_password_change'])) {
+                        $_SESSION['error'] = 'Tai khoan dang dung mat khau mac dinh. Vui long doi mat khau de tiep tuc.';
+                        header('Location: index.php?act=auth/forcePasswordChange');
+                        exit();
                     }
 
                     // Redirect theo vai trò
@@ -88,6 +105,7 @@ class AuthController {
                 }
             }
 
+            recordFailedLoginAttempt($username, 'invalid_credentials');
             $error = "Tên đăng nhập/Email hoặc mật khẩu không đúng";
             setValidationErrors(['credentials' => 'invalid'], 'Ten dang nhap/Email hoac mat khau khong dung.');
             require 'views/auth/login.php';
@@ -105,7 +123,21 @@ class AuthController {
                 return;
             }
 
-            $email = validateEmail($_POST['email'] ?? '');
+            $schema = validateInputSchema([
+                'email' => ['type' => 'email', 'required' => true],
+                'so_dien_thoai' => ['type' => 'phone', 'required' => false],
+                'ho_ten' => ['type' => 'string', 'required' => true, 'max' => 120],
+                'password' => ['type' => 'string', 'required' => true, 'min' => 8],
+            ], 'POST');
+
+            if (!$schema['ok']) {
+                setValidationErrors($schema['errors'], 'Thong tin dang ky khong hop le.');
+                $error = "Thông tin đăng ký không hợp lệ.";
+                require 'views/auth/register.php';
+                return;
+            }
+
+            $email = $schema['data']['email'];
             if ($email === null) {
                 setValidationErrors(['email' => 'invalid'], 'Email khong hop le.');
                 $error = "Email không hợp lệ.";
@@ -113,7 +145,7 @@ class AuthController {
                 return;
             }
 
-            $soDienThoai = validatePhone($_POST['so_dien_thoai'] ?? '');
+            $soDienThoai = $schema['data']['so_dien_thoai'];
             if (!empty($_POST['so_dien_thoai']) && $soDienThoai === null) {
                 setValidationErrors(['so_dien_thoai' => 'invalid'], 'So dien thoai khong hop le.');
                 $error = "Số điện thoại không hợp lệ.";
@@ -121,14 +153,12 @@ class AuthController {
                 return;
             }
 
-            $hoTen = requestString('ho_ten', '', 'POST');
-            $password = (string)($_POST['password'] ?? '');
-            if ($hoTen === '' || mb_strlen($hoTen) > 120 || strlen($password) < 6) {
-                setValidationErrors([
-                    'ho_ten' => $hoTen === '' || mb_strlen($hoTen) > 120 ? 'invalid' : null,
-                    'password' => strlen($password) < 6 ? 'min:6' : null,
-                ], 'Thong tin dang ky khong hop le.');
-                $error = "Thông tin đăng ký không hợp lệ.";
+            $hoTen = (string)$schema['data']['ho_ten'];
+            $password = (string)$schema['data']['password'];
+            $passwordPolicy = validatePasswordPolicy($password);
+            if (!$passwordPolicy['ok']) {
+                setValidationErrors(['password' => implode(',', $passwordPolicy['errors'])], 'Mat khau chua dat chinh sach an toan.');
+                $error = "Mật khẩu phải có ít nhất 8 ký tự gồm chữ hoa, chữ thường, số và ký tự đặc biệt.";
                 require 'views/auth/register.php';
                 return;
             }
@@ -163,12 +193,12 @@ class AuthController {
             $userId = $this->model->insert($data);
 
             if ($userId) {
-                $_SESSION['user_id'] = $userId;
-                $_SESSION['role'] = 'KhachHang';
                 $khachHangId = $this->khachHangModel->insert([
                     'nguoi_dung_id' => $userId
                 ]);
-                $_SESSION['khach_hang_id'] = $khachHangId;
+                completeUserLoginSession($userId, 'KhachHang', $hoTen, [
+                    'khach_hang_id' => $khachHangId,
+                ]);
                 header('Location: index.php?act=tour/index');
                 exit();
             } else {
@@ -182,9 +212,71 @@ class AuthController {
     }
     
     public function logout() {
-        session_destroy();
+        logoutCurrentUser('logout');
         header('Location: index.php?act=auth/login');
         exit();
+    }
+
+    public function forcePasswordChange() {
+        requireLogin();
+
+        if (empty($_SESSION['force_password_change'])) {
+            redirectToRoleHome('tour/index');
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            if (!verifyCsrfToken($_POST['_csrf_token'] ?? '', 'auth_force_password_change')) {
+                setValidationErrors(['_csrf_token' => 'invalid'], 'Phien lam viec khong hop le. Vui long thu lai.');
+                $error = 'Phiên làm việc không hợp lệ. Vui lòng thử lại.';
+                require 'views/auth/force_change_password.php';
+                return;
+            }
+
+            $currentPassword = (string)($_POST['current_password'] ?? '');
+            $newPassword = (string)($_POST['new_password'] ?? '');
+            $confirmPassword = (string)($_POST['confirm_password'] ?? '');
+
+            if ($currentPassword === '' || $newPassword === '' || $confirmPassword === '') {
+                $error = 'Vui long nhap day du thong tin mat khau.';
+                require 'views/auth/force_change_password.php';
+                return;
+            }
+
+            if ($newPassword !== $confirmPassword) {
+                $error = 'Mat khau moi va xac nhan khong khop.';
+                require 'views/auth/force_change_password.php';
+                return;
+            }
+
+            $policy = validatePasswordPolicy($newPassword);
+            if (!$policy['ok']) {
+                $error = 'Mat khau moi phai co it nhat 8 ky tu, gom chu hoa, chu thuong, so va ky tu dac biet.';
+                require 'views/auth/force_change_password.php';
+                return;
+            }
+
+            $user = $this->model->findById((int)($_SESSION['user_id'] ?? 0));
+            if (!$user || !password_verify($currentPassword, (string)($user['mat_khau'] ?? ''))) {
+                $error = 'Mat khau hien tai khong dung.';
+                require 'views/auth/force_change_password.php';
+                return;
+            }
+
+            if (password_verify($newPassword, (string)$user['mat_khau'])) {
+                $error = 'Mat khau moi phai khac mat khau hien tai.';
+                require 'views/auth/force_change_password.php';
+                return;
+            }
+
+            $this->model->updatePassword((int)$user['id'], password_hash($newPassword, PASSWORD_DEFAULT));
+            unset($_SESSION['force_password_change']);
+            $_SESSION['success'] = 'Da doi mat khau thanh cong.';
+            logSecurityEvent('password_changed_after_forced_policy', ['user_id' => (int)$user['id']]);
+
+            redirectToRoleHome('tour/index');
+        }
+
+        require 'views/auth/force_change_password.php';
     }
     
 

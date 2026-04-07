@@ -3,6 +3,8 @@ $paymentNotificationCount = 0;
 $reviewNotificationCount = 0;
 $dashboardNotificationCount = 0;
 $soundNotificationEnabled = true;
+$currentRole = currentUserRole();
+$isAdminRole = hasRole('Admin');
 
 
 ?>
@@ -15,7 +17,7 @@ $soundNotificationEnabled = true;
     <title><?php echo isset($pageTitle) ? $pageTitle . ' - ' : ''; ?>AVENTURA - Life's A Journey</title>
     <link rel="stylesheet" href="<?php echo BASE_URL; ?>public/css/aventura.css?v=<?php echo rawurlencode(ASSET_VERSION); ?>">
     <link rel="icon" href="<?php echo BASE_URL; ?>public/images/momo.png" type="image/png">
-    <link rel="stylesheet" href="<?php echo BASE_URL; ?>public/vendor/bootstrap-icons/bootstrap-icons.css?v=<?php echo rawurlencode(ASSET_VERSION); ?>">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <?php if (isset($additionalCSS)): ?>
         <?php foreach ($additionalCSS as $css): ?>
             <link rel="stylesheet" href="<?php echo $css; ?>">
@@ -32,7 +34,7 @@ $soundNotificationEnabled = true;
                 <button type="button" class="sidebar-toggle" id="sidebarToggle" title="Thu gọn/mở rộng sidebar" aria-label="Thu gọn/mở rộng sidebar"><i class="bi bi-chevron-left"></i></button>
                 <button type="button" class="sidebar-theme" id="sidebarTheme" title="Chuyển chế độ sáng/tối" aria-label="Chuyển chế độ sáng/tối"><i class="bi bi-moon-stars"></i></button>
             </div>
-            <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'Admin'): ?>
+            <?php if ($isAdminRole): ?>
                 <div id="realtimeStatus" class="realtime-status is-connecting" title="Trạng thái kết nối thông báo realtime">
                     <span id="realtimeStatusDot" class="realtime-status-dot"></span>
                     <span id="realtimeStatusText">Đang kết nối realtime...</span>
@@ -40,8 +42,8 @@ $soundNotificationEnabled = true;
             <?php endif; ?>
             <ul class="nav">
                 <li class="nav-group-label">NAVIGATION</li>
-                <?php if (isset($_SESSION['role'])): ?>
-                    <?php if ($_SESSION['role'] === 'Admin'): ?>
+                <?php if ($currentRole !== null): ?>
+                    <?php if ($isAdminRole): ?>
                         <li>
                             <a href="index.php?act=admin/dashboard" class="<?php echo (isset($currentPage) && $currentPage === 'dashboard') ? 'active' : ''; ?>" title="Trang chủ">
                                 <span class="nav-icon-bg"><i class="bi bi-house-door"></i></span> <span class="nav-text">Dashboard</span>
@@ -65,6 +67,7 @@ $soundNotificationEnabled = true;
                             <a href="#" class="nav-toggle <?php echo (isset($currentPage) && $currentPage === 'booking') ? 'active' : ''; ?>" title="Quản lý Booking"><span class="nav-icon-bg"><i class="bi bi-journal-bookmark"></i></span> <span class="nav-text">Quản lý Booking</span> <span class="expand-icon">&#9662;</span></a>
                             <div class="nav-child-menu" hidden>
                                 <a href="index.php?act=admin/quanLyBooking" title="Danh sách booking"><span class="nav-child-bar"></span>- Danh sách booking</a>
+                                <a href="index.php?act=admin/bookingDaHoanThanh" title="Booking đã hoàn thành"><span class="nav-child-bar"></span>- Booking đã hoàn thành</a>
                                 <a href="index.php?act=admin/quanLyYeuCauTour" title="Yêu cầu đặt tour"><span class="nav-child-bar"></span>- Yêu cầu đặt tour</a>
                                 <a href="index.php?act=booking/datTourChoKhach" title="Đặt tour cho khách"><span class="nav-child-bar"></span>- Đặt tour cho khách</a>
                                 <a href="index.php?act=admin/lichSuXoaBooking" title="Lịch sử xóa booking"><span class="nav-child-bar"></span>- Lịch sử xóa booking</a>
@@ -90,13 +93,13 @@ $soundNotificationEnabled = true;
                         </li>
                         <li><a href="index.php?act=admin/danhGia" class="<?php echo (isset($currentPage) && ($currentPage === 'danhGia' || $currentPage === 'danh_gia')) ? 'active' : ''; ?>" title="Đánh giá & Phản hồi"><span class="nav-icon-bg"><i class="bi bi-chat-dots"></i></span> <span class="nav-text">Đánh giá & Phản hồi</span><span id="reviewNavBadge" class="nav-badge" title="Có <?php echo $reviewNotificationCount; ?> đánh giá mới"<?php if ($reviewNotificationCount <= 0): ?> style="display:none"<?php endif; ?>><?php echo $reviewNotificationCount; ?></span></a></li>
                         <li><a href="index.php?act=admin/notificationSettings" class="<?php echo (isset($currentPage) && $currentPage === 'notificationSettings') ? 'active' : ''; ?>" title="Cài đặt thông báo"><span class="nav-icon-bg"><i class="bi bi-bell"></i></span> <span class="nav-text">Cài đặt thông báo</span></a></li>
-                    <?php elseif ($_SESSION['role'] === 'HDV'): ?>
+                    <?php elseif ($currentRole === 'HDV'): ?>
                         <li><a href="index.php?act=hdv/dashboard" class="<?php echo (isset($currentPage) && $currentPage === 'dashboard') ? 'active' : ''; ?>">Trang chủ</a></li>
                         <li><a href="index.php?act=hdv/lichLamViec" class="<?php echo (isset($currentPage) && $currentPage === 'lichLamViec') ? 'active' : ''; ?>">Lịch làm việc</a></li>
                         <li><a href="index.php?act=hdv/tours" class="<?php echo (isset($currentPage) && $currentPage === 'tours') ? 'active' : ''; ?>">Tour của tôi</a></li>
                         <li><a href="index.php?act=hdv/nhatKy" class="<?php echo (isset($currentPage) && $currentPage === 'nhatKy') ? 'active' : ''; ?>">Nhật ký tour</a></li>
                         <li><a href="index.php?act=hdv/yeuCauDacBiet" class="<?php echo (isset($currentPage) && $currentPage === 'yeuCauDacBiet') ? 'active' : ''; ?>">Yêu cầu đặc biệt</a></li>
-                    <?php elseif ($_SESSION['role'] === 'KhachHang'): ?>
+                    <?php elseif ($currentRole === 'KhachHang'): ?>
                         <li><a href="index.php?act=khachHang/dashboard" class="<?php echo (isset($currentPage) && $currentPage === 'dashboard') ? 'active' : ''; ?>">Trang chủ</a></li>
                         <li><a href="index.php?act=khachHang/danhSachTour" class="<?php echo (isset($currentPage) && $currentPage === 'tours') ? 'active' : ''; ?>">Danh sách tour</a></li>
                         <li><a href="index.php?act=khachHang/traCuu" class="<?php echo (isset($currentPage) && $currentPage === 'traCuu') ? 'active' : ''; ?>">Tra cứu booking</a></li>
@@ -184,7 +187,7 @@ $soundNotificationEnabled = true;
             });
         }
 
-        const isAdminUser = <?php echo (isset($_SESSION['role']) && $_SESSION['role'] === 'Admin') ? 'true' : 'false'; ?>;
+        const isAdminUser = <?php echo $isAdminRole ? 'true' : 'false'; ?>;
         const soundEnabledOnServer = <?php echo $soundNotificationEnabled ? 'true' : 'false'; ?>;
         const STORAGE_KEYS = {
             sidebarCollapsed: 'aventura_sidebar_collapsed',

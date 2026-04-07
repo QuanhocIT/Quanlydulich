@@ -1,14 +1,8 @@
 <?php 
 
-$sessionDir = __DIR__ . '/storage/sessions';
-if (!is_dir($sessionDir)) {
-    @mkdir($sessionDir, 0777, true);
-}
-if (is_dir($sessionDir) && is_writable($sessionDir)) {
-    session_save_path($sessionDir);
-}
-
-session_start();
+require_once __DIR__ . '/commons/SessionSecurity.php';
+SessionSecurity::initialize(__DIR__ . '/storage/sessions');
+SessionSecurity::start();
 
 // Require toàn bộ các file khai báo môi trường, thực thi,...(không require view)
 
@@ -58,22 +52,62 @@ if (APP_ENV === 'production') {
 // Route
 $conn = getPDOConnection();
 
+RequestValidator::sanitizeSuperglobals();
+
 $_GET = whitelistRequestParams($_GET, [
     'act',
     'id',
+    'code',
+    'error',
     'nhan_su_id',
     'tour_id',
+    'tourId',
     'booking_id',
+    'lich_khoi_hanh_id',
+    'lich_id',
+    'entry_id',
+    'du_toan_id',
+    'group_id',
+    'ncc_id',
+    'hdv_id',
+    'phan_bo_id',
     'month',
     'year',
+    'page',
     'all',
+    'search',
+    'q',
+    'keyword',
     'method',
+    'type',
+    'action',
     'status',
+    'role',
+    'trang_thai_luong',
+    'loai_tour',
+    'loai_nhat_ky',
+    'co_yeu_cau_tour',
+    'loai',
+    'muc_do_uu_tien',
+    'loai_yeu_cau',
+    'format',
+    'from',
+    'to',
+    'start',
+    'end',
+    'date_from',
+    'date_to',
+    'tu_ngay',
+    'den_ngay',
+    'ngay_khoi_hanh',
+    'so_nguoi',
     'from_date',
     'to_date',
     'payment_status',
     'reconcile_state',
     'trang_thai',
+    'diem_min',
+    'diem_max',
     'return_act',
     'return_tour_id',
     'webhook_secret'
@@ -92,14 +126,28 @@ $allowedControllers = [
     'payment'
 ];
 
-$act = requestString('act', 'auth/login', 'GET');
+$act = requestRouteAct('auth/login');
 if (!isValidRouteFormat($act)) {
     die('Route khong hop le.');
+}
+
+$sessionState = enforceSessionSecurity();
+if (!empty($sessionState['invalidated']) && !in_array($act, ['auth/login', 'auth/register'], true)) {
+    header('Location: index.php?act=auth/login');
+    exit();
+}
+
+if (!empty($_SESSION['force_password_change'])
+    && !in_array($act, ['auth/logout', 'auth/forcePasswordChange'], true)
+    && !str_starts_with($act, 'payment/')) {
+    header('Location: index.php?act=auth/forcePasswordChange');
+    exit();
 }
 
 // Normalize common route variants to canonical action names.
 $actAliases = [
     'admin/quanlybooking' => 'admin/quanLyBooking',
+    'admin/bookingdahoanthanh' => 'admin/bookingDaHoanThanh',
     'admin/quanlytour' => 'admin/quanLyTour',
     'admin/lichsuxoabooking' => 'admin/lichSuXoaBooking',
     'booking/dattourchokhach' => 'booking/datTourChoKhach',
@@ -118,7 +166,21 @@ if (!in_array($controller, $allowedControllers, true)) {
     die('Controller khong duoc phep truy cap.');
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+authorizeRouteAccess($act);
+
+$method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+$routeValidation = validateRequestByRoute($act, $method);
+if (!$routeValidation['ok']) {
+    setValidationErrors($routeValidation['errors'], 'Du lieu dau vao khong hop le.');
+    $_SESSION['error'] = 'Du lieu dau vao khong hop le.';
+
+    $redirectParams = $_GET;
+    $redirectParams['act'] = $act;
+    header('Location: index.php?' . http_build_query($redirectParams));
+    exit();
+}
+
+if ($method === 'POST') {
     $csrfExemptActs = [
         'payment/bankWebhook',
         // These actions already perform scoped CSRF verification in their controllers.
@@ -127,6 +189,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'booking/create',
         'booking/update',
         'booking/delete',
+        'booking/hideCompleted',
         'booking/datTourChoKhach',
         'admin/confirm_payment_received',
         'admin/confirm_gateway_payment',
@@ -171,6 +234,7 @@ match ($act) {
     'auth/login' => (new AuthController())->login(),
     'auth/register' => (new AuthController())->register(),
     'auth/logout' => (new AuthController())->logout(),
+    'auth/forcePasswordChange' => (new AuthController())->forcePasswordChange(),
 
     'auth/profile' => (new AuthController())->profile(),
 
@@ -184,6 +248,7 @@ match ($act) {
     'booking/updateTrangThai' => (new BookingController())->updateTrangThai(),
     'booking/updateTienCoc' => (new BookingController())->updateTienCoc(),
     'booking/delete' => (new BookingController())->delete(),
+    'booking/hideCompleted' => (new BookingController())->hideCompleted(),
     'booking/datTourChoKhach' => (new BookingController())->datTourChoKhach(),
     'booking/kiemTraChoTrong' => (new BookingController())->kiemTraChoTrong(),
     'booking/xuatTaiLieu' => (new BookingController())->xuatTaiLieu(),
@@ -216,6 +281,7 @@ match ($act) {
     'admin/dashboard' => (new AdminController())->dashboard(),
     'admin/quanLyTour' => (new AdminController())->quanLyTour(),
     'admin/quanLyBooking' => (new AdminController())->quanLyBooking(),
+    'admin/bookingDaHoanThanh' => (new AdminController())->bookingDaHoanThanh(),
     'admin/lichSuXoaBooking' => (new AdminController())->lichSuXoaBooking(),
     'admin/lichSuXoaNhaCungCap' => (new AdminController())->lichSuXoaNhaCungCap(),
     'admin/chiTietLichSuXoaNhaCungCap' => (new AdminController())->chiTietLichSuXoaNhaCungCap(),

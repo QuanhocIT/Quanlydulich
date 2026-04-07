@@ -1,5 +1,10 @@
 <?php
 
+require_once __DIR__ . '/RequestValidator.php';
+require_once __DIR__ . '/Authorization.php';
+require_once __DIR__ . '/SessionSecurity.php';
+require_once __DIR__ . '/PasswordPolicy.php';
+
 // Kết nối CSDL qua PDO
 function connectDB() {
     return getPDOConnection();
@@ -227,121 +232,294 @@ function getFlashMessage($key) {
 
 // Check login
 function isLoggedIn() {
-    if (!isset($_SESSION)) {
-        session_start();
-    }
-    return isset($_SESSION['user_id']);
+    return Authorization::isLoggedIn();
 }
 
 // Require login
 function requireLogin() {
-    if (!isLoggedIn()) {
-        header('Location: index.php?act=auth/login');
-        exit();
-    }
+    Authorization::requireLogin();
 }
 
 // Require role
-function requireRole($role) {
-    requireLogin();
-    if (!isset($_SESSION['role']) || $_SESSION['role'] !== $role) {
-        header('Location: index.php?act=tour/index');
-        exit();
-    }
+function requireRole($role, $redirectAct = null, $message = 'Ban khong co quyen truy cap chuc nang nay.') {
+    Authorization::requireRole($role, $redirectAct, $message);
+}
+
+function requireAnyRole(array $roles, $redirectAct = null, $message = 'Ban khong co quyen truy cap chuc nang nay.') {
+    Authorization::requireRole($roles, $redirectAct, $message);
+}
+
+function currentUserRole() {
+    return Authorization::currentRole();
+}
+
+function hasRole($roles) {
+    return Authorization::hasAnyRole($roles);
+}
+
+function getRoleHomeRoute($role = null) {
+    return Authorization::getRoleHomeRoute($role);
+}
+
+function redirectToRoleHome($defaultAct = 'auth/login') {
+    Authorization::redirectToRoleHome($defaultAct);
+}
+
+function initializeSecureSession($sessionDir = null) {
+    SessionSecurity::initialize($sessionDir);
+    SessionSecurity::start();
+}
+
+function enforceSessionSecurity() {
+    return SessionSecurity::enforce();
+}
+
+function completeUserLoginSession($userId, $role, $userName, array $extraSessionData = []) {
+    SessionSecurity::completeLogin($userId, $role, $userName, $extraSessionData);
+}
+
+function logoutCurrentUser($reason = 'logout') {
+    SessionSecurity::logout($reason);
+}
+
+function logSecurityEvent($event, array $context = []) {
+    SessionSecurity::logSecurityEvent($event, $context);
+}
+
+function recordFailedLoginAttempt($identifier, $reason = 'invalid_credentials') {
+    SessionSecurity::recordFailedLogin($identifier, $reason);
+}
+
+function validatePasswordPolicy($password) {
+    return PasswordPolicy::validate($password);
+}
+
+function isSecurePasswordHash($storedPassword) {
+    return PasswordPolicy::isSecureHash($storedPassword);
+}
+
+function requiresPasswordChange($storedHash) {
+    return PasswordPolicy::needsForceChange($storedHash);
+}
+
+function generateTemporaryPassword($length = 14) {
+    return PasswordPolicy::generateTemporaryPassword($length);
+}
+
+function createOAuthState($provider) {
+    return SessionSecurity::generateOAuthState($provider);
+}
+
+function verifyOAuthState($provider, $state) {
+    return SessionSecurity::verifyOAuthState($provider, $state);
+}
+
+function getRouteRoleMatrix() {
+    return Authorization::getRouteRoleMatrix();
+}
+
+function authorizeRouteAccess($act) {
+    return Authorization::enforceRouteAccess($act);
 }
 
 function sanitizeText($value) {
-    if (is_array($value) || is_object($value)) {
-        return '';
-    }
-
-    $value = trim((string)$value);
-    $value = strip_tags($value);
-    return preg_replace('/\s+/', ' ', $value) ?? '';
+    return RequestValidator::sanitizeText($value);
 }
 
 function requestString($key, $default = '', $method = 'REQUEST') {
-    $source = strtoupper($method) === 'POST' ? $_POST : (strtoupper($method) === 'GET' ? $_GET : $_REQUEST);
-    return isset($source[$key]) ? sanitizeText($source[$key]) : $default;
+    return RequestValidator::getString($key, $default, $method);
 }
 
 function requestInt($key, $default = 0, $method = 'REQUEST') {
-    $source = strtoupper($method) === 'POST' ? $_POST : (strtoupper($method) === 'GET' ? $_GET : $_REQUEST);
-    if (!isset($source[$key])) {
-        return $default;
-    }
-
-    $value = filter_var($source[$key], FILTER_VALIDATE_INT);
-    return $value !== false ? (int)$value : $default;
+    $value = filter_var(RequestValidator::getString($key, (string)$default, $method), FILTER_VALIDATE_INT);
+    return $value !== false ? (int)$value : (int)$default;
 }
 
 function requestFloat($key, $default = 0.0, $method = 'REQUEST') {
-    $source = strtoupper($method) === 'POST' ? $_POST : (strtoupper($method) === 'GET' ? $_GET : $_REQUEST);
-    if (!isset($source[$key])) {
-        return $default;
-    }
-
-    $raw = str_replace(',', '', (string)$source[$key]);
+    $raw = str_replace(',', '', RequestValidator::getString($key, (string)$default, $method));
     return is_numeric($raw) ? (float)$raw : (float)$default;
 }
 
-function whitelistRequestParams(array $input, array $allowedKeys) {
-    $filtered = [];
-    foreach ($allowedKeys as $key) {
-        if (array_key_exists($key, $input)) {
-            $filtered[$key] = $input[$key];
-        }
+function requestRouteAct($default = 'auth/login') {
+    $act = requestString('act', $default, 'GET');
+    return isValidRouteFormat($act) ? $act : $default;
+}
+
+function requestId($key, $default = null, $method = 'REQUEST') {
+    return RequestValidator::getId($key, $default, $method);
+}
+
+function requestEmail($key, $default = null, $method = 'REQUEST') {
+    return RequestValidator::getEmail($key, $default, $method);
+}
+
+function requestPhone($key, $default = null, $method = 'REQUEST') {
+    return RequestValidator::getPhone($key, $default, $method);
+}
+
+function requestMoney($key, $default = null, $method = 'REQUEST', $min = 0.0, $max = 999999999999.0) {
+    return RequestValidator::getMoney($key, $default, $method, $min, $max);
+}
+
+function validateInputSchema(array $rules, $method = 'POST') {
+    $source = strtoupper((string)$method) === 'GET' ? $_GET : (strtoupper((string)$method) === 'POST' ? $_POST : $_REQUEST);
+    return RequestValidator::validatePayload($source, $rules);
+}
+
+function getRouteInputSchema($act, $method = 'GET') {
+    $method = strtoupper((string)$method);
+    if ($method !== 'POST') {
+        return [];
     }
-    return $filtered;
+
+    $schemas = [
+        'auth/register' => [
+            'email' => ['type' => 'email', 'required' => true],
+            'ho_ten' => ['type' => 'string', 'required' => true, 'max' => 120],
+            'password' => ['type' => 'string', 'required' => true, 'min' => 8],
+        ],
+        'booking/create' => [
+            'tour_id' => ['type' => 'id', 'required' => true],
+            'ngay_khoi_hanh' => ['type' => 'date', 'required' => true],
+            'so_nguoi' => ['type' => 'id', 'required' => true],
+        ],
+        'booking/hideCompleted' => [
+            'booking_id' => ['type' => 'id', 'required' => true],
+            'ly_do_an' => ['type' => 'string', 'required' => false, 'max' => 500],
+        ],
+        'admin/capNhatLuongCoBan' => [
+            'nhan_su_id' => ['type' => 'id', 'required' => true],
+            'luong_co_ban' => ['type' => 'money', 'required' => true, 'min' => 0],
+        ],
+        'admin/taoLuongThuong' => [
+            'nhan_su_id' => ['type' => 'id', 'required' => true],
+            'lich_khoi_hanh_id' => ['type' => 'id', 'required' => true],
+            'loai_luong' => ['type' => 'string', 'required' => true],
+        ],
+        'admin/capNhatYeuCauDacBiet' => [
+            'yeu_cau_id' => ['type' => 'id', 'required' => true],
+        ],
+        'admin/themYeuCauDacBiet' => [
+            'booking_id' => ['type' => 'id', 'required' => true],
+        ],
+        'admin/confirm_payment_received' => [
+            'received_amount' => ['type' => 'money', 'required' => true, 'min' => 1],
+            'transfer_note' => ['type' => 'string', 'required' => true, 'min' => 3],
+        ],
+        'admin/deleteNhaCungCap' => [
+            'id_nha_cung_cap' => ['type' => 'id', 'required' => true],
+            'mat_khau' => ['type' => 'string', 'required' => true, 'min' => 1],
+        ],
+        'admin/supplierServiceAction' => [
+            'dich_vu_id' => ['type' => 'id', 'required' => true],
+            'action' => ['type' => 'string', 'required' => true],
+        ],
+        'hdv/updateCheckInKhach' => [
+            'lich_khoi_hanh_id' => ['type' => 'id', 'required' => true],
+            'booking_id' => ['type' => 'id', 'required' => true],
+            'khach_hang_id' => ['type' => 'id', 'required' => true],
+        ],
+        'hdv/updateYeuCauDacBiet' => [
+            'lich_khoi_hanh_id' => ['type' => 'id', 'required' => true],
+            'tour_id' => ['type' => 'id', 'required' => true],
+            'khach_hang_id' => ['type' => 'id', 'required' => true],
+            'booking_id' => ['type' => 'id', 'required' => true],
+            'noi_dung' => ['type' => 'string', 'required' => true, 'min' => 3],
+        ],
+        'hdv/save_yeu_cau' => [
+            'tour_id' => ['type' => 'id', 'required' => true],
+            'booking_id' => ['type' => 'id', 'required' => true],
+            'tieu_de' => ['type' => 'string', 'required' => true, 'min' => 2],
+        ],
+        'hdv/save_diem_checkin' => [
+            'tour_id' => ['type' => 'id', 'required' => true],
+            'ten_diem' => ['type' => 'string', 'required' => true, 'min' => 2],
+        ],
+        'hdv/save_checkin_khach' => [
+            'diem_checkin_id' => ['type' => 'id', 'required' => true],
+            'booking_id' => ['type' => 'id', 'required' => true],
+            'trang_thai' => ['type' => 'string', 'required' => true],
+        ],
+        'hdv/delete_yeu_cau' => [
+            'id' => ['type' => 'id', 'required' => true],
+        ],
+        'hdv/save_nhat_ky' => [
+            'tour_id' => ['type' => 'id', 'required' => true],
+            'tieu_de' => ['type' => 'string', 'required' => true, 'min' => 2],
+        ],
+        'hdv/delete_nhat_ky' => [
+            'id' => ['type' => 'id', 'required' => true],
+        ],
+        'hdv/save_phan_hoi' => [
+            'tour_id' => ['type' => 'id', 'required' => true],
+            'loai_danh_gia' => ['type' => 'string', 'required' => true],
+            'diem_danh_gia' => ['type' => 'money', 'required' => true, 'min' => 1, 'max' => 5],
+            'tieu_de' => ['type' => 'string', 'required' => true, 'min' => 2],
+        ],
+        'hdv/delete_phan_hoi' => [
+            'id' => ['type' => 'id', 'required' => true],
+        ],
+        'hdv/update_profile' => [
+            'email' => ['type' => 'email', 'required' => true],
+            'so_dien_thoai' => ['type' => 'phone', 'required' => true],
+        ],
+    ];
+
+    return $schemas[$act] ?? [];
+}
+
+function validateRequestByRoute($act, $method = 'GET') {
+    $rules = getRouteInputSchema($act, $method);
+    if (empty($rules)) {
+        return ['ok' => true, 'data' => [], 'errors' => []];
+    }
+
+    return validateInputSchema($rules, $method);
+}
+
+function logValidationFailure($context, array $errors, array $meta = []) {
+    $logDir = __DIR__ . '/../storage';
+    $logFile = $logDir . '/security.log';
+    if (!is_dir($logDir)) {
+        @mkdir($logDir, 0777, true);
+    }
+
+    $payload = [
+        'time' => date('c'),
+        'event' => 'validation_failed',
+        'context' => sanitizeText($context),
+        'route' => requestString('act', '', 'GET'),
+        'ip' => isset($_SERVER['REMOTE_ADDR']) ? sanitizeText((string)$_SERVER['REMOTE_ADDR']) : '',
+        'method' => isset($_SERVER['REQUEST_METHOD']) ? sanitizeText((string)$_SERVER['REQUEST_METHOD']) : '',
+        'errors' => $errors,
+        'meta' => $meta,
+    ];
+
+    @file_put_contents($logFile, json_encode($payload, JSON_UNESCAPED_UNICODE) . PHP_EOL, FILE_APPEND);
+}
+
+function whitelistRequestParams(array $input, array $allowedKeys) {
+    return RequestValidator::whitelistParams($input, $allowedKeys);
 }
 
 function isValidRouteFormat($act) {
-    return is_string($act)
-        && preg_match('/^[A-Za-z0-9_]+\/[A-Za-z0-9_]+$/', $act) === 1;
+    return RequestValidator::isValidRouteFormat($act);
 }
 
 function validateEmail($email) {
-    $email = sanitizeText($email);
-    return filter_var($email, FILTER_VALIDATE_EMAIL) ? $email : null;
+    return RequestValidator::validateEmail($email);
 }
 
 function validatePhone($phone) {
-    $phone = preg_replace('/\D+/', '', (string)$phone) ?? '';
-    if ($phone === '') {
-        return null;
-    }
-
-    if (preg_match('/^(0|84)?[3-9][0-9]{8}$/', $phone) !== 1) {
-        return null;
-    }
-
-    if (strpos($phone, '84') === 0 && strlen($phone) === 11) {
-        $phone = '0' . substr($phone, 2);
-    }
-
-    return $phone;
+    return RequestValidator::validatePhone($phone);
 }
 
 function validateId($value) {
-    if (!is_numeric($value)) {
-        return null;
-    }
-    $id = (int)$value;
-    return $id > 0 ? $id : null;
+    return RequestValidator::validateId($value);
 }
 
 function validateMoney($value, $min = 0.0, $max = 999999999999.0) {
-    $numeric = is_string($value) ? str_replace(',', '', $value) : $value;
-    if (!is_numeric($numeric)) {
-        return null;
-    }
-
-    $money = (float)$numeric;
-    if ($money < $min || $money > $max) {
-        return null;
-    }
-
-    return $money;
+    return RequestValidator::validateMoney($value, $min, $max);
 }
 
 function validateDateYmd($value) {
@@ -387,16 +565,33 @@ function verifyCsrfToken($token, $scope = 'default') {
 
     $key = 'csrf_' . $scope;
     if (!isset($_SESSION[$key]) || !is_string($token) || $token === '') {
+        SessionSecurity::logSecurityEvent('csrf_validation_failed', [
+            'scope' => $scope,
+            'reason' => 'missing_token',
+        ]);
         return false;
     }
 
-    return hash_equals($_SESSION[$key], $token);
+    $valid = hash_equals($_SESSION[$key], $token);
+    if (!$valid) {
+        SessionSecurity::logSecurityEvent('csrf_validation_failed', [
+            'scope' => $scope,
+            'reason' => 'token_mismatch',
+        ]);
+    }
+
+    return $valid;
 }
 
 function setValidationErrors(array $errors, $message = 'Du lieu khong hop le.') {
     if (!isset($_SESSION)) {
         session_start();
     }
+
+    logValidationFailure('setValidationErrors', $errors, [
+        'message' => sanitizeText((string)$message),
+        'user_id' => (int)($_SESSION['user_id'] ?? 0),
+    ]);
 
     $_SESSION['validation'] = [
         'ok' => false,

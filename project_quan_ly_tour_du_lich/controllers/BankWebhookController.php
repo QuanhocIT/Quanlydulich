@@ -1,8 +1,12 @@
 <?php
 
+require_once __DIR__ . '/../models/Payment.php';
+require_once __DIR__ . '/../models/PaymentIdempotency.php';
+
 class BankWebhookController {
     public static function receive($conn) {
         self::ensureUnmatchedWebhookTable($conn);
+        PaymentIdempotency::ensureTable($conn);
 
         $raw = (string)file_get_contents('php://input');
 
@@ -47,9 +51,29 @@ class BankWebhookController {
         $description = self::extractDescription($payload);
         $gatewayRef = self::extractGatewayRef($payload);
         $transferType = self::extractTransferType($payload);
+        $idempotencyRawKey = implode('|', [
+            'provider=' . (string)BANK_WEBHOOK_PROVIDER,
+            'gateway_ref=' . (string)$gatewayRef,
+            'amount=' . (string)$amount,
+            'desc=' . substr((string)$description, 0, 120),
+        ]);
+        $idempotencyClaim = PaymentIdempotency::claim($conn, 'bank_webhook_receive', $idempotencyRawKey, json_encode($payload, JSON_UNESCAPED_UNICODE));
+        if (!$idempotencyClaim['owner']) {
+            $statusCode = ($idempotencyClaim['status'] === PaymentIdempotency::STATUS_COMPLETED) ? 200 : 202;
+            self::jsonResponse($statusCode, [
+                'ok' => true,
+                'matched' => false,
+                'duplicate' => true,
+                'message' => $idempotencyClaim['status'] === PaymentIdempotency::STATUS_COMPLETED
+                    ? 'Duplicate webhook ignored'
+                    : 'Webhook is being processed'
+            ]);
+            return;
+        }
 
         if ($transferType !== '' && strtolower($transferType) !== 'in') {
             self::recordUnmatchedEvent('non_inbound_transfer', $description);
+            self::completeWebhookIdempotency($conn, $idempotencyRawKey, 202, 'Ignored non-inbound transfer');
             self::jsonResponse(202, [
                 'ok' => true,
                 'matched' => false,
@@ -59,6 +83,7 @@ class BankWebhookController {
         }
 
         if ($amount <= 0) {
+            self::completeWebhookIdempotency($conn, $idempotencyRawKey, 422, 'Missing transfer amount');
             self::jsonResponse(422, ['ok' => false, 'message' => 'Missing transfer amount']);
             return;
         }
@@ -66,6 +91,7 @@ class BankWebhookController {
         $bookingCandidates = self::extractBookingCandidatesFromDescription($description);
         if (empty($bookingCandidates)) {
             self::recordUnmatchedEvent('missing_booking_token', $description);
+            self::completeWebhookIdempotency($conn, $idempotencyRawKey, 202, 'Missing booking token');
             self::jsonResponse(202, [
                 'ok' => true,
                 'matched' => false,
@@ -97,6 +123,7 @@ class BankWebhookController {
                 'payload_json' => json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
             ]);
             self::recordUnmatchedEvent('no_pending_payment', $description);
+            self::completeWebhookIdempotency($conn, $idempotencyRawKey, 200, 'No pending payment');
 
             self::jsonResponse(200, [
                 'ok' => true,
@@ -112,6 +139,7 @@ class BankWebhookController {
         $expectedAmount = (float)($payment['amount'] ?? 0);
         if ($amount + 1 < $expectedAmount) {
             self::createPaymentLog($conn, (int)$payment['payment_id'], 'WEBHOOK_UNDERPAID', 'expected=' . $expectedAmount . '; received=' . $amount . '; desc=' . $description);
+            self::completeWebhookIdempotency($conn, $idempotencyRawKey, 202, 'Underpaid transfer');
             self::jsonResponse(202, [
                 'ok' => true,
                 'matched' => true,
@@ -127,6 +155,7 @@ class BankWebhookController {
 
         if (!BANK_WEBHOOK_ALLOW_OVERPAY && abs($amount - $expectedAmount) > 1) {
             self::createPaymentLog($conn, (int)$payment['payment_id'], 'WEBHOOK_AMOUNT_MISMATCH', 'expected=' . $expectedAmount . '; received=' . $amount . '; desc=' . $description);
+            self::completeWebhookIdempotency($conn, $idempotencyRawKey, 202, 'Amount mismatch');
             self::jsonResponse(202, [
                 'ok' => true,
                 'matched' => true,
@@ -142,6 +171,8 @@ class BankWebhookController {
 
         try {
             $conn->beginTransaction();
+            self::lockBookingRow($conn, $bookingId);
+            Payment::findForUpdate($conn, (int)$payment['payment_id']);
 
             $note = 'Webhook auto confirm | provider=' . BANK_WEBHOOK_PROVIDER;
             if ($gatewayRef !== '') {
@@ -151,8 +182,16 @@ class BankWebhookController {
                 $note .= ' | desc=' . substr($description, 0, 180);
             }
 
-            $stmtPayment = $conn->prepare('UPDATE payments SET status = ?, amount = ?, note = ? WHERE payment_id = ?');
-            $stmtPayment->execute(['ThanhCong', $amount, $note, (int)$payment['payment_id']]);
+            $stmtPayment = $conn->prepare('UPDATE payments SET amount = ?, note = ? WHERE payment_id = ?');
+            $stmtPayment->execute([$amount, $note, (int)$payment['payment_id']]);
+
+            $transition = Payment::transitionStatus($conn, (int)$payment['payment_id'], Payment::STATUS_THANH_CONG, 'bank_webhook_auto_confirm', [
+                'provider' => (string)BANK_WEBHOOK_PROVIDER,
+                'gateway_ref' => (string)$gatewayRef,
+            ]);
+            if (!$transition['ok']) {
+                throw new RuntimeException((string)$transition['message']);
+            }
 
             self::createPaymentLog($conn, (int)$payment['payment_id'], 'WEBHOOK_CONFIRM', 'Auto confirmed by bank webhook. amount=' . $amount . ($gatewayRef !== '' ? '; ref=' . $gatewayRef : ''));
 
@@ -175,6 +214,7 @@ class BankWebhookController {
             }
 
             $conn->commit();
+            self::completeWebhookIdempotency($conn, $idempotencyRawKey, 200, 'Webhook processed');
 
             self::jsonResponse(200, [
                 'ok' => true,
@@ -190,8 +230,18 @@ class BankWebhookController {
             if ($conn->inTransaction()) {
                 $conn->rollBack();
             }
+            PaymentIdempotency::markFailed($conn, 'bank_webhook_receive', $idempotencyRawKey, 500, $e->getMessage());
             self::jsonResponse(500, ['ok' => false, 'message' => 'Webhook processing failed', 'error' => $e->getMessage()]);
         }
+    }
+
+    private static function completeWebhookIdempotency($conn, $rawKey, $responseCode, $message) {
+        PaymentIdempotency::markCompleted($conn, 'bank_webhook_receive', (string)$rawKey, (int)$responseCode, (string)$message);
+    }
+
+    private static function lockBookingRow($conn, $bookingId) {
+        $stmt = $conn->prepare('SELECT booking_id FROM booking WHERE booking_id = ? FOR UPDATE');
+        $stmt->execute([(int)$bookingId]);
     }
 
     private static function isWebhookAuthorized() {
@@ -395,8 +445,8 @@ class BankWebhookController {
     }
 
     private static function findLatestPendingPaymentByBooking($conn, $bookingId) {
-        $stmt = $conn->prepare('SELECT p.payment_id, p.amount, p.booking_id, b.tour_id, b.khach_hang_id FROM payments p INNER JOIN booking b ON b.booking_id = p.booking_id WHERE p.booking_id = ? AND p.status = ? ORDER BY p.payment_id DESC LIMIT 1');
-        $stmt->execute([(int)$bookingId, 'DangXuLy']);
+        $stmt = $conn->prepare('SELECT p.payment_id, p.amount, p.booking_id, b.tour_id, b.khach_hang_id FROM payments p INNER JOIN booking b ON b.booking_id = p.booking_id WHERE p.booking_id = ? AND p.status IN (?, ?) ORDER BY p.payment_id DESC LIMIT 1');
+        $stmt->execute([(int)$bookingId, Payment::STATUS_DANG_XU_LY, Payment::STATUS_TAO_MOI]);
         return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
     }
 
@@ -479,8 +529,16 @@ class BankWebhookController {
                     $note .= ' | desc=' . substr((string)$row['description'], 0, 180);
                 }
 
-                $stmtPayment = $conn->prepare('UPDATE payments SET status = ?, amount = ?, note = ? WHERE payment_id = ?');
-                $stmtPayment->execute(['ThanhCong', $amount, $note, (int)$payment['payment_id']]);
+                $stmtPayment = $conn->prepare('UPDATE payments SET amount = ?, note = ? WHERE payment_id = ?');
+                $stmtPayment->execute([$amount, $note, (int)$payment['payment_id']]);
+
+                $transition = Payment::transitionStatus($conn, (int)$payment['payment_id'], Payment::STATUS_THANH_CONG, 'bank_webhook_queue_consume', [
+                    'provider' => (string)BANK_WEBHOOK_PROVIDER,
+                    'queue_id' => (int)$row['queue_id'],
+                ]);
+                if (!$transition['ok']) {
+                    throw new RuntimeException((string)$transition['message']);
+                }
 
                 self::createPaymentLog($conn, (int)$payment['payment_id'], 'WEBHOOK_CONFIRM', 'Auto confirmed from queued unmatched webhook. amount=' . $amount . (!empty($row['gateway_ref']) ? '; ref=' . (string)$row['gateway_ref'] : ''));
 

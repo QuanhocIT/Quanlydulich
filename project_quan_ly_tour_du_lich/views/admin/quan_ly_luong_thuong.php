@@ -185,7 +185,7 @@ ob_start();
         .luong-filter-grid .form-group { grid-column: span 2 !important; }
     }
 </style>
-
+<?php $isAdminRole = hasRole('Admin'); ?>
 <div class="luong-container">
     <div class="luong-header">
         <div class="luong-header-glow"></div>
@@ -194,7 +194,7 @@ ob_start();
             <div class="luong-title">Quản lý lương thưởng</div>
             <div class="luong-subtitle">Theo tháng/năm hoặc xem tất cả, hỗ trợ tính lại/duyệt/thanh toán.</div>
         </div>
-        <?php if (($_SESSION['role'] ?? '') === 'Admin'): ?>
+        <?php if ($isAdminRole): ?>
         <div class="luong-header-actions">
             <button id="showCreateLuongBtn" class="btn-gold"><i class="bi bi-plus-circle me-1"></i> Tạo lương/thưởng</button>
         </div>
@@ -208,7 +208,7 @@ ob_start();
         <div class="flash flash-error"><?php echo htmlspecialchars($_SESSION['error']); unset($_SESSION['error']); ?></div>
     <?php endif; ?>
 
-    <?php if (($_SESSION['role'] ?? '') === 'Admin'): ?>
+    <?php if ($isAdminRole): ?>
         <style>
         .tao-luong-form-wrap { display: none; justify-content: center; margin-bottom: 18px; }
         .tao-luong-form {
@@ -416,7 +416,7 @@ ob_start();
                                     onclick='window.location.assign(<?php echo json_encode($detailHref, JSON_UNESCAPED_UNICODE); ?>);'
                                     style="padding: 6px 12px;"
                                 >Xem</button>
-                                <?php if (!$showAll && !empty($filterMonth) && !empty($filterYear) && (($_SESSION['role'] ?? '') === 'Admin')): ?>
+                                <?php if (!$showAll && !empty($filterMonth) && !empty($filterYear) && $isAdminRole): ?>
                                     <div style="margin-top:8px; display:flex; gap:6px; justify-content:center; flex-wrap:wrap;">
                                         <form method="post" action="index.php?act=admin/tinhLaiLuongNhanSu" style="margin:0;">
                                             <input type="hidden" name="nhan_su_id" value="<?php echo $nhanSuId; ?>">

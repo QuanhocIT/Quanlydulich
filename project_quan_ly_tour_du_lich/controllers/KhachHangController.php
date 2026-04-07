@@ -3,7 +3,7 @@
 class KhachHangController {
     
     public function __construct() {
-        requireLogin();
+        requireRole('KhachHang');
     }
 
     // Gửi yêu cầu tour theo mong muốn
@@ -588,7 +588,15 @@ class KhachHangController {
             ];
             
             if (!empty($_POST['mat_khau_moi']) && $_POST['mat_khau_moi'] === $_POST['xac_nhan_mat_khau']) {
+                $policy = validatePasswordPolicy($_POST['mat_khau_moi']);
+                if (!$policy['ok']) {
+                    $_SESSION['error'] = 'Mat khau moi phai co it nhat 8 ky tu, gom chu hoa, chu thuong, so va ky tu dac biet.';
+                    header('Location: index.php?act=khachHang/capNhatThongTin');
+                    exit();
+                }
+
                 $nguoiDungData['mat_khau'] = password_hash($_POST['mat_khau_moi'], PASSWORD_DEFAULT);
+                unset($_SESSION['force_password_change']);
             }
             
             $nguoiDungModel->update($_SESSION['user_id'], $nguoiDungData);
@@ -1263,25 +1271,29 @@ class KhachHangController {
     }
 
     private function expireStalePendingPayments(PDO $conn): void {
+        require_once __DIR__ . '/../models/Payment.php';
         $timeoutMinutes = 45;
         $cutoff = date('Y-m-d H:i:s', time() - ($timeoutMinutes * 60));
 
         try {
-            $stmt = $conn->prepare("SELECT payment_id FROM payments WHERE status = 'DangXuLy' AND payment_date < ? ORDER BY payment_id ASC LIMIT 200");
-            $stmt->execute([$cutoff]);
+            $stmt = $conn->prepare("SELECT payment_id FROM payments WHERE status = ? AND payment_date < ? ORDER BY payment_id ASC LIMIT 200");
+            $stmt->execute([Payment::STATUS_DANG_XU_LY, $cutoff]);
             $ids = array_map('intval', array_column($stmt->fetchAll(PDO::FETCH_ASSOC), 'payment_id'));
             if (empty($ids)) {
                 return;
             }
 
             $conn->beginTransaction();
-            $update = $conn->prepare("UPDATE payments SET status = 'ThatBai', note = CONCAT(COALESCE(note,''), ' | AUTO_TIMEOUT=', ?) WHERE payment_id = ? AND status = 'DangXuLy'");
+            $update = $conn->prepare("UPDATE payments SET note = CONCAT(COALESCE(note,''), ' | AUTO_TIMEOUT=', ?) WHERE payment_id = ? AND status = ?");
             $insertLog = $conn->prepare("INSERT INTO payment_logs (payment_id, action, log_time, note) VALUES (?, 'AUTO_TIMEOUT', ?, ?)");
             $now = date('Y-m-d H:i:s');
 
             foreach ($ids as $pid) {
-                $update->execute([$now, $pid]);
+                $update->execute([$now, $pid, Payment::STATUS_DANG_XU_LY]);
                 if ($update->rowCount() > 0) {
+                    Payment::transitionStatus($conn, $pid, Payment::STATUS_HET_HAN, 'customer_auto_timeout', [
+                        'timeout_minutes' => $timeoutMinutes,
+                    ]);
                     $insertLog->execute([$pid, $now, 'He thong tu dong timeout giao dich cho xu ly qua ' . $timeoutMinutes . ' phut']);
                 }
             }
@@ -1295,6 +1307,7 @@ class KhachHangController {
     }
 
     private function createPendingManualQrPayment(PDO $conn, int $bookingId, float $amount, string $paymentMethod): int {
+        require_once __DIR__ . '/../models/Payment.php';
         if ($bookingId <= 0 || $amount <= 0) {
             return 0;
         }
@@ -1308,7 +1321,7 @@ class KhachHangController {
             $amount,
             $resolvedMethod,
             date('Y-m-d H:i:s'),
-            'DangXuLy',
+            Payment::STATUS_TAO_MOI,
             'Khoi tao thanh toan online | gateway=VNPay'
         ]);
         if (!$ok) {
@@ -1317,6 +1330,7 @@ class KhachHangController {
 
         $paymentId = (int)$conn->lastInsertId();
         $this->createCustomerPaymentLog($conn, $paymentId, 'CREATE', 'Khoi tao giao dich online');
+        Payment::transitionStatus($conn, $paymentId, Payment::STATUS_DANG_XU_LY, 'customer_create_pending_manual_qr');
         $this->createCustomerPaymentLog($conn, $paymentId, 'WAIT_CONFIRM', 'Cho admin xac nhan da nhan tien chuyen khoan QR');
 
         $txnRef = 'BK' . $bookingId . 'P' . $paymentId . 'T' . time();
@@ -1327,17 +1341,20 @@ class KhachHangController {
     }
 
     private function ensureCustomerPaymentTables(PDO $conn): void {
+        require_once __DIR__ . '/../models/Payment.php';
         $conn->exec("CREATE TABLE IF NOT EXISTS payments (
             payment_id INT(11) NOT NULL AUTO_INCREMENT,
             booking_id INT(11) NOT NULL,
             amount DECIMAL(15,2) NOT NULL,
             payment_method ENUM('ChuyenKhoan','TienMat','TheTinDung','ViDienTu','VNPay','Momo','Paypal') NOT NULL DEFAULT 'VNPay',
             payment_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            status ENUM('ThanhCong','ThatBai','DangXuLy') DEFAULT 'DangXuLy',
+            status ENUM('TaoMoi','DangXuLy','ThanhCong','ThatBai','HetHan','DaDoiSoat') DEFAULT 'DangXuLy',
             note TEXT DEFAULT NULL,
             PRIMARY KEY (payment_id),
             KEY booking_id (booking_id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+        Payment::ensureStateMachineSchema($conn);
 
         $conn->exec("CREATE TABLE IF NOT EXISTS payment_logs (
             log_id INT(11) NOT NULL AUTO_INCREMENT,

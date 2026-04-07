@@ -1,5 +1,5 @@
 <?php
-if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'Admin') {
+if (!hasRole('Admin')) {
     header('Location: index.php?act=auth/login');
     exit;
 }

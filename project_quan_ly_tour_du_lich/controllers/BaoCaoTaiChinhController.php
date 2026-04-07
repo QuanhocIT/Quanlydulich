@@ -41,6 +41,7 @@ class BaoCaoTaiChinhController {
     private $chiPhiModel;
 
     public function __construct() {
+        requireRole('Admin');
         $this->giaoDichModel = new GiaoDich();
         $this->tourModel = new Tour();
         $this->bookingModel = new Booking();

@@ -5,6 +5,7 @@ class Booking
     public $conn;
     private static $columnExistsCache = [];
     private static $tableColumnsCache = [];
+    private const HIDDEN_REASON_PREFIX = '[AN_HOAN_TAT]';
     
     public function __construct()
     {
@@ -292,6 +293,16 @@ class Booking
         $where = [];
         $params = [];
 
+        if (!empty($filters['exclude_hidden'])) {
+            $where[] = "NOT EXISTS (
+                SELECT 1
+                FROM booking_deletion_history bdh_hide
+                WHERE bdh_hide.booking_id = b.booking_id
+                  AND bdh_hide.ly_do_xoa LIKE ?
+            )";
+            $params[] = self::HIDDEN_REASON_PREFIX . '%';
+        }
+
         if (!empty($filters['trang_thai'])) {
             $where[] = 'b.trang_thai = ?';
             $params[] = $filters['trang_thai'];
@@ -336,6 +347,16 @@ class Booking
         $where = [];
         $params = [];
 
+        if (!empty($filters['exclude_hidden'])) {
+            $where[] = "NOT EXISTS (
+                SELECT 1
+                FROM booking_deletion_history bdh_hide
+                WHERE bdh_hide.booking_id = b.booking_id
+                  AND bdh_hide.ly_do_xoa LIKE ?
+            )";
+            $params[] = self::HIDDEN_REASON_PREFIX . '%';
+        }
+
         if (!empty($filters['trang_thai'])) {
             $where[] = 'b.trang_thai = ?';
             $params[] = $filters['trang_thai'];
@@ -367,7 +388,13 @@ class Booking
         $sql = "SELECT b.*,
                 t.ten_tour, t.gia_co_ban, t.loai_tour,
                 kh.khach_hang_id, kh.dia_chi,
-                nd.id AS nguoi_dung_id, nd.ho_ten, nd.email, nd.so_dien_thoai
+                nd.id AS nguoi_dung_id, nd.ho_ten, nd.email, nd.so_dien_thoai,
+                EXISTS (
+                    SELECT 1
+                    FROM booking_deletion_history bdh_hide
+                    WHERE bdh_hide.booking_id = b.booking_id
+                      AND bdh_hide.ly_do_xoa LIKE ?
+                ) AS is_hidden
                 FROM booking b
                 LEFT JOIN tour t ON b.tour_id = t.tour_id
                 LEFT JOIN khach_hang kh ON b.khach_hang_id = kh.khach_hang_id
@@ -375,11 +402,27 @@ class Booking
                 $whereClause
                 ORDER BY b.ngay_dat DESC, b.booking_id DESC
                 LIMIT ? OFFSET ?";
+        $params[] = self::HIDDEN_REASON_PREFIX . '%';
         $params[] = $limit;
         $params[] = $offset;
         $stmt = $this->conn->prepare($sql);
         $stmt->execute($params);
         return $stmt->fetchAll();
+    }
+
+    public function isBookingHidden($bookingId) {
+        $sql = "SELECT 1
+                FROM booking_deletion_history
+                WHERE booking_id = ?
+                  AND ly_do_xoa LIKE ?
+                LIMIT 1";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute([(int)$bookingId, self::HIDDEN_REASON_PREFIX . '%']);
+        return (bool)$stmt->fetchColumn();
+    }
+
+    public function getHideReasonPrefix() {
+        return self::HIDDEN_REASON_PREFIX;
     }
 
     // Xóa booking

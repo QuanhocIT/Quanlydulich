@@ -3,6 +3,7 @@ require_once __DIR__ . '/../models/Payment.php';
 require_once __DIR__ . '/../models/PaymentLog.php';
 class PaymentController {
     public static function index($conn) {
+        Payment::ensureStateMachineSchema($conn);
         $userId = (int)($_SESSION['user_id'] ?? 0);
         if ($userId > 0) {
             try {
@@ -17,10 +18,44 @@ class PaymentController {
 
         self::runAutoReconcileTick($conn);
         $payments = Payment::all($conn);
+        $statusSummary = self::buildStatusSummary($conn, $payments);
         include __DIR__ . '/../views/admin/payments/index.php';
     }
 
+    private static function buildStatusSummary($conn, array $payments): array {
+        $summary = [
+            Payment::STATUS_TAO_MOI => 0,
+            Payment::STATUS_DANG_XU_LY => 0,
+            Payment::STATUS_THANH_CONG => 0,
+            Payment::STATUS_THAT_BAI => 0,
+            Payment::STATUS_HET_HAN => 0,
+            Payment::STATUS_DA_DOI_SOAT => 0,
+        ];
+
+        try {
+            $stmt = $conn->query('SELECT status, COUNT(*) AS total FROM payments GROUP BY status');
+            $rows = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+            foreach ($rows as $row) {
+                $status = (string)($row['status'] ?? '');
+                if (array_key_exists($status, $summary)) {
+                    $summary[$status] = (int)($row['total'] ?? 0);
+                }
+            }
+        } catch (Throwable $e) {
+            foreach ($payments as $payment) {
+                $status = (string)($payment['status'] ?? '');
+                if (array_key_exists($status, $summary)) {
+                    $summary[$status]++;
+                }
+            }
+        }
+
+        return $summary;
+    }
+
     public static function reconcile($conn) {
+        Payment::ensureStateMachineSchema($conn);
+        self::ensureReconcileAuditTable($conn);
         $userId = (int)($_SESSION['user_id'] ?? 0);
         if ($userId > 0) {
             try {
@@ -35,8 +70,8 @@ class PaymentController {
 
         self::runAutoReconcileTick($conn);
         $filters = [
-            'from_date' => validateDateYmd($_GET['from_date'] ?? '') ?? '',
-            'to_date' => validateDateYmd($_GET['to_date'] ?? '') ?? '',
+            'from_date' => validateDateYmd(requestString('from_date', '', 'GET')) ?? '',
+            'to_date' => validateDateYmd(requestString('to_date', '', 'GET')) ?? '',
             'payment_status' => requestString('payment_status', '', 'GET'),
             'reconcile_state' => requestString('reconcile_state', '', 'GET')
         ];
@@ -48,8 +83,9 @@ class PaymentController {
                 exit;
             }
 
-            $paymentId = validateId($_POST['repair_payment_id'] ?? null) ?? 0;
-            $repairResult = self::repairMissingFinanceTransaction($conn, $paymentId);
+            $paymentId = requestId('repair_payment_id', 0, 'POST') ?? 0;
+            $repairReason = requestString('repair_reason', '', 'POST');
+            $repairResult = self::repairMissingFinanceTransaction($conn, $paymentId, $repairReason);
             $_SESSION[$repairResult['ok'] ? 'success' : 'error'] = $repairResult['message'];
 
             $query = [
@@ -64,6 +100,8 @@ class PaymentController {
             })));
             exit;
         }
+
+        $dailyMismatchReport = self::refreshDailyMismatchReportCache($conn);
 
         $reconcileRows = [];
         $summary = [
@@ -99,7 +137,7 @@ class PaymentController {
             $sql .= " AND DATE(p.payment_date) <= ?";
             $params[] = $filters['to_date'];
         }
-        if (in_array($filters['payment_status'], ['DangXuLy', 'ThanhCong', 'ThatBai'], true)) {
+        if (in_array($filters['payment_status'], Payment::getStateList(), true)) {
             $sql .= " AND p.status = ?";
             $params[] = $filters['payment_status'];
         }
@@ -115,7 +153,7 @@ class PaymentController {
                 $issues = [];
                 $paymentAmount = (float)($row['amount'] ?? 0);
                 $financeTotal = (float)($row['finance_total'] ?? 0);
-                $isSuccess = (($row['status'] ?? '') === 'ThanhCong');
+                $isSuccess = in_array(($row['status'] ?? ''), [Payment::STATUS_THANH_CONG, Payment::STATUS_DA_DOI_SOAT], true);
                 $isFailed = (($row['status'] ?? '') === 'ThatBai');
                 $hasThu = ((int)($row['finance_thu_count'] ?? 0) > 0) && ($financeTotal > 0);
 
@@ -186,6 +224,7 @@ class PaymentController {
             @file_put_contents($cacheFile, json_encode(['last_run' => $now], JSON_UNESCAPED_UNICODE));
 
             $sql = "SELECT p.payment_id, p.booking_id, p.amount, p.status,
+                          p.payment_date,
                            COALESCE(fin.total_thu, 0) AS finance_total,
                            COALESCE(fin.thu_count, 0) AS finance_thu_count
                     FROM payments p
@@ -213,7 +252,7 @@ class PaymentController {
                 $paymentId = (int)($row['payment_id'] ?? 0);
                 $paymentAmount = (float)($row['amount'] ?? 0);
                 $financeTotal = (float)($row['finance_total'] ?? 0);
-                $isSuccess = (($row['status'] ?? '') === 'ThanhCong');
+                $isSuccess = in_array(($row['status'] ?? ''), [Payment::STATUS_THANH_CONG, Payment::STATUS_DA_DOI_SOAT], true);
                 $isFailed = (($row['status'] ?? '') === 'ThatBai');
                 $hasThu = ((int)($row['finance_thu_count'] ?? 0) > 0) && ($financeTotal > 0);
 
@@ -228,7 +267,21 @@ class PaymentController {
                 }
 
                 if (empty($issues) || $paymentId <= 0) {
+                    if ($isSuccess) {
+                        Payment::transitionStatus($conn, $paymentId, Payment::STATUS_DA_DOI_SOAT, 'auto_reconcile_ok', [
+                            'source' => 'runAutoReconcileTick',
+                        ]);
+                    }
                     continue;
+                }
+
+                if (($row['status'] ?? '') === Payment::STATUS_DANG_XU_LY) {
+                    $paymentDateTs = !empty($row['payment_date']) ? strtotime((string)$row['payment_date']) : 0;
+                    if ($paymentDateTs > 0 && (time() - $paymentDateTs) > 86400) {
+                        Payment::transitionStatus($conn, $paymentId, Payment::STATUS_HET_HAN, 'auto_timeout_dang_xu_ly', [
+                            'payment_date' => (string)$row['payment_date'],
+                        ]);
+                    }
                 }
 
                 $note = 'AUTO_RECONCILE: ' . implode(' | ', $issues);
@@ -254,17 +307,25 @@ class PaymentController {
                 'checked' => $checked,
                 'warned' => $warned,
             ], JSON_UNESCAPED_UNICODE));
+
+            self::refreshDailyMismatchReportCache($conn);
         } catch (Throwable $e) {
             // Never break payment pages because of background reconcile tick.
         }
     }
 
-    private static function repairMissingFinanceTransaction($conn, $paymentId) {
+    private static function repairMissingFinanceTransaction($conn, $paymentId, $repairReason = '') {
         if ($paymentId <= 0) {
             return ['ok' => false, 'message' => 'Payment ID khong hop le.'];
         }
 
+        $repairReason = trim((string)$repairReason);
+        if (mb_strlen($repairReason) < 10) {
+            return ['ok' => false, 'message' => 'Vui long nhap ly do sua loi toi thieu 10 ky tu.'];
+        }
+
         try {
+            self::ensureReconcileAuditTable($conn);
             $stmt = $conn->prepare("SELECT p.payment_id, p.booking_id, p.amount, p.payment_date, p.status,
                                            b.tour_id, b.khach_hang_id
                                     FROM payments p
@@ -291,6 +352,15 @@ class PaymentController {
 
             $conn->beginTransaction();
 
+            $adminId = (int)($_SESSION['user_id'] ?? 0);
+            $beforeSnapshot = [
+                'payment_id' => (int)$payment['payment_id'],
+                'booking_id' => (int)$payment['booking_id'],
+                'payment_status' => (string)$payment['status'],
+                'payment_amount' => (float)$payment['amount'],
+                'finance_thu_count' => $existsCount,
+            ];
+
             $stmtInsert = $conn->prepare("INSERT INTO giao_dich_tai_chinh
                 (booking_id, tour_id, khach_hang_id, loai, so_tien, mo_ta, ngay_giao_dich)
                 VALUES (?, ?, ?, ?, ?, ?, ?)");
@@ -308,7 +378,24 @@ class PaymentController {
                 'payment_id' => (int)$payment['payment_id'],
                 'action' => 'REPAIR_FINANCE',
                 'log_time' => date('Y-m-d H:i:s'),
-                'note' => 'Tao bu toan thu bo sung tu trang doi soat admin'
+                'note' => 'Tao bu toan thu bo sung tu trang doi soat admin | reason=' . $repairReason . ' | admin_id=' . $adminId
+            ]);
+
+            $afterSnapshot = [
+                'payment_id' => (int)$payment['payment_id'],
+                'booking_id' => (int)$payment['booking_id'],
+                'finance_thu_count' => 1,
+                'finance_amount' => (float)$payment['amount'],
+            ];
+
+            self::createReconcileAudit($conn, [
+                'payment_id' => (int)$payment['payment_id'],
+                'booking_id' => (int)$payment['booking_id'],
+                'action' => 'repair_missing_finance',
+                'reason' => $repairReason,
+                'performed_by' => $adminId,
+                'before_json' => json_encode($beforeSnapshot, JSON_UNESCAPED_UNICODE),
+                'after_json' => json_encode($afterSnapshot, JSON_UNESCAPED_UNICODE),
             ]);
 
             $conn->commit();
@@ -321,7 +408,126 @@ class PaymentController {
         }
     }
 
+    private static function ensureReconcileAuditTable($conn) {
+        $conn->exec("CREATE TABLE IF NOT EXISTS payment_reconcile_audit (
+            audit_id INT(11) NOT NULL AUTO_INCREMENT,
+            payment_id INT(11) NOT NULL,
+            booking_id INT(11) NOT NULL,
+            action VARCHAR(64) NOT NULL,
+            reason VARCHAR(500) DEFAULT NULL,
+            performed_by INT(11) DEFAULT NULL,
+            before_json LONGTEXT DEFAULT NULL,
+            after_json LONGTEXT DEFAULT NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (audit_id),
+            KEY idx_payment_id (payment_id),
+            KEY idx_booking_id (booking_id),
+            KEY idx_created_at (created_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    }
+
+    private static function createReconcileAudit($conn, array $data) {
+        $stmt = $conn->prepare("INSERT INTO payment_reconcile_audit (payment_id, booking_id, action, reason, performed_by, before_json, after_json, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->execute([
+            (int)($data['payment_id'] ?? 0),
+            (int)($data['booking_id'] ?? 0),
+            (string)($data['action'] ?? 'unknown'),
+            substr((string)($data['reason'] ?? ''), 0, 500),
+            isset($data['performed_by']) ? (int)$data['performed_by'] : null,
+            (string)($data['before_json'] ?? ''),
+            (string)($data['after_json'] ?? ''),
+            date('Y-m-d H:i:s'),
+        ]);
+    }
+
+    private static function refreshDailyMismatchReportCache($conn) {
+        $cacheDir = __DIR__ . '/../storage/cache';
+        $cacheFile = $cacheDir . '/payment_mismatch_daily_report.json';
+
+        if (!is_dir($cacheDir)) {
+            @mkdir($cacheDir, 0777, true);
+        }
+
+        $today = date('Y-m-d');
+        $cached = [];
+        if (is_file($cacheFile)) {
+            $raw = @file_get_contents($cacheFile);
+            $cached = $raw ? (json_decode($raw, true) ?: []) : [];
+        }
+
+        if (($cached['date'] ?? '') === $today && !empty($cached['report'])) {
+            return $cached['report'];
+        }
+
+        $report = self::buildDailyMismatchReport($conn, $today);
+        @file_put_contents($cacheFile, json_encode([
+            'date' => $today,
+            'generated_at' => date('c'),
+            'report' => $report,
+        ], JSON_UNESCAPED_UNICODE));
+
+        return $report;
+    }
+
+    private static function buildDailyMismatchReport($conn, $dateYmd) {
+        $summary = [
+            'date' => (string)$dateYmd,
+            'total' => 0,
+            'warning' => 0,
+            'thieu_thu' => 0,
+            'thua_thu' => 0,
+            'lech_tien' => 0,
+        ];
+
+        $sql = "SELECT p.payment_id, p.amount, p.status,
+                       COALESCE(fin.total_thu, 0) AS finance_total,
+                       COALESCE(fin.thu_count, 0) AS finance_thu_count
+                FROM payments p
+                LEFT JOIN (
+                    SELECT booking_id,
+                           SUM(CASE WHEN loai = 'Thu' THEN so_tien ELSE 0 END) AS total_thu,
+                           SUM(CASE WHEN loai = 'Thu' THEN 1 ELSE 0 END) AS thu_count
+                    FROM giao_dich_tai_chinh
+                    GROUP BY booking_id
+                ) fin ON fin.booking_id = p.booking_id
+                WHERE DATE(p.payment_date) = ?";
+
+        $stmt = $conn->prepare($sql);
+        $stmt->execute([(string)$dateYmd]);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        foreach ($rows as $row) {
+            $summary['total']++;
+            $paymentAmount = (float)($row['amount'] ?? 0);
+            $financeTotal = (float)($row['finance_total'] ?? 0);
+            $isSuccess = in_array(($row['status'] ?? ''), [Payment::STATUS_THANH_CONG, Payment::STATUS_DA_DOI_SOAT], true);
+            $isFailed = (($row['status'] ?? '') === Payment::STATUS_THAT_BAI);
+            $hasThu = ((int)($row['finance_thu_count'] ?? 0) > 0) && ($financeTotal > 0);
+
+            $hasIssue = false;
+            if ($isSuccess && !$hasThu) {
+                $summary['thieu_thu']++;
+                $hasIssue = true;
+            }
+            if ($isFailed && $hasThu) {
+                $summary['thua_thu']++;
+                $hasIssue = true;
+            }
+            if ($isSuccess && $hasThu && abs($financeTotal - $paymentAmount) > 1) {
+                $summary['lech_tien']++;
+                $hasIssue = true;
+            }
+
+            if ($hasIssue) {
+                $summary['warning']++;
+            }
+        }
+
+        return $summary;
+    }
+
     public static function show($conn, $id) {
+        Payment::ensureStateMachineSchema($conn);
         $userId = (int)($_SESSION['user_id'] ?? 0);
         if ($userId > 0) {
             try {
@@ -383,8 +589,19 @@ class PaymentController {
             exit;
         }
 
-        $receivedAmount = validateMoney($_POST['received_amount'] ?? null, 0) ?? 0;
-        $transferNote = requestString('transfer_note', '', 'POST');
+        $schema = validateInputSchema([
+            'received_amount' => ['type' => 'money', 'required' => true, 'min' => 1],
+            'transfer_note' => ['type' => 'string', 'required' => true, 'min' => 3, 'max' => 255],
+        ], 'POST');
+        if (!$schema['ok']) {
+            setValidationErrors($schema['errors'], 'Thong tin xac nhan thanh toan khong hop le.');
+            $_SESSION['error'] = 'Thong tin xac nhan thanh toan khong hop le.';
+            header('Location: index.php?act=admin/show_payment&id=' . $paymentId);
+            exit;
+        }
+
+        $receivedAmount = (float)($schema['data']['received_amount'] ?? 0);
+        $transferNote = (string)($schema['data']['transfer_note'] ?? '');
 
         try {
             $stmt = $conn->prepare("SELECT p.payment_id, p.booking_id, p.amount, p.status,
@@ -407,7 +624,7 @@ class PaymentController {
                 exit;
             }
 
-            if (($payment['status'] ?? '') === 'ThanhCong') {
+            if (in_array(($payment['status'] ?? ''), [Payment::STATUS_THANH_CONG, Payment::STATUS_DA_DOI_SOAT], true)) {
                 $_SESSION['success'] = 'Giao dich da o trang thai ThanhCong truoc do.';
                 header('Location: index.php?act=admin/show_payment&id=' . $paymentId);
                 exit;
@@ -471,8 +688,7 @@ class PaymentController {
             $conn->beginTransaction();
 
             $stmtUpdate = $conn->prepare("UPDATE payments
-                                          SET status = 'ThanhCong',
-                                              amount = ?,
+                                          SET amount = ?,
                                               note = CONCAT(COALESCE(note, ''), ' | ADMIN_CONFIRM=', ?, ' | TRANSFER_NOTE=', ?)
                                           WHERE payment_id = ?");
             $stmtUpdate->execute([
@@ -481,6 +697,15 @@ class PaymentController {
                 substr($transferNote, 0, 255),
                 $paymentId
             ]);
+
+            $transition = Payment::transitionStatus($conn, $paymentId, Payment::STATUS_THANH_CONG, 'admin_manual_confirm_received', [
+                'received_amount' => $receivedAmount,
+                'matched_booking' => $matchedBooking ? 1 : 0,
+                'matched_phone' => $matchedPhone ? 1 : 0,
+            ]);
+            if (!$transition['ok']) {
+                throw new RuntimeException((string)$transition['message']);
+            }
 
             PaymentLog::create($conn, [
                 'payment_id' => $paymentId,
@@ -572,7 +797,7 @@ class PaymentController {
                 exit;
             }
 
-            if (($payment['status'] ?? '') === 'ThanhCong') {
+            if (in_array(($payment['status'] ?? ''), [Payment::STATUS_THANH_CONG, Payment::STATUS_DA_DOI_SOAT], true)) {
                 $_SESSION['success'] = 'Giao dịch đã ở trạng thái ThanhCong.';
                 header('Location: index.php?act=admin/show_payment&id=' . $paymentId);
                 exit;
@@ -584,13 +809,19 @@ class PaymentController {
             $conn->beginTransaction();
 
             $stmtUpdate = $conn->prepare("UPDATE payments
-                                          SET status = 'ThanhCong',
-                                              note = CONCAT(COALESCE(note, ''), ' | GATEWAY_CONFIRM=', ?)
+                                          SET note = CONCAT(COALESCE(note, ''), ' | GATEWAY_CONFIRM=', ?)
                                           WHERE payment_id = ?");
             $stmtUpdate->execute([
                 date('Y-m-d H:i:s') . ($adminNote !== '' ? '; note=' . substr($adminNote, 0, 200) : '') . '; admin_id=' . $adminId,
                 $paymentId
             ]);
+
+            $transition = Payment::transitionStatus($conn, $paymentId, Payment::STATUS_THANH_CONG, 'admin_manual_gateway_confirm', [
+                'admin_id' => $adminId,
+            ]);
+            if (!$transition['ok']) {
+                throw new RuntimeException((string)$transition['message']);
+            }
 
             PaymentLog::create($conn, [
                 'payment_id' => $paymentId,

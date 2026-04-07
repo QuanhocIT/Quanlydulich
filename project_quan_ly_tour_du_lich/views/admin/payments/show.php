@@ -138,7 +138,7 @@ ob_start();
         </ul>
     </div>
 
-    <?php if (($payment['status'] ?? '') === 'DangXuLy'): ?>
+    <?php if (in_array(($payment['status'] ?? ''), ['TaoMoi', 'DangXuLy'], true)): ?>
         <?php $isGatewayMethod = in_array(($payment['payment_method'] ?? ''), ['VNPay', 'Momo', 'Paypal'], true); ?>
 
         <?php if ($isGatewayMethod && defined('PAYMENT_MODE') && PAYMENT_MODE === 'vnpay' && defined('VNPAY_TMN_CODE') && VNPAY_TMN_CODE !== ''): ?>

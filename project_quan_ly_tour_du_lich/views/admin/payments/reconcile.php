@@ -117,9 +117,12 @@ ob_start();
             <label>Trạng thái payment</label>
             <select name="payment_status">
                 <option value="">Tất cả</option>
+                <option value="TaoMoi" <?php echo (($filters['payment_status'] ?? '') === 'TaoMoi') ? 'selected' : ''; ?>>TaoMoi</option>
                 <option value="DangXuLy" <?php echo (($filters['payment_status'] ?? '') === 'DangXuLy') ? 'selected' : ''; ?>>DangXuLy</option>
                 <option value="ThanhCong" <?php echo (($filters['payment_status'] ?? '') === 'ThanhCong') ? 'selected' : ''; ?>>ThanhCong</option>
                 <option value="ThatBai" <?php echo (($filters['payment_status'] ?? '') === 'ThatBai') ? 'selected' : ''; ?>>ThatBai</option>
+                <option value="HetHan" <?php echo (($filters['payment_status'] ?? '') === 'HetHan') ? 'selected' : ''; ?>>HetHan</option>
+                <option value="DaDoiSoat" <?php echo (($filters['payment_status'] ?? '') === 'DaDoiSoat') ? 'selected' : ''; ?>>DaDoiSoat</option>
             </select>
         </div>
         <div class="field">
@@ -143,6 +146,15 @@ ob_start();
         <div class="summary-card"><div class="label">Thiếu thu</div><div class="value"><?php echo (int)($summary['thieu_thu'] ?? 0); ?></div></div>
         <div class="summary-card"><div class="label">Thừa thu</div><div class="value"><?php echo (int)($summary['thua_thu'] ?? 0); ?></div></div>
         <div class="summary-card"><div class="label">Lệch tiền</div><div class="value"><?php echo (int)($summary['lech_tien'] ?? 0); ?></div></div>
+    </div>
+
+    <div class="summary-grid" style="margin-top:-4px;">
+        <div class="summary-card"><div class="label">Bao cao ngay</div><div class="value"><?php echo htmlspecialchars((string)($dailyMismatchReport['date'] ?? date('Y-m-d'))); ?></div></div>
+        <div class="summary-card"><div class="label">Tong payment/ngay</div><div class="value"><?php echo (int)($dailyMismatchReport['total'] ?? 0); ?></div></div>
+        <div class="summary-card"><div class="label">Canh bao/ngay</div><div class="value warn"><?php echo (int)($dailyMismatchReport['warning'] ?? 0); ?></div></div>
+        <div class="summary-card"><div class="label">Thieu thu/ngay</div><div class="value"><?php echo (int)($dailyMismatchReport['thieu_thu'] ?? 0); ?></div></div>
+        <div class="summary-card"><div class="label">Thua thu/ngay</div><div class="value"><?php echo (int)($dailyMismatchReport['thua_thu'] ?? 0); ?></div></div>
+        <div class="summary-card"><div class="label">Lech tien/ngay</div><div class="value"><?php echo (int)($dailyMismatchReport['lech_tien'] ?? 0); ?></div></div>
     </div>
 
     <div class="aventura-table-wrapper">
@@ -187,6 +199,7 @@ ob_start();
                                     <form method="POST" action="index.php?act=admin/paymentReconcile&from_date=<?php echo urlencode((string)($filters['from_date'] ?? '')); ?>&to_date=<?php echo urlencode((string)($filters['to_date'] ?? '')); ?>&payment_status=<?php echo urlencode((string)($filters['payment_status'] ?? '')); ?>&reconcile_state=<?php echo urlencode((string)($filters['reconcile_state'] ?? '')); ?>" style="margin:0;">
                                         <?php echo csrfField('payment_reconcile_repair'); ?>
                                         <input type="hidden" name="repair_payment_id" value="<?php echo (int)$row['payment_id']; ?>">
+                                        <input type="text" name="repair_reason" maxlength="500" required placeholder="Ly do sua loi (toi thieu 10 ky tu)" style="width:230px;margin-right:6px;">
                                         <button type="submit" class="aventura-btn-sm aventura-btn-gold" onclick="return confirm('Tạo bút toán thu bổ sung cho payment #<?php echo (int)$row['payment_id']; ?>?');">Tạo bút toán thu</button>
                                     </form>
                                 <?php else: ?>

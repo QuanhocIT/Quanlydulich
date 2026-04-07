@@ -44,6 +44,21 @@ class BookingController {
                 exit();
             }
 
+            $schema = validateInputSchema([
+                'tour_id' => ['type' => 'id', 'required' => true],
+                'ngay_khoi_hanh' => ['type' => 'date', 'required' => true],
+                'ngay_ket_thuc' => ['type' => 'date', 'required' => false],
+                'so_nguoi' => ['type' => 'id', 'required' => true],
+                'tien_coc' => ['type' => 'money', 'required' => false, 'min' => 0],
+                'tong_tien' => ['type' => 'money', 'required' => false, 'min' => 0],
+            ], 'POST');
+            if (!$schema['ok']) {
+                setValidationErrors($schema['errors'], 'Du lieu dat tour khong hop le.');
+                $_SESSION['error'] = 'Du lieu dat tour khong hop le.';
+                header('Location: index.php?act=tour/index');
+                exit();
+            }
+
             $khachHangId = $_SESSION['khach_hang_id'] ?? null;
             if (!$khachHangId && isset($_SESSION['user_id'])) {
                 $khachHang = $this->khachHangModel->findByNguoiDungId($_SESSION['user_id']);
@@ -58,19 +73,19 @@ class BookingController {
                 exit();
             }
 
-            $tourId = validateId($_POST['tour_id'] ?? null) ?? 0;
+            $tourId = (int)($schema['data']['tour_id'] ?? 0);
             $tour = $tourId > 0 ? $this->tourModel->findById($tourId) : null;
             if ($tourId <= 0 || !$tour) {
                 header('Location: index.php?act=tour/index');
                 exit();
             }
 
-            $ngayKhoiHanh = validateDateYmd($_POST['ngay_khoi_hanh'] ?? '') ?? '';
-            $ngayKetThuc = validateDateYmd($_POST['ngay_ket_thuc'] ?? '') ?? $ngayKhoiHanh;
-            $soNguoi = validateId($_POST['so_nguoi'] ?? 1) ?? 1;
+            $ngayKhoiHanh = (string)($schema['data']['ngay_khoi_hanh'] ?? '');
+            $ngayKetThuc = (string)($schema['data']['ngay_ket_thuc'] ?? $ngayKhoiHanh);
+            $soNguoi = (int)($schema['data']['so_nguoi'] ?? 1);
 
-            $tienCoc = validateMoney($_POST['tien_coc'] ?? 0, 0) ?? 0;
-            $tongTienInput = validateMoney($_POST['tong_tien'] ?? null, 0);
+            $tienCoc = (float)($schema['data']['tien_coc'] ?? 0);
+            $tongTienInput = $schema['data']['tong_tien'];
             $tongTien = $tongTienInput ?? ((float)($tour['gia_co_ban'] ?? 0) * $soNguoi);
 
             $data = [
@@ -123,7 +138,7 @@ class BookingController {
                 exit();
             }
         } else {
-            $tourId = validateId($_GET['tour_id'] ?? null) ?? 0;
+            $tourId = requestId('tour_id', 0, 'GET') ?? 0;
             $tour = $this->tourModel->findById($tourId);
             if (!$tour) {
                 header('Location: index.php?act=tour/index');
@@ -135,7 +150,7 @@ class BookingController {
     
     public function show() {
         // requireLogin();
-        $id = validateId($_GET['id'] ?? null) ?? 0;
+        $id = requestId('id', 0, 'GET') ?? 0;
         $booking = $this->bookingModel->findById($id);
         
         $khachHangId = $_SESSION['khach_hang_id'] ?? null;
@@ -159,7 +174,7 @@ class BookingController {
         // requireLogin();
         $filters = [];
         
-        if (isset($_SESSION['role']) && $_SESSION['role'] === 'KhachHang') {
+        if (hasRole('KhachHang')) {
             $khachHangId = $_SESSION['khach_hang_id'] ?? null;
             if (!$khachHangId && isset($_SESSION['user_id'])) {
                 $khachHang = $this->khachHangModel->findByNguoiDungId($_SESSION['user_id']);
@@ -653,12 +668,7 @@ class BookingController {
             exit();
         }
         
-        // Chỉ Admin mới được xóa
-        if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'Admin') {
-            $_SESSION['error'] = 'Chỉ Admin mới có quyền xóa booking.';
-            header('Location: index.php?act=admin/quanLyBooking');
-            exit();
-        }
+        requireRole('Admin', 'admin/quanLyBooking', 'Chi Admin moi co quyen xoa booking.');
         
         // GET: Hiển thị form xác nhận mật khẩu
         if ($_SERVER['REQUEST_METHOD'] === 'GET') {
@@ -741,21 +751,97 @@ class BookingController {
         }
     }
 
+    // Ẩn booking đã hoàn tất khỏi danh sách chính (không xóa dữ liệu).
+    public function hideCompleted() {
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+            header('Location: index.php?act=admin/quanLyBooking');
+            exit();
+        }
+
+        if (!verifyCsrfToken($_POST['_csrf_token'] ?? '', 'booking_hide')) {
+            $_SESSION['error'] = 'Phiên làm việc không hợp lệ.';
+            header('Location: index.php?act=admin/quanLyBooking');
+            exit();
+        }
+
+        requireRole('Admin', 'admin/quanLyBooking', 'Chi Admin moi co quyen an booking.');
+
+        $bookingId = (int)($_POST['booking_id'] ?? 0);
+        if ($bookingId <= 0) {
+            $_SESSION['error'] = 'ID booking không hợp lệ.';
+            header('Location: index.php?act=admin/quanLyBooking');
+            exit();
+        }
+
+        $booking = $this->bookingModel->getBookingWithDetails($bookingId);
+        if (!$booking) {
+            $_SESSION['error'] = 'Booking không tồn tại.';
+            header('Location: index.php?act=admin/quanLyBooking');
+            exit();
+        }
+
+        if (($booking['trang_thai'] ?? '') !== 'HoanTat') {
+            $_SESSION['error'] = 'Chỉ có thể ẩn booking đã hoàn tất.';
+            header('Location: index.php?act=admin/quanLyBooking');
+            exit();
+        }
+
+        if ($this->bookingModel->isBookingHidden($bookingId)) {
+            $_SESSION['success'] = 'Booking này đã được ẩn trước đó.';
+            header('Location: index.php?act=admin/quanLyBooking');
+            exit();
+        }
+
+        $lyDoAn = trim((string)($_POST['ly_do_an'] ?? ''));
+        $prefix = $this->bookingModel->getHideReasonPrefix();
+
+        $thongTinBooking = json_encode([
+            'booking_id' => $booking['booking_id'],
+            'tour_id' => $booking['tour_id'],
+            'ten_tour' => $booking['ten_tour'] ?? 'N/A',
+            'khach_hang_id' => $booking['khach_hang_id'],
+            'ten_khach_hang' => $booking['ho_ten'] ?? 'N/A',
+            'so_nguoi' => $booking['so_nguoi'] ?? 0,
+            'tong_tien' => $booking['tong_tien'] ?? 0,
+            'ngay_dat' => $booking['ngay_dat'] ?? null,
+            'ngay_khoi_hanh' => $booking['ngay_khoi_hanh'] ?? null,
+            'ngay_ket_thuc' => $booking['ngay_ket_thuc'] ?? null,
+            'trang_thai' => $booking['trang_thai'] ?? 'N/A',
+            'ghi_chu' => $booking['ghi_chu'] ?? null,
+        ], JSON_UNESCAPED_UNICODE);
+
+        $historySaved = $this->deletionHistoryModel->insert([
+            'booking_id' => $bookingId,
+            'tour_id' => $booking['tour_id'] ?? null,
+            'khach_hang_id' => $booking['khach_hang_id'] ?? null,
+            'nguoi_xoa_id' => (int)($_SESSION['user_id'] ?? 0),
+            'ly_do_xoa' => $prefix . ($lyDoAn !== '' ? (' ' . $lyDoAn) : ' Ẩn booking đã hoàn tất khỏi danh sách chính'),
+            'thong_tin_booking' => $thongTinBooking,
+        ]);
+
+        if ($historySaved) {
+            $_SESSION['success'] = 'Đã ẩn booking hoàn tất. Bạn có thể xem lại trong mục "Booking đã hoàn thành".';
+        } else {
+            $_SESSION['error'] = 'Không thể ẩn booking. Vui lòng thử lại.';
+        }
+
+        header('Location: index.php?act=admin/quanLyBooking');
+        exit();
+    }
+
     // Kiểm tra quyền cập nhật
     private function checkPermissionToUpdate($bookingId) {
         if (!isset($_SESSION['user_id'])) {
             return false;
         }
-        
-        $role = $_SESSION['role'] ?? '';
-        
+
         // Admin có quyền cập nhật tất cả
-        if ($role === 'Admin') {
+        if (hasRole('Admin')) {
             return true;
         }
         
         // HDV có thể cập nhật booking của tour mình phụ trách
-        if ($role === 'HDV') {
+        if (hasRole('HDV')) {
             // Có thể thêm logic kiểm tra tour do HDV phụ trách
             return true; // Tạm thời cho phép
         }
@@ -768,16 +854,14 @@ class BookingController {
         if (!isset($_SESSION['user_id'])) {
             return false;
         }
-        
-        $role = $_SESSION['role'] ?? '';
-        
+
         // Admin và HDV có quyền xem tất cả
-        if ($role === 'Admin' || $role === 'HDV') {
+        if (hasRole(['Admin', 'HDV'])) {
             return true;
         }
         
         // Khách hàng chỉ xem được booking của mình
-        if ($role === 'KhachHang') {
+        if (hasRole('KhachHang')) {
             $khachHangId = $_SESSION['khach_hang_id'] ?? null;
             if (!$khachHangId && isset($_SESSION['user_id'])) {
                 $khachHang = $this->khachHangModel->findByNguoiDungId($_SESSION['user_id']);
@@ -793,7 +877,7 @@ class BookingController {
 
     // Nhân viên đặt tour cho khách hàng
     public function datTourChoKhach() {
-        // requireRole('Admin');
+        requireRole('Admin', 'admin/quanLyBooking');
         
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             try {

@@ -19,7 +19,7 @@
 1. Chuan hoa validation dau vao
 - Tao mot lop helper validate chung cho GET/POST.
 - Ap dung whitelist cho act route va cac tham so dieu huong.
-- Bat buoc sanitize va validate cac truong nhay cam (email, so dien thoai, so tien, id).
+- Bat buoc sanitize va validate cac truong nhay cam (email, so dien thoai, so tien, id).d
 
 2. Chuan hoa phan quyen
 - Tap trung logic kiem tra role vao mot middleware/helper duy nhat.

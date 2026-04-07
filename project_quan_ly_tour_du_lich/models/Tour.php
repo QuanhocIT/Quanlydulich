@@ -287,6 +287,49 @@ class Tour
         $stmt->execute([(int)$tourId]);
         return $stmt->fetch();
     }
+
+    // Lấy danh sách tour mà HDV hiện tại được phân công theo user_id.
+    public function getToursByHDV($nguoiDungId) {
+        $nguoiDungId = (int)$nguoiDungId;
+        if ($nguoiDungId <= 0) {
+            return [];
+        }
+
+        $sql = "SELECT DISTINCT
+                    t.*, 
+                    MAX(lk.ngay_khoi_hanh) AS ngay_khoi_hanh_gan_nhat
+                FROM nhan_su ns
+                INNER JOIN lich_khoi_hanh lk
+                    ON lk.hdv_id = ns.nhan_su_id
+                INNER JOIN tour t
+                    ON t.tour_id = lk.tour_id
+                WHERE ns.nguoi_dung_id = ?
+                  AND ns.vai_tro = 'HDV'
+                GROUP BY t.tour_id
+                
+                UNION
+                
+                SELECT DISTINCT
+                    t.*, 
+                    MAX(lk.ngay_khoi_hanh) AS ngay_khoi_hanh_gan_nhat
+                FROM nhan_su ns
+                INNER JOIN phan_bo_nhan_su pbn
+                    ON pbn.nhan_su_id = ns.nhan_su_id
+                   AND pbn.vai_tro = 'HDV'
+                INNER JOIN lich_khoi_hanh lk
+                    ON lk.id = pbn.lich_khoi_hanh_id
+                INNER JOIN tour t
+                    ON t.tour_id = lk.tour_id
+                WHERE ns.nguoi_dung_id = ?
+                  AND ns.vai_tro = 'HDV'
+                GROUP BY t.tour_id
+                
+                ORDER BY ngay_khoi_hanh_gan_nhat DESC, tour_id DESC";
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute([$nguoiDungId, $nguoiDungId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
     
 
     // Lấy danh sách hình ảnh theo tour_id

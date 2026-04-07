@@ -405,7 +405,7 @@ ob_start();
     </div>
 </div>
 
-<script src="<?php echo BASE_URL; ?>public/vendor/chartjs/chart.umd.min.js?v=<?php echo rawurlencode(ASSET_VERSION); ?>"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 <script>
 const tours = <?php echo json_encode($tours ?? [], JSON_UNESCAPED_UNICODE); ?>;
 const tourNames = tours.map(t => t.ten_tour);

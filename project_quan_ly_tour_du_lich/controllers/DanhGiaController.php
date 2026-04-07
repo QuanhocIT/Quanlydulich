@@ -14,7 +14,7 @@ class DanhGiaController {
         
         // Debug
         error_log("DanhGiaController::index() called");
-        error_log("Session role: " . ($_SESSION['role'] ?? 'not set'));
+        error_log("Session role: " . (currentUserRole() ?? 'not set'));
         
         // Lấy tham số lọc
         $filters = [

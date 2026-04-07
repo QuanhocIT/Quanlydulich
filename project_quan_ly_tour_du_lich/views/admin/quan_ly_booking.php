@@ -1,5 +1,6 @@
 <?php
-$pageTitle = 'Quản lý Booking';
+$isCompletedView = !empty($isCompletedView);
+$pageTitle = $isCompletedView ? 'Booking đã hoàn thành' : 'Quản lý Booking';
 $currentPage = 'booking';
 ob_start();
 ?>
@@ -571,8 +572,8 @@ $huy = count(array_filter($bookingsPage, fn($b) => $b['trang_thai'] === 'Huy'));
             <div class="page-header-main">
                 <div class="page-header-avatar">📋</div>
                 <div class="page-header-title">
-                    <h1>Quản Lý Booking</h1>
-                    <p>Quản lý đặt tour, theo dõi trạng thái và xử lý booking của khách hàng</p>
+                    <h1><?php echo $isCompletedView ? 'Booking Đã Hoàn Thành' : 'Quản Lý Booking'; ?></h1>
+                    <p><?php echo $isCompletedView ? 'Xem lại các booking hoàn tất, bao gồm booking đã ẩn khỏi danh sách chính' : 'Quản lý đặt tour, theo dõi trạng thái và xử lý booking của khách hàng'; ?></p>
                 </div>
             </div>
             <div class="header-actions">
@@ -604,8 +605,11 @@ $huy = count(array_filter($bookingsPage, fn($b) => $b['trang_thai'] === 'Huy'));
     </div>
 
     <div class="booking-view-switch">
-        <a href="index.php?act=admin/quanLyBooking" class="view-switch-link active">
+        <a href="index.php?act=admin/quanLyBooking" class="view-switch-link <?php echo !$isCompletedView ? 'active' : ''; ?>">
             📋 Danh sách booking
+        </a>
+        <a href="index.php?act=admin/bookingDaHoanThanh" class="view-switch-link <?php echo $isCompletedView ? 'active' : ''; ?>">
+            ✅ Booking đã hoàn thành
         </a>
         <a href="index.php?act=booking/datTourChoKhach" class="view-switch-link">
             ➕ Đặt tour cho khách
@@ -654,7 +658,7 @@ $huy = count(array_filter($bookingsPage, fn($b) => $b['trang_thai'] === 'Huy'));
             </div>
         </div>
         <form method="GET" action="index.php">
-            <input type="hidden" name="act" value="admin/quanLyBooking">
+            <input type="hidden" name="act" value="<?php echo $isCompletedView ? 'admin/bookingDaHoanThanh' : 'admin/quanLyBooking'; ?>">
             <div class="filter-row">
                 <div class="form-group">
                     <label>Lọc theo trạng thái</label>
@@ -662,7 +666,7 @@ $huy = count(array_filter($bookingsPage, fn($b) => $b['trang_thai'] === 'Huy'));
                         <option value="">Tất cả trạng thái</option>
                         <option value="ChoXacNhan" <?php echo (isset($_GET['trang_thai']) && $_GET['trang_thai'] == 'ChoXacNhan') ? 'selected' : ''; ?>>Chờ xác nhận</option>
                         <option value="DaCoc" <?php echo (isset($_GET['trang_thai']) && $_GET['trang_thai'] == 'DaCoc') ? 'selected' : ''; ?>>Đã cọc</option>
-                        <option value="HoanTat" <?php echo (isset($_GET['trang_thai']) && $_GET['trang_thai'] == 'HoanTat') ? 'selected' : ''; ?>>Hoàn tất</option>
+                        <option value="HoanTat" <?php echo ((isset($_GET['trang_thai']) && $_GET['trang_thai'] == 'HoanTat') || $isCompletedView) ? 'selected' : ''; ?>>Hoàn tất</option>
                         <option value="Huy" <?php echo (isset($_GET['trang_thai']) && $_GET['trang_thai'] == 'Huy') ? 'selected' : ''; ?>>Hủy</option>
                     </select>
                 </div>
@@ -745,6 +749,9 @@ $huy = count(array_filter($bookingsPage, fn($b) => $b['trang_thai'] === 'Huy'));
                                 echo $statusLabels[$booking['trang_thai']] ?? $booking['trang_thai'];
                                 ?>
                             </span>
+                            <?php if (!empty($booking['is_hidden'])): ?>
+                                <div style="margin-top: 6px; font-size: 11px; color: #f7d36d;">Đã ẩn khỏi danh sách chính</div>
+                            <?php endif; ?>
                         </td>
                         <td style="text-align: center;">
                             <div class="btn-group">
@@ -760,20 +767,26 @@ $huy = count(array_filter($bookingsPage, fn($b) => $b['trang_thai'] === 'Huy'));
                                     👥
                                 </a>
                                 <?php endif; ?>
-                                <?php if (isset($_SESSION['role']) && ($_SESSION['role'] === 'Admin' || $_SESSION['role'] === 'HDV')): ?>
+                                <?php if (hasRole(['Admin', 'HDV'])): ?>
                                 <a href="index.php?act=booking/chiTiet&id=<?php echo $booking['booking_id']; ?>"
                                    class="btn-icon edit"
                                    title="Chỉnh sửa booking">
                                     ✏️
                                 </a>
                                 <?php endif; ?>
-                                <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'Admin'): ?>
-                                <a href="index.php?act=booking/delete&id=<?php echo $booking['booking_id']; ?>"
-                                   class="btn-icon delete"
-                                   title="Xóa booking"
-                                   onclick="return confirm('Bạn có chắc chắn muốn xóa booking này?');">
-                                    🗑️
-                                </a>
+                                <?php if (hasRole('Admin') && !$isCompletedView && ($booking['trang_thai'] ?? '') === 'HoanTat' && empty($booking['is_hidden'])): ?>
+                                <form method="POST" action="index.php" style="display:inline; margin:0;">
+                                    <input type="hidden" name="act" value="booking/hideCompleted">
+                                    <input type="hidden" name="booking_id" value="<?php echo (int)$booking['booking_id']; ?>">
+                                    <input type="hidden" name="_csrf_token" value="<?php echo htmlspecialchars(csrfToken('booking_hide'), ENT_QUOTES, 'UTF-8'); ?>">
+                                    <button type="submit"
+                                            class="btn-icon delete"
+                                            title="Ẩn khỏi danh sách booking"
+                                            onclick="return confirm('Ẩn booking hoàn tất này khỏi danh sách chính?');"
+                                            style="border:0; cursor:pointer;">
+                                        🙈
+                                    </button>
+                                </form>
                                 <?php endif; ?>
                             </div>
                         </td>

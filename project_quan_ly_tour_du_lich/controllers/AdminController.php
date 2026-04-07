@@ -101,8 +101,19 @@ class AdminController {
             require_once __DIR__ . '/../models/NhanSu.php';
             $nhanSuModel = new NhanSu();
 
-            $nhanSuId = (int)($_POST['nhan_su_id'] ?? 0);
-            $luongCoBan = (float)($_POST['luong_co_ban'] ?? 0);
+            $schema = validateInputSchema([
+                'nhan_su_id' => ['type' => 'id', 'required' => true],
+                'luong_co_ban' => ['type' => 'money', 'required' => true, 'min' => 0],
+            ], 'POST');
+            if (!$schema['ok']) {
+                setValidationErrors($schema['errors'], 'Du lieu cap nhat luong co ban khong hop le.');
+                $_SESSION['error'] = 'Du lieu cap nhat luong co ban khong hop le.';
+                header('Location: index.php?act=admin/quanLyLuongThuong');
+                exit;
+            }
+
+            $nhanSuId = (int)($schema['data']['nhan_su_id'] ?? 0);
+            $luongCoBan = (float)($schema['data']['luong_co_ban'] ?? 0);
             if ($nhanSuId <= 0) {
                 $_SESSION['error'] = 'Thiếu nhân_sự_id.';
                 header('Location: index.php?act=admin/quanLyLuongThuong');
@@ -112,7 +123,7 @@ class AdminController {
             $ok = $nhanSuModel->updateLuongCoBan($nhanSuId, $luongCoBan);
             $_SESSION[$ok ? 'success' : 'error'] = $ok ? 'Đã cập nhật lương cơ bản.' : 'Không thể cập nhật lương cơ bản (hãy đảm bảo đã thêm cột luong_co_ban).';
 
-            $redirect = $_POST['redirect'] ?? null;
+            $redirect = requestString('redirect', '', 'POST');
             header('Location: ' . (!empty($redirect) ? $redirect : 'index.php?act=admin/chiTietLuong&nhan_su_id=' . $nhanSuId));
             exit;
         }
@@ -285,12 +296,27 @@ class AdminController {
         $nhanSuModel = new NhanSu();
         $lichKhoiHanhModel = new LichKhoiHanh();
 
-        $nhanSuId = (int)($_POST['nhan_su_id'] ?? 0);
-        $lichKhoiHanhId = (int)($_POST['lich_khoi_hanh_id'] ?? 0);
-        $loaiLuong = $_POST['loai_luong'] ?? 'CoDinh';
-        $soTienCoDinh = $_POST['so_tien_co_dinh'] ?? 0;
-        $phanTramHoaHong = $_POST['phan_tram_hoa_hong'] ?? 0;
-        $ghiChu = trim($_POST['ghi_chu'] ?? '');
+        $schema = validateInputSchema([
+            'nhan_su_id' => ['type' => 'id', 'required' => true],
+            'lich_khoi_hanh_id' => ['type' => 'id', 'required' => true],
+            'loai_luong' => ['type' => 'string', 'required' => true, 'enum' => ['CoDinh', 'PhanTram', 'KetHop']],
+            'so_tien_co_dinh' => ['type' => 'money', 'required' => false, 'min' => 0],
+            'phan_tram_hoa_hong' => ['type' => 'money', 'required' => false, 'min' => 0, 'max' => 100],
+            'ghi_chu' => ['type' => 'string', 'required' => false, 'max' => 500],
+        ], 'POST');
+        if (!$schema['ok']) {
+            setValidationErrors($schema['errors'], 'Du lieu tao luong thuong khong hop le.');
+            $_SESSION['error'] = 'Du lieu tao luong thuong khong hop le.';
+            header('Location: index.php?act=admin/quanLyLuongThuong');
+            exit;
+        }
+
+        $nhanSuId = (int)($schema['data']['nhan_su_id'] ?? 0);
+        $lichKhoiHanhId = (int)($schema['data']['lich_khoi_hanh_id'] ?? 0);
+        $loaiLuong = (string)($schema['data']['loai_luong'] ?? 'CoDinh');
+        $soTienCoDinh = (float)($schema['data']['so_tien_co_dinh'] ?? 0);
+        $phanTramHoaHong = (float)($schema['data']['phan_tram_hoa_hong'] ?? 0);
+        $ghiChu = (string)($schema['data']['ghi_chu'] ?? '');
 
         if ($nhanSuId <= 0 || $lichKhoiHanhId <= 0) {
             $_SESSION['error'] = 'Vui lòng chọn nhân sự và lịch khởi hành.';
@@ -737,6 +763,7 @@ class AdminController {
             'trang_thai' => $_GET['trang_thai'] ?? '',
             'search'     => trim($_GET['search'] ?? ''),
             'co_yeu_cau_tour' => isset($_GET['co_yeu_cau_tour']) ? (string)$_GET['co_yeu_cau_tour'] : '',
+            'exclude_hidden' => true,
         ];
 
         $totalBookings = $bookingModel->countAllWithDetailsFiltered($filters);
@@ -760,6 +787,44 @@ class AdminController {
             unset($booking);
         }
 
+        require 'views/admin/quan_ly_booking.php';
+    }
+
+    public function bookingDaHoanThanh() {
+        $bookingModel = new Booking();
+
+        $perPage = 20;
+        $pageNumber = max(1, (int)($_GET['page'] ?? 1));
+        $offset = ($pageNumber - 1) * $perPage;
+
+        $filters = [
+            'trang_thai' => 'HoanTat',
+            'search' => trim($_GET['search'] ?? ''),
+            'co_yeu_cau_tour' => isset($_GET['co_yeu_cau_tour']) ? (string)$_GET['co_yeu_cau_tour'] : '',
+            'exclude_hidden' => false,
+        ];
+
+        $totalBookings = $bookingModel->countAllWithDetailsFiltered($filters);
+        $bookings = $bookingModel->getAllWithDetailsFiltered($filters, $perPage, $offset);
+        $totalPages = (int)ceil($totalBookings / $perPage);
+
+        try {
+            $thongBaoModel = new ThongBao();
+            $yeuCauMap = $thongBaoModel->getYeuCauTourByUserIds(array_column($bookings, 'nguoi_dung_id'));
+
+            foreach ($bookings as &$booking) {
+                $ndId = (int)($booking['nguoi_dung_id'] ?? 0);
+                $booking['yeu_cau_tour'] = $ndId > 0 ? ($yeuCauMap[$ndId] ?? null) : null;
+            }
+            unset($booking);
+        } catch (Exception $e) {
+            foreach ($bookings as &$booking) {
+                $booking['yeu_cau_tour'] = null;
+            }
+            unset($booking);
+        }
+
+        $isCompletedView = true;
         require 'views/admin/quan_ly_booking.php';
     }
 
@@ -799,7 +864,22 @@ class AdminController {
             exit();
         }
 
-        $yeuCauId = isset($_POST['yeu_cau_id']) ? (int)$_POST['yeu_cau_id'] : 0;
+        $this->requirePostCsrf('admin/yeuCauDacBiet');
+
+        $schema = validateInputSchema([
+            'yeu_cau_id' => ['type' => 'id', 'required' => true],
+            'trang_thai' => ['type' => 'string', 'required' => false, 'max' => 50],
+            'muc_do_uu_tien' => ['type' => 'string', 'required' => false, 'max' => 50],
+            'ghi_chu_hdv' => ['type' => 'string', 'required' => false, 'max' => 1000],
+        ], 'POST');
+        if (!$schema['ok']) {
+            setValidationErrors($schema['errors'], 'Du lieu cap nhat yeu cau dac biet khong hop le.');
+            $_SESSION['error'] = 'Du lieu cap nhat yeu cau dac biet khong hop le.';
+            header('Location: index.php?act=admin/yeuCauDacBiet');
+            exit();
+        }
+
+        $yeuCauId = (int)($schema['data']['yeu_cau_id'] ?? 0);
         if ($yeuCauId <= 0) {
             $_SESSION['error'] = 'Thiếu mã yêu cầu cần cập nhật.';
             header('Location: index.php?act=admin/yeuCauDacBiet');
@@ -810,9 +890,9 @@ class AdminController {
         $yeuCauModel = new YeuCauDacBiet();
 
         $data = [
-            'trang_thai' => $_POST['trang_thai'] ?? null,
-            'muc_do_uu_tien' => $_POST['muc_do_uu_tien'] ?? null,
-            'ghi_chu_hdv' => $_POST['ghi_chu_hdv'] ?? null
+            'trang_thai' => $schema['data']['trang_thai'] ?? null,
+            'muc_do_uu_tien' => $schema['data']['muc_do_uu_tien'] ?? null,
+            'ghi_chu_hdv' => $schema['data']['ghi_chu_hdv'] ?? null
         ];
 
         $nguoiDungId = $_SESSION['user_id'] ?? null;
@@ -835,7 +915,25 @@ class AdminController {
             exit();
         }
 
-        $bookingId = isset($_POST['booking_id']) ? (int)$_POST['booking_id'] : 0;
+        $this->requirePostCsrf('admin/yeuCauDacBiet');
+
+        $schema = validateInputSchema([
+            'booking_id' => ['type' => 'id', 'required' => true],
+            'loai_yeu_cau' => ['type' => 'string', 'required' => false, 'max' => 50],
+            'tieu_de' => ['type' => 'string', 'required' => false, 'max' => 255],
+            'mo_ta' => ['type' => 'string', 'required' => false, 'max' => 5000],
+            'muc_do_uu_tien' => ['type' => 'string', 'required' => false, 'max' => 50],
+            'trang_thai' => ['type' => 'string', 'required' => false, 'max' => 50],
+            'ghi_chu_hdv' => ['type' => 'string', 'required' => false, 'max' => 1000],
+        ], 'POST');
+        if (!$schema['ok']) {
+            setValidationErrors($schema['errors'], 'Du lieu tao yeu cau dac biet khong hop le.');
+            $_SESSION['error'] = 'Du lieu tao yeu cau dac biet khong hop le.';
+            header('Location: index.php?act=admin/yeuCauDacBiet');
+            exit();
+        }
+
+        $bookingId = (int)($schema['data']['booking_id'] ?? 0);
         if ($bookingId <= 0) {
             $_SESSION['error'] = 'Vui lòng chọn booking/khách hàng cần tạo yêu cầu.';
             header('Location: index.php?act=admin/yeuCauDacBiet');
@@ -846,12 +944,12 @@ class AdminController {
         $yeuCauModel = new YeuCauDacBiet();
 
         $data = [
-            'loai_yeu_cau' => $_POST['loai_yeu_cau'] ?? 'khac',
-            'tieu_de' => trim($_POST['tieu_de'] ?? ''),
-            'mo_ta' => $_POST['mo_ta'] ?? null,
-            'muc_do_uu_tien' => $_POST['muc_do_uu_tien'] ?? 'trung_binh',
-            'trang_thai' => $_POST['trang_thai'] ?? 'moi',
-            'ghi_chu_hdv' => $_POST['ghi_chu_hdv'] ?? null,
+            'loai_yeu_cau' => $schema['data']['loai_yeu_cau'] ?? 'khac',
+            'tieu_de' => (string)($schema['data']['tieu_de'] ?? ''),
+            'mo_ta' => $schema['data']['mo_ta'] ?? null,
+            'muc_do_uu_tien' => $schema['data']['muc_do_uu_tien'] ?? 'trung_binh',
+            'trang_thai' => $schema['data']['trang_thai'] ?? 'moi',
+            'ghi_chu_hdv' => $schema['data']['ghi_chu_hdv'] ?? null,
         ];
 
         if ($data['tieu_de'] === '') {
@@ -1014,9 +1112,21 @@ class AdminController {
         
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $this->requirePostCsrf('admin/nhaCungCap');
-            $id = $_POST['id_nha_cung_cap'] ?? 0;
-            $matKhau = $_POST['mat_khau'] ?? '';
-            $lyDoXoa = $_POST['ly_do_xoa'] ?? '';
+            $schema = validateInputSchema([
+                'id_nha_cung_cap' => ['type' => 'id', 'required' => true],
+                'mat_khau' => ['type' => 'string', 'required' => true, 'min' => 1],
+                'ly_do_xoa' => ['type' => 'string', 'required' => false, 'max' => 1000],
+            ], 'POST');
+            if (!$schema['ok']) {
+                setValidationErrors($schema['errors'], 'Du lieu xoa nha cung cap khong hop le.');
+                $_SESSION['error'] = 'Du lieu xoa nha cung cap khong hop le.';
+                header('Location: index.php?act=admin/nhaCungCap');
+                exit();
+            }
+
+            $id = (int)($schema['data']['id_nha_cung_cap'] ?? 0);
+            $matKhau = (string)($schema['data']['mat_khau'] ?? '');
+            $lyDoXoa = (string)($schema['data']['ly_do_xoa'] ?? '');
             
             if ($id <= 0) {
                 $_SESSION['error'] = 'ID nhà cung cấp không hợp lệ';
@@ -1130,9 +1240,23 @@ class AdminController {
         }
         $this->requirePostCsrf('admin/nhaCungCap');
 
-        $serviceId = (int)($_POST['dich_vu_id'] ?? 0);
-        $action = $_POST['action'] ?? '';
-        $nccId = (int)($_POST['ncc_id'] ?? 0);
+        $schema = validateInputSchema([
+            'dich_vu_id' => ['type' => 'id', 'required' => true],
+            'action' => ['type' => 'string', 'required' => true, 'enum' => ['approve', 'reject', 'update_price']],
+            'ncc_id' => ['type' => 'id', 'required' => false],
+            'gia_tien' => ['type' => 'money', 'required' => false, 'min' => 0],
+            'ghi_chu' => ['type' => 'string', 'required' => false, 'max' => 500],
+        ], 'POST');
+        if (!$schema['ok']) {
+            setValidationErrors($schema['errors'], 'Du lieu xu ly dich vu nha cung cap khong hop le.');
+            $_SESSION['error'] = 'Du lieu xu ly dich vu nha cung cap khong hop le.';
+            header('Location: index.php?act=admin/nhaCungCap');
+            exit();
+        }
+
+        $serviceId = (int)($schema['data']['dich_vu_id'] ?? 0);
+        $action = (string)($schema['data']['action'] ?? '');
+        $nccId = (int)($schema['data']['ncc_id'] ?? 0);
         $redirect = 'index.php?act=admin/nhaCungCap';
         if ($nccId) {
             $redirect .= '&id=' . $nccId;
@@ -1149,7 +1273,7 @@ class AdminController {
         try {
             switch ($action) {
                 case 'approve':
-                    $giaTien = (int)($_POST['gia_tien'] ?? 0);
+                    $giaTien = (int)($schema['data']['gia_tien'] ?? 0);
                     if ($giaTien <= 0) {
                         throw new Exception('Giá tiền phải lớn hơn 0');
                     }
@@ -1157,12 +1281,12 @@ class AdminController {
                     $_SESSION['success'] = 'Đã xác nhận dịch vụ';
                     break;
                 case 'reject':
-                    $ghiChu = trim($_POST['ghi_chu'] ?? '');
+                    $ghiChu = (string)($schema['data']['ghi_chu'] ?? '');
                     $nhaCungCapModel->tuChoiDichVu($serviceId, $ghiChu ?: null);
                     $_SESSION['success'] = 'Đã từ chối dịch vụ';
                     break;
                 case 'update_price':
-                    $giaTien = (int)($_POST['gia_tien'] ?? 0);
+                    $giaTien = (int)($schema['data']['gia_tien'] ?? 0);
                     if ($giaTien <= 0) {
                         throw new Exception('Giá tiền phải lớn hơn 0');
                     }
@@ -2353,14 +2477,16 @@ class AdminController {
             
             // Tìm người dùng theo email
             $nguoiDung = $nguoiDungModel->findByEmail($email);
+            $matKhauTam = null;
             if (!$nguoiDung) {
                 // Tạo người dùng mới
+                $matKhauTam = generateTemporaryPassword();
                 $nguoiDungId = $nguoiDungModel->insert([
                     'ho_ten' => $hoTen,
                     'email' => $email,
                     'so_dien_thoai' => $soDienThoai,
                     'vai_tro' => 'KhachHang',
-                    'mat_khau' => password_hash('123456', PASSWORD_DEFAULT) // Mật khẩu mặc định
+                    'mat_khau' => password_hash($matKhauTam, PASSWORD_DEFAULT)
                 ]);
                 $nguoiDung = $nguoiDungModel->findById($nguoiDungId);
             }
@@ -2389,6 +2515,9 @@ class AdminController {
             $bookingId = $bookingModel->insert($bookingData);
             if ($bookingId) {
                 $_SESSION['success'] = 'Thêm khách vào lịch khởi hành thành công.';
+                if ($matKhauTam !== null) {
+                    $_SESSION['success'] .= ' Tai khoan moi da duoc tao voi mat khau tam thoi: ' . $matKhauTam . '. Vui long thong bao cho khach doi mat khau ngay sau lan dang nhap dau.';
+                }
             } else {
                 $_SESSION['error'] = 'Không thể thêm booking.';
             }

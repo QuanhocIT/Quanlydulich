@@ -3,8 +3,12 @@ require_once __DIR__ . '/vendor/autoload.php';
 require_once __DIR__ . '/commons/env.php';
 require_once __DIR__ . '/commons/function.php';
 
-if (session_status() !== PHP_SESSION_ACTIVE) {
-    session_start();
+initializeSecureSession(__DIR__ . '/storage/sessions');
+
+if (!verifyOAuthState('google', $_GET['state'] ?? '')) {
+    $_SESSION['error'] = 'Phien dang nhap Google khong hop le. Vui long thu lai.';
+    header('Location: index.php?act=auth/login');
+    exit;
 }
 
 if (trim((string)GOOGLE_CLIENT_ID) === '' || trim((string)GOOGLE_CLIENT_SECRET) === '') {
@@ -58,12 +62,13 @@ $khachHangModel = new KhachHang();
 
 $nguoiDung = $nguoiDungModel->findByEmail($email);
 if (!$nguoiDung) {
+    $localPassword = generateTemporaryPassword(20);
     $nguoiDungId = $nguoiDungModel->insert([
         'ten_dang_nhap' => $email,
         'ho_ten' => trim((string)($userInfo->name ?? 'Nguoi dung Google')),
         'email' => $email,
         'so_dien_thoai' => '',
-        'mat_khau' => password_hash('google_oauth', PASSWORD_DEFAULT),
+        'mat_khau' => password_hash($localPassword, PASSWORD_DEFAULT),
         'vai_tro' => 'KhachHang',
         'ngay_tao' => date('Y-m-d H:i:s')
     ]);
@@ -86,29 +91,34 @@ if (!$nguoiDung) {
 $nguoiDungId = (int)($nguoiDung['id'] ?? 0);
 $vaiTro = (string)($nguoiDung['vai_tro'] ?? 'KhachHang');
 
-$_SESSION['user_id'] = $nguoiDungId;
-$_SESSION['role'] = $vaiTro;
-$_SESSION['user_name'] = (string)($nguoiDung['ho_ten'] ?? ($userInfo->name ?? 'Nguoi dung'));
+$sessionData = [];
 
 if ($vaiTro === 'KhachHang' && $nguoiDungId > 0) {
     $khachHang = $khachHangModel->findByNguoiDungId($nguoiDungId);
     if (!$khachHang) {
         $khachHangId = $khachHangModel->insert(['nguoi_dung_id' => $nguoiDungId]);
         if ($khachHangId) {
-            $_SESSION['khach_hang_id'] = (int)$khachHangId;
+            $sessionData['khach_hang_id'] = (int)$khachHangId;
         }
     } else {
-        $_SESSION['khach_hang_id'] = (int)($khachHang['khach_hang_id'] ?? 0);
+        $sessionData['khach_hang_id'] = (int)($khachHang['khach_hang_id'] ?? 0);
     }
 }
 
-$_SESSION['user'] = [
+$sessionData['user'] = [
     'id' => $nguoiDungId,
     'email' => (string)($nguoiDung['email'] ?? $email),
-    'name' => (string)($_SESSION['user_name'] ?? ''),
+    'name' => (string)($nguoiDung['ho_ten'] ?? ($userInfo->name ?? 'Nguoi dung')),
     'picture' => (string)($userInfo->picture ?? ''),
-    'role' => $vaiTro
+    'role' => $vaiTro,
 ];
+
+completeUserLoginSession(
+    $nguoiDungId,
+    $vaiTro,
+    (string)($nguoiDung['ho_ten'] ?? ($userInfo->name ?? 'Nguoi dung')),
+    $sessionData
+);
 
 if ($vaiTro === 'Admin') {
     header('Location: index.php?act=admin/dashboard');

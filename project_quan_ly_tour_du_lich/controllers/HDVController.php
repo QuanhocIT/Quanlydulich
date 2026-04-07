@@ -242,11 +242,25 @@ class HDVController {
         $nhanSu = $this->getCurrentHDV();
         $nhanSuId = $nhanSu['nhan_su_id'];
 
-        $lichKhoiHanhId = isset($_POST['lich_khoi_hanh_id']) ? (int)$_POST['lich_khoi_hanh_id'] : 0;
-        $bookingId = isset($_POST['booking_id']) ? (int)$_POST['booking_id'] : 0;
-        $khachHangId = isset($_POST['khach_hang_id']) ? (int)$_POST['khach_hang_id'] : 0;
-        $trangThai = $_POST['trang_thai'] ?? 'ChuaCheckIn';
-        $ghiChu = trim($_POST['ghi_chu'] ?? '');
+        $schema = validateInputSchema([
+            'lich_khoi_hanh_id' => ['type' => 'id', 'required' => true],
+            'booking_id' => ['type' => 'id', 'required' => true],
+            'khach_hang_id' => ['type' => 'id', 'required' => true],
+            'trang_thai' => ['type' => 'string', 'required' => true, 'enum' => ['ChuaCheckIn', 'DaCheckIn', 'DaCheckOut']],
+            'ghi_chu' => ['type' => 'string', 'required' => false, 'max' => 1000],
+        ], 'POST');
+        if (!$schema['ok']) {
+            setValidationErrors($schema['errors'], 'Du lieu check-in khach khong hop le.');
+            $_SESSION['error'] = 'Du lieu check-in khach khong hop le.';
+            header('Location: index.php?act=hdv/checkInKhach');
+            exit();
+        }
+
+        $lichKhoiHanhId = (int)($schema['data']['lich_khoi_hanh_id'] ?? 0);
+        $bookingId = (int)($schema['data']['booking_id'] ?? 0);
+        $khachHangId = (int)($schema['data']['khach_hang_id'] ?? 0);
+        $trangThai = (string)($schema['data']['trang_thai'] ?? 'ChuaCheckIn');
+        $ghiChu = (string)($schema['data']['ghi_chu'] ?? '');
 
         if ($lichKhoiHanhId <= 0 || $bookingId <= 0 || $khachHangId <= 0) {
             $_SESSION['error'] = 'Thiếu thông tin cần thiết.';
@@ -379,11 +393,26 @@ $stats = $this->yeuCauDacBietModel->getSummaryStatsForHDV($nhanSuId, $filters);
         $nhanSu = $this->getCurrentHDV();
         $nhanSuId = $nhanSu['nhan_su_id'];
 
-        $lichKhoiHanhId = isset($_POST['lich_khoi_hanh_id']) ? (int)$_POST['lich_khoi_hanh_id'] : 0;
-        $tourId = isset($_POST['tour_id']) ? (int)$_POST['tour_id'] : 0;
-        $khachHangId = isset($_POST['khach_hang_id']) ? (int)$_POST['khach_hang_id'] : 0;
-        $bookingId = isset($_POST['booking_id']) ? (int)$_POST['booking_id'] : 0;
-        $noiDung = trim($_POST['noi_dung'] ?? '');
+        $schema = validateInputSchema([
+            'lich_khoi_hanh_id' => ['type' => 'id', 'required' => true],
+            'tour_id' => ['type' => 'id', 'required' => true],
+            'khach_hang_id' => ['type' => 'id', 'required' => true],
+            'booking_id' => ['type' => 'id', 'required' => true],
+            'noi_dung' => ['type' => 'string', 'required' => true, 'min' => 3, 'max' => 2000],
+            'redirect_to' => ['type' => 'string', 'required' => false, 'max' => 100],
+        ], 'POST');
+        if (!$schema['ok']) {
+            setValidationErrors($schema['errors'], 'Du lieu yeu cau dac biet khong hop le.');
+            $_SESSION['error'] = 'Du lieu yeu cau dac biet khong hop le.';
+            header('Location: index.php?act=hdv/checkInKhach');
+            exit();
+        }
+
+        $lichKhoiHanhId = (int)($schema['data']['lich_khoi_hanh_id'] ?? 0);
+        $tourId = (int)($schema['data']['tour_id'] ?? 0);
+        $khachHangId = (int)($schema['data']['khach_hang_id'] ?? 0);
+        $bookingId = (int)($schema['data']['booking_id'] ?? 0);
+        $noiDung = (string)($schema['data']['noi_dung'] ?? '');
 
         if ($lichKhoiHanhId <= 0 || $tourId <= 0 || $khachHangId <= 0 || $bookingId <= 0) {
             $_SESSION['error'] = 'Thiếu thông tin yêu cầu đặc biệt.';
@@ -419,7 +448,7 @@ $stats = $this->yeuCauDacBietModel->getSummaryStatsForHDV($nhanSuId, $filters);
         $result = $this->yeuCauDacBietModel->upsert($khachHangId, $tourId, $noiDung);
         $_SESSION[$result ? 'success' : 'error'] = $result ? 'Đã lưu yêu cầu đặc biệt.' : 'Không thể lưu yêu cầu.';
 
-        $redirectTo = $_POST['redirect_to'] ?? 'hdv/quanLyYeuCauDacBiet';
+        $redirectTo = (string)($schema['data']['redirect_to'] ?? 'hdv/quanLyYeuCauDacBiet');
         if ($redirectTo === 'hdv/checkInKhach') {
             header('Location: index.php?act=hdv/checkInKhach&lich_id=' . $lichKhoiHanhId);
         } elseif ($redirectTo === 'hdv/lichLamViec') {
@@ -608,11 +637,11 @@ $stats = $this->yeuCauDacBietModel->getSummaryStatsForHDV($nhanSuId, $filters);
             exit();
         }
         
-        $nhanSuId = $nhanSu['nhan_su_id'];
-        $phanBoId = $_POST['phan_bo_id'] ?? $_GET['phan_bo_id'] ?? 0;
-        $action = $_POST['action'] ?? $_GET['action'] ?? ''; // 'xac_nhan' hoặc 'tu_choi'
+        $nhanSuId = (int)$nhanSu['nhan_su_id'];
+        $phanBoId = requestId('phan_bo_id', 0, 'REQUEST') ?? 0;
+        $action = requestString('action', '', 'REQUEST'); // 'xac_nhan' hoặc 'tu_choi'
         
-        if ($phanBoId <= 0 || !in_array($action, ['xac_nhan', 'tu_choi'])) {
+        if ($phanBoId <= 0 || !in_array($action, ['xac_nhan', 'tu_choi'], true)) {
             $_SESSION['error'] = 'Thông tin không hợp lệ.';
             header('Location: index.php?act=hdv/tours');
             exit();
@@ -1142,22 +1171,45 @@ $stats = $this->yeuCauDacBietModel->getSummaryStatsForHDV($nhanSuId, $filters);
      * Lưu điểm check-in
      */
     public function saveDiemCheckin() {
-        $tour_id = $_POST['tour_id'] ?? 0;
-        $diem_id = $_POST['diem_id'] ?? 0;
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+            header('Location: index.php?act=hdv/checkin');
+            exit;
+        }
+
+        $this->requirePostCsrf('hdv/checkin');
+
+        $schema = validateInputSchema([
+            'tour_id' => ['type' => 'id', 'required' => true],
+            'diem_id' => ['type' => 'id', 'required' => false],
+            'ten_diem' => ['type' => 'string', 'required' => true, 'min' => 2, 'max' => 255],
+            'loai_diem' => ['type' => 'string', 'required' => false, 'max' => 50],
+            'thoi_gian_du_kien' => ['type' => 'string', 'required' => false, 'max' => 30],
+            'ghi_chu' => ['type' => 'string', 'required' => false, 'max' => 1000],
+            'thu_tu' => ['type' => 'id', 'required' => false],
+        ], 'POST');
+        if (!$schema['ok']) {
+            setValidationErrors($schema['errors'], 'Du lieu diem check-in khong hop le.');
+            $_SESSION['error'] = 'Du lieu diem check-in khong hop le.';
+            header('Location: index.php?act=hdv/checkin');
+            exit;
+        }
+
+        $tour_id = (int)($schema['data']['tour_id'] ?? 0);
+        $diem_id = (int)($schema['data']['diem_id'] ?? 0);
         
         // Normalize thoi_gian_du_kien: chuyển chuỗi rỗng thành NULL
-        $thoiGianDuKien = $_POST['thoi_gian_du_kien'] ?? null;
+        $thoiGianDuKien = $schema['data']['thoi_gian_du_kien'] ?? null;
         if ($thoiGianDuKien === '' || $thoiGianDuKien === null) {
             $thoiGianDuKien = null;
         }
         
         $data = [
             'tour_id' => $tour_id,
-            'ten_diem' => $_POST['ten_diem'] ?? '',
-            'loai_diem' => $_POST['loai_diem'] ?? 'tap_trung',
+            'ten_diem' => (string)($schema['data']['ten_diem'] ?? ''),
+            'loai_diem' => (string)($schema['data']['loai_diem'] ?? 'tap_trung'),
             'thoi_gian_du_kien' => $thoiGianDuKien,
-            'ghi_chu' => $_POST['ghi_chu'] ?? null,
-            'thu_tu' => $_POST['thu_tu'] ?? 1
+            'ghi_chu' => $schema['data']['ghi_chu'] ?? null,
+            'thu_tu' => (int)($schema['data']['thu_tu'] ?? 1)
         ];
         
         try {
@@ -1203,8 +1255,19 @@ $stats = $this->yeuCauDacBietModel->getSummaryStatsForHDV($nhanSuId, $filters);
 
         $this->requirePostCsrf('hdv/checkin');
 
-        $diem_id = $_POST['id'] ?? 0;
-        $tour_id = $_POST['tour_id'] ?? 0;
+        $schema = validateInputSchema([
+            'id' => ['type' => 'id', 'required' => true],
+            'tour_id' => ['type' => 'id', 'required' => false],
+        ], 'POST');
+        if (!$schema['ok']) {
+            setValidationErrors($schema['errors'], 'Du lieu xoa diem check-in khong hop le.');
+            $_SESSION['error'] = 'Du lieu xoa diem check-in khong hop le.';
+            header('Location: index.php?act=hdv/checkin');
+            exit;
+        }
+
+        $diem_id = (int)($schema['data']['id'] ?? 0);
+        $tour_id = (int)($schema['data']['tour_id'] ?? 0);
         
         try {
             $sql = "DELETE FROM diem_checkin WHERE id = ?";
@@ -1223,6 +1286,13 @@ $stats = $this->yeuCauDacBietModel->getSummaryStatsForHDV($nhanSuId, $filters);
      * Lưu trạng thái check-in của khách
      */
     public function saveCheckinKhach() {
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+            echo json_encode(['success' => false, 'message' => 'Yeu cau khong hop le']);
+            exit;
+        }
+
+        $this->requirePostCsrf('hdv/checkin');
+
         $userId = $_SESSION['user_id'] ?? null;
         
         // Lấy nhan_su_id
@@ -1236,10 +1306,21 @@ $stats = $this->yeuCauDacBietModel->getSummaryStatsForHDV($nhanSuId, $filters);
             exit;
         }
         
-        $diem_checkin_id = $_POST['diem_checkin_id'] ?? 0;
-        $booking_id = $_POST['booking_id'] ?? 0;
-        $trang_thai = $_POST['trang_thai'] ?? 'da_checkin';
-        $ghi_chu = $_POST['ghi_chu'] ?? null;
+        $schema = validateInputSchema([
+            'diem_checkin_id' => ['type' => 'id', 'required' => true],
+            'booking_id' => ['type' => 'id', 'required' => true],
+            'trang_thai' => ['type' => 'string', 'required' => true, 'enum' => ['da_checkin', 'vang_mat', 're_gio', 'chua_checkin']],
+            'ghi_chu' => ['type' => 'string', 'required' => false, 'max' => 1000],
+        ], 'POST');
+        if (!$schema['ok']) {
+            echo json_encode(['success' => false, 'message' => 'Du lieu khong hop le']);
+            exit;
+        }
+
+        $diem_checkin_id = (int)($schema['data']['diem_checkin_id'] ?? 0);
+        $booking_id = (int)($schema['data']['booking_id'] ?? 0);
+        $trang_thai = (string)($schema['data']['trang_thai'] ?? 'da_checkin');
+        $ghi_chu = $schema['data']['ghi_chu'] ?? null;
         
         try {
             // Lấy thông tin điểm check-in để biết lich_khoi_hanh_id
@@ -1423,9 +1504,34 @@ $stats = $this->yeuCauDacBietModel->getSummaryStatsForHDV($nhanSuId, $filters);
      * Lưu yêu cầu đặc biệt
      */
     public function saveYeuCauDacBiet() {
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+            header('Location: index.php?act=hdv/yeu_cau_dac_biet');
+            exit;
+        }
+
+        $this->requirePostCsrf('hdv/yeu_cau_dac_biet');
+
         $userId = $_SESSION['user_id'] ?? null;
-        $tour_id = $_POST['tour_id'] ?? 0;
-        $yeu_cau_id = $_POST['yeu_cau_id'] ?? 0;
+        $schema = validateInputSchema([
+            'tour_id' => ['type' => 'id', 'required' => true],
+            'yeu_cau_id' => ['type' => 'id', 'required' => false],
+            'booking_id' => ['type' => 'id', 'required' => true],
+            'loai_yeu_cau' => ['type' => 'string', 'required' => false, 'max' => 50],
+            'tieu_de' => ['type' => 'string', 'required' => true, 'min' => 2, 'max' => 255],
+            'mo_ta' => ['type' => 'string', 'required' => false, 'max' => 5000],
+            'muc_do_uu_tien' => ['type' => 'string', 'required' => false, 'max' => 50],
+            'trang_thai' => ['type' => 'string', 'required' => false, 'max' => 50],
+            'ghi_chu_hdv' => ['type' => 'string', 'required' => false, 'max' => 1000],
+        ], 'POST');
+        if (!$schema['ok']) {
+            setValidationErrors($schema['errors'], 'Du lieu yeu cau dac biet khong hop le.');
+            $_SESSION['error'] = 'Du lieu yeu cau dac biet khong hop le.';
+            header('Location: index.php?act=hdv/yeu_cau_dac_biet');
+            exit;
+        }
+
+        $tour_id = (int)($schema['data']['tour_id'] ?? 0);
+        $yeu_cau_id = (int)($schema['data']['yeu_cau_id'] ?? 0);
         
         // Lấy nhan_su_id
         $sql = "SELECT nhan_su_id FROM nhan_su WHERE nguoi_dung_id = ? AND vai_tro = 'HDV' LIMIT 1";
@@ -1440,13 +1546,13 @@ $stats = $this->yeuCauDacBietModel->getSummaryStatsForHDV($nhanSuId, $filters);
         }
         
         $data = [
-            'booking_id' => $_POST['booking_id'] ?? 0,
-            'loai_yeu_cau' => $_POST['loai_yeu_cau'] ?? 'khac',
-            'tieu_de' => $_POST['tieu_de'] ?? '',
-            'mo_ta' => $_POST['mo_ta'] ?? null,
-            'muc_do_uu_tien' => $_POST['muc_do_uu_tien'] ?? 'trung_binh',
-            'trang_thai' => $_POST['trang_thai'] ?? 'moi',
-            'ghi_chu_hdv' => $_POST['ghi_chu_hdv'] ?? null
+            'booking_id' => (int)($schema['data']['booking_id'] ?? 0),
+            'loai_yeu_cau' => $schema['data']['loai_yeu_cau'] ?? 'khac',
+            'tieu_de' => $schema['data']['tieu_de'] ?? '',
+            'mo_ta' => $schema['data']['mo_ta'] ?? null,
+            'muc_do_uu_tien' => $schema['data']['muc_do_uu_tien'] ?? 'trung_binh',
+            'trang_thai' => $schema['data']['trang_thai'] ?? 'moi',
+            'ghi_chu_hdv' => $schema['data']['ghi_chu_hdv'] ?? null
         ];
         
         try {
@@ -1524,8 +1630,19 @@ $stats = $this->yeuCauDacBietModel->getSummaryStatsForHDV($nhanSuId, $filters);
 
         $this->requirePostCsrf('hdv/yeu_cau_dac_biet');
 
-        $yeu_cau_id = $_POST['id'] ?? 0;
-        $tour_id = $_POST['tour_id'] ?? 0;
+        $schema = validateInputSchema([
+            'id' => ['type' => 'id', 'required' => true],
+            'tour_id' => ['type' => 'id', 'required' => false],
+        ], 'POST');
+        if (!$schema['ok']) {
+            setValidationErrors($schema['errors'], 'Du lieu xoa yeu cau khong hop le.');
+            $_SESSION['error'] = 'Du lieu xoa yeu cau khong hop le.';
+            header('Location: index.php?act=hdv/yeu_cau_dac_biet');
+            exit;
+        }
+
+        $yeu_cau_id = (int)($schema['data']['id'] ?? 0);
+        $tour_id = (int)($schema['data']['tour_id'] ?? 0);
         
         try {
             $sql = "DELETE FROM yeu_cau_dac_biet WHERE id = ?";
@@ -1632,6 +1749,13 @@ $stats = $this->yeuCauDacBietModel->getSummaryStatsForHDV($nhanSuId, $filters);
      * Lưu nhật ký tour
      */
     public function saveNhatKy() {
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+            header('Location: index.php?act=hdv/nhat_ky');
+            exit;
+        }
+
+        $this->requirePostCsrf('hdv/nhat_ky');
+
         if (!isset($_SESSION['user_id'])) {
             $_SESSION['error'] = 'Vui lòng đăng nhập';
             header('Location: index.php?act=auth/login');
@@ -1652,9 +1776,25 @@ $stats = $this->yeuCauDacBietModel->getSummaryStatsForHDV($nhanSuId, $filters);
             exit;
         }
         
+        $schema = validateInputSchema([
+            'tour_id' => ['type' => 'id', 'required' => true],
+            'entry_id' => ['type' => 'id', 'required' => false],
+            'loai_nhat_ky' => ['type' => 'string', 'required' => false, 'max' => 50],
+            'tieu_de' => ['type' => 'string', 'required' => true, 'min' => 2, 'max' => 255],
+            'noi_dung' => ['type' => 'string', 'required' => true, 'min' => 2, 'max' => 10000],
+            'ngay_ghi' => ['type' => 'string', 'required' => false, 'max' => 30],
+            'cach_xu_ly' => ['type' => 'string', 'required' => false, 'max' => 2000],
+        ], 'POST');
+        if (!$schema['ok']) {
+            setValidationErrors($schema['errors'], 'Du lieu nhat ky khong hop le.');
+            $_SESSION['error'] = 'Du lieu nhat ky khong hop le.';
+            header('Location: index.php?act=hdv/nhat_ky');
+            exit;
+        }
+
         $nhanSuId = $nhanSu['nhan_su_id'];
-        $tour_id = $_POST['tour_id'] ?? 0;
-        $entry_id = $_POST['entry_id'] ?? 0;
+        $tour_id = (int)($schema['data']['tour_id'] ?? 0);
+        $entry_id = (int)($schema['data']['entry_id'] ?? 0);
         
         if ($tour_id <= 0) {
             $_SESSION['error'] = 'Thiếu thông tin tour';
@@ -1701,11 +1841,11 @@ $stats = $this->yeuCauDacBietModel->getSummaryStatsForHDV($nhanSuId, $filters);
         $data = [
             'tour_id' => $tour['tour_table_id'], // Sử dụng tour_id từ bảng tour
             'nhan_su_id' => $nhanSuId,
-            'loai_nhat_ky' => $_POST['loai_nhat_ky'] ?? 'hanh_trinh',
-            'tieu_de' => $_POST['tieu_de'] ?? '',
-            'noi_dung' => $_POST['noi_dung'] ?? '',
-            'ngay_ghi' => $_POST['ngay_ghi'] ?? date('Y-m-d H:i:s'),
-            'cach_xu_ly' => $_POST['cach_xu_ly'] ?? null,
+            'loai_nhat_ky' => $schema['data']['loai_nhat_ky'] ?? 'hanh_trinh',
+            'tieu_de' => $schema['data']['tieu_de'] ?? '',
+            'noi_dung' => $schema['data']['noi_dung'] ?? '',
+            'ngay_ghi' => $schema['data']['ngay_ghi'] ?? date('Y-m-d H:i:s'),
+            'cach_xu_ly' => $schema['data']['cach_xu_ly'] ?? null,
             'hinh_anh' => !empty($imageUrls) ? json_encode($imageUrls) : null
         ];
         
@@ -1773,8 +1913,19 @@ $stats = $this->yeuCauDacBietModel->getSummaryStatsForHDV($nhanSuId, $filters);
 
         $this->requirePostCsrf('hdv/nhat_ky');
 
-        $entry_id = $_POST['id'] ?? 0;
-        $tour_id = $_POST['tour_id'] ?? 0;
+        $schema = validateInputSchema([
+            'id' => ['type' => 'id', 'required' => true],
+            'tour_id' => ['type' => 'id', 'required' => false],
+        ], 'POST');
+        if (!$schema['ok']) {
+            setValidationErrors($schema['errors'], 'Du lieu xoa nhat ky khong hop le.');
+            $_SESSION['error'] = 'Du lieu xoa nhat ky khong hop le.';
+            header('Location: index.php?act=hdv/nhat_ky');
+            exit;
+        }
+
+        $entry_id = (int)($schema['data']['id'] ?? 0);
+        $tour_id = (int)($schema['data']['tour_id'] ?? 0);
         
         // Lấy nhan_su_id
         $sql = "SELECT nhan_su_id FROM nhan_su WHERE nguoi_dung_id = ? AND vai_tro = 'HDV' LIMIT 1";
@@ -1922,6 +2073,13 @@ $stats = $this->yeuCauDacBietModel->getSummaryStatsForHDV($nhanSuId, $filters);
     }
     
     public function savePhanHoi() {
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+            header('Location: index.php?act=hdv/phan_hoi');
+            exit;
+        }
+
+        $this->requirePostCsrf('hdv/phan_hoi');
+
         $userId = $_SESSION['user_id'] ?? null;
         
         if (!$userId) {
@@ -1940,17 +2098,36 @@ $stats = $this->yeuCauDacBietModel->getSummaryStatsForHDV($nhanSuId, $filters);
             exit;
         }
         
-        $nhanSuId = $nhanSu['nhan_su_id'];
-        $id = $_POST['id'] ?? 0;
-        $tour_id = $_POST['tour_id'] ?? 0;
-        $loai_danh_gia = $_POST['loai_danh_gia'] ?? '';
-        $ten_doi_tuong = $_POST['ten_doi_tuong'] ?? '';
-        $diem_danh_gia = $_POST['diem_danh_gia'] ?? 0;
-        $tieu_de = $_POST['tieu_de'] ?? '';
-        $noi_dung = $_POST['noi_dung'] ?? '';
-        $diem_manh = $_POST['diem_manh'] ?? '';
-        $diem_yeu = $_POST['diem_yeu'] ?? '';
-        $de_xuat = $_POST['de_xuat'] ?? '';
+        $schema = validateInputSchema([
+            'id' => ['type' => 'id', 'required' => false],
+            'tour_id' => ['type' => 'id', 'required' => true],
+            'loai_danh_gia' => ['type' => 'string', 'required' => true, 'max' => 50],
+            'ten_doi_tuong' => ['type' => 'string', 'required' => true, 'max' => 255],
+            'diem_danh_gia' => ['type' => 'money', 'required' => true, 'min' => 1, 'max' => 5],
+            'tieu_de' => ['type' => 'string', 'required' => true, 'min' => 2, 'max' => 255],
+            'noi_dung' => ['type' => 'string', 'required' => true, 'min' => 2, 'max' => 10000],
+            'diem_manh' => ['type' => 'string', 'required' => false, 'max' => 5000],
+            'diem_yeu' => ['type' => 'string', 'required' => false, 'max' => 5000],
+            'de_xuat' => ['type' => 'string', 'required' => false, 'max' => 5000],
+        ], 'POST');
+        if (!$schema['ok']) {
+            setValidationErrors($schema['errors'], 'Du lieu phan hoi khong hop le.');
+            $_SESSION['error'] = 'Du lieu phan hoi khong hop le.';
+            header('Location: index.php?act=hdv/phan_hoi');
+            exit;
+        }
+
+        $nhanSuId = (int)$nhanSu['nhan_su_id'];
+        $id = (int)($schema['data']['id'] ?? 0);
+        $tour_id = (int)($schema['data']['tour_id'] ?? 0);
+        $loai_danh_gia = (string)($schema['data']['loai_danh_gia'] ?? '');
+        $ten_doi_tuong = (string)($schema['data']['ten_doi_tuong'] ?? '');
+        $diem_danh_gia = (float)($schema['data']['diem_danh_gia'] ?? 0);
+        $tieu_de = (string)($schema['data']['tieu_de'] ?? '');
+        $noi_dung = (string)($schema['data']['noi_dung'] ?? '');
+        $diem_manh = (string)($schema['data']['diem_manh'] ?? '');
+        $diem_yeu = (string)($schema['data']['diem_yeu'] ?? '');
+        $de_xuat = (string)($schema['data']['de_xuat'] ?? '');
         
         // Xử lý upload ảnh
         $hinh_anh = [];
@@ -2052,9 +2229,20 @@ $stats = $this->yeuCauDacBietModel->getSummaryStatsForHDV($nhanSuId, $filters);
 
         $this->requirePostCsrf('hdv/phan_hoi');
 
-        $nhanSuId = $nhanSu['nhan_su_id'];
-        $id = $_POST['id'] ?? 0;
-        $tour_id = $_POST['tour_id'] ?? 0;
+        $schema = validateInputSchema([
+            'id' => ['type' => 'id', 'required' => true],
+            'tour_id' => ['type' => 'id', 'required' => false],
+        ], 'POST');
+        if (!$schema['ok']) {
+            setValidationErrors($schema['errors'], 'Du lieu xoa phan hoi khong hop le.');
+            $_SESSION['error'] = 'Du lieu xoa phan hoi khong hop le.';
+            header('Location: index.php?act=hdv/phan_hoi');
+            exit;
+        }
+
+        $nhanSuId = (int)$nhanSu['nhan_su_id'];
+        $id = (int)($schema['data']['id'] ?? 0);
+        $tour_id = (int)($schema['data']['tour_id'] ?? 0);
         
         // Xóa ảnh trước
         $sql = "SELECT hinh_anh FROM phan_hoi_hdv WHERE id = ? AND hdv_id = ?";
@@ -2118,6 +2306,28 @@ $stats = $this->yeuCauDacBietModel->getSummaryStatsForHDV($nhanSuId, $filters);
             exit;
         }
         
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+            header('Location: index.php?act=hdv/profile');
+            exit;
+        }
+
+        $this->requirePostCsrf('hdv/profile');
+
+        $schema = validateInputSchema([
+            'email' => ['type' => 'email', 'required' => true],
+            'so_dien_thoai' => ['type' => 'phone', 'required' => true],
+            'chung_chi' => ['type' => 'string', 'required' => false, 'max' => 1000],
+            'ngon_ngu' => ['type' => 'string', 'required' => false, 'max' => 255],
+            'kinh_nghiem' => ['type' => 'string', 'required' => false, 'max' => 2000],
+            'suc_khoe' => ['type' => 'string', 'required' => false, 'max' => 500],
+        ], 'POST');
+        if (!$schema['ok']) {
+            setValidationErrors($schema['errors'], 'Du lieu cap nhat ho so khong hop le.');
+            $_SESSION['error'] = 'Du lieu cap nhat ho so khong hop le.';
+            header('Location: index.php?act=hdv/profile');
+            exit;
+        }
+
         try {
             // Cập nhật bảng nguoi_dung
             $sql = "UPDATE nguoi_dung SET 
@@ -2126,8 +2336,8 @@ $stats = $this->yeuCauDacBietModel->getSummaryStatsForHDV($nhanSuId, $filters);
                     WHERE id = ?";
             $stmt = $this->nhanSuModel->conn->prepare($sql);
             $stmt->execute([
-                $_POST['email'] ?? '',
-                $_POST['so_dien_thoai'] ?? '',
+                $schema['data']['email'] ?? '',
+                $schema['data']['so_dien_thoai'] ?? '',
                 $userId
             ]);
             
@@ -2140,10 +2350,10 @@ $stats = $this->yeuCauDacBietModel->getSummaryStatsForHDV($nhanSuId, $filters);
                     WHERE nguoi_dung_id = ?";
             $stmt = $this->nhanSuModel->conn->prepare($sql);
             $stmt->execute([
-                $_POST['chung_chi'] ?? null,
-                $_POST['ngon_ngu'] ?? null,
-                $_POST['kinh_nghiem'] ?? null,
-                $_POST['suc_khoe'] ?? null,
+                $schema['data']['chung_chi'] ?? null,
+                $schema['data']['ngon_ngu'] ?? null,
+                $schema['data']['kinh_nghiem'] ?? null,
+                $schema['data']['suc_khoe'] ?? null,
                 $userId
             ]);
             

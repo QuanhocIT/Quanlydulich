@@ -9,22 +9,8 @@ class TourController {
     }
     
     public function index() {
-        $role = $_SESSION['role'] ?? null;
-        if ($role === 'Admin') {
-            header('Location: index.php?act=admin/dashboard');
-            exit();
-        }
-        if ($role === 'HDV') {
-            header('Location: index.php?act=hdv/dashboard');
-            exit();
-        }
-        if ($role === 'KhachHang') {
-            header('Location: index.php?act=khachHang/dashboard');
-            exit();
-        }
-        if ($role === 'NhaCungCap') {
-            header('Location: index.php?act=nhaCungCap/dashboard');
-            exit();
+        if (isLoggedIn()) {
+            redirectToRoleHome('auth/login');
         }
 
         header('Location: index.php?act=auth/login');
@@ -53,7 +39,7 @@ class TourController {
     }
     
     public function create() {
-        // requireRole('Admin');
+        requireRole('Admin');
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $hanhDong = $_POST['hanh_dong'] ?? 'create';
@@ -167,7 +153,7 @@ class TourController {
     }
     
     public function update() {
-        // requireRole('Admin');
+        requireRole('Admin');
         $id = $_POST['id'] ?? $_GET['id'] ?? null;
         $id = $id !== null ? (int)$id : null;
         
@@ -264,7 +250,7 @@ class TourController {
     }
     
     public function delete() {
-        // requireRole('Admin');
+        requireRole('Admin');
         if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
             header('Location: index.php?act=admin/quanLyTour');
             exit();
