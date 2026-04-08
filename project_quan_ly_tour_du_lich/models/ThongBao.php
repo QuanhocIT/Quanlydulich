@@ -3,6 +3,18 @@
 class ThongBao 
 {
     public $conn;
+
+    /**
+     * Điều kiện SQL nhận diện khiếu nại chuyển khoản sai/thiếu nội dung.
+     */
+    private function paymentComplaintWhereClause(): string
+    {
+        return "(
+                    tb.tieu_de LIKE 'Khieu nai chuyen khoan sai noi dung%'
+                    OR tb.tieu_de LIKE 'Khiếu nại chuyển khoản sai nội dung%'
+                    OR tb.noi_dung LIKE '[KHIEU NAI CHUYEN KHOAN SAI NOI DUNG]%'
+                )";
+    }
     
     public function __construct()
     {
@@ -256,7 +268,7 @@ class ThongBao
                 nd_gui.so_dien_thoai as nguoi_gui_phone
                 FROM thong_bao tb
                 LEFT JOIN nguoi_dung nd_gui ON tb.nguoi_gui_id = nd_gui.id
-                WHERE tb.tieu_de = 'Yêu cầu tour theo mong muốn'
+            WHERE tb.tieu_de = 'Yêu cầu tour theo mong muốn'
                   AND tb.vai_tro_nhan = 'Admin'";
         
         $params = [];
@@ -338,6 +350,62 @@ class ThongBao
         $sql = "SELECT COUNT(*) as total
                 FROM thong_bao tb
                 WHERE tb.tieu_de = 'Yêu cầu tour theo mong muốn'
+                  AND tb.vai_tro_nhan = 'Admin'
+                  AND tb.trang_thai = 'DaGui'";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute();
+        $result = $stmt->fetch();
+        return (int)($result['total'] ?? 0);
+    }
+
+    /**
+     * Lấy danh sách khiếu nại thanh toán từ khách hàng (cho Admin)
+     */
+    public function getPaymentComplaints($filters = []) {
+        $sql = "SELECT tb.*, 
+                nd_gui.ho_ten as nguoi_gui_ten,
+                nd_gui.email as nguoi_gui_email,
+                nd_gui.so_dien_thoai as nguoi_gui_phone
+                FROM thong_bao tb
+                LEFT JOIN nguoi_dung nd_gui ON tb.nguoi_gui_id = nd_gui.id
+                                WHERE " . $this->paymentComplaintWhereClause() . "
+                  AND tb.vai_tro_nhan = 'Admin'";
+
+        $params = [];
+
+        if (!empty($filters['trang_thai'])) {
+            $sql .= " AND tb.trang_thai = ?";
+            $params[] = $filters['trang_thai'];
+        }
+
+        if (!empty($filters['search'])) {
+            $sql .= " AND (nd_gui.ho_ten LIKE ? OR nd_gui.so_dien_thoai LIKE ? OR tb.noi_dung LIKE ? OR tb.tieu_de LIKE ?)";
+            $search = '%' . $filters['search'] . '%';
+            $params[] = $search;
+            $params[] = $search;
+            $params[] = $search;
+            $params[] = $search;
+        }
+
+        $sql .= " ORDER BY tb.created_at DESC";
+
+        if (!empty($filters['limit'])) {
+            $sql .= " LIMIT ?";
+            $params[] = (int)$filters['limit'];
+        }
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Đếm khiếu nại thanh toán chưa xử lý
+     */
+    public function countPaymentComplaintsChuaXuLy() {
+        $sql = "SELECT COUNT(*) as total
+                FROM thong_bao tb
+                                WHERE " . $this->paymentComplaintWhereClause() . "
                   AND tb.vai_tro_nhan = 'Admin'
                   AND tb.trang_thai = 'DaGui'";
         $stmt = $this->conn->prepare($sql);

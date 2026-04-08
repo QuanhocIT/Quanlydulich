@@ -78,6 +78,27 @@ ob_start();
         }
         .flash-success { background: rgba(34,197,94,.15); border: 1px solid rgba(34,197,94,.4); }
         .flash-error { background: rgba(239,68,68,.15); border: 1px solid rgba(239,68,68,.4); }
+
+        .col-detail,
+        .cell-detail {
+            text-align: center;
+            width: 120px;
+            white-space: nowrap;
+        }
+
+        .detail-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            min-width: 74px;
+            white-space: nowrap;
+        }
+
+        .detail-link i {
+            line-height: 1;
+        }
+
         @media (max-width: 1100px) {
             .reconcile-form { grid-template-columns: repeat(2, minmax(140px, 1fr)); }
             .summary-grid { grid-template-columns: repeat(3, minmax(120px, 1fr)); }
@@ -92,15 +113,22 @@ ob_start();
         <h1 class="aventura-title"><i class="bi bi-clipboard-check"></i> Đối soát thanh toán online</h1>
     </div>
 
-    <?php if (isset($_SESSION['success'])): ?>
+    <?php if (isset($_SESSION['payment_reconcile_success'])): ?>
+        <div class="flash flash-success"><?php echo htmlspecialchars($_SESSION['payment_reconcile_success']); unset($_SESSION['payment_reconcile_success']); ?></div>
+    <?php elseif (isset($_SESSION['success'])): ?>
         <div class="flash flash-success"><?php echo htmlspecialchars($_SESSION['success']); unset($_SESSION['success']); ?></div>
     <?php endif; ?>
-    <?php if (isset($_SESSION['error'])): ?>
+    <?php if (isset($_SESSION['payment_reconcile_error'])): ?>
+        <div class="flash flash-error"><?php echo htmlspecialchars($_SESSION['payment_reconcile_error']); unset($_SESSION['payment_reconcile_error']); ?></div>
+    <?php elseif (isset($_SESSION['error'])): ?>
         <div class="flash flash-error"><?php echo htmlspecialchars($_SESSION['error']); unset($_SESSION['error']); ?></div>
     <?php endif; ?>
 
     <div class="reconcile-tools">
-        <a href="index.php?act=admin/payments" class="aventura-btn aventura-btn-outline"><i class="bi bi-arrow-left"></i> Danh sách thanh toán</a>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <a href="index.php?act=admin/payments" class="aventura-btn aventura-btn-outline"><i class="bi bi-arrow-left"></i> Danh sách thanh toán</a>
+            <a href="index.php?act=admin/paymentComplaints" class="aventura-btn aventura-btn-outline"><i class="bi bi-exclamation-diamond"></i> Khiếu nại thanh toán</a>
+        </div>
     </div>
 
     <form method="GET" action="index.php" class="reconcile-form">
@@ -168,13 +196,12 @@ ob_start();
                     <th>Số tiền payment</th>
                     <th>Tổng thu tài chính</th>
                     <th>Kết quả đối soát</th>
-                    <th>Chi tiết</th>
-                    <th>Hành động</th>
+                    <th class="col-detail">Chi tiết</th>
                 </tr>
             </thead>
             <tbody>
                 <?php if (empty($reconcileRows)): ?>
-                    <tr><td colspan="9" style="text-align:center;color:var(--text-muted)">Không có dữ liệu đối soát.</td></tr>
+                        <tr><td colspan="8" style="text-align:center;color:var(--text-muted)">Không có dữ liệu đối soát.</td></tr>
                 <?php else: ?>
                     <?php foreach ($reconcileRows as $row): ?>
                         <?php $isWarning = (($row['reconcile_state'] ?? 'OK') !== 'OK'); ?>
@@ -186,25 +213,25 @@ ob_start();
                             <td><?php echo number_format((float)($row['amount'] ?? 0)); ?> VND</td>
                             <td><?php echo number_format((float)($row['finance_total'] ?? 0)); ?> VND</td>
                             <td>
-                                <?php echo htmlspecialchars((string)($row['reconcile_state'] ?? 'OK')); ?>
+                                <?php
+                                    $reconcileState = (string)($row['reconcile_state'] ?? 'OK');
+                                    $paymentStatus = (string)($row['status'] ?? '');
+                                    $financeTotal = (float)($row['finance_total'] ?? 0);
+                                    $stateLabel = $reconcileState;
+
+                                    if ($reconcileState === 'OK' && $paymentStatus === 'ThatBai' && $financeTotal <= 0) {
+                                        $stateLabel = 'OK - ThatBai hop le (khong ghi thu)';
+                                    } elseif ($reconcileState === 'OK' && in_array($paymentStatus, ['ThanhCong', 'DaDoiSoat'], true)) {
+                                        $stateLabel = 'OK - Khop giao dich thu';
+                                    }
+                                ?>
+                                <?php echo htmlspecialchars($stateLabel); ?>
                                 <?php if (!empty($row['issues'])): ?>
                                     <div class="issues-note"><?php echo htmlspecialchars(implode(' | ', $row['issues'])); ?></div>
                                 <?php endif; ?>
                             </td>
-                            <td>
-                                <a href="index.php?act=admin/show_payment&id=<?php echo (int)$row['payment_id']; ?>" class="aventura-btn-sm aventura-btn-outline"><i class="bi bi-eye"></i> Xem</a>
-                            </td>
-                            <td>
-                                <?php if (!empty($row['can_repair_missing_finance'])): ?>
-                                    <form method="POST" action="index.php?act=admin/paymentReconcile&from_date=<?php echo urlencode((string)($filters['from_date'] ?? '')); ?>&to_date=<?php echo urlencode((string)($filters['to_date'] ?? '')); ?>&payment_status=<?php echo urlencode((string)($filters['payment_status'] ?? '')); ?>&reconcile_state=<?php echo urlencode((string)($filters['reconcile_state'] ?? '')); ?>" style="margin:0;">
-                                        <?php echo csrfField('payment_reconcile_repair'); ?>
-                                        <input type="hidden" name="repair_payment_id" value="<?php echo (int)$row['payment_id']; ?>">
-                                        <input type="text" name="repair_reason" maxlength="500" required placeholder="Ly do sua loi (toi thieu 10 ky tu)" style="width:230px;margin-right:6px;">
-                                        <button type="submit" class="aventura-btn-sm aventura-btn-gold" onclick="return confirm('Tạo bút toán thu bổ sung cho payment #<?php echo (int)$row['payment_id']; ?>?');">Tạo bút toán thu</button>
-                                    </form>
-                                <?php else: ?>
-                                    <span style="color:var(--text-muted)">-</span>
-                                <?php endif; ?>
+                            <td class="cell-detail">
+                                <a href="index.php?act=admin/show_payment&id=<?php echo (int)$row['payment_id']; ?>" class="aventura-btn-sm aventura-btn-outline detail-link"><i class="bi bi-eye"></i> <span>Xem</span></a>
                             </td>
                         </tr>
                     <?php endforeach; ?>

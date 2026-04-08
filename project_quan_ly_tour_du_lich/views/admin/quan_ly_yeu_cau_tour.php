@@ -403,6 +403,7 @@ ob_start();
                             }
                         }
                         $thoiGian = !empty($yc['created_at']) ? date('d/m/Y H:i', strtotime($yc['created_at'])) : 'N/A';
+                        $isTransferComplaint = (strpos((string)($yc['tieu_de'] ?? ''), 'Khieu nai chuyen khoan sai noi dung') === 0);
                     ?>
                     <tr>
                         <td><?php echo $index + 1; ?></td>
@@ -417,11 +418,21 @@ ob_start();
                         </td>
                         <td>
                             <div class="request-note">
-                                <strong>Địa điểm:</strong> <?php echo htmlspecialchars($thongTin['Địa điểm'] ?? 'N/A'); ?><br>
-                                <strong>Thời gian:</strong> <?php echo htmlspecialchars($thongTin['Thời gian'] ?? 'N/A'); ?><br>
-                                <strong>Số người:</strong> <?php echo htmlspecialchars($thongTin['Số người'] ?? 'N/A'); ?><br>
-                                <?php if (!empty($thongTin['Yêu cầu đặc biệt'])): ?>
-                                    <strong>Yêu cầu:</strong> <?php echo htmlspecialchars($thongTin['Yêu cầu đặc biệt']); ?>
+                                <?php if ($isTransferComplaint): ?>
+                                    <div><strong>Loại:</strong> Khieu nai chuyen khoan</div>
+                                    <div><strong>Booking:</strong> <?php echo htmlspecialchars($thongTin['Booking ID'] ?? 'N/A'); ?></div>
+                                    <div><strong>Payment:</strong> <?php echo htmlspecialchars($thongTin['Payment ID'] ?? 'N/A'); ?></div>
+                                    <div><strong>Tham chieu:</strong> <?php echo htmlspecialchars($thongTin['Ma giao dich/tham chieu'] ?? 'N/A'); ?></div>
+                                    <?php if (!empty($thongTin['Noi dung khiu nai'])): ?>
+                                        <div><strong>Noi dung:</strong> <?php echo htmlspecialchars($thongTin['Noi dung khiu nai']); ?></div>
+                                    <?php endif; ?>
+                                <?php else: ?>
+                                    <strong>Địa điểm:</strong> <?php echo htmlspecialchars($thongTin['Địa điểm'] ?? 'N/A'); ?><br>
+                                    <strong>Thời gian:</strong> <?php echo htmlspecialchars($thongTin['Thời gian'] ?? 'N/A'); ?><br>
+                                    <strong>Số người:</strong> <?php echo htmlspecialchars($thongTin['Số người'] ?? 'N/A'); ?><br>
+                                    <?php if (!empty($thongTin['Yêu cầu đặc biệt'])): ?>
+                                        <strong>Yêu cầu:</strong> <?php echo htmlspecialchars($thongTin['Yêu cầu đặc biệt']); ?>
+                                    <?php endif; ?>
                                 <?php endif; ?>
                             </div>
                         </td>

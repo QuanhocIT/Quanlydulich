@@ -37,7 +37,6 @@ CREATE TABLE `booking` (
   `so_nguoi` int(11) DEFAULT NULL,
   `tong_tien` decimal(15,2) DEFAULT NULL,
   `trang_thai` enum('ChoXacNhan','DaCoc','HoanTat','Huy') DEFAULT NULL,
-  `trang_thai_thanh_toan` enum('ChuaThanhToan','DaThanhToan','QuaHan') DEFAULT 'ChuaThanhToan',
   `ghi_chu` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -325,67 +324,6 @@ CREATE TABLE `cong_no_nha_cung_cap` (
 
 INSERT INTO `cong_no_nha_cung_cap` (`id`, `nha_cung_cap_id`, `tour_id`, `so_tien`, `han_thanh_toan`, `trang_thai`, `ghi_chu`, `created_at`, `updated_at`) VALUES
 (1, 2, 5, 30000000.00, '2025-12-05', 'ChoThanhToan', 'Công nợ khách sạn tour Nhật', '2025-11-27 05:00:00', '2025-11-27 05:00:00');
-
--- --------------------------------------------------------
-
---
--- Table structure for table `payments`
---
-CREATE TABLE `payments` (
-  `payment_id` int(11) NOT NULL AUTO_INCREMENT,
-  `booking_id` int(11) NOT NULL,
-  `amount` decimal(15,2) NOT NULL,
-  `payment_method` enum('ChuyenKhoan','TienMat','TheTinDung','ViDienTu') NOT NULL,
-  `payment_date` datetime NOT NULL DEFAULT current_timestamp(),
-  `status` enum('ThanhCong','ThatBai','DangXuLy') DEFAULT 'DangXuLy',
-  `note` text DEFAULT NULL,
-  PRIMARY KEY (`payment_id`),
-  KEY `booking_id` (`booking_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Table structure for table `invoices`
---
-CREATE TABLE `invoices` (
-  `invoice_id` int(11) NOT NULL AUTO_INCREMENT,
-  `booking_id` int(11) NOT NULL,
-  `customer_id` int(11) NOT NULL,
-  `issue_date` date NOT NULL,
-  `due_date` date DEFAULT NULL,
-  `total_amount` decimal(15,2) NOT NULL,
-  `status` enum('ChuaThanhToan','DaThanhToan','QuaHan') DEFAULT 'ChuaThanhToan',
-  `note` text DEFAULT NULL,
-  PRIMARY KEY (`invoice_id`),
-  KEY `booking_id` (`booking_id`),
-  KEY `customer_id` (`customer_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Table structure for table `invoice_items`
---
-CREATE TABLE `invoice_items` (
-  `item_id` int(11) NOT NULL AUTO_INCREMENT,
-  `invoice_id` int(11) NOT NULL,
-  `description` varchar(255) NOT NULL,
-  `quantity` int(11) NOT NULL DEFAULT 1,
-  `unit_price` decimal(15,2) NOT NULL,
-  `amount` decimal(15,2) NOT NULL,
-  PRIMARY KEY (`item_id`),
-  KEY `invoice_id` (`invoice_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Table structure for table `payment_logs`
---
-CREATE TABLE `payment_logs` (
-  `log_id` int(11) NOT NULL AUTO_INCREMENT,
-  `payment_id` int(11) NOT NULL,
-  `action` varchar(100) NOT NULL,
-  `log_time` datetime NOT NULL DEFAULT current_timestamp(),
-  `note` text DEFAULT NULL,
-  PRIMARY KEY (`log_id`),
-  KEY `payment_id` (`payment_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -862,6 +800,66 @@ INSERT INTO `lich_su_thanh_toan_hdv` (`id`, `cong_no_hdv_id`, `ngay_thanh_toan`,
 (1, 1, '2025-11-28', 5000000.00, 'ChuyenKhoan', 'Giải ngân đợt 1', '2025-11-28 09:00:00');
 
 -- --------------------------------------------------------
+
+-- Table structure for table `payments`
+--
+CREATE TABLE `payments` (
+  `payment_id` int(11) NOT NULL AUTO_INCREMENT,
+  `booking_id` int(11) NOT NULL,
+  `amount` decimal(15,2) NOT NULL,
+  `payment_method` enum('ChuyenKhoan','TienMat','TheTinDung','ViDienTu') NOT NULL,
+  `payment_date` datetime NOT NULL DEFAULT current_timestamp(),
+  `status` enum('ThanhCong','ThatBai','DangXuLy') DEFAULT 'DangXuLy',
+  `note` text DEFAULT NULL,
+  PRIMARY KEY (`payment_id`),
+  KEY `booking_id` (`booking_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Table structure for table `invoices`
+--
+CREATE TABLE `invoices` (
+  `invoice_id` int(11) NOT NULL AUTO_INCREMENT,
+  `booking_id` int(11) NOT NULL,
+  `customer_id` int(11) NOT NULL,
+  `issue_date` date NOT NULL,
+  `due_date` date DEFAULT NULL,
+  `total_amount` decimal(15,2) NOT NULL,
+  `status` enum('ChuaThanhToan','DaThanhToan','QuaHan') DEFAULT 'ChuaThanhToan',
+  `note` text DEFAULT NULL,
+  PRIMARY KEY (`invoice_id`),
+  KEY `booking_id` (`booking_id`),
+  KEY `customer_id` (`customer_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Table structure for table `invoice_items`
+--
+CREATE TABLE `invoice_items` (
+  `item_id` int(11) NOT NULL AUTO_INCREMENT,
+  `invoice_id` int(11) NOT NULL,
+  `description` varchar(255) NOT NULL,
+  `quantity` int(11) NOT NULL DEFAULT 1,
+  `unit_price` decimal(15,2) NOT NULL,
+  `amount` decimal(15,2) NOT NULL,
+  PRIMARY KEY (`item_id`),
+  KEY `invoice_id` (`invoice_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Table structure for table `payment_logs`
+--
+CREATE TABLE `payment_logs` (
+  `log_id` int(11) NOT NULL AUTO_INCREMENT,
+  `payment_id` int(11) NOT NULL,
+  `action` varchar(100) NOT NULL,
+  `log_time` datetime NOT NULL DEFAULT current_timestamp(),
+  `note` text DEFAULT NULL,
+  PRIMARY KEY (`log_id`),
+  KEY `payment_id` (`payment_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
 
 --
 -- Table structure for table `lich_su_thanh_toan_ncc`
@@ -2417,8 +2415,330 @@ COMMIT;
 ALTER TABLE booking
 ADD COLUMN so_tien_con_lai DECIMAL(15,2) DEFAULT NULL COMMENT 'Số tiền còn lại sau khi cọc';
 
+ALTER TABLE payments
+MODIFY COLUMN payment_method ENUM(
+  'VNPay',
+  'Momo',
+  'Paypal',
+  'ChuyenKhoan',
+  'TienMat',
+  'TheTinDung',
+  'ViDienTu'
+) NOT NULL DEFAULT 'VNPay';
+
 ALTER TABLE booking ADD COLUMN tien_coc DECIMAL(15,2) DEFAULT 0 AFTER tong_tien;
 
+-- 1) % hoa hồng HDV theo lịch khởi hành
+ALTER TABLE lich_khoi_hanh
+  ADD COLUMN phan_tram_hoa_hong_hdv DECIMAL(5,2) NOT NULL DEFAULT 0;
+
+-- 2) Lương cứng theo nhân sự
+ALTER TABLE nhan_su
+  ADD COLUMN luong_co_ban DECIMAL(15,2) NOT NULL DEFAULT 0;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+
+-- Performance indexes for large datasets
+-- Run this file separately on DB: quan_ly_tour_du_lich
+-- Idempotent: safe to run multiple times.
+
+SET @db_name := DATABASE();
+
+-- 1) Financial queries by tour + type + date
+SET @exists := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = @db_name AND table_name = 'giao_dich_tai_chinh' AND index_name = 'idx_gd_tour_loai_ngay'
+);
+SET @sql_stmt := IF(@exists = 0,
+  'ALTER TABLE giao_dich_tai_chinh ADD INDEX idx_gd_tour_loai_ngay (tour_id, loai, ngay_giao_dich)',
+  "SELECT 'SKIP idx_gd_tour_loai_ngay' AS migration_message"
+);
+PREPARE stmt FROM @sql_stmt; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- 2) Booking availability and status queries
+SET @exists := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = @db_name AND table_name = 'booking' AND index_name = 'idx_booking_tour_ngay_status'
+);
+SET @sql_stmt := IF(@exists = 0,
+  'ALTER TABLE booking ADD INDEX idx_booking_tour_ngay_status (tour_id, ngay_khoi_hanh, trang_thai)',
+  "SELECT 'SKIP idx_booking_tour_ngay_status' AS migration_message"
+);
+PREPARE stmt FROM @sql_stmt; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- 3) Booking list ordered by date
+SET @exists := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = @db_name AND table_name = 'booking' AND index_name = 'idx_booking_ngaydat_id'
+);
+SET @sql_stmt := IF(@exists = 0,
+  'ALTER TABLE booking ADD INDEX idx_booking_ngaydat_id (ngay_dat, booking_id)',
+  "SELECT 'SKIP idx_booking_ngaydat_id' AS migration_message"
+);
+PREPARE stmt FROM @sql_stmt; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- 4) Payment reconciliation (status/date)
+SET @exists := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = @db_name AND table_name = 'payments' AND index_name = 'idx_pay_status_date'
+);
+SET @sql_stmt := IF(@exists = 0,
+  'ALTER TABLE payments ADD INDEX idx_pay_status_date (status, payment_date)',
+  "SELECT 'SKIP idx_pay_status_date' AS migration_message"
+);
+PREPARE stmt FROM @sql_stmt; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- 5) Payment lookup by booking + status
+SET @exists := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = @db_name AND table_name = 'payments' AND index_name = 'idx_pay_booking_status'
+);
+SET @sql_stmt := IF(@exists = 0,
+  'ALTER TABLE payments ADD INDEX idx_pay_booking_status (booking_id, status)',
+  "SELECT 'SKIP idx_pay_booking_status' AS migration_message"
+);
+PREPARE stmt FROM @sql_stmt; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- 6) Schedule list and filters
+SET @exists := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = @db_name AND table_name = 'lich_khoi_hanh' AND index_name = 'idx_lkh_ngay_status'
+);
+SET @sql_stmt := IF(@exists = 0,
+  'ALTER TABLE lich_khoi_hanh ADD INDEX idx_lkh_ngay_status (ngay_khoi_hanh, trang_thai)',
+  "SELECT 'SKIP idx_lkh_ngay_status' AS migration_message"
+);
+PREPARE stmt FROM @sql_stmt; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- 7) Staff assignment conflicts
+SET @exists := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = @db_name AND table_name = 'phan_bo_nhan_su' AND index_name = 'idx_pbn_lich_nhansu'
+);
+SET @sql_stmt := IF(@exists = 0,
+  'ALTER TABLE phan_bo_nhan_su ADD INDEX idx_pbn_lich_nhansu (lich_khoi_hanh_id, nhan_su_id)',
+  "SELECT 'SKIP idx_pbn_lich_nhansu' AS migration_message"
+);
+PREPARE stmt FROM @sql_stmt; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- 8) Service assignment by departure
+SET @exists := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = @db_name AND table_name = 'phan_bo_dich_vu' AND index_name = 'idx_pbdv_lich'
+);
+SET @sql_stmt := IF(@exists = 0,
+  'ALTER TABLE phan_bo_dich_vu ADD INDEX idx_pbdv_lich (lich_khoi_hanh_id)',
+  "SELECT 'SKIP idx_pbdv_lich' AS migration_message"
+);
+PREPARE stmt FROM @sql_stmt; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- 9) Tour-request lookup for booking filters (EXISTS on thong_bao)
+SET @exists := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = @db_name AND table_name = 'thong_bao' AND index_name = 'idx_tb_gui_tieude_vaitro'
+);
+SET @sql_stmt := IF(@exists = 0,
+  'ALTER TABLE thong_bao ADD INDEX idx_tb_gui_tieude_vaitro (nguoi_gui_id, tieu_de, vai_tro_nhan)',
+  "SELECT 'SKIP idx_tb_gui_tieude_vaitro' AS migration_message"
+);
+PREPARE stmt FROM @sql_stmt; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SELECT 'DONE: performance index migration executed' AS migration_message;
+
+-- Migrate payments.status enum to state-machine values.
+-- Safe to run standalone on DB: quan_ly_tour_du_lich
+
+SET @db_name := DATABASE();
+
+SET @payments_exists := (
+  SELECT COUNT(*)
+  FROM information_schema.tables
+  WHERE table_schema = @db_name
+    AND table_name = 'payments'
+);
+
+SET @sql_stmt := IF(
+  @payments_exists > 0,
+  "ALTER TABLE payments
+   MODIFY COLUMN status ENUM(
+     'TaoMoi',
+     'DangXuLy',
+     'ThanhCong',
+     'ThatBai',
+     'HetHan',
+     'DaDoiSoat'
+   ) NOT NULL DEFAULT 'DangXuLy'",
+  "SELECT 'SKIP: table payments does not exist in current database' AS migration_message"
+);
+
+PREPARE stmt FROM @sql_stmt;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SELECT 'DONE: payment status state-machine migration executed' AS migration_message;
+
+-- Migrate payment_method enum to support online gateway labels directly.
+-- Safe to run standalone on DB: quan_ly_tour_du_lich
+-- IMPORTANT: Run this file only, not the full database dump.
+
+SET @db_name := DATABASE();
+
+SET @payments_exists := (
+  SELECT COUNT(*)
+  FROM information_schema.tables
+  WHERE table_schema = @db_name
+    AND table_name = 'payments'
+);
+
+SET @sql_stmt := IF(
+  @payments_exists > 0,
+  "ALTER TABLE payments
+   MODIFY COLUMN payment_method ENUM(
+     'VNPay',
+     'Momo',
+     'Paypal',
+     'ChuyenKhoan',
+     'TienMat',
+     'TheTinDung',
+     'ViDienTu'
+   ) NOT NULL DEFAULT 'VNPay'",
+  "SELECT 'SKIP: table payments does not exist in current database' AS migration_message"
+);
+
+PREPARE stmt FROM @sql_stmt;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SELECT 'DONE: payment_method enum migration executed' AS migration_message;
+
+
+-- Performance indexes for large datasets
+-- Run this file separately on DB: quan_ly_tour_du_lich
+-- Idempotent: safe to run multiple times.
+
+SET @db_name := DATABASE();
+
+-- 1) Financial queries by tour + type + date
+SET @exists := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = @db_name AND table_name = 'giao_dich_tai_chinh' AND index_name = 'idx_gd_tour_loai_ngay'
+);
+SET @sql_stmt := IF(@exists = 0,
+  'ALTER TABLE giao_dich_tai_chinh ADD INDEX idx_gd_tour_loai_ngay (tour_id, loai, ngay_giao_dich)',
+  "SELECT 'SKIP idx_gd_tour_loai_ngay' AS migration_message"
+);
+PREPARE stmt FROM @sql_stmt; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- 2) Booking availability and status queries
+SET @exists := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = @db_name AND table_name = 'booking' AND index_name = 'idx_booking_tour_ngay_status'
+);
+SET @sql_stmt := IF(@exists = 0,
+  'ALTER TABLE booking ADD INDEX idx_booking_tour_ngay_status (tour_id, ngay_khoi_hanh, trang_thai)',
+  "SELECT 'SKIP idx_booking_tour_ngay_status' AS migration_message"
+);
+PREPARE stmt FROM @sql_stmt; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- 3) Booking list ordered by date
+SET @exists := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = @db_name AND table_name = 'booking' AND index_name = 'idx_booking_ngaydat_id'
+);
+SET @sql_stmt := IF(@exists = 0,
+  'ALTER TABLE booking ADD INDEX idx_booking_ngaydat_id (ngay_dat, booking_id)',
+  "SELECT 'SKIP idx_booking_ngaydat_id' AS migration_message"
+);
+PREPARE stmt FROM @sql_stmt; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- 4) Payment reconciliation (status/date)
+SET @exists := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = @db_name AND table_name = 'payments' AND index_name = 'idx_pay_status_date'
+);
+SET @sql_stmt := IF(@exists = 0,
+  'ALTER TABLE payments ADD INDEX idx_pay_status_date (status, payment_date)',
+  "SELECT 'SKIP idx_pay_status_date' AS migration_message"
+);
+PREPARE stmt FROM @sql_stmt; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- 5) Payment lookup by booking + status
+SET @exists := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = @db_name AND table_name = 'payments' AND index_name = 'idx_pay_booking_status'
+);
+SET @sql_stmt := IF(@exists = 0,
+  'ALTER TABLE payments ADD INDEX idx_pay_booking_status (booking_id, status)',
+  "SELECT 'SKIP idx_pay_booking_status' AS migration_message"
+);
+PREPARE stmt FROM @sql_stmt; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- 6) Schedule list and filters
+SET @exists := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = @db_name AND table_name = 'lich_khoi_hanh' AND index_name = 'idx_lkh_ngay_status'
+);
+SET @sql_stmt := IF(@exists = 0,
+  'ALTER TABLE lich_khoi_hanh ADD INDEX idx_lkh_ngay_status (ngay_khoi_hanh, trang_thai)',
+  "SELECT 'SKIP idx_lkh_ngay_status' AS migration_message"
+);
+PREPARE stmt FROM @sql_stmt; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- 7) Staff assignment conflicts
+SET @exists := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = @db_name AND table_name = 'phan_bo_nhan_su' AND index_name = 'idx_pbn_lich_nhansu'
+);
+SET @sql_stmt := IF(@exists = 0,
+  'ALTER TABLE phan_bo_nhan_su ADD INDEX idx_pbn_lich_nhansu (lich_khoi_hanh_id, nhan_su_id)',
+  "SELECT 'SKIP idx_pbn_lich_nhansu' AS migration_message"
+);
+PREPARE stmt FROM @sql_stmt; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- 8) Service assignment by departure
+SET @exists := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = @db_name AND table_name = 'phan_bo_dich_vu' AND index_name = 'idx_pbdv_lich'
+);
+SET @sql_stmt := IF(@exists = 0,
+  'ALTER TABLE phan_bo_dich_vu ADD INDEX idx_pbdv_lich (lich_khoi_hanh_id)',
+  "SELECT 'SKIP idx_pbdv_lich' AS migration_message"
+);
+PREPARE stmt FROM @sql_stmt; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- 9) Tour-request lookup for booking filters (EXISTS on thong_bao)
+SET @exists := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = @db_name AND table_name = 'thong_bao' AND index_name = 'idx_tb_gui_tieude_vaitro'
+);
+SET @sql_stmt := IF(@exists = 0,
+  'ALTER TABLE thong_bao ADD INDEX idx_tb_gui_tieude_vaitro (nguoi_gui_id, tieu_de, vai_tro_nhan)',
+  "SELECT 'SKIP idx_tb_gui_tieude_vaitro' AS migration_message"
+);
+PREPARE stmt FROM @sql_stmt; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- 10) Booking list by customer + order by date/id (reduce filesort on admin list)
+SET @exists := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = @db_name AND table_name = 'booking' AND index_name = 'idx_booking_kh_ngaydat_id'
+);
+SET @sql_stmt := IF(@exists = 0,
+  'ALTER TABLE booking ADD INDEX idx_booking_kh_ngaydat_id (khach_hang_id, ngay_dat, booking_id)',
+  "SELECT 'SKIP idx_booking_kh_ngaydat_id' AS migration_message"
+);
+PREPARE stmt FROM @sql_stmt; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SELECT 'DONE: performance index migration executed' AS migration_message;
+
+
+
+SET @sql_stmt := IF(@exists = 0,
+  'ALTER TABLE payments ADD INDEX idx_pay_date_id_status (payment_date, payment_id, status)',
+  "SELECT 'SKIP idx_pay_date_id_status' AS migration_message"
+);
+
+SET @sql_stmt := IF(@exists = 0,
+  'ALTER TABLE giao_dich_tai_chinh ADD INDEX idx_gd_booking_loai (booking_id, loai)',
+  "SELECT 'SKIP idx_gd_booking_loai' AS migration_message"
+);

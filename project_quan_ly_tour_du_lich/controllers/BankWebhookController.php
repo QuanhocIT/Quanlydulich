@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/../models/Payment.php';
 require_once __DIR__ . '/../models/PaymentIdempotency.php';
+require_once __DIR__ . '/../services/PaymentFinanceService.php';
 
 class BankWebhookController {
     public static function receive($conn) {
@@ -95,7 +96,7 @@ class BankWebhookController {
             self::jsonResponse(202, [
                 'ok' => true,
                 'matched' => false,
-                'message' => 'No BOOKING_ID token found in transfer description'
+                'message' => 'No strict BOOKING_{id}_{token} found in transfer description'
             ]);
             return;
         }
@@ -198,20 +199,15 @@ class BankWebhookController {
             $stmtBooking = $conn->prepare('UPDATE booking SET trang_thai = ? WHERE booking_id = ? AND trang_thai NOT IN (\'DaCoc\', \'HoanTat\')');
             $stmtBooking->execute(['DaCoc', $bookingId]);
 
-            self::updateBookingPaymentStatusColumnIfExists($conn, $bookingId, 'DaThanhToan');
-
-            if (!self::existsPaymentFinanceTransaction($conn, $bookingId)) {
-                $stmtFinance = $conn->prepare('INSERT INTO giao_dich_tai_chinh (booking_id, tour_id, khach_hang_id, loai, so_tien, mo_ta, ngay_giao_dich) VALUES (?, ?, ?, ?, ?, ?, ?)');
-                $stmtFinance->execute([
-                    $bookingId,
-                    (int)($payment['tour_id'] ?? 0),
-                    (int)($payment['khach_hang_id'] ?? 0),
-                    'Thu',
-                    $amount,
-                    'Bank webhook auto-confirm booking #' . $bookingId,
-                    date('Y-m-d')
-                ]);
-            }
+            PaymentFinanceService::updateBookingPaymentStatusIfExists($conn, $bookingId, 'DaThanhToan');
+            PaymentFinanceService::createThuTransactionIfMissing($conn, [
+                'booking_id' => $bookingId,
+                'tour_id' => (int)($payment['tour_id'] ?? 0),
+                'khach_hang_id' => (int)($payment['khach_hang_id'] ?? 0),
+                'amount' => (float)$amount,
+                'description' => 'Bank webhook auto-confirm booking #' . $bookingId,
+                'payment_date' => date('Y-m-d'),
+            ]);
 
             $conn->commit();
             self::completeWebhookIdempotency($conn, $idempotencyRawKey, 200, 'Webhook processed');
@@ -419,26 +415,12 @@ class BankWebhookController {
             }
         };
 
-        if (preg_match('/BOOKING[_\-\s#:]*([0-9]{1,10})/i', $text, $m)) {
-            $appendCandidate($m[1]);
-        }
-
-        // Ho tro chuoi lien khong dau phan cach: BOOKING2380346858035
-        // Thu cac prefix ngan truoc (3,4,5...) vi booking_id thuong ngan hon so dien thoai.
-        if (preg_match('/BOOKING([0-9]{3,18})/i', $text, $m)) {
-            $digits = (string)$m[1];
-            $maxPrefix = min(10, strlen($digits));
-            for ($len = 3; $len <= $maxPrefix; $len++) {
-                $appendCandidate(substr($digits, 0, $len));
+        // Chi chap nhan dinh dang day du: BOOKING_{id}_{token}
+        // Vi du: BOOKING_299_0934567890
+        if (preg_match_all('/BOOKING[_\-\s#:]*([0-9]{1,10})[_\-\s]+([A-Z0-9]{4,32})/i', $text, $matches, PREG_SET_ORDER)) {
+            foreach ($matches as $m) {
+                $appendCandidate($m[1]);
             }
-        }
-
-        if (preg_match('/\bBK[_\-\s#:]*([0-9]{1,10})\b/i', $text, $m)) {
-            $appendCandidate($m[1]);
-        }
-
-        if (preg_match('/#([0-9]{1,10})/', $text, $m)) {
-            $appendCandidate($m[1]);
         }
 
         return $candidates;
@@ -448,12 +430,6 @@ class BankWebhookController {
         $stmt = $conn->prepare('SELECT p.payment_id, p.amount, p.booking_id, b.tour_id, b.khach_hang_id FROM payments p INNER JOIN booking b ON b.booking_id = p.booking_id WHERE p.booking_id = ? AND p.status IN (?, ?) ORDER BY p.payment_id DESC LIMIT 1');
         $stmt->execute([(int)$bookingId, Payment::STATUS_DANG_XU_LY, Payment::STATUS_TAO_MOI]);
         return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
-    }
-
-    private static function existsPaymentFinanceTransaction($conn, $bookingId) {
-        $stmt = $conn->prepare("SELECT COUNT(*) AS c FROM giao_dich_tai_chinh WHERE booking_id = ? AND loai = 'Thu'");
-        $stmt->execute([(int)$bookingId]);
-        return (int)$stmt->fetchColumn() > 0;
     }
 
     public static function tryConsumeQueuedWebhookForBooking($conn, $bookingId) {
@@ -544,20 +520,15 @@ class BankWebhookController {
 
                 $stmtBooking = $conn->prepare('UPDATE booking SET trang_thai = ? WHERE booking_id = ? AND trang_thai NOT IN (\'DaCoc\', \'HoanTat\')');
                 $stmtBooking->execute(['DaCoc', $bookingId]);
-                self::updateBookingPaymentStatusColumnIfExists($conn, $bookingId, 'DaThanhToan');
-
-                if (!self::existsPaymentFinanceTransaction($conn, $bookingId)) {
-                    $stmtFinance = $conn->prepare('INSERT INTO giao_dich_tai_chinh (booking_id, tour_id, khach_hang_id, loai, so_tien, mo_ta, ngay_giao_dich) VALUES (?, ?, ?, ?, ?, ?, ?)');
-                    $stmtFinance->execute([
-                        $bookingId,
-                        (int)($payment['tour_id'] ?? 0),
-                        (int)($payment['khach_hang_id'] ?? 0),
-                        'Thu',
-                        $amount,
-                        'Bank webhook auto-confirm booking #' . $bookingId,
-                        date('Y-m-d')
-                    ]);
-                }
+                PaymentFinanceService::updateBookingPaymentStatusIfExists($conn, $bookingId, 'DaThanhToan');
+                PaymentFinanceService::createThuTransactionIfMissing($conn, [
+                    'booking_id' => $bookingId,
+                    'tour_id' => (int)($payment['tour_id'] ?? 0),
+                    'khach_hang_id' => (int)($payment['khach_hang_id'] ?? 0),
+                    'amount' => (float)$amount,
+                    'description' => 'Bank webhook auto-confirm booking #' . $bookingId,
+                    'payment_date' => date('Y-m-d'),
+                ]);
 
                 self::markQueuedWebhookProcessed($conn, (int)$row['queue_id'], 'consumed_for_booking_' . $bookingId);
 
@@ -632,13 +603,6 @@ class BankWebhookController {
         }
         $stmt = $conn->prepare('INSERT INTO payment_logs (payment_id, action, log_time, note) VALUES (?, ?, ?, ?)');
         $stmt->execute([(int)$paymentId, (string)$action, date('Y-m-d H:i:s'), (string)$note]);
-    }
-
-    private static function updateBookingPaymentStatusColumnIfExists($conn, $bookingId, $status) {
-        if (dbColumnExists('booking', 'trang_thai_thanh_toan', $conn)) {
-            $stmt = $conn->prepare('UPDATE booking SET trang_thai_thanh_toan = ? WHERE booking_id = ?');
-            $stmt->execute([(string)$status, (int)$bookingId]);
-        }
     }
 
     private static function dig(array $arr, $path) {

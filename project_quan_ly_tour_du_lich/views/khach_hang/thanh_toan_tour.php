@@ -174,6 +174,22 @@
         }
         .mode-badge.mock{ color:#b45309; border-color:rgba(180,83,9,.25); background:rgba(251,191,36,.15); }
         .mode-badge.vnpay{ color:#0f766e; border-color:rgba(15,118,110,.25); background:rgba(20,184,166,.14); }
+
+        .complaint-box{
+            margin-top: 10px;
+            padding: 12px;
+            border-radius: 12px;
+            border: 1px solid rgba(220, 53, 69, .28);
+            background: rgba(220, 53, 69, .06);
+        }
+        .complaint-box .form-control,
+        .complaint-box .form-label{
+            font-size: .9rem;
+        }
+
+        .complaint-box.is-hidden {
+            display: none;
+        }
     </style>
 </head>
 <body class="paylux">
@@ -365,9 +381,14 @@
                                 <strong id="pendingPaymentTitle"><i class="bi bi-hourglass-split me-1"></i>Booking #<?php echo (int)($activeBooking['booking_id'] ?? 0); ?> dang cho doi soat</strong>
                                 <div id="pendingPaymentDesc" class="small text-muted">He thong da tao giao dich, ban chi can chuyen khoan dung noi dung ben duoi va cho webhook cap nhat.</div>
                             </div>
-                            <a href="index.php?act=khachHang/hoaDon&booking_id=<?php echo (int)($activeBooking['booking_id'] ?? 0); ?>" class="btn btn-sm btn-outline-primary">
-                                <i class="bi bi-receipt me-1"></i>Xem hoa don
-                            </a>
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <a href="index.php?act=khachHang/hoaDon&booking_id=<?php echo (int)($activeBooking['booking_id'] ?? 0); ?>" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-receipt me-1"></i>Xem hoa don
+                                </a>
+                                <button type="button" id="complaintToggleBtn" class="btn btn-sm btn-outline-danger" onclick="toggleComplaintForm()">
+                                    <i class="bi bi-exclamation-diamond me-1"></i>Khieu nai
+                                </button>
+                            </div>
                         </div>
                         <div class="mt-2 p-2 rounded" style="background:#fff;border:1px dashed #f0ad4e;">
                             <div class="small fw-semibold mb-1">Noi dung chuyen khoan chinh xac:</div>
@@ -377,6 +398,46 @@
                                     <i class="bi bi-clipboard me-1"></i>Sao chep
                                 </button>
                             </div>
+                        </div>
+
+                        <div id="complaintBox" class="complaint-box is-hidden">
+                            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                <div>
+                                    <div class="fw-semibold text-danger"><i class="bi bi-exclamation-diamond me-1"></i>Da chuyen khoan sai/thiếu noi dung?</div>
+                                    <div class="small text-muted">Gui khiu nai de admin doi soat thu cong. Ban nen dien ma giao dich va thoi gian chuyen khoan neu co.</div>
+                                </div>
+                            </div>
+
+                            <form method="post" action="index.php?act=khachHang/thanhToanTour&id=<?php echo (int)($tour['tour_id'] ?? $tour['id'] ?? 0); ?>&booking_id=<?php echo (int)($activeBooking['booking_id'] ?? 0); ?>" class="mt-2">
+                                <input type="hidden" name="_csrf_global" value="<?php echo htmlspecialchars(csrfToken('global_form'), ENT_QUOTES, 'UTF-8'); ?>">
+                                <input type="hidden" name="action" value="submit_transfer_complaint">
+                                <input type="hidden" name="booking_id" value="<?php echo (int)($activeBooking['booking_id'] ?? 0); ?>">
+                                <input type="hidden" name="payment_id" value="<?php echo (int)($activePayment['payment_id'] ?? 0); ?>">
+
+                                <div class="row g-2">
+                                    <div class="col-md-4">
+                                        <label class="form-label mb-1">So tien da chuyen (neu co)</label>
+                                        <input type="text" name="transfer_amount" maxlength="40" class="form-control" placeholder="Vi du: 5,000">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label mb-1">Thoi gian chuyen khoan (neu co)</label>
+                                        <input type="datetime-local" name="transfer_time" class="form-control">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label mb-1">Ma giao dich/tham chieu</label>
+                                        <input type="text" name="transfer_ref" maxlength="120" class="form-control" placeholder="Ref tu app/ngan hang">
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label mb-1">Mo ta van de</label>
+                                        <textarea name="complaint_note" class="form-control" rows="3" minlength="10" maxlength="1000" required placeholder="Vi du: em da chuyen luc 10:42, nguoi nhan MB Bank, nhung viet sai noi dung..." ></textarea>
+                                    </div>
+                                    <div class="col-12 d-grid d-md-flex justify-content-md-end">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                            <i class="bi bi-send me-1"></i>Gui khieu nai
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
                         </div>
                     </div>
                 <?php endif; ?>
@@ -568,6 +629,29 @@
             }
         }
 
+        function toggleComplaintForm() {
+            var box = document.getElementById('complaintBox');
+            var btn = document.getElementById('complaintToggleBtn');
+            if (!box) return;
+
+            var isHidden = box.classList.contains('is-hidden');
+            if (isHidden) {
+                box.classList.remove('is-hidden');
+                if (btn) {
+                    btn.innerHTML = '<i class="bi bi-chevron-up me-1"></i>An form khieu nai';
+                }
+                var textarea = box.querySelector('textarea[name="complaint_note"]');
+                if (textarea) {
+                    textarea.focus();
+                }
+            } else {
+                box.classList.add('is-hidden');
+                if (btn) {
+                    btn.innerHTML = '<i class="bi bi-exclamation-diamond me-1"></i>Khieu nai';
+                }
+            }
+        }
+
         function showSuccessToast(message) {
             if (!window.bootstrap || !bootstrap.Toast) return;
 
@@ -626,9 +710,11 @@
         })();
 
         (function () {
-            var form = document.querySelector('form[action*="khachHang/thanhToanTour"]');
             var submitBtn = document.getElementById('createPaymentBtn');
-            if (!form || !submitBtn) return;
+            if (!submitBtn) return;
+
+            var form = submitBtn.closest('form');
+            if (!form) return;
 
             form.addEventListener('submit', function () {
                 if (submitBtn.disabled) return;

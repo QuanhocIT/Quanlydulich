@@ -38,6 +38,79 @@ function dbColumnExists($tableName, $columnName, $conn = null) {
     return $columnCache[$cacheKey];
 }
 
+function cacheBaseDir() {
+    $dir = __DIR__ . '/../storage/cache/app';
+    if (!is_dir($dir)) {
+        @mkdir($dir, 0777, true);
+    }
+    return $dir;
+}
+
+function cacheFilePath($key) {
+    $normalizedKey = trim((string)$key);
+    if ($normalizedKey === '') {
+        $normalizedKey = 'default';
+    }
+
+    return cacheBaseDir() . '/' . sha1($normalizedKey) . '.json';
+}
+
+function cacheRemember($key, $ttlSeconds, callable $resolver, $forceRefresh = false) {
+    $ttlSeconds = max(1, (int)$ttlSeconds);
+    $cachePath = cacheFilePath($key);
+
+    if (!$forceRefresh && is_file($cachePath)) {
+        $raw = @file_get_contents($cachePath);
+        $payload = $raw ? json_decode($raw, true) : null;
+        $expiresAt = (int)($payload['expires_at'] ?? 0);
+        if ($expiresAt > time() && array_key_exists('value', (array)$payload)) {
+            return $payload['value'];
+        }
+    }
+
+    $value = $resolver();
+    @file_put_contents($cachePath, json_encode([
+        'key' => (string)$key,
+        'expires_at' => time() + $ttlSeconds,
+        'value' => $value,
+    ], JSON_UNESCAPED_UNICODE));
+
+    return $value;
+}
+
+function cacheForget($key) {
+    $cachePath = cacheFilePath($key);
+    if (is_file($cachePath)) {
+        @unlink($cachePath);
+    }
+}
+
+function cacheForgetByPrefix($prefix) {
+    $prefix = trim((string)$prefix);
+    if ($prefix === '') {
+        return;
+    }
+
+    $baseDir = cacheBaseDir();
+    $files = glob($baseDir . '/*.json');
+    if (!is_array($files)) {
+        return;
+    }
+
+    foreach ($files as $file) {
+        if (!is_file($file)) {
+            continue;
+        }
+
+        $raw = @file_get_contents($file);
+        $payload = $raw ? json_decode($raw, true) : null;
+        $cacheKey = (string)($payload['key'] ?? '');
+        if (strpos($cacheKey, $prefix) === 0) {
+            @unlink($file);
+        }
+    }
+}
+
 function ensureAdminNotificationStateTable($conn = null) {
     static $initialized = false;
 

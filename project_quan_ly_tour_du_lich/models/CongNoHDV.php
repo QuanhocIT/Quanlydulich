@@ -44,4 +44,28 @@ class CongNoHDV {
         $stmt = $this->conn->prepare($sql);
         return $stmt->execute([$ly_do, $id]);
     }
+
+    // Lấy số công nợ quá hạn (chưa duyệt, ngầy gửi cách đây > 7 ngày)
+    public function getQuaHanCount($days = 7) {
+        $sql = "SELECT COUNT(*) as total FROM cong_no_hdv 
+                WHERE trang_thai NOT IN ('DaDuyet', 'TuChoi') 
+                AND ngay_gui < DATE_SUB(NOW(), INTERVAL ? DAY)";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute([$days]);
+        $result = $stmt->fetch();
+        return (int)($result['total'] ?? 0);
+    }
+
+    // Lấy danh sách công nợ quá hạn
+    public function getQuaHanList($days = 7) {
+        $sql = "SELECT cnh.*, t.ten_tour, nd.ho_ten as ten_hdv FROM cong_no_hdv cnh 
+                JOIN tour t ON cnh.tour_id = t.tour_id 
+                JOIN nguoi_dung nd ON cnh.hdv_id = nd.id 
+                WHERE cnh.trang_thai NOT IN ('DaDuyet', 'TuChoi') 
+                AND cnh.ngay_gui < DATE_SUB(NOW(), INTERVAL ? DAY)
+                ORDER BY cnh.ngay_gui ASC";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute([$days]);
+        return $stmt->fetchAll();
+    }
 }

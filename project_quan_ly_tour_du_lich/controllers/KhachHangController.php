@@ -733,12 +733,90 @@ class KhachHangController {
                 $activeBooking = $activeBookingData;
                 $activePayment = $this->getLatestPaymentByBookingId($bookingModel->conn, $activeBookingId);
                 $phoneDigits = preg_replace('/\D+/', '', (string)($nguoiDung['so_dien_thoai'] ?? ''));
+                if ($phoneDigits === '' || strlen($phoneDigits) < 4) {
+                    // Fallback de dam bao noi dung chuyen khoan luon dung format BOOKING_{id}_{token}
+                    $phoneDigits = str_pad((string)$activeBookingId, 4, '0', STR_PAD_LEFT);
+                }
                 $activeTransferNote = 'BOOKING_' . $activeBookingId . '_' . $phoneDigits;
             }
         }
 
+        $activePaymentStatus = strtoupper(trim((string)($activePayment['status'] ?? '')));
+        $hasActivePending = !empty($activeBooking) && !empty($activePayment) && ($activePaymentStatus === 'DANGXULY');
+
         // Xử lý khi khách bấm "Xác nhận đã thanh toán & Đặt tour"
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $postAction = trim((string)($_POST['action'] ?? ''));
+
+            if ($postAction === 'submit_transfer_complaint') {
+                if (!verifyCsrfToken($_POST['_csrf_global'] ?? '', 'global_form')) {
+                    $_SESSION['error'] = 'Yeu cau khong hop le (CSRF). Vui long thu lai.';
+                    header('Location: index.php?act=khachHang/thanhToanTour&id=' . (int)$tourId . '&booking_id=' . (int)$activeBookingId);
+                    exit();
+                }
+
+                $postedBookingId = (int)($_POST['booking_id'] ?? 0);
+                $postedPaymentId = (int)($_POST['payment_id'] ?? 0);
+                if ($postedBookingId <= 0 || $postedPaymentId <= 0) {
+                    $_SESSION['error'] = 'Khong tim thay thong tin giao dich de khiu nai.';
+                    header('Location: index.php?act=khachHang/thanhToanTour&id=' . (int)$tourId . '&booking_id=' . (int)$activeBookingId);
+                    exit();
+                }
+
+                if (!$hasActivePending || (int)($activeBooking['booking_id'] ?? 0) !== $postedBookingId || (int)($activePayment['payment_id'] ?? 0) !== $postedPaymentId) {
+                    $_SESSION['error'] = 'Chi co the gui khiu nai voi giao dich dang cho doi soat.';
+                    header('Location: index.php?act=khachHang/thanhToanTour&id=' . (int)$tourId . '&booking_id=' . (int)$activeBookingId);
+                    exit();
+                }
+
+                $complaintNote = trim((string)($_POST['complaint_note'] ?? ''));
+                $transferRef = trim((string)($_POST['transfer_ref'] ?? ''));
+                $transferTime = trim((string)($_POST['transfer_time'] ?? ''));
+                $transferAmount = trim((string)($_POST['transfer_amount'] ?? ''));
+
+                if (mb_strlen($complaintNote) < 10) {
+                    $_SESSION['error'] = 'Noi dung khiu nai can it nhat 10 ky tu.';
+                    header('Location: index.php?act=khachHang/thanhToanTour&id=' . (int)$tourId . '&booking_id=' . (int)$activeBookingId);
+                    exit();
+                }
+
+                if (mb_strlen($complaintNote) > 1000) {
+                    $complaintNote = mb_substr($complaintNote, 0, 1000);
+                }
+                if (mb_strlen($transferRef) > 120) {
+                    $transferRef = mb_substr($transferRef, 0, 120);
+                }
+                if (mb_strlen($transferTime) > 40) {
+                    $transferTime = mb_substr($transferTime, 0, 40);
+                }
+                if (mb_strlen($transferAmount) > 40) {
+                    $transferAmount = mb_substr($transferAmount, 0, 40);
+                }
+
+                $created = $this->createWrongTransferComplaint([
+                    'user' => $nguoiDung,
+                    'tour' => $tour,
+                    'booking_id' => $postedBookingId,
+                    'payment_id' => $postedPaymentId,
+                    'expected_transfer_note' => $activeTransferNote,
+                    'expected_amount' => (float)($activePayment['amount'] ?? 0),
+                    'complaint_note' => $complaintNote,
+                    'transfer_ref' => $transferRef,
+                    'transfer_time' => $transferTime,
+                    'transfer_amount' => $transferAmount,
+                ]);
+
+                if ($created) {
+                    $this->createCustomerPaymentLog($bookingModel->conn, $postedPaymentId, 'CUSTOMER_WRONG_TRANSFER_CLAIM', 'Khach hang gui khieu nai chuyen khoan sai/thiieu noi dung.');
+                    $_SESSION['success'] = 'Da gui khiu nai thanh cong. Admin se kiem tra giao dich va lien he voi ban som.';
+                } else {
+                    $_SESSION['error'] = 'Khong the gui khiu nai luc nay. Vui long thu lai sau it phut.';
+                }
+
+                header('Location: index.php?act=khachHang/thanhToanTour&id=' . (int)$tourId . '&booking_id=' . (int)$activeBookingId);
+                exit();
+            }
+
             if (!$canCreateNewBooking) {
                 $_SESSION['error'] = $bookingLockMessage !== ''
                     ? $bookingLockMessage
@@ -1414,6 +1492,58 @@ class KhachHangController {
             $stmt = $conn->prepare('INSERT INTO payment_logs (payment_id, action, log_time, note) VALUES (?, ?, ?, ?)');
             $stmt->execute([$paymentId, $action, date('Y-m-d H:i:s'), $note]);
         } catch (Throwable $e) {
+        }
+    }
+
+    private function createWrongTransferComplaint(array $payload): bool {
+        try {
+            require_once __DIR__ . '/../models/ThongBao.php';
+            $thongBaoModel = new ThongBao();
+
+            $user = (array)($payload['user'] ?? []);
+            $tour = (array)($payload['tour'] ?? []);
+            $bookingId = (int)($payload['booking_id'] ?? 0);
+            $paymentId = (int)($payload['payment_id'] ?? 0);
+            $expectedTransferNote = trim((string)($payload['expected_transfer_note'] ?? ''));
+            $expectedAmount = (float)($payload['expected_amount'] ?? 0);
+            $complaintNote = trim((string)($payload['complaint_note'] ?? ''));
+            $transferRef = trim((string)($payload['transfer_ref'] ?? ''));
+            $transferTime = trim((string)($payload['transfer_time'] ?? ''));
+            $transferAmount = trim((string)($payload['transfer_amount'] ?? ''));
+
+            if ($bookingId <= 0 || $paymentId <= 0 || $complaintNote === '') {
+                return false;
+            }
+
+            $noiDung =
+                "[KHIEU NAI CHUYEN KHOAN SAI NOI DUNG]\n" .
+                'Khach hang: ' . (string)($user['ho_ten'] ?? '') . "\n" .
+                'Email: ' . (string)($user['email'] ?? '') . "\n" .
+                'So dien thoai: ' . (string)($user['so_dien_thoai'] ?? '') . "\n" .
+                'Booking ID: #' . $bookingId . "\n" .
+                'Payment ID: #' . $paymentId . "\n" .
+                'Tour: ' . (string)($tour['ten_tour'] ?? '') . "\n" .
+                'So tien du kien: ' . number_format($expectedAmount) . " VND\n" .
+                'Noi dung chuyen khoan dung: ' . $expectedTransferNote . "\n" .
+                'So tien khach khai bao: ' . ($transferAmount !== '' ? $transferAmount : '[Khong cung cap]') . "\n" .
+                'Thoi gian chuyen khoan: ' . ($transferTime !== '' ? $transferTime : '[Khong cung cap]') . "\n" .
+                'Ma giao dich/tham chieu: ' . ($transferRef !== '' ? $transferRef : '[Khong cung cap]') . "\n" .
+                'Noi dung khiu nai: ' . $complaintNote;
+
+            $insertId = $thongBaoModel->insert([
+                'tieu_de' => 'Khieu nai chuyen khoan sai noi dung - Booking #' . $bookingId,
+                'noi_dung' => $noiDung,
+                'loai_thong_bao' => 'KhachHang',
+                'muc_do_uu_tien' => 'Cao',
+                'nguoi_gui_id' => (int)($_SESSION['user_id'] ?? 0),
+                'vai_tro_nhan' => 'Admin',
+                'trang_thai' => 'DaGui',
+            ]);
+
+            return !empty($insertId);
+        } catch (Throwable $e) {
+            error_log('[KhachHangController::createWrongTransferComplaint] ' . $e->getMessage());
+            return false;
         }
     }
 

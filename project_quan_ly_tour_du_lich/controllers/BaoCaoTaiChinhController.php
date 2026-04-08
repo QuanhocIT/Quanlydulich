@@ -57,17 +57,26 @@ class BaoCaoTaiChinhController {
         $thangHienTai = date('Y-m');
         $tuNgay = date('Y-m-01');
         $denNgay = date('Y-m-t');
-        
-        // Thống kê giao dịch tháng này
-        $thongKe = $this->giaoDichModel->getThongKeTongHop($tuNgay, $denNgay);
-        
-        // Tính tổng thu, tổng chi, lợi nhuận (kết quả trả về dạng 1 bản ghi tổng hợp)
-        $tongThu = (float)($thongKe['tong_thu'] ?? 0);
-        $tongChi = (float)($thongKe['tong_chi'] ?? 0);
-        $loiNhuan = (float)($thongKe['lai_lo'] ?? ($tongThu - $tongChi));
-        
-        // Lấy top 5 tour có doanh thu cao nhất
-        $topTours = $this->getTopToursByRevenue(5);
+
+        $cacheKey = 'bao_cao_tai_chinh_dashboard_' . $thangHienTai;
+        $payload = cacheRemember($cacheKey, 90, function () use ($tuNgay, $denNgay) {
+            // Thống kê giao dịch tháng này
+            $thongKe = $this->giaoDichModel->getThongKeTongHop($tuNgay, $denNgay);
+
+            $tongThu = (float)($thongKe['tong_thu'] ?? 0);
+            $tongChi = (float)($thongKe['tong_chi'] ?? 0);
+            return [
+                'tongThu' => $tongThu,
+                'tongChi' => $tongChi,
+                'loiNhuan' => (float)($thongKe['lai_lo'] ?? ($tongThu - $tongChi)),
+                'topTours' => $this->getTopToursByRevenue(5),
+            ];
+        });
+
+        $tongThu = (float)($payload['tongThu'] ?? 0);
+        $tongChi = (float)($payload['tongChi'] ?? 0);
+        $loiNhuan = (float)($payload['loiNhuan'] ?? ($tongThu - $tongChi));
+        $topTours = $payload['topTours'] ?? [];
         
         require __DIR__ . '/../views/admin/bao_cao_tai_chinh/dashboard.php';
     }
@@ -450,25 +459,30 @@ class BaoCaoTaiChinhController {
     
     // Helper: Lấy top tours theo doanh thu
     private function getTopToursByRevenue($limit = 5) {
-        $stats = $this->giaoDichModel->getThuChiTatCaTour();
-        $result = [];
+        $limit = max(1, (int)$limit);
+        $cacheKey = 'bao_cao_tai_chinh_top_tour_revenue_limit_' . $limit;
 
-        foreach ($stats as $stat) {
-            $result[] = [
-                'tour' => [
-                    'tour_id' => $stat['tour_id'] ?? null,
-                    'ten_tour' => $stat['ten_tour'] ?? '',
-                    'loai_tour' => $stat['loai_tour'] ?? '',
-                ],
-                'doanh_thu' => (float)($stat['tong_thu'] ?? 0)
-            ];
-        }
+        return cacheRemember($cacheKey, 120, function () use ($limit) {
+            $stats = $this->giaoDichModel->getThuChiTatCaTour();
+            $result = [];
 
-        usort($result, function($a, $b) {
-            return $b['doanh_thu'] <=> $a['doanh_thu'];
+            foreach ($stats as $stat) {
+                $result[] = [
+                    'tour' => [
+                        'tour_id' => $stat['tour_id'] ?? null,
+                        'ten_tour' => $stat['ten_tour'] ?? '',
+                        'loai_tour' => $stat['loai_tour'] ?? '',
+                    ],
+                    'doanh_thu' => (float)($stat['tong_thu'] ?? 0)
+                ];
+            }
+
+            usort($result, function($a, $b) {
+                return $b['doanh_thu'] <=> $a['doanh_thu'];
+            });
+
+            return array_slice($result, 0, $limit);
         });
-
-        return array_slice($result, 0, max(1, (int)$limit));
     }
     
     // ==================== QUẢN LÝ DỰ TOÁN TOUR ====================

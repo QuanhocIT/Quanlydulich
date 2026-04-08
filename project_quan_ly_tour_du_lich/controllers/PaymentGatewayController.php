@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/../services/PaymentFinanceService.php';
+
 class PaymentGatewayController {
     private static function debugRedirect($stage, array $payload = []) {
         $logFile = __DIR__ . '/../storage/payment_redirect_debug.log';
@@ -152,21 +154,14 @@ class PaymentGatewayController {
                     $conn->prepare("UPDATE booking SET trang_thai = 'DaCoc' WHERE booking_id = ?")->execute([(int)$payment['booking_id']]);
                 }
 
-                $stmtExists = $conn->prepare("SELECT COUNT(*) FROM giao_dich_tai_chinh WHERE booking_id = ? AND loai = 'Thu'");
-                $stmtExists->execute([(int)$payment['booking_id']]);
-                if ((int)$stmtExists->fetchColumn() === 0) {
-                    $conn->prepare("INSERT INTO giao_dich_tai_chinh
-                        (booking_id, tour_id, khach_hang_id, loai, so_tien, mo_ta, ngay_giao_dich)
-                        VALUES (?, ?, ?, ?, ?, ?, ?)")->execute([
-                        (int)$payment['booking_id'],
-                        (int)($payment['tour_id'] ?? 0),
-                        (int)($payment['khach_hang_id'] ?? 0),
-                        'Thu',
-                        (float)($payment['amount'] ?? 0),
-                        'Xác nhận qua VNPay Query cho payment #' . $paymentId,
-                        date('Y-m-d')
-                    ]);
-                }
+                PaymentFinanceService::createThuTransactionIfMissing($conn, [
+                    'booking_id' => (int)$payment['booking_id'],
+                    'tour_id' => (int)($payment['tour_id'] ?? 0),
+                    'khach_hang_id' => (int)($payment['khach_hang_id'] ?? 0),
+                    'amount' => (float)($payment['amount'] ?? 0),
+                    'description' => 'Xác nhận qua VNPay Query cho payment #' . $paymentId,
+                    'payment_date' => date('Y-m-d'),
+                ]);
 
                 $conn->commit();
                 $_SESSION['success'] = 'VNPay xác nhận giao dịch thành công! Payment #' . $paymentId . ' đã được cập nhật.';
@@ -347,22 +342,14 @@ class PaymentGatewayController {
                         ->execute([(int)$payment['booking_id']]);
                 }
 
-                $stmtExists = $conn->prepare("SELECT COUNT(*) FROM giao_dich_tai_chinh WHERE booking_id = ? AND loai = 'Thu'");
-                $stmtExists->execute([(int)$payment['booking_id']]);
-                if ((int)$stmtExists->fetchColumn() === 0) {
-                    $conn->prepare("INSERT INTO giao_dich_tai_chinh
-                        (booking_id, tour_id, khach_hang_id, loai, so_tien, mo_ta, ngay_giao_dich)
-                        VALUES (?, ?, ?, ?, ?, ?, ?)")
-                        ->execute([
-                            (int)$payment['booking_id'],
-                            (int)($payment['tour_id'] ?? 0),
-                            (int)($payment['khach_hang_id'] ?? 0),
-                            'Thu',
-                            (float)($payment['amount'] ?? 0),
-                            'VNPay IPN - payment #' . $paymentId . ' - ref=' . $gatewayRef,
-                            date('Y-m-d')
-                        ]);
-                }
+                PaymentFinanceService::createThuTransactionIfMissing($conn, [
+                    'booking_id' => (int)$payment['booking_id'],
+                    'tour_id' => (int)($payment['tour_id'] ?? 0),
+                    'khach_hang_id' => (int)($payment['khach_hang_id'] ?? 0),
+                    'amount' => (float)($payment['amount'] ?? 0),
+                    'description' => 'VNPay IPN - payment #' . $paymentId . ' - ref=' . $gatewayRef,
+                    'payment_date' => date('Y-m-d'),
+                ]);
             }
 
             $conn->commit();
@@ -651,22 +638,17 @@ class PaymentGatewayController {
                     $stmtBooking->execute(['DaCoc', $bookingId]);
                 }
 
-                self::updateBookingPaymentStatusColumnIfExists($conn, $bookingId, 'DaThanhToan');
-
-                if (!self::existsPaymentFinanceTransaction($conn, $bookingId)) {
-                    $stmtFinance = $conn->prepare('INSERT INTO giao_dich_tai_chinh (booking_id, tour_id, khach_hang_id, loai, so_tien, mo_ta, ngay_giao_dich) VALUES (?, ?, ?, ?, ?, ?, ?)');
-                    $stmtFinance->execute([
-                        $bookingId,
-                        (int)($booking['tour_id'] ?? 0),
-                        (int)($booking['khach_hang_id'] ?? 0),
-                        'Thu',
-                        (float)($booking['tong_tien'] ?? 0),
-                        'Thanh toan online booking #' . $bookingId,
-                        date('Y-m-d')
-                    ]);
-                }
+                PaymentFinanceService::updateBookingPaymentStatusIfExists($conn, $bookingId, 'DaThanhToan');
+                PaymentFinanceService::createThuTransactionIfMissing($conn, [
+                    'booking_id' => $bookingId,
+                    'tour_id' => (int)($booking['tour_id'] ?? 0),
+                    'khach_hang_id' => (int)($booking['khach_hang_id'] ?? 0),
+                    'amount' => (float)($booking['tong_tien'] ?? 0),
+                    'description' => 'Thanh toan online booking #' . $bookingId,
+                    'payment_date' => date('Y-m-d'),
+                ]);
             } else {
-                self::updateBookingPaymentStatusColumnIfExists($conn, $bookingId, 'ChuaThanhToan');
+                PaymentFinanceService::updateBookingPaymentStatusIfExists($conn, $bookingId, 'ChuaThanhToan');
             }
 
             $conn->commit();
@@ -880,20 +862,6 @@ class PaymentGatewayController {
         $stmt->execute([(int)$paymentId]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         return (string)($row['status'] ?? '');
-    }
-
-    private static function existsPaymentFinanceTransaction($conn, $bookingId) {
-        $stmt = $conn->prepare("SELECT COUNT(*) AS c FROM giao_dich_tai_chinh WHERE booking_id = ? AND mo_ta = ?");
-        $stmt->execute([(int)$bookingId, 'Thanh toan online booking #' . (int)$bookingId]);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        return (int)($row['c'] ?? 0) > 0;
-    }
-
-    private static function updateBookingPaymentStatusColumnIfExists($conn, $bookingId, $status) {
-        if (dbColumnExists('booking', 'trang_thai_thanh_toan', $conn)) {
-            $stmt = $conn->prepare('UPDATE booking SET trang_thai_thanh_toan = ? WHERE booking_id = ?');
-            $stmt->execute([(string)$status, (int)$bookingId]);
-        }
     }
 
     private static function buildTxnRef($bookingId, $paymentId) {

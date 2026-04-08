@@ -457,6 +457,7 @@ match ($act) {
         'admin/show_invoice' => InvoiceController::show($conn, $_GET['id'] ?? null),
         'admin/payments' => PaymentController::index($conn),
         'admin/paymentReconcile' => PaymentController::reconcile($conn),
+        'admin/paymentComplaints' => PaymentController::complaints($conn),
         'admin/show_payment' => PaymentController::show($conn, $_GET['id'] ?? null),
         'admin/confirm_payment_received' => PaymentController::confirmReceived($conn, $_GET['id'] ?? null),
         'admin/confirm_gateway_payment' => PaymentController::confirmGatewayPayment($conn, $_GET['id'] ?? null),

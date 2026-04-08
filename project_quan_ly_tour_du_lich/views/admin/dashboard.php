@@ -343,6 +343,253 @@ ob_start();
             height: 220px;
         }
     }
+
+    /* === KPI Alerts Styles === */
+    .kpi-alerts-section {
+        margin: 24px 0 34px;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 20px;
+    }
+
+    .kpi-alert-card {
+        position: relative;
+        border-radius: 20px;
+        padding: 24px;
+        border: 2px solid;
+        background: linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+        overflow: hidden;
+        transition: all 0.3s ease;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        min-height: 180px;
+    }
+
+    .kpi-alert-card::before {
+        content: '';
+        position: absolute;
+        inset: auto -50px -50px auto;
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        opacity: 0.08;
+        pointer-events: none;
+    }
+
+    .kpi-alert-card.warning {
+        border-color: rgba(239, 68, 68, 0.4);
+        background: linear-gradient(135deg, rgba(239, 68, 68, 0.08), rgba(239, 68, 68, 0.02));
+    }
+
+    .kpi-alert-card.warning::before {
+        background: radial-gradient(circle, rgba(239, 68, 68, 0.2), transparent 70%);
+    }
+
+    .kpi-alert-card.critical {
+        border-color: rgba(239, 68, 68, 0.6);
+        background: linear-gradient(135deg, rgba(239, 68, 68, 0.12), rgba(239, 68, 68, 0.04));
+    }
+
+    .kpi-alert-card.critical::before {
+        background: radial-gradient(circle, rgba(239, 68, 68, 0.3), transparent 70%);
+    }
+
+    .kpi-alert-card.success {
+        border-color: rgba(34, 197, 94, 0.3);
+        background: linear-gradient(135deg, rgba(34, 197, 94, 0.08), rgba(34, 197, 94, 0.02));
+    }
+
+    .kpi-alert-card.success::before {
+        background: radial-gradient(circle, rgba(34, 197, 94, 0.15), transparent 70%);
+    }
+
+    .kpi-alert-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+    }
+
+    .kpi-alert-label {
+        font-size: 0.85rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--text-muted);
+        margin-bottom: 8px;
+        z-index: 1;
+        position: relative;
+    }
+
+    .kpi-alert-number {
+        font-size: 2.8rem;
+        font-weight: 900;
+        margin-bottom: 6px;
+        z-index: 1;
+        position: relative;
+    }
+
+    .kpi-alert-card.warning .kpi-alert-number {
+        color: #ef4444;
+    }
+
+    .kpi-alert-card.critical .kpi-alert-number {
+        color: #f97316;
+    }
+
+    .kpi-alert-card.success .kpi-alert-number {
+        color: #22c55e;
+    }
+
+    .kpi-alert-detail {
+        font-size: 0.92rem;
+        color: var(--text-muted);
+        margin-top: 8px;
+        line-height: 1.5;
+        z-index: 1;
+        position: relative;
+    }
+
+    .kpi-alert-action {
+        margin-top: 14px;
+        display: inline-block;
+        z-index: 1;
+        position: relative;
+    }
+
+    .kpi-alert-action a {
+        font-size: 0.9rem;
+        font-weight: 600;
+        text-decoration: none;
+        padding: 8px 12px;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+        display: inline-block;
+    }
+
+    .kpi-alert-card.warning .kpi-alert-action a {
+        color: #ef4444;
+        background: rgba(239, 68, 68, 0.12);
+    }
+
+    .kpi-alert-card.warning .kpi-alert-action a:hover {
+        background: rgba(239, 68, 68, 0.24);
+    }
+
+    .kpi-alert-card.critical .kpi-alert-action a {
+        color: #f97316;
+        background: rgba(249, 115, 22, 0.12);
+    }
+
+    .kpi-alert-card.critical .kpi-alert-action a:hover {
+        background: rgba(249, 115, 22, 0.24);
+    }
+
+    .kpi-alert-card.success .kpi-alert-action a {
+        color: #22c55e;
+        background: rgba(34, 197, 94, 0.12);
+    }
+
+    .kpi-alert-card.success .kpi-alert-action a:hover {
+        background: rgba(34, 197, 94, 0.24);
+    }
+
+    /* === Quick Filters Styles === */
+    .quick-filters-section {
+        margin: 30px 0 28px;
+        padding: 20px 24px;
+        border-radius: 20px;
+        border: 1px solid rgba(212, 175, 55, 0.14);
+        background: linear-gradient(135deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+        backdrop-filter: blur(10px);
+    }
+
+    .quick-filters-title {
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--accent-gold);
+        margin-bottom: 14px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .quick-filters-form {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+        align-items: center;
+    }
+
+    .quick-filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .quick-filter-label {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+
+    .quick-filter-input,
+    .quick-filter-select {
+        min-width: 160px;
+        padding: 8px 12px;
+        border: 1px solid rgba(212, 175, 55, 0.2);
+        border-radius: 8px;
+        background: rgba(0,0,0,0.2);
+        color: var(--text-light);
+        font-size: 0.92rem;
+        transition: all 0.2s ease;
+    }
+
+    .quick-filter-input:focus,
+    .quick-filter-select:focus {
+        outline: none;
+        border-color: rgba(212, 175, 55, 0.5);
+        box-shadow: 0 0 8px rgba(212, 175, 55, 0.2);
+    }
+
+    .quick-filter-input::placeholder {
+        color: var(--text-muted);
+    }
+
+    .quick-filter-btn {
+        padding: 8px 20px;
+        border-radius: 8px;
+        border: 1px solid rgba(212, 175, 55, 0.3);
+        background: linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(212, 175, 55, 0.1));
+        color: var(--accent-gold);
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        margin-top: 22px;
+    }
+
+    .quick-filter-btn:hover {
+        background: linear-gradient(135deg, rgba(212, 175, 55, 0.3), rgba(212, 175, 55, 0.2));
+        border-color: rgba(212, 175, 55, 0.5);
+    }
+
+    @media (max-width: 768px) {
+        .quick-filters-form {
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .quick-filter-input,
+        .quick-filter-select {
+            width: 100%;
+        }
+
+        .quick-filter-btn {
+            width: 100%;
+        }
+    }
+
 </style>
 
 <div class="welcome-admin">
@@ -352,6 +599,125 @@ ob_start();
         <h2 class="welcome-title">Xin chào Quản trị viên</h2>
         <div class="welcome-desc">Bảng điều khiển được làm mới để bạn theo dõi doanh thu, lợi nhuận và vận hành trực quan hơn.</div>
     </div>
+</div>
+
+<!-- === KPI ALERTS SECTION === -->
+<div class="kpi-alerts-section">
+    <!-- Booking Pending -->
+    <div class="kpi-alert-card <?php echo ($kpiAlerts['bookingPending'] > 10) ? 'critical' : (($kpiAlerts['bookingPending'] > 0) ? 'warning' : 'success'); ?>">
+        <div>
+            <div class="kpi-alert-label">📋 Booking Chờ Xử Lý</div>
+            <div class="kpi-alert-number"><?php echo $kpiAlerts['bookingPending']; ?></div>
+            <div class="kpi-alert-detail">
+                <?php if ($kpiAlerts['bookingPending'] > 10): ?>
+                    ⚠️ Có nhiều booking cần xử lý ngay
+                <?php elseif ($kpiAlerts['bookingPending'] > 0): ?>
+                    ℹ️ Cần xem xét những yêu cầu mới
+                <?php else: ?>
+                    ✓ Không có booking nào chờ xử lý
+                <?php endif; ?>
+            </div>
+        </div>
+        <div class="kpi-alert-action">
+            <a href="index.php?act=admin/quanLyBooking" title="Xem chi tiết">Xem danh sách →</a>
+        </div>
+    </div>
+
+    <!-- Payment Mismatch -->
+    <div class="kpi-alert-card <?php echo ($kpiAlerts['paymentMismatch'] > 5) ? 'critical' : (($kpiAlerts['paymentMismatch'] > 0) ? 'warning' : 'success'); ?>">
+        <div>
+            <div class="kpi-alert-label">💰 Payment Mismatch</div>
+            <div class="kpi-alert-number"><?php echo $kpiAlerts['paymentMismatch']; ?></div>
+            <div class="kpi-alert-detail">
+                <?php if ($kpiAlerts['paymentMismatch'] > 5): ?>
+                    ⚠️ Có vấn đề với đối soát thanh toán
+                <?php elseif ($kpiAlerts['paymentMismatch'] > 0): ?>
+                    ℹ️ Cần kiểm tra lại giao dịch
+                <?php else: ?>
+                    ✓ Tất cả thanh toán đều đối soát
+                <?php endif; ?>
+            </div>
+        </div>
+        <div class="kpi-alert-action">
+            <a href="index.php?act=admin/paymentReconcile" title="Xem chi tiết">Đối soát →</a>
+        </div>
+    </div>
+
+    <!-- Overdue Debt -->
+    <div class="kpi-alert-card <?php echo ($kpiAlerts['overdueDebt'] > 3) ? 'critical' : (($kpiAlerts['overdueDebt'] > 0) ? 'warning' : 'success'); ?>">
+        <div>
+            <div class="kpi-alert-label">📌 Công Nợ Quá Hạn</div>
+            <div class="kpi-alert-number"><?php echo $kpiAlerts['overdueDebt']; ?></div>
+            <div class="kpi-alert-detail">
+                <?php if ($kpiAlerts['overdueDebt'] > 3): ?>
+                    ⚠️ Có công nợ sắp hết hạn
+                <?php elseif ($kpiAlerts['overdueDebt'] > 0): ?>
+                    ℹ️ Cần xử lý công nợ HDV
+                <?php else: ?>
+                    ✓ Không có công nợ quá hạn
+                <?php endif; ?>
+            </div>
+        </div>
+        <div class="kpi-alert-action">
+            <a href="index.php?act=congNoHDV/index" title="Xem chi tiết">Quản lý →</a>
+        </div>
+    </div>
+</div>
+
+<!-- === QUICK FILTERS SECTION === -->
+<div class="quick-filters-section">
+    <div class="quick-filters-title">⚙️ Lọc nhanh dữ liệu</div>
+    <form method="get" class="quick-filters-form" action="index.php">
+        <input type="hidden" name="act" value="admin/dashboard">
+        
+        <div class="quick-filter-group">
+            <label class="quick-filter-label">Từ ngày</label>
+            <input 
+                type="date" 
+                name="date_from" 
+                class="quick-filter-input"
+                value="<?php echo htmlspecialchars($_GET['date_from'] ?? ''); ?>"
+            >
+        </div>
+
+        <div class="quick-filter-group">
+            <label class="quick-filter-label">Đến ngày</label>
+            <input 
+                type="date" 
+                name="date_to" 
+                class="quick-filter-input"
+                value="<?php echo htmlspecialchars($_GET['date_to'] ?? ''); ?>"
+            >
+        </div>
+
+        <div class="quick-filter-group">
+            <label class="quick-filter-label">Tour</label>
+            <select name="tour_id" class="quick-filter-select">
+                <option value="">-- Tất cả tour --</option>
+                <?php if (!empty($tours)): ?>
+                    <?php foreach ($tours as $tour): ?>
+                        <option value="<?php echo htmlspecialchars($tour['ten_tour'] ?? ''); ?>" 
+                            <?php echo (($_GET['tour_id'] ?? '') === ($tour['ten_tour'] ?? '')) ? 'selected' : ''; ?>>
+                            <?php echo htmlspecialchars($tour['ten_tour'] ?? '', ENT_QUOTES, 'UTF-8'); ?>
+                        </option>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </select>
+        </div>
+
+        <div class="quick-filter-group">
+            <label class="quick-filter-label">Trạng thái</label>
+            <select name="status" class="quick-filter-select">
+                <option value="">-- Tất cả trạng thái --</option>
+                <option value="DangXuLy" <?php echo (($_GET['status'] ?? '') === 'DangXuLy') ? 'selected' : ''; ?>>Đang xử lý</option>
+                <option value="DaXuLy" <?php echo (($_GET['status'] ?? '') === 'DaXuLy') ? 'selected' : ''; ?>>Đã xử lý</option>
+                <option value="HoanThanh" <?php echo (($_GET['status'] ?? '') === 'HoanThanh') ? 'selected' : ''; ?>>Hoàn thành</option>
+                <option value="HuyBo" <?php echo (($_GET['status'] ?? '') === 'HuyBo') ? 'selected' : ''; ?>>Hủy bỏ</option>
+            </select>
+        </div>
+
+        <button type="submit" class="quick-filter-btn">🔍 Lọc dữ liệu</button>
+    </form>
 </div>
 
 <div class="report-card">

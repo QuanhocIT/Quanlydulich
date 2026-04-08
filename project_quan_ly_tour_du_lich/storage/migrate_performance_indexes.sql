@@ -114,4 +114,26 @@ SET @sql_stmt := IF(@exists = 0,
 );
 PREPARE stmt FROM @sql_stmt; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
+-- 11) Payment reconcile/report date-range + sort
+SET @exists := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = @db_name AND table_name = 'payments' AND index_name = 'idx_pay_date_id_status'
+);
+SET @sql_stmt := IF(@exists = 0,
+  'ALTER TABLE payments ADD INDEX idx_pay_date_id_status (payment_date, payment_id, status)',
+  "SELECT 'SKIP idx_pay_date_id_status' AS migration_message"
+);
+PREPARE stmt FROM @sql_stmt; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- 12) Finance summary by booking + type (Thu)
+SET @exists := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = @db_name AND table_name = 'giao_dich_tai_chinh' AND index_name = 'idx_gd_booking_loai'
+);
+SET @sql_stmt := IF(@exists = 0,
+  'ALTER TABLE giao_dich_tai_chinh ADD INDEX idx_gd_booking_loai (booking_id, loai)',
+  "SELECT 'SKIP idx_gd_booking_loai' AS migration_message"
+);
+PREPARE stmt FROM @sql_stmt; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
 SELECT 'DONE: performance index migration executed' AS migration_message;

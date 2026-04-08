@@ -223,7 +223,7 @@ class AdminController {
 
         $nhanSuList = $nhanSuModel->getOptions();
         $tourList = $tourModel->getOptions();
-        $lichKhoiHanhList = $lichKhoiHanhModel->getOptions();
+        $lichKhoiHanhList = $lichKhoiHanhModel->getUpcomingOptions(500, 365);
 
         $pageTitle = 'Quản lý lương thưởng nhân sự';
         $currentPage = 'luongThuong';
@@ -543,6 +543,48 @@ class AdminController {
         requireRole('Admin');
         // khi vào gốc dự án sẽ gọi new AdminController(). Trong AdminController::__construct() có requireRole('Admin') → requireLogin() → nếu chưa đăng nhập thì chuyển hướng sang auth/login. Nên luôn thấy trang đăng nhập trước khi có session.
     }
+
+    // Helper: Lấy KPI cảnh báo thực tế từ DB
+    private function buildKpiAlerts(array $bookingStatusStats) {
+        // 1. Booking chờ xác nhận - dùng lại data cache đã có, đúng status 'ChoXacNhan'
+        $bookingPending = (int)($bookingStatusStats['ChoXacNhan'] ?? 0);
+
+        // 2. Payment mismatch: payments ThanhCong/DaDoiSoat chưa có giao dịch Thu
+        $paymentMismatch = 0;
+        try {
+            $conn = connectDB();
+            $stmt = $conn->prepare(
+                "SELECT COUNT(DISTINCT p.payment_id) AS cnt
+                 FROM payments p
+                 WHERE p.status IN ('ThanhCong', 'DaDoiSoat')
+                   AND NOT EXISTS (
+                       SELECT 1 FROM giao_dich_tai_chinh g
+                       WHERE g.booking_id = p.booking_id
+                         AND g.loai = 'Thu'
+                   )"
+            );
+            $stmt->execute();
+            $paymentMismatch = (int)($stmt->fetchColumn() ?? 0);
+        } catch (Throwable $e) {
+            error_log('[AdminController::buildKpiAlerts] paymentMismatch error: ' . $e->getMessage());
+        }
+
+        // 3. Công nợ HDV quá hạn > 7 ngày chưa duyệt
+        $overdueDebt = 0;
+        try {
+            require_once __DIR__ . '/../models/CongNoHDV.php';
+            $congNoHdvModel = new CongNoHDV();
+            $overdueDebt = $congNoHdvModel->getQuaHanCount(7);
+        } catch (Throwable $e) {
+            error_log('[AdminController::buildKpiAlerts] overdueDebt error: ' . $e->getMessage());
+        }
+
+        return [
+            'bookingPending' => $bookingPending,
+            'paymentMismatch' => $paymentMismatch,
+            'overdueDebt' => $overdueDebt,
+        ];
+    }
     
     public function dashboard() {
         try {
@@ -551,61 +593,69 @@ class AdminController {
             $this->initAdminNotificationState();
         }
 
-        require_once __DIR__ . '/../models/GiaoDich.php';
-        require_once __DIR__ . '/../models/Booking.php';
-        require_once __DIR__ . '/../models/KhachHang.php';
-        $tourModel = new Tour();
-        $giaoDichModel = new GiaoDich();
-        $bookingModel = new Booking();
-        $khachHangModel = new KhachHang();
-        $toursRaw = $tourModel->getDashboardTourStats();
+        $dashboardData = cacheRemember('admin_dashboard_overview_v1', 120, function () {
+            require_once __DIR__ . '/../models/GiaoDich.php';
+            require_once __DIR__ . '/../models/Booking.php';
+            require_once __DIR__ . '/../models/KhachHang.php';
+            require_once __DIR__ . '/../models/DanhGia.php';
+            require_once __DIR__ . '/../models/LichKhoiHanh.php';
 
-        $tourIds = array_map(static function ($tour) {
-            return (int)($tour['tour_id'] ?? 0);
-        }, $toursRaw);
-        $tongThuChiMap = $giaoDichModel->getTongThuChiByTourIds($tourIds);
+            $tourModel = new Tour();
+            $giaoDichModel = new GiaoDich();
+            $bookingModel = new Booking();
+            $khachHangModel = new KhachHang();
+            $danhGiaModel = new DanhGia();
+            $lichKhoiHanhModel = new LichKhoiHanh();
 
-        $tours = [];
-        foreach ($toursRaw as $tour) {
-            $tourId = (int)($tour['tour_id'] ?? 0);
-            $tongThu = (float)($tongThuChiMap[$tourId]['tong_thu'] ?? 0);
-            $tongChi = (float)($tongThuChiMap[$tourId]['tong_chi'] ?? 0);
-            $loiNhuan = $tongThu - $tongChi;
-            $tours[] = [
-                'ten_tour' => $tour['ten_tour'],
-                'tong_thu' => $tongThu,
-                'tong_chi_thuc_te' => $tongChi,
-                'tong_du_toan' => $tour['gia_co_ban'],
-                'loi_nhuan' => $loiNhuan
+            $toursRaw = $tourModel->getDashboardTourStats();
+            $tourIds = array_map(static function ($tour) {
+                return (int)($tour['tour_id'] ?? 0);
+            }, $toursRaw);
+            $tongThuChiMap = $giaoDichModel->getTongThuChiByTourIds($tourIds);
+
+            $tours = [];
+            $tourStatusStats = [];
+            foreach ($toursRaw as $tour) {
+                $tourId = (int)($tour['tour_id'] ?? 0);
+                $tongThu = (float)($tongThuChiMap[$tourId]['tong_thu'] ?? 0);
+                $tongChi = (float)($tongThuChiMap[$tourId]['tong_chi'] ?? 0);
+                $tours[] = [
+                    'ten_tour' => $tour['ten_tour'],
+                    'tong_thu' => $tongThu,
+                    'tong_chi_thuc_te' => $tongChi,
+                    'tong_du_toan' => $tour['gia_co_ban'],
+                    'loi_nhuan' => $tongThu - $tongChi,
+                ];
+
+                $status = $tour['trang_thai'] ?? 'Khác';
+                $tourStatusStats[$status] = ($tourStatusStats[$status] ?? 0) + 1;
+            }
+
+            $bookingStatusStats = $bookingModel->getStatusCounts();
+
+            return [
+                'tours' => $tours,
+                'doanhThuTheoThang' => $giaoDichModel->getTongThuTheoThang(12),
+                'bookingStatusStats' => $bookingStatusStats,
+                'khachHangMoiTheoThang' => $khachHangModel->getNewCustomersByMonth(12),
+                'tourStatusStats' => $tourStatusStats,
+                'feedbackStats' => $danhGiaModel->getTourFeedbackBuckets(),
+                'bookingManageStats' => $bookingStatusStats,
+                'lichKhoiHanhStats' => $lichKhoiHanhModel->getScheduleCountByMonth(12),
             ];
-        }
-        $doanhThuTheoThang = $giaoDichModel->getTongThuTheoThang(12);
+        });
 
-        // 1. Trạng thái booking
-        $bookingStatusStats = $bookingModel->getStatusCounts();
+        $tours = $dashboardData['tours'] ?? [];
+        $doanhThuTheoThang = $dashboardData['doanhThuTheoThang'] ?? [];
+        $bookingStatusStats = $dashboardData['bookingStatusStats'] ?? [];
+        $khachHangMoiTheoThang = $dashboardData['khachHangMoiTheoThang'] ?? [];
+        $tourStatusStats = $dashboardData['tourStatusStats'] ?? [];
+        $feedbackStats = $dashboardData['feedbackStats'] ?? [];
+        $bookingManageStats = $dashboardData['bookingManageStats'] ?? [];
+        $lichKhoiHanhStats = $dashboardData['lichKhoiHanhStats'] ?? [];
 
-        // 2. Khách hàng mới theo tháng
-        $khachHangMoiTheoThang = $khachHangModel->getNewCustomersByMonth(12);
-
-        // 3. Trạng thái tour
-        $tourStatusStats = [];
-        foreach ($toursRaw as $tour) {
-            $status = $tour['trang_thai'] ?? 'Khác';
-            $tourStatusStats[$status] = ($tourStatusStats[$status] ?? 0) + 1;
-        }
-
-        // 4. Đánh giá phản hồi
-        require_once __DIR__ . '/../models/DanhGia.php';
-        $danhGiaModel = new DanhGia();
-        $feedbackStats = $danhGiaModel->getTourFeedbackBuckets();
-
-        // 5. Quản lý Booking (thống kê số lượng booking theo trạng thái)
-        $bookingManageStats = $bookingStatusStats;
-
-        // 6. Quản lý Lịch khởi hành (thống kê số lượng theo tháng)
-        require_once __DIR__ . '/../models/LichKhoiHanh.php';
-        $lichKhoiHanhModel = new LichKhoiHanh();
-        $lichKhoiHanhStats = $lichKhoiHanhModel->getScheduleCountByMonth(12);
+        // === KPI Alerts Data (dùng $bookingStatusStats đã có, thêm 2 truy vấn nhẹ) ===
+        $kpiAlerts = $this->buildKpiAlerts($bookingStatusStats);
 
         require 'views/admin/dashboard.php';
     }
@@ -764,6 +814,7 @@ class AdminController {
             'search'     => trim($_GET['search'] ?? ''),
             'co_yeu_cau_tour' => isset($_GET['co_yeu_cau_tour']) ? (string)$_GET['co_yeu_cau_tour'] : '',
             'exclude_hidden' => true,
+            'only_paid' => true,
         ];
 
         $totalBookings = $bookingModel->countAllWithDetailsFiltered($filters);
@@ -2744,7 +2795,16 @@ class AdminController {
         $thongBaoModel = new ThongBao();
         $yeuCau = $thongBaoModel->findById($id);
         
-        if (!$yeuCau || $yeuCau['tieu_de'] !== 'Yêu cầu tour theo mong muốn') {
+        $isTourRequest = !empty($yeuCau) && (($yeuCau['tieu_de'] ?? '') === 'Yêu cầu tour theo mong muốn');
+        $complaintTitle = (string)($yeuCau['tieu_de'] ?? '');
+        $complaintContent = (string)($yeuCau['noi_dung'] ?? '');
+        $isTransferComplaint = !empty($yeuCau) && (
+            strpos($complaintTitle, 'Khieu nai chuyen khoan sai noi dung') === 0
+            || strpos($complaintTitle, 'Khiếu nại chuyển khoản sai nội dung') === 0
+            || strpos($complaintContent, '[KHIEU NAI CHUYEN KHOAN SAI NOI DUNG]') === 0
+        );
+
+        if (!$yeuCau || (!$isTourRequest && !$isTransferComplaint)) {
             $_SESSION['error'] = 'Yêu cầu không tồn tại.';
             header('Location: index.php?act=admin/quanLyYeuCauTour');
             exit;

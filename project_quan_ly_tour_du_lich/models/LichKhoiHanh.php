@@ -3,6 +3,12 @@
 class LichKhoiHanh 
 {
     public $conn;
+
+    private function clearScheduleReadCache() {
+        cacheForgetByPrefix('lich_khoi_hanh_options_');
+        cacheForgetByPrefix('lich_khoi_hanh_upcoming_');
+        cacheForget('admin_dashboard_overview_v1');
+    }
     
     public function __construct()
     {
@@ -30,6 +36,10 @@ class LichKhoiHanh
                           AND (ngay_ket_thuc IS NULL OR ngay_ket_thuc >= CURDATE())";
         $stmt2 = $this->conn->prepare($sqlDangChay);
         $stmt2->execute();
+
+        if (((int)$stmt1->rowCount() + (int)$stmt2->rowCount()) > 0) {
+            $this->clearScheduleReadCache();
+        }
     }
 
     // Lấy tất cả lịch khởi hành
@@ -60,20 +70,47 @@ class LichKhoiHanh
     }
 
     public function getOptions($limit = null) {
-        $sql = "SELECT lk.id, lk.ngay_khoi_hanh, t.ten_tour
-                FROM lich_khoi_hanh lk
-                LEFT JOIN tour t ON lk.tour_id = t.tour_id
-                ORDER BY lk.ngay_khoi_hanh DESC, lk.id DESC";
-        if ($limit !== null) {
-            $sql .= " LIMIT ?";
-        }
+        $limitValue = $limit !== null ? max(1, (int)$limit) : 0;
+        $cacheKey = 'lich_khoi_hanh_options_' . ($limitValue > 0 ? ('limit_' . $limitValue) : 'all');
 
-        $stmt = $this->conn->prepare($sql);
-        if ($limit !== null) {
-            $stmt->bindValue(1, (int)$limit, PDO::PARAM_INT);
-        }
-        $stmt->execute();
-        return $stmt->fetchAll();
+        return cacheRemember($cacheKey, 120, function () use ($limitValue) {
+            $sql = "SELECT lk.id, lk.ngay_khoi_hanh, t.ten_tour
+                    FROM lich_khoi_hanh lk
+                    LEFT JOIN tour t ON lk.tour_id = t.tour_id
+                    ORDER BY lk.ngay_khoi_hanh DESC, lk.id DESC";
+            if ($limitValue > 0) {
+                $sql .= " LIMIT ?";
+            }
+
+            $stmt = $this->conn->prepare($sql);
+            if ($limitValue > 0) {
+                $stmt->bindValue(1, $limitValue, PDO::PARAM_INT);
+            }
+            $stmt->execute();
+            return $stmt->fetchAll();
+        });
+    }
+
+    public function getUpcomingOptions($limit = 200, $daysAhead = 365) {
+        $limit = max(1, (int)$limit);
+        $daysAhead = max(7, (int)$daysAhead);
+        $cacheKey = 'lich_khoi_hanh_upcoming_limit_' . $limit . '_days_' . $daysAhead;
+
+        return cacheRemember($cacheKey, 120, function () use ($limit, $daysAhead) {
+            $sql = "SELECT lk.id, lk.ngay_khoi_hanh, lk.trang_thai, t.ten_tour
+                    FROM lich_khoi_hanh lk
+                    LEFT JOIN tour t ON lk.tour_id = t.tour_id
+                    WHERE lk.ngay_khoi_hanh >= CURDATE()
+                      AND lk.ngay_khoi_hanh <= DATE_ADD(CURDATE(), INTERVAL ? DAY)
+                    ORDER BY lk.ngay_khoi_hanh ASC, lk.id ASC
+                    LIMIT ?";
+
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bindValue(1, $daysAhead, PDO::PARAM_INT);
+            $stmt->bindValue(2, $limit, PDO::PARAM_INT);
+            $stmt->execute();
+            return $stmt->fetchAll();
+        });
     }
 
     // Lấy danh sách lịch khởi hành theo bộ lọc (thực hiện filter tại SQL).
@@ -219,6 +256,7 @@ class LichKhoiHanh
         ]);
         
         if ($result) {
+            $this->clearScheduleReadCache();
             return $this->conn->lastInsertId();
         }
         return false;
@@ -232,7 +270,7 @@ class LichKhoiHanh
                 so_cho = ?, hdv_id = ?, trang_thai = ?, ghi_chu = ?
                 WHERE id = ?";
         $stmt = $this->conn->prepare($sql);
-        return $stmt->execute([
+        $result = $stmt->execute([
             $data['tour_id'] ?? null,
             $data['ngay_khoi_hanh'] ?? null,
             $data['gio_xuat_phat'] ?? null,
@@ -245,6 +283,12 @@ class LichKhoiHanh
             $data['ghi_chu'] ?? null,
             $id
         ]);
+
+        if ($result) {
+            $this->clearScheduleReadCache();
+        }
+
+        return $result;
     }
 
     // Cập nhật % hoa hồng HDV cho lịch khởi hành (cần cột lich_khoi_hanh.phan_tram_hoa_hong_hdv)
@@ -263,17 +307,27 @@ class LichKhoiHanh
     public function assignHDV($lichKhoiHanhId, $nhanSuId) {
         $sql = "UPDATE lich_khoi_hanh SET hdv_id = ? WHERE id = ?";
         $stmt = $this->conn->prepare($sql);
-        return $stmt->execute([
+        $result = $stmt->execute([
             $nhanSuId !== null ? (int)$nhanSuId : null,
             (int)$lichKhoiHanhId
         ]);
+
+        if ($result) {
+            $this->clearScheduleReadCache();
+        }
+
+        return $result;
     }
 
     // Xóa lịch khởi hành
     public function delete($id) {
         $sql = "DELETE FROM lich_khoi_hanh WHERE id = ?";
         $stmt = $this->conn->prepare($sql);
-        return $stmt->execute([(int)$id]);
+        $result = $stmt->execute([(int)$id]);
+        if ($result) {
+            $this->clearScheduleReadCache();
+        }
+        return $result;
     }
 
     // Lấy lịch khởi hành với đầy đủ thông tin

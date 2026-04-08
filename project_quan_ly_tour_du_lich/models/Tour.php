@@ -3,6 +3,12 @@
 class Tour 
 {
     public $conn;
+
+    private function clearTourReadCache() {
+        cacheForgetByPrefix('tour_options_');
+        cacheForget('tour_dashboard_stats_v1');
+        cacheForget('admin_dashboard_overview_v1');
+    }
     
     public function __construct()
     {
@@ -46,17 +52,22 @@ class Tour
     }
 
     public function getOptions($limit = null) {
-        $sql = "SELECT tour_id, ten_tour FROM tour ORDER BY ten_tour ASC";
-        if ($limit !== null) {
-            $sql .= " LIMIT ?";
-        }
+        $limitValue = $limit !== null ? max(1, (int)$limit) : 0;
+        $cacheKey = 'tour_options_' . ($limitValue > 0 ? ('limit_' . $limitValue) : 'all');
 
-        $stmt = $this->conn->prepare($sql);
-        if ($limit !== null) {
-            $stmt->bindValue(1, (int)$limit, PDO::PARAM_INT);
-        }
-        $stmt->execute();
-        return $stmt->fetchAll();
+        return cacheRemember($cacheKey, 300, function () use ($limitValue) {
+            $sql = "SELECT tour_id, ten_tour FROM tour ORDER BY ten_tour ASC";
+            if ($limitValue > 0) {
+                $sql .= " LIMIT ?";
+            }
+
+            $stmt = $this->conn->prepare($sql);
+            if ($limitValue > 0) {
+                $stmt->bindValue(1, $limitValue, PDO::PARAM_INT);
+            }
+            $stmt->execute();
+            return $stmt->fetchAll();
+        });
     }
 
     public function getPublicTours(array $filters = [], $limit = null, $offset = 0) {
@@ -125,12 +136,14 @@ class Tour
     }
 
     public function getDashboardTourStats() {
-        $sql = "SELECT tour_id, ten_tour, gia_co_ban, trang_thai
+        return cacheRemember('tour_dashboard_stats_v1', 120, function () {
+            $sql = "SELECT tour_id, ten_tour, gia_co_ban, trang_thai
                 FROM tour
                 ORDER BY tour_id DESC";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        });
     }
 
     // Lấy tour theo ID
@@ -165,7 +178,7 @@ class Tour
         $sql = "INSERT INTO tour (ten_tour, loai_tour, mo_ta, gia_co_ban, chinh_sach, id_nha_cung_cap, tao_boi, trang_thai) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         $stmt = $this->conn->prepare($sql);
-        return $stmt->execute([
+        $result = $stmt->execute([
             $data['ten_tour'] ?? '',
             $data['loai_tour'] ?? 'TrongNuoc',
             $data['mo_ta'] ?? '',
@@ -175,6 +188,12 @@ class Tour
             $data['tao_boi'] ?? null,
             $data['trang_thai'] ?? 'HoatDong'
         ]);
+
+        if ($result) {
+            $this->clearTourReadCache();
+        }
+
+        return $result;
     }
 
     // Cập nhật tour
@@ -182,7 +201,7 @@ class Tour
         $sql = "UPDATE tour SET ten_tour = ?, loai_tour = ?, mo_ta = ?, gia_co_ban = ?, chinh_sach = ?, 
                 id_nha_cung_cap = ?, trang_thai = ? WHERE tour_id = ?";
         $stmt = $this->conn->prepare($sql);
-        return $stmt->execute([
+        $result = $stmt->execute([
             $data['ten_tour'] ?? '',
             $data['loai_tour'] ?? 'TrongNuoc',
             $data['mo_ta'] ?? '',
@@ -192,12 +211,22 @@ class Tour
             $data['trang_thai'] ?? 'HoatDong',
             $id
         ]);
+
+        if ($result) {
+            $this->clearTourReadCache();
+        }
+
+        return $result;
     }
 
     public function updateQrCodePath($tourId, $path) {
         $sql = "UPDATE tour SET qr_code_path = ? WHERE tour_id = ?";
         $stmt = $this->conn->prepare($sql);
-        return $stmt->execute([$path, (int)$tourId]);
+        $result = $stmt->execute([$path, (int)$tourId]);
+        if ($result) {
+            $this->clearTourReadCache();
+        }
+        return $result;
     }
 
     // Xóa tour
@@ -233,6 +262,10 @@ class Tour
         $sql = "DELETE FROM tour WHERE tour_id = ?";
         $stmt = $this->conn->prepare($sql);
         $result = $stmt->execute([$id]);
+
+        if ($result) {
+            $this->clearTourReadCache();
+        }
         
         return $result;
     }

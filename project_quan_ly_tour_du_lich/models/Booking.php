@@ -307,6 +307,23 @@ class Booking
             $where[] = 'b.trang_thai = ?';
             $params[] = $filters['trang_thai'];
         }
+        if (!empty($filters['only_paid'])) {
+            $paidClauses = [
+                "EXISTS (
+                    SELECT 1
+                    FROM payments p_paid
+                    WHERE p_paid.booking_id = b.booking_id
+                      AND p_paid.status IN ('ThanhCong', 'DaDoiSoat')
+                )",
+                "b.trang_thai IN ('DaCoc', 'HoanTat')",
+            ];
+
+            if ($this->hasColumn('booking', 'trang_thai_thanh_toan')) {
+                $paidClauses[] = "COALESCE(b.trang_thai_thanh_toan, '') = 'DaThanhToan'";
+            }
+
+            $where[] = '(' . implode(' OR ', $paidClauses) . ')';
+        }
         if (!empty($filters['search'])) {
             $where[] = '(nd.ho_ten LIKE ? OR nd.email LIKE ? OR b.booking_id LIKE ? OR t.ten_tour LIKE ?)';
             $kw = '%' . $filters['search'] . '%';
@@ -360,6 +377,23 @@ class Booking
         if (!empty($filters['trang_thai'])) {
             $where[] = 'b.trang_thai = ?';
             $params[] = $filters['trang_thai'];
+        }
+        if (!empty($filters['only_paid'])) {
+            $paidClauses = [
+                "EXISTS (
+                    SELECT 1
+                    FROM payments p_paid
+                    WHERE p_paid.booking_id = b.booking_id
+                      AND p_paid.status IN ('ThanhCong', 'DaDoiSoat')
+                )",
+                "b.trang_thai IN ('DaCoc', 'HoanTat')",
+            ];
+
+            if ($this->hasColumn('booking', 'trang_thai_thanh_toan')) {
+                $paidClauses[] = "COALESCE(b.trang_thai_thanh_toan, '') = 'DaThanhToan'";
+            }
+
+            $where[] = '(' . implode(' OR ', $paidClauses) . ')';
         }
         if (!empty($filters['search'])) {
             $where[] = '(nd.ho_ten LIKE ? OR nd.email LIKE ? OR b.booking_id LIKE ? OR t.ten_tour LIKE ?)';
