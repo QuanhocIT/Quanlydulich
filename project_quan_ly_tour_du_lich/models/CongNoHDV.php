@@ -45,13 +45,20 @@ class CongNoHDV {
         return $stmt->execute([$ly_do, $id]);
     }
 
-    // Lấy số công nợ quá hạn (chưa duyệt, ngầy gửi cách đây > 7 ngày)
+    // Lấy số công nợ quá hạn theo đúng nghiệp vụ: còn dư nợ và đã quá hạn thanh toán.
     public function getQuaHanCount($days = 7) {
-        $sql = "SELECT COUNT(*) as total FROM cong_no_hdv 
-                WHERE trang_thai NOT IN ('DaDuyet', 'TuChoi') 
-                AND ngay_gui < DATE_SUB(NOW(), INTERVAL ? DAY)";
+        $sql = "SELECT COUNT(*) AS total
+                FROM cong_no_hdv c
+                LEFT JOIN (
+                    SELECT cong_no_hdv_id, COALESCE(SUM(so_tien), 0) AS tong_da_thanh_toan
+                    FROM lich_su_thanh_toan_hdv
+                    GROUP BY cong_no_hdv_id
+                ) ls ON ls.cong_no_hdv_id = c.id
+                WHERE c.han_thanh_toan IS NOT NULL
+                  AND c.han_thanh_toan < CURDATE()
+                  AND (COALESCE(c.so_tien, 0) - COALESCE(ls.tong_da_thanh_toan, 0)) > 0";
         $stmt = $this->conn->prepare($sql);
-        $stmt->execute([$days]);
+        $stmt->execute();
         $result = $stmt->fetch();
         return (int)($result['total'] ?? 0);
     }

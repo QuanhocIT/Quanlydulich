@@ -1,5 +1,44 @@
 <?php
 class AdminController {
+    private function resolveDashboardAnchorDate(): DateTimeImmutable {
+        $requestedDate = trim((string)($_GET['date_to'] ?? ''));
+        $normalizedDate = validateDateYmd($requestedDate);
+        $safeDate = $normalizedDate ?: date('Y-m-d');
+
+        try {
+            return new DateTimeImmutable($safeDate);
+        } catch (Throwable $e) {
+            return new DateTimeImmutable(date('Y-m-d'));
+        }
+    }
+
+    private function getMonthToDateRevenue(DateTimeImmutable $anchorDate): array {
+        $fromDate = $anchorDate->modify('first day of this month')->format('Y-m-d');
+        $toDate = $anchorDate->format('Y-m-d');
+        $total = 0.0;
+
+        try {
+            $conn = connectDB();
+            $stmt = $conn->prepare(
+                "SELECT COALESCE(SUM(so_tien), 0)
+                 FROM giao_dich_tai_chinh
+                 WHERE loai = 'Thu'
+                   AND ngay_giao_dich >= ?
+                   AND ngay_giao_dich <= ?"
+            );
+            $stmt->execute([$fromDate, $toDate]);
+            $total = (float)($stmt->fetchColumn() ?? 0);
+        } catch (Throwable $e) {
+            error_log('[AdminController::getMonthToDateRevenue] ' . $e->getMessage());
+        }
+
+        return [
+            'amount' => $total,
+            'from' => $fromDate,
+            'to' => $toDate,
+        ];
+    }
+
     private function requirePostCsrf($redirectAct = 'admin/dashboard') {
         $scopedToken = $_POST['_csrf_token'] ?? '';
         $globalToken = $_POST['_csrf_global'] ?? '';
@@ -579,10 +618,16 @@ class AdminController {
             error_log('[AdminController::buildKpiAlerts] overdueDebt error: ' . $e->getMessage());
         }
 
+        $anchorDate = $this->resolveDashboardAnchorDate();
+        $monthToDateRevenue = $this->getMonthToDateRevenue($anchorDate);
+
         return [
             'bookingPending' => $bookingPending,
             'paymentMismatch' => $paymentMismatch,
             'overdueDebt' => $overdueDebt,
+            'monthToDateRevenue' => (float)($monthToDateRevenue['amount'] ?? 0),
+            'monthToDateFrom' => (string)($monthToDateRevenue['from'] ?? ''),
+            'monthToDateTo' => (string)($monthToDateRevenue['to'] ?? ''),
         ];
     }
     

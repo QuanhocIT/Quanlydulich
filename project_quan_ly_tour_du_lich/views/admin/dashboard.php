@@ -603,6 +603,13 @@ ob_start();
 
 <!-- === KPI ALERTS SECTION === -->
 <div class="kpi-alerts-section">
+    <?php
+        $monthToDateRevenue = (float)($kpiAlerts['monthToDateRevenue'] ?? 0);
+        $monthToDateFrom = (string)($kpiAlerts['monthToDateFrom'] ?? date('Y-m-01'));
+        $monthToDateTo = (string)($kpiAlerts['monthToDateTo'] ?? date('Y-m-d'));
+        $monthToDateRangeText = date('d/m/Y', strtotime($monthToDateFrom)) . ' - ' . date('d/m/Y', strtotime($monthToDateTo));
+        $monthToDateActionUrl = 'index.php?act=admin/lichSuGiaoDich&loai=Thu&tu_ngay=' . urlencode($monthToDateFrom) . '&den_ngay=' . urlencode($monthToDateTo);
+    ?>
     <!-- Booking Pending -->
     <div class="kpi-alert-card <?php echo ($kpiAlerts['bookingPending'] > 10) ? 'critical' : (($kpiAlerts['bookingPending'] > 0) ? 'warning' : 'success'); ?>">
         <div>
@@ -623,23 +630,21 @@ ob_start();
         </div>
     </div>
 
-    <!-- Payment Mismatch -->
-    <div class="kpi-alert-card <?php echo ($kpiAlerts['paymentMismatch'] > 5) ? 'critical' : (($kpiAlerts['paymentMismatch'] > 0) ? 'warning' : 'success'); ?>">
+    <!-- Month-To-Date Revenue -->
+    <div class="kpi-alert-card <?php echo ($monthToDateRevenue > 0) ? 'success' : 'warning'; ?>">
         <div>
-            <div class="kpi-alert-label">💰 Payment Mismatch</div>
-            <div class="kpi-alert-number"><?php echo $kpiAlerts['paymentMismatch']; ?></div>
+            <div class="kpi-alert-label">💰 Doanh Thu Lũy Kế Tháng</div>
+            <div class="kpi-alert-number"><?php echo number_format($monthToDateRevenue, 0, ',', '.'); ?>đ</div>
             <div class="kpi-alert-detail">
-                <?php if ($kpiAlerts['paymentMismatch'] > 5): ?>
-                    ⚠️ Có vấn đề với đối soát thanh toán
-                <?php elseif ($kpiAlerts['paymentMismatch'] > 0): ?>
-                    ℹ️ Cần kiểm tra lại giao dịch
+                <?php if ($monthToDateRevenue > 0): ?>
+                    ✓ Từ ngày <?php echo htmlspecialchars(date('d/m', strtotime($monthToDateFrom))); ?> đến <?php echo htmlspecialchars(date('d/m', strtotime($monthToDateTo))); ?>
                 <?php else: ?>
-                    ✓ Tất cả thanh toán đều đối soát
+                    ℹ️ Chưa có doanh thu trong khoảng <?php echo htmlspecialchars($monthToDateRangeText); ?>
                 <?php endif; ?>
             </div>
         </div>
         <div class="kpi-alert-action">
-            <a href="index.php?act=admin/paymentReconcile" title="Xem chi tiết">Đối soát →</a>
+            <a href="<?php echo htmlspecialchars($monthToDateActionUrl); ?>" title="Xem chi tiết">Xem thu →</a>
         </div>
     </div>
 
@@ -659,7 +664,7 @@ ob_start();
             </div>
         </div>
         <div class="kpi-alert-action">
-            <a href="index.php?act=congNoHDV/index" title="Xem chi tiết">Quản lý →</a>
+            <a href="index.php?act=admin/congNo" title="Xem chi tiết">Quản lý →</a>
         </div>
     </div>
 </div>

@@ -88,6 +88,10 @@ ob_start();
         border-collapse: collapse;
         color: var(--text-light);
     }
+    .table-wrap {
+        width: 100%;
+        overflow-x: auto;
+    }
     .table th {
         background: rgba(45, 45, 45, 0.7);
         color: var(--text-light);
@@ -123,11 +127,16 @@ ob_start();
         margin-top: 6px;
         text-align: left;
     }
+    .history-payment-cell {
+        text-align: left !important;
+        min-width: 260px;
+    }
     .pay-form {
         display: grid;
-        grid-template-columns: 1fr 1fr 1fr;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 6px;
         margin-top: 8px;
+        width: 100%;
     }
     .pay-form input,
     .pay-form select {
@@ -136,10 +145,14 @@ ob_start();
         background: rgba(255,255,255,.03);
         color: var(--text-light);
         padding: 6px 8px;
+        min-width: 0;
+        width: 100%;
+        box-sizing: border-box;
     }
     .pay-form button {
         grid-column: 1 / -1;
         justify-self: start;
+        max-width: 100%;
     }
     .flash {
         border-radius: 10px;
@@ -250,6 +263,7 @@ ob_start();
     </div>
     
     <div class="report-card">
+        <div class="table-wrap">
         <table class="table table-bordered">
             <thead>
                 <tr>
@@ -300,7 +314,7 @@ ob_start();
                                 <span class="badge badge-gold"><i class="fas fa-hourglass-half"></i> Còn nợ</span>
                             <?php endif; ?>
                         </td>
-                        <td style="text-align:left; min-width: 320px;">
+                        <td class="history-payment-cell">
                             <details>
                                 <summary style="cursor:pointer;">Xem lịch sử (<?= (int)($row['so_lan_thanh_toan'] ?? 0) ?> lần)</summary>
                                 <?php if (empty($row['lich_su_thanh_toan'])): ?>
@@ -343,6 +357,7 @@ ob_start();
                 <?php endif; ?>
             </tbody>
         </table>
+        </div>
     </div>
 </div>
 <?php
