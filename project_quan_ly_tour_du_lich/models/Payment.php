@@ -54,15 +54,37 @@ class Payment {
     }
 
     public static function ensureStateMachineSchema($conn) {
-        $statuses = array_map(static function ($value) {
-            return "'" . $value . "'";
-        }, self::getStateList());
-
-        $enumSql = "ALTER TABLE payments MODIFY COLUMN status ENUM(" . implode(',', $statuses) . ") NOT NULL DEFAULT '" . self::STATUS_DANG_XU_LY . "'";
         try {
-            $conn->exec($enumSql);
+            $stmt = $conn->query("SHOW COLUMNS FROM payments LIKE 'status'");
+            $column = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : null;
+            if (!$column || empty($column['Type'])) {
+                throw new RuntimeException('Missing payments.status column');
+            }
+
+            if (stripos((string)$column['Type'], 'enum(') !== 0) {
+                throw new RuntimeException('payments.status must be ENUM');
+            }
+
+            $rawEnum = (string)$column['Type'];
+            preg_match('/^enum\((.*)\)$/i', $rawEnum, $matches);
+            $parts = isset($matches[1]) ? str_getcsv($matches[1], ',', "'", '\\') : [];
+            $enumValues = [];
+            foreach ($parts as $part) {
+                $value = trim((string)$part, "'");
+                if ($value !== '') {
+                    $enumValues[] = $value;
+                }
+            }
+
+            foreach (self::getStateList() as $required) {
+                if (!in_array($required, $enumValues, true)) {
+                    throw new RuntimeException('payments.status enum is missing state: ' . $required);
+                }
+            }
         } catch (Throwable $e) {
-            // Ignore if DB user lacks ALTER privileges; runtime transitions will still be validated in app layer.
+            throw new RuntimeException(
+                'Schema payments is not ready for payment state machine. Please run `php scripts/migrate.php up`. Root cause: ' . $e->getMessage()
+            );
         }
     }
 

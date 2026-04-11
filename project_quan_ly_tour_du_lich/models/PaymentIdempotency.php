@@ -6,22 +6,13 @@ class PaymentIdempotency {
     public const STATUS_FAILED = 'failed';
 
     public static function ensureTable($conn) {
-        $conn->exec("CREATE TABLE IF NOT EXISTS payment_idempotency (
-            id INT(11) NOT NULL AUTO_INCREMENT,
-            scope VARCHAR(64) NOT NULL,
-            idem_key CHAR(64) NOT NULL,
-            status ENUM('processing','completed','failed') NOT NULL DEFAULT 'processing',
-            response_code INT(11) DEFAULT NULL,
-            response_message VARCHAR(255) DEFAULT NULL,
-            payload_hash CHAR(64) DEFAULT NULL,
-            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            last_seen_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            PRIMARY KEY (id),
-            UNIQUE KEY uniq_scope_key (scope, idem_key),
-            KEY idx_scope_status (scope, status),
-            KEY idx_last_seen_at (last_seen_at)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+        try {
+            $conn->query('SELECT id, scope, idem_key, status FROM payment_idempotency LIMIT 1');
+        } catch (Throwable $e) {
+            throw new RuntimeException(
+                'Schema payment_idempotency is missing. Please run `php scripts/migrate.php up`. Root cause: ' . $e->getMessage()
+            );
+        }
     }
 
     public static function claim($conn, $scope, $rawKey, $payload = '') {

@@ -119,17 +119,13 @@ function ensureAdminNotificationStateTable($conn = null) {
         return true;
     }
 
-    $pdo->exec(
-        "CREATE TABLE IF NOT EXISTS admin_notification_state (
-            user_id INT(11) NOT NULL,
-            payments_last_seen_id INT(11) NOT NULL DEFAULT 0,
-            reviews_last_seen_id INT(11) NOT NULL DEFAULT 0,
-            sound_enabled TINYINT(1) NOT NULL DEFAULT 1,
-            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            PRIMARY KEY (user_id)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
-    );
+    try {
+        $pdo->query('SELECT user_id, payments_last_seen_id, reviews_last_seen_id, sound_enabled FROM admin_notification_state LIMIT 1');
+    } catch (Throwable $e) {
+        throw new RuntimeException(
+            'Schema admin_notification_state is missing. Please run `php scripts/migrate.php up`. Root cause: ' . $e->getMessage()
+        );
+    }
 
     if ($conn === null) {
         $initialized = true;

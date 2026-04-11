@@ -87,6 +87,7 @@ class AuthController {
                     // Redirect theo vai trò
                     switch ($user['vai_tro']) {
                         case 'Admin':
+                        $_SESSION['admin_sidebar_start_hidden_once'] = 1;
                         header('Location: index.php?act=admin/dashboard');
                         exit();
                         case 'HDV':

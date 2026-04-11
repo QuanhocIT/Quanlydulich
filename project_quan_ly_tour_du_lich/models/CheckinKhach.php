@@ -110,12 +110,10 @@ class CheckinKhach
             return;
         }
 
-        if (!dbColumnExists('tour_checkin', 'anh_cccd', $this->conn)) {
-            $this->conn->exec("ALTER TABLE tour_checkin ADD COLUMN anh_cccd VARCHAR(255) NULL DEFAULT NULL");
-        }
-
-        if (!dbColumnExists('tour_checkin', 'anh_passport', $this->conn)) {
-            $this->conn->exec("ALTER TABLE tour_checkin ADD COLUMN anh_passport VARCHAR(255) NULL DEFAULT NULL");
+        if (!dbColumnExists('tour_checkin', 'anh_cccd', $this->conn) || !dbColumnExists('tour_checkin', 'anh_passport', $this->conn)) {
+            throw new RuntimeException(
+                'Schema tour_checkin is missing extended document columns. Please run `php scripts/migrate.php up`.'
+            );
         }
 
         $initialized = true;

@@ -37,11 +37,36 @@ cd project_quan_ly_tour_du_lich
 ```
 
 4. Import database:
-- Import file `database.sql` vào MySQL
+- Import file `quan_ly_tour_du_lich.sql` vào MySQL
 
-5. Khởi chạy:
+5. Chay migration versioned:
+```bash
+php scripts/migrate.php status
+php scripts/migrate.php up
+```
+
+6. Khởi chạy:
 - Truy cập `http://localhost/project_quan_ly_tour_du_lich/` hoặc URL đã cấu hình
 - Hoặc sử dụng: `http://localhost/project_quan_ly_tour_du_lich/index.php?act=tour/index`
+
+## Migration versioned
+
+- Thu muc migration: `migrations/`
+- Quy uoc ten file: `Vxxx__ten_migration.sql`
+- Script chay migration: `scripts/migrate.php`
+
+Lenh ho tro:
+
+```bash
+php scripts/migrate.php status
+php scripts/migrate.php up
+php scripts/migrate.php up --step=1
+```
+
+Ghi chu:
+
+- Script tao bang `schema_migrations` tu dong neu chua ton tai.
+- Nen backup DB truoc khi chay migration tren production.
 
 ## Cấu hình môi trường (.env)
 

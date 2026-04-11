@@ -1,6 +1,13 @@
 <?php
 require_once 'models/DanhGia.php';
 
+if (file_exists(__DIR__ . '/../vendor/autoload.php')) {
+    require_once __DIR__ . '/../vendor/autoload.php';
+}
+
+use Dompdf\Dompdf;
+use Dompdf\Options;
+
 class DanhGiaController {
     private $model;
     
@@ -174,13 +181,66 @@ class DanhGiaController {
     }
     
     private function exportPDF($data, $loai) {
-        // Simple PDF export using HTML
-        header('Content-Type: application/pdf');
-        header('Content-Disposition: attachment; filename="bao-cao-danh-gia-' . $loai . '-' . date('Y-m-d') . '.pdf"');
-        
-        // Simplified - would use a proper PDF library in production
-        $_SESSION['info'] = 'Tính năng xuất PDF đang được phát triển. Vui lòng sử dụng Excel.';
-        header('Location: index.php?act=admin/danhGia/baoCao&loai=' . $loai);
+        if (!class_exists(Dompdf::class)) {
+            $_SESSION['error'] = 'Khong tim thay thu vien PDF. Vui long kiem tra composer install.';
+            header('Location: index.php?act=admin/danhGia/baoCao&loai=' . urlencode((string)$loai));
+            exit();
+        }
+
+        $fileName = 'bao-cao-danh-gia-' . $loai . '-' . date('Y-m-d') . '.pdf';
+        $html = $this->renderPdfHtml($data, $loai);
+
+        $options = new Options();
+        $options->set('defaultFont', 'DejaVu Sans');
+        $options->set('isRemoteEnabled', false);
+
+        $dompdf = new Dompdf($options);
+        $dompdf->loadHtml($html, 'UTF-8');
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->render();
+        $dompdf->stream($fileName, ['Attachment' => true]);
         exit();
+    }
+
+    private function renderPdfHtml($data, $loai) {
+        $title = 'Bao cao danh gia - ' . ucfirst((string)$loai);
+        $rowsHtml = '';
+
+        if (!empty($data['danh_gia_list']) && is_array($data['danh_gia_list'])) {
+            foreach ($data['danh_gia_list'] as $dg) {
+                $rowsHtml .= '<tr>'
+                    . '<td>' . htmlspecialchars(date('d/m/Y', strtotime((string)($dg['ngay_danh_gia'] ?? date('Y-m-d')))), ENT_QUOTES, 'UTF-8') . '</td>'
+                    . '<td>' . htmlspecialchars((string)($dg['ho_ten'] ?? $dg['ten_khach_hang'] ?? ''), ENT_QUOTES, 'UTF-8') . '</td>'
+                    . '<td>' . htmlspecialchars((string)($dg['ten_tour'] ?? $dg['loai_danh_gia'] ?? $loai), ENT_QUOTES, 'UTF-8') . '</td>'
+                    . '<td style="text-align:center">' . (int)($dg['diem'] ?? 0) . '/5</td>'
+                    . '<td>' . nl2br(htmlspecialchars((string)($dg['noi_dung'] ?? ''), ENT_QUOTES, 'UTF-8')) . '</td>'
+                    . '</tr>';
+            }
+        } elseif ($loai === 'tour' && !empty($data['tour'])) {
+            $rowsHtml .= '<tr><td colspan="5">Khong co danh gia chi tiet cho tour nay.</td></tr>';
+        } elseif ($loai === 'ncc' && !empty($data['nha_cung_cap'])) {
+            $rowsHtml .= '<tr><td colspan="5">Khong co danh gia chi tiet cho nha cung cap nay.</td></tr>';
+        } elseif ($loai === 'nhan_su' && !empty($data['nhan_su'])) {
+            $rowsHtml .= '<tr><td colspan="5">Khong co danh gia chi tiet cho nhan su nay.</td></tr>';
+        } else {
+            $title = 'Bao cao danh gia tong hop';
+            $rowsHtml .= '<tr><td colspan="5">Bao cao tong hop khong co danh sach chi tiet de xuat PDF. Vui long dung Excel neu can du lieu tong hop day du.</td></tr>';
+        }
+
+        return '<!DOCTYPE html>'
+            . '<html><head><meta charset="UTF-8"><title>' . htmlspecialchars($title, ENT_QUOTES, 'UTF-8') . '</title>'
+            . '<style>'
+            . 'body{font-family:"DejaVu Sans",sans-serif;font-size:12px;color:#111;}'
+            . 'h1{font-size:18px;margin:0 0 8px 0;}'
+            . '.meta{margin:0 0 16px 0;color:#555;}'
+            . 'table{width:100%;border-collapse:collapse;margin-top:12px;}'
+            . 'th,td{border:1px solid #ccc;padding:8px;vertical-align:top;}'
+            . 'th{background:#f3f3f3;text-align:left;}'
+            . '</style></head><body>'
+            . '<h1>' . htmlspecialchars($title, ENT_QUOTES, 'UTF-8') . '</h1>'
+            . '<div class="meta">Ngay xuat: ' . date('d/m/Y H:i') . '</div>'
+            . '<table><thead><tr><th>Ngay</th><th>Khach hang</th><th>Doi tuong</th><th>Diem</th><th>Noi dung</th></tr></thead><tbody>'
+            . $rowsHtml
+            . '</tbody></table></body></html>';
     }
 }

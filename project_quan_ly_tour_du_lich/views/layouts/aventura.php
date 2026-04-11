@@ -5,6 +5,11 @@ $dashboardNotificationCount = 0;
 $soundNotificationEnabled = true;
 $currentRole = currentUserRole();
 $isAdminRole = hasRole('Admin');
+$forceSidebarHiddenOnLoad = false;
+if ($isAdminRole && !empty($_SESSION['admin_sidebar_start_hidden_once'])) {
+    $forceSidebarHiddenOnLoad = true;
+    unset($_SESSION['admin_sidebar_start_hidden_once']);
+}
 
 
 ?>
@@ -30,10 +35,6 @@ $isAdminRole = hasRole('Admin');
         <aside class="sidebar" id="sidebar">
             <div class="logo">AVENTURA</div>
             <div class="logo-subtitle">LIFE'S A JOURNEY</div>
-            <div class="sidebar-utility">
-                <button type="button" class="sidebar-toggle" id="sidebarToggle" title="Thu gọn/mở rộng sidebar" aria-label="Thu gọn/mở rộng sidebar"><i class="bi bi-chevron-left"></i></button>
-                <button type="button" class="sidebar-theme" id="sidebarTheme" title="Chuyển chế độ sáng/tối" aria-label="Chuyển chế độ sáng/tối"><i class="bi bi-moon-stars"></i></button>
-            </div>
             <?php if ($isAdminRole): ?>
                 <div id="realtimeStatus" class="realtime-status is-connecting" title="Trạng thái kết nối thông báo realtime">
                     <span id="realtimeStatusDot" class="realtime-status-dot"></span>
@@ -138,6 +139,10 @@ $isAdminRole = hasRole('Admin');
             <!-- Header -->
             <header class="header">
                 <div class="header-left">
+                    <div class="header-utility-controls" aria-label="Điều khiển giao diện nhanh">
+                        <button type="button" class="sidebar-toggle" id="sidebarToggle" title="Thu gọn/mở rộng sidebar" aria-label="Thu gọn/mở rộng sidebar"><i class="bi bi-chevron-left"></i></button>
+                        <button type="button" class="sidebar-theme" id="sidebarTheme" title="Chuyển chế độ sáng/tối" aria-label="Chuyển chế độ sáng/tối"><i class="bi bi-moon-stars"></i></button>
+                    </div>
                     <div class="header-item">
                         <span>☎</span>
                         <a href="tel:+1-888-665-5553">Call Center: +1-888-665-5553</a>
@@ -172,6 +177,7 @@ $isAdminRole = hasRole('Admin');
     document.addEventListener('DOMContentLoaded', function() {
         const csrfMeta = document.querySelector('meta[name="csrf-global-token"]');
         const csrfGlobalToken = csrfMeta ? csrfMeta.getAttribute('content') : '';
+        const forceSidebarHiddenOnLoad = <?php echo $forceSidebarHiddenOnLoad ? 'true' : 'false'; ?>;
 
         if (csrfGlobalToken) {
             document.querySelectorAll('form[method="post"], form[method="POST"]').forEach(function(form) {
@@ -429,6 +435,13 @@ $isAdminRole = hasRole('Admin');
             }
         }
 
+        function applySidebarState() {
+            if (!sidebar) return;
+            const isCollapsed = sidebar.classList.contains('collapsed');
+            document.body.classList.toggle('sidebar-hidden', isCollapsed);
+            setSidebarIcon();
+        }
+
         function applyThemeMode(mode) {
             const safeMode = THEME_MODES.includes(mode) ? mode : 'dark';
             document.body.classList.remove('theme-light', 'theme-business-dark');
@@ -467,8 +480,13 @@ $isAdminRole = hasRole('Admin');
             return 'dark';
         }
 
-        if (sidebar && localStorage.getItem(STORAGE_KEYS.sidebarCollapsed) === '1') {
-            sidebar.classList.add('collapsed');
+        if (sidebar) {
+            const shouldStartCollapsed = forceSidebarHiddenOnLoad
+                ? true
+                : localStorage.getItem(STORAGE_KEYS.sidebarCollapsed) === '1';
+
+            sidebar.classList.toggle('collapsed', shouldStartCollapsed);
+            localStorage.setItem(STORAGE_KEYS.sidebarCollapsed, shouldStartCollapsed ? '1' : '0');
         }
         let savedThemeMode = localStorage.getItem(STORAGE_KEYS.themeMode);
         if (!savedThemeMode) {
@@ -476,7 +494,7 @@ $isAdminRole = hasRole('Admin');
         }
         const appliedTheme = applyThemeMode(savedThemeMode);
         localStorage.setItem(STORAGE_KEYS.themeMode, appliedTheme);
-        setSidebarIcon();
+        applySidebarState();
         setThemeIcon(appliedTheme);
 
         // Nav parent-child: cho phép mở nhiều menu con cùng lúc
@@ -499,7 +517,7 @@ $isAdminRole = hasRole('Admin');
         if (sidebar && sidebarToggle) {
             sidebarToggle.addEventListener('click', function() {
                 sidebar.classList.toggle('collapsed');
-                setSidebarIcon();
+                applySidebarState();
                 localStorage.setItem(STORAGE_KEYS.sidebarCollapsed, sidebar.classList.contains('collapsed') ? '1' : '0');
                 // Đóng tất cả menu cha khi thu gọn
                 if (sidebar.classList.contains('collapsed')) {

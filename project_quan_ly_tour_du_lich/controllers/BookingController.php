@@ -345,10 +345,19 @@ class BookingController {
         // Nếu chưa có, sẽ cần ALTER TABLE để thêm các cột này
         $conn = connectDB();
         try {
-            // Kiểm tra xem các cột có tồn tại không
-            $hasTienCoc = dbColumnExists('booking', 'tien_coc', $conn);
-            
-            if ($hasTienCoc) {
+            $requiredColumns = ['tien_coc', 'trang_thai_coc'];
+            $missingColumns = [];
+            foreach ($requiredColumns as $columnName) {
+                if (!dbColumnExists('booking', $columnName, $conn)) {
+                    $missingColumns[] = $columnName;
+                }
+            }
+
+            if (!empty($missingColumns)) {
+                throw new RuntimeException('Bang booking chua du schema de cap nhat tien coc. Thieu cot: ' . implode(', ', $missingColumns) . '.');
+            }
+
+            if (true) {
                 // Cập nhật với các trường mới
                 // Kiểm tra cột so_tien_con_lai
                 $hasSoTienConLai = dbColumnExists('booking', 'so_tien_con_lai', $conn);
@@ -363,10 +372,6 @@ class BookingController {
                     $stmt = $conn->prepare($sql);
                     $result = $stmt->execute([$tienCoc, $trangThaiCocMoi, $bookingId]);
                 }
-            } else {
-                // Nếu chưa có cột, chỉ cập nhật trạng thái booking nếu cần
-                // Hoặc có thể tự động tạo cột (không khuyến khích trong production)
-                $result = true; // Tạm thời return true, sẽ cần ALTER TABLE sau
             }
             
             if ($result) {
@@ -390,7 +395,7 @@ class BookingController {
             } else {
                 $_SESSION['error'] = 'Không thể cập nhật tiền cọc.';
             }
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $_SESSION['error'] = 'Lỗi khi cập nhật tiền cọc: ' . $e->getMessage();
         }
         
@@ -842,11 +847,81 @@ class BookingController {
         
         // HDV có thể cập nhật booking của tour mình phụ trách
         if (hasRole('HDV')) {
-            // Có thể thêm logic kiểm tra tour do HDV phụ trách
-            return true; // Tạm thời cho phép
+            return $this->canCurrentHdvManageBooking((int)$bookingId);
         }
         
         return false;
+    }
+
+    private function canCurrentHdvManageBooking($bookingId) {
+        $bookingId = (int)$bookingId;
+        if ($bookingId <= 0) {
+            return false;
+        }
+
+        $nhanSuId = $this->getCurrentHdvNhanSuId();
+        if ($nhanSuId <= 0) {
+            return false;
+        }
+
+        $lichKhoiHanhId = $this->resolveLichKhoiHanhIdForPermission($bookingId);
+        if ($lichKhoiHanhId <= 0) {
+            return false;
+        }
+
+        $conn = connectDB();
+        $stmt = $conn->prepare(
+            "SELECT 1
+             FROM lich_khoi_hanh lkh
+             LEFT JOIN phan_bo_nhan_su pbn
+                    ON pbn.lich_khoi_hanh_id = lkh.id
+                   AND pbn.nhan_su_id = ?
+                   AND pbn.trang_thai = 'DaXacNhan'
+             WHERE lkh.id = ?
+               AND (lkh.hdv_id = ? OR pbn.nhan_su_id IS NOT NULL)
+             LIMIT 1"
+        );
+        $stmt->execute([$nhanSuId, $lichKhoiHanhId, $nhanSuId]);
+
+        return (bool)$stmt->fetchColumn();
+    }
+
+    private function getCurrentHdvNhanSuId() {
+        $userId = (int)($_SESSION['user_id'] ?? 0);
+        if ($userId <= 0) {
+            return 0;
+        }
+
+        $conn = connectDB();
+        $stmt = $conn->prepare("SELECT nhan_su_id FROM nhan_su WHERE nguoi_dung_id = ? AND vai_tro = 'HDV' LIMIT 1");
+        $stmt->execute([$userId]);
+
+        return (int)$stmt->fetchColumn();
+    }
+
+    private function resolveLichKhoiHanhIdForPermission($bookingId) {
+        $conn = connectDB();
+        $stmt = $conn->prepare('SELECT lich_khoi_hanh_id, tour_id, ngay_khoi_hanh FROM booking WHERE booking_id = ? LIMIT 1');
+        $stmt->execute([(int)$bookingId]);
+        $booking = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$booking) {
+            return 0;
+        }
+
+        $directId = (int)($booking['lich_khoi_hanh_id'] ?? 0);
+        if ($directId > 0) {
+            return $directId;
+        }
+
+        $tourId = (int)($booking['tour_id'] ?? 0);
+        $ngayKhoiHanh = trim((string)($booking['ngay_khoi_hanh'] ?? ''));
+        if ($tourId <= 0 || $ngayKhoiHanh === '') {
+            return 0;
+        }
+
+        $stmtLich = $conn->prepare('SELECT id FROM lich_khoi_hanh WHERE tour_id = ? AND ngay_khoi_hanh = ? ORDER BY id DESC LIMIT 1');
+        $stmtLich->execute([$tourId, $ngayKhoiHanh]);
+        return (int)$stmtLich->fetchColumn();
     }
 
     // Kiểm tra quyền xem

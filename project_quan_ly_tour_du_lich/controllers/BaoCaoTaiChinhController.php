@@ -7,6 +7,13 @@ require_once __DIR__ . '/../models/LichSuKhachHang.php';
 require_once __DIR__ . '/../models/DuToanTour.php';
 require_once __DIR__ . '/../models/ChiPhiThucTe.php';
 
+if (file_exists(__DIR__ . '/../vendor/autoload.php')) {
+    require_once __DIR__ . '/../vendor/autoload.php';
+}
+
+use Dompdf\Dompdf;
+use Dompdf\Options;
+
 class BaoCaoTaiChinhController {
         // Hiển thị thu chi từng tour
         public function thuChiTour() {
@@ -449,12 +456,209 @@ class BaoCaoTaiChinhController {
     
     // Xuất báo cáo Excel/PDF
     public function xuatBaoCao() {
-        $loaiBaoCao = $_GET['loai'] ?? 'giao_dich';
-        $format = $_GET['format'] ?? 'excel';
-        
-        // TODO: Implement export functionality
-        $_SESSION['info'] = 'Chức năng xuất báo cáo đang được phát triển';
-        header('Location: ' . $_SERVER['HTTP_REFERER']);
+        $loaiBaoCao = strtolower(trim((string)($_GET['loai'] ?? 'giao_dich')));
+        $format = strtolower(trim((string)($_GET['format'] ?? 'excel')));
+
+        if (!in_array($loaiBaoCao, ['giao_dich', 'lai_lo_tour', 'thu_chi_tour'], true)) {
+            $_SESSION['error'] = 'Loai bao cao khong hop le.';
+            header('Location: ' . $this->buildFinancialReportBackUrl());
+            exit;
+        }
+
+        if (!in_array($format, ['excel', 'pdf'], true)) {
+            $format = 'excel';
+        }
+
+        $payload = $this->buildExportPayload($loaiBaoCao);
+        $fileName = 'bao-cao-' . $loaiBaoCao . '-' . date('Ymd-His');
+
+        if ($format === 'pdf') {
+            $this->exportFinancialReportPdf($payload['title'], $payload['headers'], $payload['rows'], $fileName . '.pdf');
+            return;
+        }
+
+        $this->exportFinancialReportExcel($payload['title'], $payload['headers'], $payload['rows'], $fileName . '.xls');
+    }
+
+    private function buildExportPayload($loaiBaoCao) {
+        switch ($loaiBaoCao) {
+            case 'lai_lo_tour':
+                $rows = [];
+                foreach ($this->tourModel->getOptions(500) as $tour) {
+                    $doanhThu = (float)$this->giaoDichModel->getTongThuByTour($tour['tour_id']);
+                    $chiPhi = (float)$this->giaoDichModel->getTongChiByTour($tour['tour_id']);
+                    $loiNhuan = $doanhThu - $chiPhi;
+                    $tySuat = $doanhThu > 0 ? ($loiNhuan / $doanhThu * 100) : 0;
+                    $rows[] = [
+                        (string)($tour['ten_tour'] ?? ''),
+                        $this->formatCurrency($doanhThu),
+                        $this->formatCurrency($chiPhi),
+                        $this->formatCurrency($loiNhuan),
+                        number_format($tySuat, 2) . '%',
+                    ];
+                }
+
+                usort($rows, function ($left, $right) {
+                    return strcmp((string)$left[0], (string)$right[0]);
+                });
+
+                return [
+                    'title' => 'Bao cao lai lo tung tour',
+                    'headers' => ['Tour', 'Doanh thu', 'Chi phi', 'Loi nhuan', 'Ty suat'],
+                    'rows' => $rows,
+                ];
+
+            case 'thu_chi_tour':
+                $stats = $this->giaoDichModel->getThuChiTatCaTour();
+                $rows = [];
+                foreach ($stats as $stat) {
+                    $tongThu = (float)($stat['tong_thu'] ?? 0);
+                    $tongChi = (float)($stat['tong_chi'] ?? 0);
+                    $rows[] = [
+                        (string)($stat['ten_tour'] ?? ''),
+                        (string)($stat['loai_tour'] ?? ''),
+                        $this->formatCurrency($tongThu),
+                        $this->formatCurrency($tongChi),
+                        $this->formatCurrency($tongThu - $tongChi),
+                    ];
+                }
+
+                return [
+                    'title' => 'Bao cao thu chi tung tour',
+                    'headers' => ['Ten tour', 'Loai tour', 'Tong thu', 'Tong chi', 'Loi nhuan'],
+                    'rows' => $rows,
+                ];
+
+            case 'giao_dich':
+            default:
+                $filters = [
+                    'loai' => $_GET['loai_giao_dich_chinh'] ?? ($_GET['loai'] ?? ''),
+                    'loai_giao_dich' => $_GET['loai_giao_dich'] ?? '',
+                    'tour_id' => $_GET['tour_id'] ?? '',
+                    'khach_hang_id' => $_GET['khach_hang_id'] ?? '',
+                    'tu_ngay' => $_GET['tu_ngay'] ?? '',
+                    'den_ngay' => $_GET['den_ngay'] ?? '',
+                    'keyword' => $_GET['keyword'] ?? '',
+                ];
+                $filters = array_filter($filters, function ($value) {
+                    return $value !== '' && $value !== null;
+                });
+
+                $rows = [];
+                foreach ($this->giaoDichModel->getFiltered($filters) as $gd) {
+                    $rows[] = [
+                        (string)($gd['ngay_giao_dich'] ?? ''),
+                        (string)($gd['loai'] ?? ''),
+                        (string)($gd['loai_giao_dich'] ?? ''),
+                        $this->formatCurrency((float)($gd['so_tien'] ?? 0)),
+                        (string)($gd['mo_ta'] ?? ''),
+                        (string)($gd['nguoi_thuc_hien'] ?? ''),
+                    ];
+                }
+
+                return [
+                    'title' => 'Lich su giao dich noi bo',
+                    'headers' => ['Ngay giao dich', 'Loai', 'Loai giao dich', 'So tien', 'Mo ta', 'Nguoi thuc hien'],
+                    'rows' => $rows,
+                ];
+        }
+    }
+
+    private function exportFinancialReportExcel($title, array $headers, array $rows, $fileName) {
+        header('Content-Type: application/vnd.ms-excel; charset=UTF-8');
+        header('Content-Disposition: attachment; filename="' . $fileName . '"');
+
+        echo "\xEF\xBB\xBF";
+        echo '<html><head><meta charset="UTF-8"><title>' . htmlspecialchars((string)$title, ENT_QUOTES, 'UTF-8') . '</title></head><body>';
+        echo '<h2>' . htmlspecialchars((string)$title, ENT_QUOTES, 'UTF-8') . '</h2>';
+        echo '<table border="1" cellspacing="0" cellpadding="6">';
+        echo '<thead><tr>';
+        foreach ($headers as $header) {
+            echo '<th>' . htmlspecialchars((string)$header, ENT_QUOTES, 'UTF-8') . '</th>';
+        }
+        echo '</tr></thead><tbody>';
+
+        if (empty($rows)) {
+            echo '<tr><td colspan="' . count($headers) . '">Khong co du lieu</td></tr>';
+        } else {
+            foreach ($rows as $row) {
+                echo '<tr>';
+                foreach ($row as $cell) {
+                    echo '<td>' . htmlspecialchars((string)$cell, ENT_QUOTES, 'UTF-8') . '</td>';
+                }
+                echo '</tr>';
+            }
+        }
+
+        echo '</tbody></table></body></html>';
+        exit;
+    }
+
+    private function exportFinancialReportPdf($title, array $headers, array $rows, $fileName) {
+        if (!class_exists(Dompdf::class)) {
+            $_SESSION['error'] = 'Khong tim thay thu vien PDF. Vui long kiem tra composer install.';
+            header('Location: ' . $this->buildFinancialReportBackUrl());
+            exit;
+        }
+
+        $options = new Options();
+        $options->set('defaultFont', 'DejaVu Sans');
+        $options->set('isRemoteEnabled', false);
+
+        $dompdf = new Dompdf($options);
+        $dompdf->loadHtml($this->renderFinancialReportPdfHtml($title, $headers, $rows), 'UTF-8');
+        $dompdf->setPaper('A4', 'landscape');
+        $dompdf->render();
+        $dompdf->stream($fileName, ['Attachment' => true]);
+        exit;
+    }
+
+    private function renderFinancialReportPdfHtml($title, array $headers, array $rows) {
+        $thead = '';
+        foreach ($headers as $header) {
+            $thead .= '<th>' . htmlspecialchars((string)$header, ENT_QUOTES, 'UTF-8') . '</th>';
+        }
+
+        $tbody = '';
+        if (empty($rows)) {
+            $tbody = '<tr><td colspan="' . count($headers) . '">Khong co du lieu</td></tr>';
+        } else {
+            foreach ($rows as $row) {
+                $tbody .= '<tr>';
+                foreach ($row as $cell) {
+                    $tbody .= '<td>' . htmlspecialchars((string)$cell, ENT_QUOTES, 'UTF-8') . '</td>';
+                }
+                $tbody .= '</tr>';
+            }
+        }
+
+        return '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'
+            . htmlspecialchars((string)$title, ENT_QUOTES, 'UTF-8')
+            . '</title><style>'
+            . 'body{font-family:"DejaVu Sans",sans-serif;font-size:11px;color:#111;}'
+            . 'h1{font-size:18px;margin:0 0 8px 0;}'
+            . '.meta{margin:0 0 12px 0;color:#555;}'
+            . 'table{width:100%;border-collapse:collapse;}'
+            . 'th,td{border:1px solid #ccc;padding:6px;vertical-align:top;}'
+            . 'th{background:#f3f3f3;text-align:left;}'
+            . '</style></head><body>'
+            . '<h1>' . htmlspecialchars((string)$title, ENT_QUOTES, 'UTF-8') . '</h1>'
+            . '<div class="meta">Ngay xuat: ' . date('d/m/Y H:i') . '</div>'
+            . '<table><thead><tr>' . $thead . '</tr></thead><tbody>' . $tbody . '</tbody></table>'
+            . '</body></html>';
+    }
+
+    private function formatCurrency($value) {
+        return number_format((float)$value) . ' VND';
+    }
+
+    private function buildFinancialReportBackUrl() {
+        $referer = trim((string)($_SERVER['HTTP_REFERER'] ?? ''));
+        if ($referer !== '') {
+            return $referer;
+        }
+
+        return 'index.php?act=admin/baoCaoTaiChinh';
     }
     
     // Helper: Lấy top tours theo doanh thu

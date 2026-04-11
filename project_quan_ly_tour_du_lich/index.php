@@ -333,6 +333,7 @@ match ($act) {
     'admin/soSanhDuToan' => (new BaoCaoTaiChinhController())->soSanhDuToan(),
     'admin/nhacHanCongNo' => (new BaoCaoTaiChinhController())->nhacHanCongNo(),
     'admin/thuChiTour' => (new BaoCaoTaiChinhController())->thuChiTour(),
+    'admin/baoCaoTaiChinh/xuatBaoCao' => (new BaoCaoTaiChinhController())->xuatBaoCao(),
     // HDV
     'hdv/dashboard' => (new HDVController())->dashboard(),
     'hdv/tours' => (new HDVController())->tours(),

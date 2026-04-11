@@ -75,13 +75,28 @@ ob_start();
     </style>
 
 <div style="padding: 20px; max-width: 1400px; margin: 0 auto;">
+    <?php
+    $exportQuery = $_GET;
+    $exportQuery['act'] = 'admin/baoCaoTaiChinh/xuatBaoCao';
+    $exportQuery['loai'] = 'giao_dich';
+    $exportExcelUrl = 'index.php?' . http_build_query($exportQuery + ['format' => 'excel']);
+    $exportPdfUrl = 'index.php?' . http_build_query($exportQuery + ['format' => 'pdf']);
+    ?>
     <div class="page-header-section" style="margin-bottom: 30px;">
         <h1 style="margin: 0 0 10px 0; font-size: 2rem; color: var(--text-light);">
             <i class="fas fa-history" style="color: var(--accent-gold);"></i> Lịch Sử Giao Dịch Nội Bộ
         </h1>
-        <a href="index.php?act=admin/baoCaoTaiChinh" style="background: var(--accent-gold); color: #000; padding: 10px 20px; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; margin-top: 15px; font-weight: 500;">
-            <i class="fas fa-arrow-left"></i> Quay lại
-        </a>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:15px;">
+            <a href="index.php?act=admin/baoCaoTaiChinh" style="background: var(--accent-gold); color: #000; padding: 10px 20px; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; font-weight: 500;">
+                <i class="fas fa-arrow-left"></i> Quay lại
+            </a>
+            <a href="<?= htmlspecialchars($exportExcelUrl) ?>" class="btn">
+                <i class="fas fa-file-excel"></i> Xuất Excel
+            </a>
+            <a href="<?= htmlspecialchars($exportPdfUrl) ?>" class="btn">
+                <i class="fas fa-file-pdf"></i> Xuất PDF
+            </a>
+        </div>
     </div>
     
     <div class="stats-grid">

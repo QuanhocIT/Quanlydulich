@@ -1420,29 +1420,16 @@ class KhachHangController {
 
     private function ensureCustomerPaymentTables(PDO $conn): void {
         require_once __DIR__ . '/../models/Payment.php';
-        $conn->exec("CREATE TABLE IF NOT EXISTS payments (
-            payment_id INT(11) NOT NULL AUTO_INCREMENT,
-            booking_id INT(11) NOT NULL,
-            amount DECIMAL(15,2) NOT NULL,
-            payment_method ENUM('ChuyenKhoan','TienMat','TheTinDung','ViDienTu','VNPay','Momo','Paypal') NOT NULL DEFAULT 'VNPay',
-            payment_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            status ENUM('TaoMoi','DangXuLy','ThanhCong','ThatBai','HetHan','DaDoiSoat') DEFAULT 'DangXuLy',
-            note TEXT DEFAULT NULL,
-            PRIMARY KEY (payment_id),
-            KEY booking_id (booking_id)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+        try {
+            $conn->query('SELECT payment_id, booking_id, amount, payment_method, status FROM payments LIMIT 1');
+            $conn->query('SELECT log_id, payment_id, action FROM payment_logs LIMIT 1');
+        } catch (Throwable $e) {
+            throw new RuntimeException(
+                'Schema payments/payment_logs is missing. Please run `php scripts/migrate.php up`. Root cause: ' . $e->getMessage()
+            );
+        }
 
         Payment::ensureStateMachineSchema($conn);
-
-        $conn->exec("CREATE TABLE IF NOT EXISTS payment_logs (
-            log_id INT(11) NOT NULL AUTO_INCREMENT,
-            payment_id INT(11) NOT NULL,
-            action VARCHAR(100) NOT NULL,
-            log_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            note TEXT DEFAULT NULL,
-            PRIMARY KEY (log_id),
-            KEY payment_id (payment_id)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
     }
 
     private function resolveCustomerPaymentMethod(PDO $conn, string $paymentMethod): string {
@@ -1642,7 +1629,7 @@ class KhachHangController {
         }
 
         if (!dbColumnExists('booking', 'trang_thai_hanh_khach', $conn)) {
-            $conn->exec("ALTER TABLE booking ADD COLUMN trang_thai_hanh_khach VARCHAR(50) NULL DEFAULT NULL");
+            throw new RuntimeException('Schema booking.trang_thai_hanh_khach is missing. Please run `php scripts/migrate.php up`.');
         }
 
         $initialized = true;

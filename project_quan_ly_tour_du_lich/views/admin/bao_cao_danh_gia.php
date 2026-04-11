@@ -153,6 +153,17 @@ ob_start();
     </style>
 
 <div style="padding: 20px;">
+    <?php
+    $exportParams = ['act' => 'admin/danhGia/export'];
+    if (!empty($_GET['loai'])) {
+        $exportParams['loai'] = $_GET['loai'];
+    }
+    if (!empty($_GET['id'])) {
+        $exportParams['id'] = $_GET['id'];
+    }
+    $excelUrl = 'index.php?' . http_build_query($exportParams + ['format' => 'excel']);
+    $pdfUrl = 'index.php?' . http_build_query($exportParams + ['format' => 'pdf']);
+    ?>
     <div class="page-header-section" style="margin-bottom: 30px;">
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
             <h1 style="margin: 0; font-size: 2rem; color: var(--text-light);">
@@ -165,8 +176,11 @@ ob_start();
                 <button onclick="window.print()" class="btn btn-primary">
                     <i class="bi bi-printer"></i> In báo cáo
                 </button>
-                <a href="index.php?act=admin/danhGia/export&format=excel" class="btn btn-success">
+                <a href="<?= htmlspecialchars($excelUrl) ?>" class="btn btn-success">
                     <i class="bi bi-file-excel"></i> Xuất Excel
+                </a>
+                <a href="<?= htmlspecialchars($pdfUrl) ?>" class="btn btn-danger">
+                    <i class="bi bi-file-earmark-pdf"></i> Xuất PDF
                 </a>
             </div>
         </div>
