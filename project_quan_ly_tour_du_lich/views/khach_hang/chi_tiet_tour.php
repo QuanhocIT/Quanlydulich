@@ -605,6 +605,19 @@ if ($soChoConLai !== null && $soChoToiDa !== null && $soChoToiDa > 0) {
     </header>
 
     <main class="container my-4 my-lg-5">
+        <?php if (!empty($_SESSION['success'])): ?>
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <?php echo htmlspecialchars((string)$_SESSION['success']); unset($_SESSION['success']); ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        <?php endif; ?>
+        <?php if (!empty($_SESSION['error'])): ?>
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <?php echo htmlspecialchars((string)$_SESSION['error']); unset($_SESSION['error']); ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        <?php endif; ?>
+
         <div class="row g-4">
             <div class="col-lg-8">
                 <div class="panel mb-4">
@@ -879,6 +892,66 @@ if ($soChoConLai !== null && $soChoToiDa !== null && $soChoToiDa > 0) {
                 </div>
             </div>
         <?php endif; ?>
+
+        <div class="panel mb-4">
+            <div class="panel-body">
+                <h3 class="panel-title"><i class="bi bi-pencil-square"></i> Đánh giá tour này</h3>
+
+                <?php if (!empty($coTheDanhGiaTour)): ?>
+                    <?php
+                        $existingDiem = !empty($tourReviewCurrentUser['diem']) ? (int)$tourReviewCurrentUser['diem'] : 0;
+                        $existingNoiDung = trim((string)($tourReviewCurrentUser['noi_dung'] ?? ''));
+                    ?>
+                    <?php if (!empty($daDanhGiaTourNay)): ?>
+                        <div class="alert alert-success mt-3 mb-0">
+                            <i class="bi bi-check-circle me-1"></i>
+                            Bạn đã đánh giá tour này. Bạn có thể chỉnh sửa đánh giá bên dưới.
+                        </div>
+                    <?php endif; ?>
+                    <form class="mt-3" method="post" action="index.php?act=khachHang/guiDanhGia">
+                        <input type="hidden" name="loai_danh_gia" value="Tour">
+                        <input type="hidden" name="tour_id" value="<?php echo (int)($tour['tour_id'] ?? 0); ?>">
+                        <input type="hidden" name="tieu_chi" value="ChatLuongTour">
+                        <input type="hidden" name="redirect_tour_id" value="<?php echo (int)($tour['tour_id'] ?? 0); ?>">
+
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Điểm đánh giá</label>
+                                <select class="form-select" name="diem" required>
+                                    <option value="" <?php echo $existingDiem <= 0 ? 'selected' : ''; ?>>Chọn điểm</option>
+                                    <option value="5" <?php echo $existingDiem === 5 ? 'selected' : ''; ?>>5 - Rất hài lòng</option>
+                                    <option value="4" <?php echo $existingDiem === 4 ? 'selected' : ''; ?>>4 - Hài lòng</option>
+                                    <option value="3" <?php echo $existingDiem === 3 ? 'selected' : ''; ?>>3 - Bình thường</option>
+                                    <option value="2" <?php echo $existingDiem === 2 ? 'selected' : ''; ?>>2 - Chưa hài lòng</option>
+                                    <option value="1" <?php echo $existingDiem === 1 ? 'selected' : ''; ?>>1 - Không hài lòng</option>
+                                </select>
+                            </div>
+                            <div class="col-md-8">
+                                <label class="form-label fw-bold">Nội dung đánh giá</label>
+                                <textarea class="form-control" name="noi_dung" rows="4" maxlength="1000" required placeholder="Chia sẻ trải nghiệm thực tế của bạn về tour..."><?php echo htmlspecialchars($existingNoiDung); ?></textarea>
+                            </div>
+                        </div>
+
+                        <div class="mt-3 d-flex gap-2 flex-wrap">
+                            <button type="submit" class="btn btn-lux px-4">
+                                <i class="bi bi-send me-1"></i> <?php echo !empty($daDanhGiaTourNay) ? 'Cập nhật đánh giá' : 'Gửi đánh giá'; ?>
+                            </button>
+                            <span class="text-muted-2 align-self-center">Chỉ hiển thị khi bạn đã đặt và hoàn thành tour.</span>
+                        </div>
+                    </form>
+                <?php elseif (empty($daDatTourNay)): ?>
+                    <div class="alert alert-warning mt-3 mb-0">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Bạn cần đặt tour này trước khi có thể đánh giá.
+                    </div>
+                <?php else: ?>
+                    <div class="alert alert-info mt-3 mb-0">
+                        <i class="bi bi-clock-history me-1"></i>
+                        Bạn đã đặt tour, vui lòng đánh giá sau khi đã trải nghiệm xong chuyến đi.
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
 
         <?php if (!empty($tourCungLoai)): ?>
             <div class="panel mb-4">

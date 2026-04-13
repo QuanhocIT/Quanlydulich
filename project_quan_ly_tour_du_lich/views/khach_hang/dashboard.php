@@ -118,16 +118,22 @@
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-2">
                 <li class="nav-item"><a class="nav-link px-3 fw-semibold active" href="#home"><i class="bi bi-house-door"></i> Trang chủ</a></li>
-                <li class="nav-item"><a class="nav-link px-3 fw-semibold" href="#tours"><i class="bi bi-stars"></i> Tour nổi bật</a></li>
+                <li class="nav-item"><a class="nav-link px-3 fw-semibold" href="index.php?act=khachHang/danhSachTour"><i class="bi bi-stars"></i> Tour nổi bật</a></li>
                 <li class="nav-item"><a class="nav-link px-3 fw-semibold" href="#reviews"><i class="bi bi-chat-dots"></i> Đánh giá</a></li>
                 <li class="nav-item"><a class="nav-link px-3 fw-semibold" href="#support"><i class="bi bi-headset"></i> Hỗ trợ</a></li>
 
                 <li class="nav-item">
                     <a class="nav-link px-3 fw-bold luxury-cta" href="index.php?act=khachHang/guiYeuCauTour">
-                        <i class="bi bi-plus-circle"></i> Đặt tour theo yêu cầu
+                        <i class="bi bi-plus-circle"></i> Tour của tôi
                     </a>
                 </li>
 
+                <li class="nav-item">
+                    <a class="nav-link nav-icon-link nav-notify-link" href="index.php?act=khachHang/thongBao" title="Thông báo" aria-label="Thông báo">
+                        <i class="bi bi-bell"></i>
+                        <span id="customerNotificationBadge" class="customer-notification-badge" <?php if (($thongBaoChuaDoc ?? 0) <= 0): ?>style="display:none"<?php endif; ?>><?php echo (int)($thongBaoChuaDoc ?? 0); ?></span>
+                    </a>
+                </li>
                 <li class="nav-item">
                     <a class="nav-link nav-icon-link" href="index.php?act=khachHang/capNhatThongTin" title="Hồ sơ tài khoản" aria-label="Hồ sơ tài khoản">
                         <i class="bi bi-person-circle"></i>
@@ -186,9 +192,9 @@
             <div class="col-lg-5 offset-lg-1">
                 <div class="booking-box text-white">
 
-                    <h4 class="text-warning fw-bold mb-3">Đặt tour theo yêu cầu</h4>
+                    <h4 class="text-warning fw-bold mb-3">Tour của tôi</h4>
 
-                    <form method="POST" action="index.php?act=khachHang/guiYeuCauTour">
+                    <form method="POST" action="index.php?act=khachHang/guiYeuCauTour" id="quickTourRequestForm">
                         <input type="hidden" name="_csrf_global" value="<?php echo htmlspecialchars(csrfToken('global_form'), ENT_QUOTES, 'UTF-8'); ?>">
                         <input type="hidden" name="redirect_to" value="index.php?act=khachHang/dashboard">
                         <div class="mb-3">
@@ -219,6 +225,7 @@
 
                         <button type="submit" class="btn btn-warning w-100 fw-bold">GỬI YÊU CẦU</button>
                     </form>
+                    <div id="quickTourRequestFeedback" class="small mt-2" style="display:none;"></div>
                 </div>
             </div>
 
@@ -407,6 +414,48 @@
 
     #tab-content-currency {
         padding: 22px;
+    }
+}
+
+/* ===== MOBILE: thu nhỏ bảng quy đổi tỉ giá ===== */
+@media (max-width: 767.98px) {
+    #tab-content-currency {
+        padding: 14px 12px !important;
+    }
+    #tab-content-currency h3 {
+        font-size: 1.15rem !important;
+        margin-bottom: 2px !important;
+    }
+    #tab-content-currency::after {
+        font-size: 0.78rem !important;
+        margin-bottom: 10px !important;
+    }
+    #tab-content-currency .form-label {
+        font-size: 0.8rem !important;
+        margin-bottom: 4px !important;
+    }
+    #tab-content-currency .form-select,
+    #tab-content-currency .form-control {
+        min-height: 44px !important;
+        padding: 8px 12px !important;
+        font-size: 0.88rem !important;
+        border-radius: 12px !important;
+    }
+    .swap-btn {
+        width: 44px !important;
+        height: 44px !important;
+        font-size: 1rem !important;
+        margin-top: 22px !important;
+        border-radius: 14px !important;
+    }
+    .result-box {
+        font-size: 0.98rem !important;
+        min-height: 58px !important;
+        padding: 10px 14px !important;
+        border-radius: 14px !important;
+    }
+    #tab-content-currency .mt-4 {
+        margin-top: 12px !important;
     }
 }
 </style>
@@ -711,9 +760,59 @@ function showTab(tab) {
                     </style>
                 </div>
         <h2 class="mb-4 fw-bold" id="tours">Tour trong nước</h2>
+        <?php
+        $renderHomeTourCard = static function ($tour, $fallbackImage, $typeLabel) {
+            $tourId = (int)($tour['tour_id'] ?? $tour['id'] ?? 0);
+            $image = trim((string)($tour['hinh_anh'] ?? ''));
+            if ($image === '') {
+                $image = $fallbackImage;
+            }
+            $name = (string)($tour['ten_tour'] ?? 'Tour đang cập nhật');
+            $description = (string)($tour['mo_ta_ngan'] ?? $tour['mo_ta'] ?? 'Thông tin tour đang được cập nhật.');
+            $description = mb_strlen($description) > 155 ? mb_substr($description, 0, 155) . '...' : $description;
+            $price = (float)($tour['gia_tour'] ?? $tour['gia_co_ban'] ?? 0);
+            $startDate = !empty($tour['ngay_khoi_hanh_gan_nhat']) ? date('d/m/Y', strtotime((string)$tour['ngay_khoi_hanh_gan_nhat'])) : 'Linh hoạt';
+            $meetingPoint = trim((string)($tour['diem_tap_trung'] ?? ''));
+            $seats = $tour['so_cho'] ?? null;
+            $rating = $tour['rating'] ?? ['diem_tb' => 0, 'so_danh_gia' => 0];
+            $ratingCount = (int)($rating['so_danh_gia'] ?? 0);
+            $ratingText = $ratingCount > 0
+                ? number_format((float)($rating['diem_tb'] ?? 0), 1) . '/5 (' . $ratingCount . ' đánh giá)'
+                : 'Chưa có đánh giá';
+            ?>
+            <article class="home-tour-card">
+                <div class="home-tour-media">
+                    <img src="<?php echo htmlspecialchars($image); ?>" alt="<?php echo htmlspecialchars($name); ?>" loading="lazy">
+                    <span class="home-tour-badge"><?php echo htmlspecialchars($typeLabel); ?></span>
+                </div>
+                <div class="home-tour-body">
+                    <h3><?php echo htmlspecialchars($name); ?></h3>
+                    <p class="home-tour-desc"><?php echo htmlspecialchars($description); ?></p>
+                    <div class="home-tour-meta">
+                        <div><i class="bi bi-calendar-event"></i><span>Khởi hành: <b><?php echo htmlspecialchars($startDate); ?></b></span></div>
+                        <div><i class="bi bi-geo-alt"></i><span>Điểm tập trung: <b><?php echo htmlspecialchars($meetingPoint !== '' ? $meetingPoint : 'Đang cập nhật'); ?></b></span></div>
+                        <div><i class="bi bi-people"></i><span>Số chỗ: <b><?php echo $seats !== null ? (int)$seats . ' khách' : 'Đang cập nhật'; ?></b></span></div>
+                        <div><i class="bi bi-star-fill"></i><span><b><?php echo htmlspecialchars($ratingText); ?></b></span></div>
+                    </div>
+                    <div class="home-tour-footer">
+                        <div>
+                            <div class="home-tour-price-label">Giá từ</div>
+                            <div class="home-tour-price"><?php echo number_format($price); ?>&#273;</div>
+                        </div>
+                        <div class="home-tour-actions">
+                            <a class="home-tour-detail" href="index.php?act=khachHang/chiTietTour&id=<?php echo $tourId; ?>"><i class="bi bi-info-circle"></i> Chi tiết</a>
+                            <a class="home-tour-book" href="index.php?act=khachHang/thanhToanTour&id=<?php echo $tourId; ?>"><i class="bi bi-cart-check"></i> Đặt ngay</a>
+                        </div>
+                    </div>
+                </div>
+            </article>
+            <?php
+        };
+        ?>
         <?php if (!empty($tourTrongNuoc)): ?>
-        <div class="d-flex flex-row flex-nowrap overflow-auto pb-2 luxury-scroll">
+        <div class="d-flex flex-row flex-nowrap overflow-x-auto overflow-y-hidden pb-2 luxury-scroll">
             <?php foreach ($tourTrongNuoc as $tour): ?>
+            <?php $renderHomeTourCard($tour, 'https://images.unsplash.com/photo-1465156799763-2c087c332922?auto=format&fit=crop&w=900&q=80', 'Trong nước'); continue; ?>
             <div class="tour-card card shadow-sm" style="min-width:320px; max-width:340px;">
                 <img src="<?php echo htmlspecialchars($tour['hinh_anh'] ?? 'https://images.unsplash.com/photo-1465156799763-2c087c332922?auto=format&fit=crop&w=600&q=80'); ?>" class="card-img-top" alt="<?php echo htmlspecialchars($tour['ten_tour']); ?>">
                 <div class="card-body">
@@ -743,8 +842,9 @@ function showTab(tab) {
         <?php endif; ?>
         <h2 class="mb-4 fw-bold mt-5">Tour quốc tế</h2>
         <?php if (!empty($tourQuocTe)): ?>
-        <div class="d-flex flex-row flex-nowrap overflow-auto pb-2 luxury-scroll">
+        <div class="d-flex flex-row flex-nowrap overflow-x-auto overflow-y-hidden pb-2 luxury-scroll">
             <?php foreach ($tourQuocTe as $tour): ?>
+            <?php $renderHomeTourCard($tour, 'https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=900&q=80', 'Quốc tế'); continue; ?>
             <div class="tour-card card shadow-sm" style="min-width:320px; max-width:340px;">
                 <img src="<?php echo htmlspecialchars($tour['hinh_anh'] ?? 'https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=600&q=80'); ?>" class="card-img-top" alt="<?php echo htmlspecialchars($tour['ten_tour']); ?>">
                 <div class="card-body">
@@ -1040,6 +1140,17 @@ function showTab(tab) {
     <style id="luxury-theme">
         html{ scroll-behavior:smooth; }
 
+        @keyframes luxurySoftIn {
+            from { opacity: 0; filter: blur(10px); }
+            to { opacity: 1; filter: blur(0); }
+        }
+
+        @keyframes luxuryChatPulse {
+            0% { opacity: .45; transform: scale(.82); }
+            70% { opacity: 0; transform: scale(1.45); }
+            100% { opacity: 0; transform: scale(1.45); }
+        }
+
         :root{
             --lx-bg:#0b1220;
             --lx-bg2:#070d18;
@@ -1160,6 +1271,26 @@ function showTab(tab) {
             text-transform:none;
             letter-spacing:0;
             font-size:1.05rem;
+            position:relative;
+        }
+        body.luxury .luxury-nav .customer-notification-badge{
+            position:absolute;
+            top:-6px;
+            right:-6px;
+            min-width:18px;
+            height:18px;
+            border-radius:999px;
+            display:inline-flex;
+            align-items:center;
+            justify-content:center;
+            padding:0 5px;
+            background:#ef4444;
+            color:#fff;
+            font-size:.66rem;
+            font-weight:800;
+            border:1px solid rgba(255,255,255,.78);
+            box-shadow:0 8px 18px rgba(239,68,68,.35);
+            line-height:1;
         }
         body.luxury .luxury-nav .nav-icon-link:hover,
         body.luxury .luxury-nav .nav-icon-link.active{
@@ -1196,6 +1327,7 @@ function showTab(tab) {
         }
         body.luxury .hero-main-copy{
             transform: translateY(-80px);
+            animation: luxurySoftIn .8s ease both;
         }
 
         body.luxury .booking-box{
@@ -1207,6 +1339,7 @@ function showTab(tab) {
             margin-left: auto;
             padding: 22px 20px;
             border-radius: 16px;
+            animation: luxurySoftIn .9s .12s ease both;
         }
         body.luxury .booking-box h4{
             font-size: 1.85rem;
@@ -1413,7 +1546,12 @@ function showTab(tab) {
             color:#f8f4eb;
             font-size:1.1rem;
             font-weight:800;
+            animation: luxurySoftIn .7s ease both;
         }
+        body.luxury .feature:nth-child(1){ animation-delay:.12s; }
+        body.luxury .feature:nth-child(2){ animation-delay:.2s; }
+        body.luxury .feature:nth-child(3){ animation-delay:.28s; }
+        body.luxury .feature:nth-child(4){ animation-delay:.36s; }
         body.luxury .swap-btn{
             background:linear-gradient(135deg,#15233b,#20365f);
             border:1px solid rgba(214,178,109,.18);
@@ -1482,13 +1620,185 @@ function showTab(tab) {
             color:#7a561f;
         }
 
+        body.luxury .home-tour-card{
+            min-width:415px;
+            max-width:415px;
+            width:415px;
+            background:linear-gradient(180deg,#ffffff,#fbfdfa);
+            border:1px solid rgba(15,23,42,.08);
+            border-radius:28px;
+            overflow:hidden;
+            box-shadow:0 24px 70px rgba(2,6,23,.12);
+            scroll-snap-align:start;
+            display:flex;
+            flex-direction:column;
+        }
+        body.luxury .home-tour-media{
+            height:235px;
+            position:relative;
+            overflow:hidden;
+            background:#eef2f7;
+        }
+        body.luxury .home-tour-media img{
+            width:100%;
+            height:100%;
+            object-fit:cover;
+            display:block;
+            transition: transform .5s ease, filter .35s ease;
+        }
+        body.luxury .home-tour-card:hover .home-tour-media img{
+            transform: scale(1.045);
+            filter: saturate(1.05) contrast(1.02);
+        }
+        body.luxury .home-tour-badge{
+            position:absolute;
+            left:16px;
+            top:16px;
+            border-radius:16px;
+            background:rgba(29,42,39,.9);
+            color:#fff;
+            padding:9px 15px;
+            font-weight:900;
+            font-size:.82rem;
+            box-shadow:0 10px 24px rgba(0,0,0,.18);
+        }
+        body.luxury .home-tour-body{
+            padding:20px;
+            display:flex;
+            flex:1;
+            flex-direction:column;
+        }
+        body.luxury .home-tour-body h3{
+            margin:0 0 10px;
+            color:#0f1f1b;
+            font-family:"Manrope", sans-serif;
+            font-size:1.08rem;
+            font-weight:900;
+            line-height:1.32;
+        }
+        body.luxury .home-tour-desc{
+            color:#62716d;
+            font-size:.88rem;
+            line-height:1.58;
+            margin:0 0 15px;
+            min-height:66px;
+            display:-webkit-box;
+            overflow:hidden;
+            -webkit-box-orient:vertical;
+            -webkit-line-clamp:3;
+        }
+        body.luxury .home-tour-meta{
+            display:grid;
+            gap:8px;
+            margin-top:auto;
+        }
+        body.luxury .home-tour-meta div{
+            display:flex;
+            gap:9px;
+            align-items:flex-start;
+            color:#243632;
+            font-size:.84rem;
+            font-weight:700;
+        }
+        body.luxury .home-tour-meta i{
+            color:#047a78;
+            font-size:.86rem;
+            min-width:17px;
+            transform:translateY(1px);
+        }
+        body.luxury .home-tour-footer{
+            border-top:1px solid rgba(15,23,42,.12);
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:12px;
+            margin-top:18px;
+            padding-top:18px;
+        }
+        body.luxury .home-tour-footer > div:first-child{
+            flex:1 1 auto;
+            min-width:0;
+        }
+        body.luxury .home-tour-price-label{
+            color:#64706d;
+            font-size:.68rem;
+            font-weight:900;
+            letter-spacing:.12em;
+            text-transform:uppercase;
+        }
+        body.luxury .home-tour-price{
+            color:#a15c08;
+            font-size:1.14rem;
+            font-weight:900;
+            letter-spacing:.04em;
+            white-space:nowrap;
+        }
+        body.luxury .home-tour-actions{
+            display:flex;
+            gap:8px;
+            align-items:center;
+            flex:0 0 auto;
+            justify-content:flex-end;
+            min-width:0;
+        }
+        body.luxury .home-tour-detail,
+        body.luxury .home-tour-book{
+            min-height:46px;
+            border-radius:999px;
+            display:inline-flex;
+            align-items:center;
+            justify-content:center;
+            gap:7px;
+            padding:9px 13px;
+            text-decoration:none;
+            font-weight:900;
+            white-space:nowrap;
+            font-size:.82rem;
+        }
+        body.luxury .home-tour-detail{
+            min-width:112px;
+        }
+        body.luxury .home-tour-book{
+            min-width:116px;
+        }
+        body.luxury .home-tour-detail{
+            background:#f3ead8;
+            color:#17413b;
+        }
+        body.luxury .home-tour-book{
+            background:#17413b;
+            color:#fff;
+            box-shadow:0 14px 30px rgba(23,65,59,.22);
+        }
+        body.luxury .home-tour-card:hover,
+        body.luxury .special-offer-box:hover,
+        body.luxury .review-card:hover,
+        body.luxury .featured-place-card:hover{
+            will-change: transform;
+        }
+
+        body.luxury .js-reveal{
+            opacity:0;
+            transform: translateY(22px);
+            transition: opacity .62s ease, transform .62s ease;
+        }
+        body.luxury .js-reveal.is-visible{
+            opacity:1;
+            transform: translateY(0);
+        }
+
         body.luxury .luxury-scroll{
             gap:22px !important;
             padding-bottom:14px !important;
+            overflow-x:auto;
+            overflow-y:hidden !important;
             scroll-snap-type:x mandatory;
             -webkit-overflow-scrolling: touch;
             overscroll-behavior-x: contain;
             position:relative;
+        }
+        body.luxury .luxury-scroll:has(.home-tour-card){
+            gap:22px !important;
         }
         /* Remove edge fade overlay (looked like a "blur" on cards) */
         body.luxury .luxury-scroll::before,
@@ -1572,16 +1882,173 @@ function showTab(tab) {
         }
         body.luxury .footer a:hover{ color:#fff; }
 
+        body.luxury .customer-chatbot {
+            position: fixed;
+            right: 24px;
+            bottom: 24px;
+            z-index: 1300;
+            font-family: "Manrope", sans-serif;
+        }
+        body.luxury .chatbot-toggle {
+            width: 64px;
+            height: 64px;
+            border: 1px solid rgba(214,178,109,.45);
+            border-radius: 22px;
+            background: linear-gradient(135deg, #d6b26d, #f2cf83);
+            color: #101827;
+            box-shadow: 0 18px 46px rgba(8,13,26,.32);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.55rem;
+            cursor: pointer;
+            position: relative;
+        }
+        body.luxury .chatbot-toggle::before {
+            content: "";
+            position: absolute;
+            inset: -8px;
+            border-radius: 28px;
+            border: 2px solid rgba(214,178,109,.55);
+            animation: luxuryChatPulse 1.8s ease-out 3;
+        }
+        body.luxury .chatbot-toggle::after {
+            content: "";
+            position: absolute;
+            right: 8px;
+            top: 8px;
+            width: 12px;
+            height: 12px;
+            border-radius: 999px;
+            background: #22c55e;
+            border: 2px solid #fff;
+        }
+        body.luxury .chatbot-panel {
+            position: absolute;
+            right: 0;
+            bottom: 82px;
+            width: min(380px, calc(100vw - 28px));
+            max-height: min(640px, calc(100vh - 130px));
+            display: none;
+            overflow: hidden;
+            border-radius: 28px;
+            border: 1px solid rgba(214,178,109,.28);
+            background: rgba(12,18,32,.94);
+            color: #f8f4eb;
+            box-shadow: 0 30px 90px rgba(0,0,0,.36);
+            backdrop-filter: blur(18px);
+        }
+        body.luxury .customer-chatbot.is-open .chatbot-panel {
+            display: flex;
+            flex-direction: column;
+        }
+        body.luxury .chatbot-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            padding: 18px 20px;
+            background: linear-gradient(135deg, rgba(214,178,109,.18), rgba(255,255,255,.05));
+            border-bottom: 1px solid rgba(255,255,255,.1);
+        }
+        body.luxury .chatbot-title {
+            margin: 0;
+            font-size: 1rem;
+            font-weight: 900;
+        }
+        body.luxury .chatbot-subtitle {
+            margin: 3px 0 0;
+            color: rgba(255,255,255,.66);
+            font-size: .82rem;
+        }
+        body.luxury .chatbot-close {
+            border: 0;
+            width: 36px;
+            height: 36px;
+            border-radius: 14px;
+            background: rgba(255,255,255,.1);
+            color: #fff;
+        }
+        body.luxury .chatbot-messages {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            overflow-y: auto;
+            padding: 18px;
+        }
+        body.luxury .chat-msg {
+            width: fit-content;
+            max-width: 88%;
+            border-radius: 18px;
+            padding: 10px 13px;
+            font-size: .92rem;
+            line-height: 1.5;
+        }
+        body.luxury .chat-msg.bot {
+            background: rgba(255,255,255,.1);
+            border-top-left-radius: 6px;
+        }
+        body.luxury .chat-msg.user {
+            align-self: flex-end;
+            background: linear-gradient(135deg, #d6b26d, #f2cf83);
+            color: #101827;
+            border-top-right-radius: 6px;
+            font-weight: 700;
+        }
+        body.luxury .chatbot-suggestions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 0 18px 16px;
+        }
+        body.luxury .chat-suggestion {
+            border: 1px solid rgba(214,178,109,.36);
+            border-radius: 999px;
+            background: rgba(255,255,255,.08);
+            color: #f7dfac;
+            font-size: .82rem;
+            font-weight: 800;
+            padding: 8px 11px;
+        }
+        body.luxury .chatbot-form {
+            display: flex;
+            gap: 8px;
+            padding: 14px;
+            border-top: 1px solid rgba(255,255,255,.1);
+            background: rgba(0,0,0,.16);
+        }
+        body.luxury .chatbot-form input {
+            flex: 1;
+            border: 1px solid rgba(255,255,255,.14);
+            border-radius: 16px;
+            background: rgba(255,255,255,.08);
+            color: #fff;
+            outline: none;
+            padding: 11px 13px;
+        }
+        body.luxury .chatbot-form input::placeholder { color: rgba(255,255,255,.5); }
+        body.luxury .chatbot-form button {
+            border: 0;
+            border-radius: 16px;
+            background: #d6b26d;
+            color: #101827;
+            font-weight: 900;
+            padding: 0 14px;
+        }
+
         @media (max-width: 992px){
-            body.luxury .hero-hotel{ height: 720px; }
-            body.luxury .hero-content{ padding-top: 96px; }
-            body.luxury .hero-main-copy{ transform: translateY(-60px); }
-            body.luxury .booking-box{ transform: translateY(-18px); max-width: 520px; margin: 0 auto; }
+            /* Keep sections in normal flow on tablet/mobile to avoid overlap. */
+            body.luxury .hero-hotel{ height: auto; min-height: 0; }
+            body.luxury .hero-content{ padding-top: 96px; padding-bottom: 22px; }
+            body.luxury .hero-main-copy{ transform: none; margin-bottom: 14px; }
+            body.luxury .booking-box{ transform: none; max-width: 520px; margin: 0 auto; }
+            body.luxury .luxury-float{ margin-top: 20px !important; }
             body.luxury .featured-place-name{ font-size:1.1rem; }
         }
         @media (max-width: 576px){
-            body.luxury .hero-hotel{ height: 760px; }
-            body.luxury .booking-box{ transform: translateY(-12px); padding: 18px 14px; max-width: none; }
+            body.luxury .hero-content{ padding-top: 88px; padding-bottom: 18px; }
+            body.luxury .booking-box{ transform: none; padding: 18px 14px; max-width: none; }
+            body.luxury .luxury-float{ margin-top: 14px !important; }
             body.luxury .luxury-scroll{ gap:16px !important; }
 
             /* Keep the quick-tools tabs readable on very small screens. */
@@ -1607,16 +2074,87 @@ function showTab(tab) {
                 font-size:.84rem;
                 white-space:nowrap;
             }
+            body.luxury .home-tour-card{
+                min-width:86vw;
+                max-width:86vw;
+                width:86vw;
+            }
+            body.luxury .home-tour-media{
+                height:220px;
+            }
+            body.luxury .home-tour-body{
+                padding:20px;
+            }
+            body.luxury .home-tour-footer{
+                align-items:flex-start;
+                flex-direction:column;
+            }
+            body.luxury .home-tour-actions{
+                width:100%;
+            }
+            body.luxury .home-tour-actions a{
+                flex:1;
+            }
+            body.luxury .customer-chatbot {
+                right: 14px;
+                bottom: 14px;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce){
+            html{ scroll-behavior:auto; }
+            body.luxury *,
+            body.luxury *::before,
+            body.luxury *::after{
+                animation:none !important;
+                transition:none !important;
+            }
+            body.luxury .js-reveal{
+                opacity:1;
+                transform:none;
+            }
         }
     </style>
 
 </main>
+
+    <div class="customer-chatbot" id="customerChatbot">
+        <div class="chatbot-panel" role="dialog" aria-modal="false" aria-labelledby="chatbotTitle">
+            <div class="chatbot-head">
+                <div>
+                    <h3 class="chatbot-title" id="chatbotTitle">Trợ lý DuLichPro</h3>
+                    <p class="chatbot-subtitle">Gợi ý nhanh tour, thanh toán và hỗ trợ.</p>
+                </div>
+                <button type="button" class="chatbot-close" id="chatbotClose" aria-label="Đóng chatbot">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+            <div class="chatbot-messages" id="chatbotMessages" aria-live="polite">
+                <div class="chat-msg bot">Xin chào, mình có thể hỗ trợ bạn tìm tour, xem booking, hóa đơn hoặc gửi yêu cầu hỗ trợ.</div>
+            </div>
+            <div class="chatbot-suggestions" aria-label="Câu hỏi nhanh">
+                <button type="button" class="chat-suggestion" data-chat-question="Tôi muốn tìm tour">Tìm tour</button>
+                <button type="button" class="chat-suggestion" data-chat-question="Tôi muốn xem tour đã đặt">Tour đã đặt</button>
+                <button type="button" class="chat-suggestion" data-chat-question="Tôi muốn thanh toán">Thanh toán</button>
+                <button type="button" class="chat-suggestion" data-chat-question="Tôi cần hỗ trợ">Hỗ trợ</button>
+            </div>
+            <form class="chatbot-form" id="chatbotForm">
+                <input type="text" id="chatbotInput" autocomplete="off" placeholder="Nhập câu hỏi của bạn...">
+                <button type="submit" aria-label="Gửi câu hỏi"><i class="bi bi-send-fill"></i></button>
+            </form>
+        </div>
+        <button type="button" class="chatbot-toggle" id="chatbotToggle" aria-label="Mở chatbot hỗ trợ">
+            <i class="bi bi-chat-dots-fill"></i>
+        </button>
+    </div>
     
     <footer class="footer text-center" id="support">
         <div class="container">
             <p class="mb-2">&copy; 2025 DuLichPro. All rights reserved.</p>
             <a href="#" class="me-3">Chính sách bảo mật</a>
             <a href="#">Liên hệ hỗ trợ</a>
+            <a href="tel:0346858035">0346858035</a>
+            <a href="https://www.facebook.com/quan.le.703104?mibextid=wwXIfr&rdid=8WBCL51N50RpNmIP&share_url=https%3A%2F%2Fwww.facebook.com%2Fshare%2F1AxgBcMUrw%2F%3Fmibextid%3DwwXIfr">Facebook</a>
         </div>
         <!-- Section: Trải nghiệm cho mọi người -->
 
@@ -1656,9 +2194,361 @@ function showTab(tab) {
                 }, 260);
             }, 3000);
         }
+
+        var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        var revealItems = document.querySelectorAll('#tools, #experiences, #tours, #reviews, #places, #support, .home-tour-card, .review-card, .featured-place-card, .special-offer-box');
+        revealItems.forEach(function (item, index) {
+            item.classList.add('js-reveal');
+            item.style.transitionDelay = Math.min(index % 6, 5) * 70 + 'ms';
+        });
+
+        if (reduceMotion || !('IntersectionObserver' in window)) {
+            revealItems.forEach(function (item) {
+                item.classList.add('is-visible');
+                item.style.transitionDelay = '';
+            });
+        } else {
+            var revealObserver = new IntersectionObserver(function (entries) {
+                entries.forEach(function (entry) {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('is-visible');
+                        revealObserver.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.14, rootMargin: '0px 0px -8% 0px' });
+
+            revealItems.forEach(function (item) {
+                revealObserver.observe(item);
+            });
+        }
+
+        var sectionLinks = Array.prototype.slice.call(document.querySelectorAll('.luxury-nav .nav-link[href^="#"]'));
+        var sections = sectionLinks
+            .map(function (link) {
+                var target = document.querySelector(link.getAttribute('href'));
+                return target ? { link: link, target: target } : null;
+            })
+            .filter(Boolean);
+
+        if (sections.length) {
+            var setActiveSectionLink = function (activeLink) {
+                sectionLinks.forEach(function (link) {
+                    link.classList.toggle('active', link === activeLink);
+                });
+            };
+
+            var updateActiveSectionLink = function () {
+                var triggerLine = 120;
+                var current = sections[0];
+
+                sections.forEach(function (item) {
+                    if (item.target.getBoundingClientRect().top <= triggerLine) {
+                        current = item;
+                    }
+                });
+
+                setActiveSectionLink(current.link);
+            };
+
+            updateActiveSectionLink();
+            window.addEventListener('scroll', updateActiveSectionLink, { passive: true });
+            window.addEventListener('resize', updateActiveSectionLink);
+            window.addEventListener('hashchange', updateActiveSectionLink);
+        }
+
+        var chatbot = document.getElementById('customerChatbot');
+        var chatbotToggle = document.getElementById('chatbotToggle');
+        var chatbotClose = document.getElementById('chatbotClose');
+        var chatbotForm = document.getElementById('chatbotForm');
+        var chatbotInput = document.getElementById('chatbotInput');
+        var chatbotMessages = document.getElementById('chatbotMessages');
+        var quickTourRequestForm = document.getElementById('quickTourRequestForm');
+        var quickTourRequestFeedback = document.getElementById('quickTourRequestFeedback');
+        var customerNotificationBadge = document.getElementById('customerNotificationBadge');
+        var customerNotificationTimerId = null;
+        var customerVisiblePollingMs = 5000;
+        var customerHiddenPollingMs = 20000;
+
+        var chatLinks = {
+            tours: 'index.php?act=khachHang/danhSachTour',
+            bookings: 'index.php?act=khachHang/yeuCauTour',
+            invoices: 'index.php?act=khachHang/hoaDon',
+            notifications: 'index.php?act=khachHang/thongBao',
+            support: 'index.php?act=khachHang/guiYeuCauHoTro',
+            request: 'index.php?act=khachHang/dashboard#home'
+        };
+
+        function addChatMessage(text, sender) {
+            if (!chatbotMessages) return;
+            var msg = document.createElement('div');
+            msg.className = 'chat-msg ' + sender;
+            msg.innerHTML = text;
+            chatbotMessages.appendChild(msg);
+            chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+        }
+
+        function normalizeChatText(value) {
+            return (value || '')
+                .toLowerCase()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/đ/g, 'd')
+                .replace(/Đ/g, 'D');
+        }
+
+        function detectTourType(normalized) {
+            if (normalized.includes('quoc te') || normalized.includes('nuoc ngoai') || normalized.includes('oversea')) {
+                return 'QuocTe';
+            }
+            if (normalized.includes('trong nuoc') || normalized.includes('noi dia') || normalized.includes('viet nam')) {
+                return 'TrongNuoc';
+            }
+            return '';
+        }
+
+        function detectPriceRange(normalized) {
+            if (normalized.match(/duoi\s*5|duoi\s*nam|<\s*5/)) return 'under5';
+            if (normalized.match(/5\s*(den|-|toi)\s*10|nam\s*(den|-|toi)\s*muoi/)) return '5to10';
+            if (normalized.match(/10\s*(den|-|toi)\s*20|muoi\s*(den|-|toi)\s*hai muoi/)) return '10to20';
+            if (normalized.match(/tren\s*20|hon\s*20|>\s*20|hai muoi tro len/)) return 'over20';
+            return '';
+        }
+
+        function detectDestination(question, normalized) {
+            var knownDestinations = [
+                ['da nang', 'Đà Nẵng'],
+                ['hoi an', 'Hội An'],
+                ['phu quoc', 'Phú Quốc'],
+                ['nha trang', 'Nha Trang'],
+                ['da lat', 'Đà Lạt'],
+                ['sa pa', 'Sa Pa'],
+                ['sapa', 'Sa Pa'],
+                ['ha long', 'Hạ Long'],
+                ['hue', 'Huế'],
+                ['ha noi', 'Hà Nội'],
+                ['sai gon', 'Sài Gòn'],
+                ['nhat ban', 'Nhật Bản'],
+                ['tokyo', 'Tokyo'],
+                ['nagoya', 'Nagoya'],
+                ['han quoc', 'Hàn Quốc'],
+                ['thai lan', 'Thái Lan'],
+                ['singapore', 'Singapore']
+            ];
+            for (var i = 0; i < knownDestinations.length; i++) {
+                if (normalized.includes(knownDestinations[i][0])) {
+                    return knownDestinations[i][1];
+                }
+            }
+
+            var cleaned = question
+                .replace(/tôi|toi|mình|minh|muốn|muon|cần|can|cho tôi|cho toi/gi, ' ')
+                .replace(/tìm|tim|kiếm|kiem|gợi ý|goi y|tour|du lịch|du lich|đi|di|giá|gia|triệu|trieu/gi, ' ')
+                .replace(/trong nước|trong nuoc|quốc tế|quoc te|nước ngoài|nuoc ngoai/gi, ' ')
+                .replace(/dưới|duoi|trên|tren|hơn|hon|từ|tu|đến|den|tới|toi|\d+/gi, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+
+            return cleaned.length >= 3 && cleaned.length <= 40 ? cleaned : '';
+        }
+
+        function buildTourSearchUrl(question) {
+            var normalized = normalizeChatText(question);
+            var params = new URLSearchParams();
+            var destination = detectDestination(question, normalized);
+            var tourType = detectTourType(normalized);
+            var priceRange = detectPriceRange(normalized);
+
+            params.set('act', 'khachHang/danhSachTour');
+            if (destination) params.set('q', destination);
+            if (tourType) params.set('loai_tour', tourType);
+            if (priceRange) params.set('price_range', priceRange);
+            if (normalized.includes('sap khoi hanh') || normalized.includes('gan nhat')) {
+                params.set('sort', 'upcoming');
+            }
+
+            return 'index.php?' + params.toString();
+        }
+
+        function describeTourFilters(question) {
+            var normalized = normalizeChatText(question);
+            var parts = [];
+            var destination = detectDestination(question, normalized);
+            var tourType = detectTourType(normalized);
+            var priceRange = detectPriceRange(normalized);
+
+            if (destination) parts.push('điểm đến "' + destination + '"');
+            if (tourType === 'QuocTe') parts.push('tour quốc tế');
+            if (tourType === 'TrongNuoc') parts.push('tour trong nước');
+            if (priceRange === 'under5') parts.push('giá dưới 5 triệu');
+            if (priceRange === '5to10') parts.push('giá 5 - 10 triệu');
+            if (priceRange === '10to20') parts.push('giá 10 - 20 triệu');
+            if (priceRange === 'over20') parts.push('giá trên 20 triệu');
+
+            return parts.length ? parts.join(', ') : 'nhu cầu của bạn';
+        }
+
+        function buildBotReply(question) {
+            var normalized = normalizeChatText(question);
+            if (normalized.includes('tour') || normalized.includes('tim') || normalized.includes('kham pha') || normalized.includes('du lich') || normalized.includes('di ')) {
+                var tourSearchUrl = buildTourSearchUrl(question);
+                return 'Mình đã hiểu ' + describeTourFilters(question) + '. Bạn bấm vào <a href="' + tourSearchUrl + '" style="color:#f7dfac;font-weight:900;">xem tour phù hợp</a> để mở trang Khám phá tour với bộ lọc sẵn.';
+            }
+            if (normalized.includes('booking') || normalized.includes('da dat') || normalized.includes('lich trinh')) {
+                return 'Bạn vào <a href="' + chatLinks.bookings + '" style="color:#f7dfac;font-weight:900;">Tour đã đặt</a> để xem trạng thái booking, người tham gia và nhắc nhở khởi hành.';
+            }
+            if (normalized.includes('thanh toan') || normalized.includes('hoa don')) {
+                return 'Bạn có thể kiểm tra <a href="' + chatLinks.invoices + '" style="color:#f7dfac;font-weight:900;">Hóa đơn & thanh toán</a>. Nếu vừa chuyển khoản, hãy copy đúng nội dung thanh toán để hệ thống đối soát nhanh hơn.';
+            }
+            if (normalized.includes('thong bao')) {
+                return 'Bạn xem các cập nhật mới tại <a href="' + chatLinks.notifications + '" style="color:#f7dfac;font-weight:900;">Thông báo</a>.';
+            }
+            if (normalized.includes('ho tro') || normalized.includes('lien he')) {
+                return 'Bạn có thể gửi yêu cầu qua <a href="' + chatLinks.support + '" style="color:#f7dfac;font-weight:900;">Trung tâm hỗ trợ</a> hoặc gọi hotline ở cuối trang.';
+            }
+            if (normalized.includes('yeu cau') || normalized.includes('thiet ke')) {
+                return 'Nếu muốn thiết kế tour riêng, bạn điền form <a href="' + chatLinks.request + '" style="color:#f7dfac;font-weight:900;">Tour của tôi</a> ngay trên trang chủ.';
+            }
+            return 'Mình có thể hỗ trợ nhanh các mục: <a href="' + chatLinks.tours + '" style="color:#f7dfac;font-weight:900;">tìm tour</a>, <a href="' + chatLinks.bookings + '" style="color:#f7dfac;font-weight:900;">tour đã đặt</a>, <a href="' + chatLinks.invoices + '" style="color:#f7dfac;font-weight:900;">thanh toán</a> hoặc <a href="' + chatLinks.support + '" style="color:#f7dfac;font-weight:900;">hỗ trợ</a>.';
+        }
+
+        function handleChatQuestion(question) {
+            var cleanQuestion = (question || '').trim();
+            if (!cleanQuestion) return;
+            addChatMessage(cleanQuestion.replace(/[<>&]/g, function (char) {
+                return {'<': '&lt;', '>': '&gt;', '&': '&amp;'}[char];
+            }), 'user');
+            window.setTimeout(function () {
+                addChatMessage(buildBotReply(cleanQuestion), 'bot');
+            }, 250);
+        }
+
+        function renderCustomerNotificationBadge(count) {
+            if (!customerNotificationBadge) return;
+            var safeCount = Number.isFinite(count) ? Math.max(0, Math.floor(count)) : 0;
+            if (safeCount > 0) {
+                customerNotificationBadge.textContent = safeCount;
+                customerNotificationBadge.style.display = 'inline-flex';
+            } else {
+                customerNotificationBadge.textContent = '0';
+                customerNotificationBadge.style.display = 'none';
+            }
+        }
+
+        async function fetchCustomerNotificationCounts() {
+            try {
+                var response = await fetch('index.php?act=khachHang/notificationCounts&_ts=' + Date.now(), {
+                    method: 'GET',
+                    credentials: 'same-origin',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                if (!response.ok) return;
+                var data = await response.json();
+                if (!data || data.success !== true) return;
+                renderCustomerNotificationBadge(Number(data.unread || 0));
+            } catch (error) {
+                // Bo qua loi mang tam thoi.
+            }
+        }
+
+        function restartCustomerNotificationTimer() {
+            if (customerNotificationTimerId) {
+                window.clearInterval(customerNotificationTimerId);
+                customerNotificationTimerId = null;
+            }
+
+            var intervalMs = document.hidden ? customerHiddenPollingMs : customerVisiblePollingMs;
+            customerNotificationTimerId = window.setInterval(fetchCustomerNotificationCounts, intervalMs);
+        }
+
+        if (quickTourRequestForm) {
+            quickTourRequestForm.addEventListener('submit', async function (event) {
+                event.preventDefault();
+
+                var submitButton = quickTourRequestForm.querySelector('button[type="submit"]');
+                if (submitButton) {
+                    submitButton.disabled = true;
+                    submitButton.dataset.originalText = submitButton.textContent || '';
+                    submitButton.textContent = 'ĐANG GỬI...';
+                }
+
+                if (quickTourRequestFeedback) {
+                    quickTourRequestFeedback.style.display = 'none';
+                    quickTourRequestFeedback.textContent = '';
+                    quickTourRequestFeedback.className = 'small mt-2';
+                }
+
+                try {
+                    var response = await fetch(quickTourRequestForm.action, {
+                        method: 'POST',
+                        body: new FormData(quickTourRequestForm),
+                        credentials: 'same-origin',
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    });
+
+                    var data = await response.json();
+                    if (data && data.success) {
+                        if (quickTourRequestFeedback) {
+                            quickTourRequestFeedback.style.display = 'block';
+                            quickTourRequestFeedback.className = 'small mt-2 text-success';
+                            quickTourRequestFeedback.textContent = data.message || 'Gửi yêu cầu thành công.';
+                        }
+                        quickTourRequestForm.reset();
+                        fetchCustomerNotificationCounts();
+                    } else if (quickTourRequestFeedback) {
+                        quickTourRequestFeedback.style.display = 'block';
+                        quickTourRequestFeedback.className = 'small mt-2 text-danger';
+                        quickTourRequestFeedback.textContent = (data && data.message) ? data.message : 'Không thể gửi yêu cầu. Vui lòng thử lại.';
+                    }
+                } catch (error) {
+                    if (quickTourRequestFeedback) {
+                        quickTourRequestFeedback.style.display = 'block';
+                        quickTourRequestFeedback.className = 'small mt-2 text-danger';
+                        quickTourRequestFeedback.textContent = 'Lỗi kết nối. Vui lòng kiểm tra mạng và thử lại.';
+                    }
+                } finally {
+                    if (submitButton) {
+                        submitButton.disabled = false;
+                        submitButton.textContent = submitButton.dataset.originalText || 'GỬI YÊU CẦU';
+                    }
+                }
+            });
+        }
+
+        if (chatbot && chatbotToggle) {
+            chatbotToggle.addEventListener('click', function () {
+                chatbot.classList.toggle('is-open');
+                if (chatbot.classList.contains('is-open') && chatbotInput) {
+                    window.setTimeout(function () { chatbotInput.focus(); }, 120);
+                }
+            });
+        }
+        if (chatbotClose && chatbot) {
+            chatbotClose.addEventListener('click', function () {
+                chatbot.classList.remove('is-open');
+            });
+        }
+        if (chatbotForm) {
+            chatbotForm.addEventListener('submit', function (event) {
+                event.preventDefault();
+                handleChatQuestion(chatbotInput ? chatbotInput.value : '');
+                if (chatbotInput) chatbotInput.value = '';
+            });
+        }
+        document.querySelectorAll('[data-chat-question]').forEach(function (button) {
+            button.addEventListener('click', function () {
+                handleChatQuestion(button.getAttribute('data-chat-question') || '');
+            });
+        });
+
+        fetchCustomerNotificationCounts();
+        restartCustomerNotificationTimer();
+        document.addEventListener('visibilitychange', function () {
+            restartCustomerNotificationTimer();
+            if (!document.hidden) {
+                fetchCustomerNotificationCounts();
+            }
+        });
     });
     </script>
 </body>
 </html>
-
-

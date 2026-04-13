@@ -367,6 +367,7 @@
             </a>
         </div>
 
+        <div id="profileUpdateFeedback">
         <?php if (isset($_SESSION['success'])): ?>
             <div class="alert alert-success alert-dismissible fade show status-alert">
                 <?php echo htmlspecialchars($_SESSION['success']); unset($_SESSION['success']); ?>
@@ -380,6 +381,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
         <?php endif; ?>
+        </div>
 
         <div class="row layout-grid">
             <div class="col-lg-4">
@@ -403,7 +405,7 @@
                     <h4 class="section-title mb-2">Hồ sơ tài khoản</h4>
                     <div class="section-subtitle">Cập nhật chính xác thông tin cá nhân để đặt tour nhanh và thuận tiện hơn.</div>
 
-                    <form method="POST" action="index.php?act=khachHang/capNhatThongTin">
+                    <form method="POST" action="index.php?act=khachHang/capNhatThongTin" id="profileUpdateForm">
                         <div class="form-shell">
                             <div class="form-block-title"><i class="bi bi-person-vcard"></i> Thông tin liên hệ</div>
                             <div class="row">
@@ -455,7 +457,7 @@
                         </div>
 
                         <div class="pw-actions">
-                            <button type="submit" class="btn-save">
+                            <button type="submit" class="btn-save" id="profileUpdateSubmitBtn">
                                 <i class="bi bi-check-circle me-2"></i>Cập nhật thông tin
                             </button>
                         </div>
@@ -466,6 +468,64 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var profileUpdateForm = document.getElementById('profileUpdateForm');
+        var profileUpdateSubmitBtn = document.getElementById('profileUpdateSubmitBtn');
+        var profileUpdateFeedback = document.getElementById('profileUpdateFeedback');
+        var profileNameNode = document.querySelector('.side-name');
+
+        function renderFeedback(message, type) {
+            if (!profileUpdateFeedback) return;
+            var safeType = type === 'success' ? 'success' : 'danger';
+            profileUpdateFeedback.innerHTML =
+                '<div class="alert alert-' + safeType + ' alert-dismissible fade show status-alert" role="alert">' +
+                message +
+                '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>' +
+                '</div>';
+        }
+
+        if (!profileUpdateForm) return;
+
+        profileUpdateForm.addEventListener('submit', async function (event) {
+            event.preventDefault();
+
+            if (profileUpdateSubmitBtn) {
+                profileUpdateSubmitBtn.disabled = true;
+                profileUpdateSubmitBtn.dataset.originalHtml = profileUpdateSubmitBtn.innerHTML;
+                profileUpdateSubmitBtn.innerHTML = '<i class="bi bi-arrow-repeat me-2"></i>Đang cập nhật...';
+            }
+
+            try {
+                var response = await fetch(profileUpdateForm.action, {
+                    method: 'POST',
+                    body: new FormData(profileUpdateForm),
+                    credentials: 'same-origin',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                var data = await response.json();
+                if (data && data.success) {
+                    renderFeedback(data.message || 'Cập nhật thông tin thành công', 'success');
+                    if (profileNameNode && data.display_name) {
+                        profileNameNode.textContent = data.display_name;
+                    }
+                } else {
+                    renderFeedback((data && data.message) ? data.message : 'Không thể cập nhật. Vui lòng thử lại.', 'danger');
+                }
+            } catch (error) {
+                renderFeedback('Lỗi kết nối. Vui lòng kiểm tra mạng và thử lại.', 'danger');
+            } finally {
+                if (profileUpdateSubmitBtn) {
+                    profileUpdateSubmitBtn.disabled = false;
+                    profileUpdateSubmitBtn.innerHTML = profileUpdateSubmitBtn.dataset.originalHtml || '<i class="bi bi-check-circle me-2"></i>Cập nhật thông tin';
+                }
+            }
+        });
+    });
+    </script>
 </body>
 </html>
 

@@ -148,7 +148,11 @@ class ThongBao
                 FROM thong_bao tb
                 LEFT JOIN nguoi_dung nd_gui ON tb.nguoi_gui_id = nd_gui.id
                 LEFT JOIN thong_bao_doc tbd ON tb.id = tbd.thong_bao_id AND tbd.nguoi_dung_id = ?
-                WHERE (tb.nguoi_nhan_id = ? OR tb.nguoi_nhan_id IS NULL)
+            WHERE tb.nguoi_nhan_id = ?
+              AND tb.vai_tro_nhan = 'KhachHang'
+              AND tb.trang_thai = 'DaGui'
+              AND tb.nguoi_gui_id IS NOT NULL
+              AND nd_gui.vai_tro = 'Admin'
                 ORDER BY tb.created_at DESC
                 LIMIT ?";
         $stmt = $this->conn->prepare($sql);
@@ -162,8 +166,12 @@ class ThongBao
     public function countChuaDoc($nguoiDungId) {
         $sql = "SELECT COUNT(*) as total
                 FROM thong_bao tb
+                                LEFT JOIN nguoi_dung nd_gui ON tb.nguoi_gui_id = nd_gui.id
                 LEFT JOIN thong_bao_doc tbd ON tb.id = tbd.thong_bao_id AND tbd.nguoi_dung_id = ?
-                WHERE (tb.nguoi_nhan_id = ? OR tb.nguoi_nhan_id IS NULL)
+                                WHERE tb.nguoi_nhan_id = ?
+                                    AND tb.vai_tro_nhan = 'KhachHang'
+                                    AND tb.nguoi_gui_id IS NOT NULL
+                                    AND nd_gui.vai_tro = 'Admin'
                   AND (tbd.da_doc IS NULL OR tbd.da_doc = 0)
                   AND tb.trang_thai = 'DaGui'";
         $stmt = $this->conn->prepare($sql);

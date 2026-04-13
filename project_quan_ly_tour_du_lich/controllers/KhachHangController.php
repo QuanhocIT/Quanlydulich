@@ -9,6 +9,7 @@ class KhachHangController {
     // Gửi yêu cầu tour theo mong muốn
     public function guiYeuCauTour() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $isAjaxRequest = strtolower((string)($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '')) === 'xmlhttprequest';
             require_once 'models/ThongBao.php';
             require_once 'models/NguoiDung.php';
             $thongBaoModel = new ThongBao();
@@ -45,8 +46,28 @@ class KhachHangController {
                 'vai_tro_nhan' => 'Admin',
                 'trang_thai' => 'DaGui'
             ];
-            $thongBaoModel->insert($data);
-            $_SESSION['success'] = 'Yêu cầu của bạn đã được gửi đến admin. Chúng tôi sẽ liên hệ lại sớm nhất!';
+            $createdId = (int)$thongBaoModel->insert($data);
+
+            if ($isAjaxRequest) {
+                header('Content-Type: application/json; charset=utf-8');
+                if ($createdId > 0) {
+                    echo json_encode([
+                        'success' => true,
+                        'message' => 'Yêu cầu của bạn đã được gửi đến admin. Chúng tôi sẽ liên hệ lại sớm nhất!'
+                    ], JSON_UNESCAPED_UNICODE);
+                } else {
+                    http_response_code(500);
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Không thể gửi yêu cầu lúc này. Vui lòng thử lại sau.'
+                    ], JSON_UNESCAPED_UNICODE);
+                }
+                exit();
+            }
+
+            $_SESSION['success'] = $createdId > 0
+                ? 'Yêu cầu của bạn đã được gửi đến admin. Chúng tôi sẽ liên hệ lại sớm nhất!'
+                : 'Không thể gửi yêu cầu lúc này. Vui lòng thử lại sau.';
             $redirectTo = trim((string)($_POST['redirect_to'] ?? ''));
             if ($redirectTo === '' || strpos($redirectTo, 'index.php?act=') !== 0) {
                 $redirectTo = 'index.php?act=khachHang/guiYeuCauTour';
@@ -131,6 +152,35 @@ class KhachHangController {
 
         require 'views/khach_hang/yeu_cau_tour.php';
     }
+
+    public function notificationCounts() {
+        header('Content-Type: application/json; charset=utf-8');
+
+        $userId = (int)($_SESSION['user_id'] ?? 0);
+        if ($userId <= 0) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'unread' => 0], JSON_UNESCAPED_UNICODE);
+            exit();
+        }
+
+        try {
+            require_once 'models/ThongBao.php';
+            $thongBaoModel = new ThongBao();
+            $unread = (int)$thongBaoModel->countChuaDoc($userId);
+
+            echo json_encode([
+                'success' => true,
+                'unread' => $unread,
+            ], JSON_UNESCAPED_UNICODE);
+            exit();
+        } catch (Throwable $e) {
+            echo json_encode([
+                'success' => false,
+                'unread' => 0,
+            ], JSON_UNESCAPED_UNICODE);
+            exit();
+        }
+    }
     
     // Dashboard khách hàng
     public function dashboard() {
@@ -204,9 +254,30 @@ class KhachHangController {
             return (int)($tour['tour_id'] ?? 0);
         }, $allTours);
         $thumbnailMap = $tourModel->getThumbnailMapByTourIds($tourIds);
+        $ratingMap = $danhGiaModel->getTourRatingMapByTourIds($tourIds);
         foreach ($allTours as &$tour) {
             $tourId = (int)($tour['tour_id'] ?? 0);
             $tour['hinh_anh'] = $thumbnailMap[$tourId] ?? null;
+            $tour['rating'] = $ratingMap[$tourId] ?? ['diem_tb' => 0, 'so_danh_gia' => 0];
+
+            $lichKhoiHanhList = $tourId > 0 ? $tourModel->getLichKhoiHanhByTourId($tourId) : [];
+            $nextSchedule = null;
+            foreach ($lichKhoiHanhList as $lichKhoiHanh) {
+                if (empty($lichKhoiHanh['ngay_khoi_hanh'])) {
+                    continue;
+                }
+                if (strtotime((string)$lichKhoiHanh['ngay_khoi_hanh']) >= strtotime(date('Y-m-d'))) {
+                    $nextSchedule = $lichKhoiHanh;
+                    break;
+                }
+            }
+            if ($nextSchedule === null && !empty($lichKhoiHanhList)) {
+                $nextSchedule = $lichKhoiHanhList[0];
+            }
+
+            $tour['ngay_khoi_hanh_gan_nhat'] = $nextSchedule['ngay_khoi_hanh'] ?? null;
+            $tour['diem_tap_trung'] = $nextSchedule['diem_tap_trung'] ?? '';
+            $tour['so_cho'] = $nextSchedule['so_cho'] ?? null;
         }
         unset($tour);
         $tourTrongNuoc = array_filter($allTours, fn($t) => $t['loai_tour'] === 'TrongNuoc' && $t['trang_thai'] === 'HoatDong');
@@ -233,6 +304,85 @@ class KhachHangController {
     }
     
     public function danhSachTour() {
+        require_once 'models/Tour.php';
+        require_once 'models/DanhGia.php';
+
+        $tourModel = new Tour();
+        $danhGiaModel = new DanhGia();
+        $search = trim((string)($_GET['q'] ?? ''));
+        $loaiTour = trim((string)($_GET['loai_tour'] ?? ''));
+        $priceRange = trim((string)($_GET['price_range'] ?? ''));
+        $sort = trim((string)($_GET['sort'] ?? 'newest'));
+
+        $allowedLoaiTour = ['TrongNuoc', 'QuocTe'];
+        if (!in_array($loaiTour, $allowedLoaiTour, true)) {
+            $loaiTour = '';
+        }
+
+        $tours = $tourModel->getPublicTours([
+            'search' => $search,
+            'loai_tour' => $loaiTour,
+        ], 80, 0);
+
+        $tourIds = array_column($tours, 'tour_id');
+        $tourRatingMap = $danhGiaModel->getTourRatingMapByTourIds($tourIds);
+
+        $thumbnailMap = $tourModel->getThumbnailMapByTourIds($tourIds);
+        foreach ($tours as &$tour) {
+            $tourId = (int)($tour['tour_id'] ?? 0);
+            $tour['hinh_anh'] = $thumbnailMap[$tourId] ?? null;
+            $tour['diem_tb'] = (float)($tourRatingMap[$tourId]['diem_tb'] ?? 0);
+            $tour['so_danh_gia'] = (int)($tourRatingMap[$tourId]['so_danh_gia'] ?? 0);
+
+            $lichKhoiHanhList = $tourId > 0 ? $tourModel->getLichKhoiHanhByTourId($tourId) : [];
+            $nextSchedule = null;
+            foreach ($lichKhoiHanhList as $lichKhoiHanh) {
+                if (empty($lichKhoiHanh['ngay_khoi_hanh'])) {
+                    continue;
+                }
+                if (strtotime((string)$lichKhoiHanh['ngay_khoi_hanh']) >= strtotime(date('Y-m-d'))) {
+                    $nextSchedule = $lichKhoiHanh;
+                    break;
+                }
+            }
+            if ($nextSchedule === null && !empty($lichKhoiHanhList)) {
+                $nextSchedule = $lichKhoiHanhList[0];
+            }
+
+            $tour['ngay_khoi_hanh_gan_nhat'] = $nextSchedule['ngay_khoi_hanh'] ?? null;
+            $tour['ngay_ket_thuc_gan_nhat'] = $nextSchedule['ngay_ket_thuc'] ?? null;
+            $tour['diem_tap_trung'] = $nextSchedule['diem_tap_trung'] ?? '';
+            $tour['so_cho'] = $nextSchedule['so_cho'] ?? null;
+        }
+        unset($tour);
+
+        $tours = array_values(array_filter($tours, static function ($tour) use ($priceRange) {
+            $price = (float)($tour['gia_co_ban'] ?? 0);
+            return match ($priceRange) {
+                'under5' => $price < 5000000,
+                '5to10' => $price >= 5000000 && $price < 10000000,
+                '10to20' => $price >= 10000000 && $price < 20000000,
+                'over20' => $price >= 20000000,
+                default => true,
+            };
+        }));
+
+        usort($tours, static function ($a, $b) use ($sort) {
+            return match ($sort) {
+                'price_asc' => ((float)($a['gia_co_ban'] ?? 0)) <=> ((float)($b['gia_co_ban'] ?? 0)),
+                'price_desc' => ((float)($b['gia_co_ban'] ?? 0)) <=> ((float)($a['gia_co_ban'] ?? 0)),
+                'upcoming' => strtotime((string)($a['ngay_khoi_hanh_gan_nhat'] ?? '2999-12-31')) <=> strtotime((string)($b['ngay_khoi_hanh_gan_nhat'] ?? '2999-12-31')),
+                default => ((int)($b['tour_id'] ?? 0)) <=> ((int)($a['tour_id'] ?? 0)),
+            };
+        });
+
+        $filters = [
+            'q' => $search,
+            'loai_tour' => $loaiTour,
+            'price_range' => $priceRange,
+            'sort' => $sort,
+        ];
+
         require 'views/khach_hang/danh_sach_tour.php';
     }
     
@@ -250,6 +400,11 @@ class KhachHangController {
         $danhGiaTourList = [];
         $danhGiaTourAvg = 0;
         $danhGiaTourCount = 0;
+        $daDatTourNay = false;
+        $daTraiNghiemTourNay = false;
+        $daDanhGiaTourNay = false;
+        $coTheDanhGiaTour = false;
+        $tourReviewCurrentUser = null;
         $error = null;
 
         if ($id <= 0) {
@@ -304,6 +459,22 @@ class KhachHangController {
                 if ($loaiTour !== '') {
                     $tourCungLoai = $tourModel->getRelatedToursByType($loaiTour, $id, 6);
                 }
+
+                require_once 'models/KhachHang.php';
+                $khachHangModel = new KhachHang();
+                $khachHang = $khachHangModel->findByUserId((int)($_SESSION['user_id'] ?? 0));
+                if ($khachHang && !empty($khachHang['khach_hang_id'])) {
+                    $bookings = $bookingModelForSeats->getByKhachHangId((int)$khachHang['khach_hang_id']);
+                    $eligibility = $this->evaluateTourReviewEligibility($bookings, $id);
+                    $daDatTourNay = (bool)$eligibility['booked'];
+                    $daTraiNghiemTourNay = (bool)$eligibility['experienced'];
+
+                    if ($daTraiNghiemTourNay) {
+                        $tourReviewCurrentUser = $danhGiaModel->getTourReviewByKhachHang((int)$khachHang['khach_hang_id'], $id);
+                        $daDanhGiaTourNay = !empty($tourReviewCurrentUser);
+                        $coTheDanhGiaTour = true;
+                    }
+                }
             }
         }
 
@@ -344,13 +515,19 @@ class KhachHangController {
     }
     
     public function guiDanhGia() {
+        $redirectTourId = (int)($_POST['redirect_tour_id'] ?? 0);
+        $redirectUrl = $redirectTourId > 0
+            ? 'index.php?act=khachHang/chiTietTour&id=' . $redirectTourId
+            : 'index.php?act=khachHang/danhGia';
+
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header('Location: index.php?act=khachHang/danhGia');
+            header('Location: ' . $redirectUrl);
             exit();
         }
         
         require_once 'models/DanhGia.php';
         require_once 'models/KhachHang.php';
+        require_once 'models/Booking.php';
         
         // Lấy khach_hang_id từ session
         $khachHangModel = new KhachHang();
@@ -358,16 +535,43 @@ class KhachHangController {
         
         if (!$khachHang) {
             $_SESSION['error'] = 'Không tìm thấy thông tin khách hàng';
-            header('Location: index.php?act=khachHang/danhGia');
+            header('Location: ' . $redirectUrl);
             exit();
+        }
+
+        $loaiDanhGia = trim((string)($_POST['loai_danh_gia'] ?? ''));
+        $tourId = !empty($_POST['tour_id']) ? (int)$_POST['tour_id'] : 0;
+
+        if ($loaiDanhGia === 'Tour') {
+            if ($tourId <= 0) {
+                $_SESSION['error'] = 'Thiếu thông tin tour cần đánh giá.';
+                header('Location: ' . $redirectUrl);
+                exit();
+            }
+
+            $bookingModel = new Booking();
+            $bookings = $bookingModel->getByKhachHangId((int)$khachHang['khach_hang_id']);
+            $eligibility = $this->evaluateTourReviewEligibility($bookings, $tourId);
+
+            if (empty($eligibility['booked'])) {
+                $_SESSION['error'] = 'Bạn cần đặt tour này trước khi gửi đánh giá.';
+                header('Location: ' . $redirectUrl);
+                exit();
+            }
+
+            if (empty($eligibility['experienced'])) {
+                $_SESSION['error'] = 'Bạn chỉ có thể đánh giá sau khi đã trải nghiệm xong tour.';
+                header('Location: ' . $redirectUrl);
+                exit();
+            }
         }
         
         $data = [
             'khach_hang_id' => $khachHang['khach_hang_id'],
-            'tour_id' => !empty($_POST['tour_id']) ? (int)$_POST['tour_id'] : null,
+            'tour_id' => $tourId > 0 ? $tourId : null,
             'nha_cung_cap_id' => !empty($_POST['nha_cung_cap_id']) ? (int)$_POST['nha_cung_cap_id'] : null,
             'nhan_su_id' => !empty($_POST['nhan_su_id']) ? (int)$_POST['nhan_su_id'] : null,
-            'loai_danh_gia' => $_POST['loai_danh_gia'],
+            'loai_danh_gia' => $loaiDanhGia,
             'tieu_chi' => $_POST['tieu_chi'] ?? null,
             'loai_dich_vu' => $_POST['loai_dich_vu'] ?? null,
             'diem' => (int)$_POST['diem'],
@@ -375,14 +579,64 @@ class KhachHangController {
         ];
         
         $danhGiaModel = new DanhGia();
+
+        if ($loaiDanhGia === 'Tour' && $tourId > 0) {
+            $existingTourReview = $danhGiaModel->getTourReviewByKhachHang((int)$khachHang['khach_hang_id'], $tourId);
+            if (!empty($existingTourReview)) {
+                if ($danhGiaModel->updateTourReviewByKhachHang((int)$khachHang['khach_hang_id'], $tourId, $data)) {
+                    $_SESSION['success'] = 'Đã cập nhật đánh giá tour của bạn.';
+                } else {
+                    $_SESSION['error'] = 'Không thể cập nhật đánh giá. Vui lòng thử lại sau.';
+                }
+
+                header('Location: ' . $redirectUrl);
+                exit();
+            }
+        }
+
         if ($danhGiaModel->create($data)) {
             $_SESSION['success'] = 'Cảm ơn bạn đã đánh giá! Ý kiến của bạn rất quan trọng với chúng tôi.';
         } else {
             $_SESSION['error'] = 'Có lỗi xảy ra. Vui lòng thử lại sau.';
         }
         
-        header('Location: index.php?act=khachHang/danhGia');
+        header('Location: ' . $redirectUrl);
         exit();
+    }
+
+    private function evaluateTourReviewEligibility(array $bookings, int $tourId): array {
+        $booked = false;
+        $experienced = false;
+        $now = time();
+
+        foreach ($bookings as $booking) {
+            if ((int)($booking['tour_id'] ?? 0) !== $tourId) {
+                continue;
+            }
+
+            $booked = true;
+            $status = trim((string)($booking['trang_thai'] ?? ''));
+            if ($status === 'HoanTat') {
+                $experienced = true;
+                break;
+            }
+
+            $ngayKetThuc = trim((string)($booking['ngay_ket_thuc'] ?? ''));
+            $ngayKhoiHanh = trim((string)($booking['ngay_khoi_hanh'] ?? ''));
+            $endTs = $ngayKetThuc !== '' ? strtotime($ngayKetThuc . ' 23:59:59') : false;
+            $startTs = $ngayKhoiHanh !== '' ? strtotime($ngayKhoiHanh . ' 23:59:59') : false;
+
+            if (($endTs !== false && $endTs < $now) || ($endTs === false && $startTs !== false && $startTs < $now)) {
+                $experienced = true;
+                break;
+            }
+        }
+
+        return [
+            'booked' => $booked,
+            'experienced' => $experienced,
+            'can_review' => $booked && $experienced,
+        ];
     }
 
     // Xem hóa đơn và trạng thái thanh toán
@@ -552,26 +806,152 @@ class KhachHangController {
     // Thông báo
     public function thongBao() {
         require_once 'models/ThongBao.php';
+        $isAjaxRequest = strtolower((string)($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '')) === 'xmlhttprequest';
         
         $thongBaoModel = new ThongBao();
-        
-        $thongBaoList = $thongBaoModel->getByNguoiDung($_SESSION['user_id'], 50);
-        $thongBaoChuaDoc = $thongBaoModel->countChuaDoc($_SESSION['user_id']);
+        $userId = (int)($_SESSION['user_id'] ?? 0);
         
         // Đánh dấu đã đọc nếu có tham số
         if (isset($_GET['mark_read']) && $_GET['mark_read'] > 0) {
-            $thongBaoModel->danhDauDaDoc((int)$_GET['mark_read'], $_SESSION['user_id']);
+            $marked = $thongBaoModel->danhDauDaDoc((int)$_GET['mark_read'], $userId);
+            if ($isAjaxRequest) {
+                header('Content-Type: application/json; charset=utf-8');
+                echo json_encode([
+                    'success' => (bool)$marked,
+                    'unread' => (int)$thongBaoModel->countChuaDoc($userId),
+                ], JSON_UNESCAPED_UNICODE);
+                exit();
+            }
             header('Location: index.php?act=khachHang/thongBao');
             exit();
         }
+
+        $thongBaoList = $thongBaoModel->getByNguoiDung($userId, 50);
+        $thongBaoChuaDoc = $thongBaoModel->countChuaDoc($userId);
         
         require 'views/khach_hang/thong_bao.php';
+    }
+
+    public function notificationFeed() {
+        header('Content-Type: application/json; charset=utf-8');
+        require_once 'models/ThongBao.php';
+
+        $userId = (int)($_SESSION['user_id'] ?? 0);
+        if ($userId <= 0) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'unread' => 0, 'items' => []], JSON_UNESCAPED_UNICODE);
+            exit();
+        }
+
+        try {
+            $thongBaoModel = new ThongBao();
+            $items = $thongBaoModel->getByNguoiDung($userId, 50);
+            $unread = (int)$thongBaoModel->countChuaDoc($userId);
+
+            $normalizedItems = array_map(static function ($tb) {
+                return [
+                    'id' => (int)($tb['id'] ?? 0),
+                    'tieu_de' => (string)($tb['tieu_de'] ?? ''),
+                    'noi_dung' => (string)($tb['noi_dung'] ?? ''),
+                    'da_doc' => (int)($tb['da_doc'] ?? 0),
+                    'thoi_gian_gui' => (string)($tb['thoi_gian_gui'] ?? ''),
+                    'created_at' => (string)($tb['created_at'] ?? ''),
+                ];
+            }, $items ?: []);
+
+            echo json_encode([
+                'success' => true,
+                'unread' => $unread,
+                'items' => $normalizedItems,
+            ], JSON_UNESCAPED_UNICODE);
+            exit();
+        } catch (Throwable $e) {
+            echo json_encode(['success' => false, 'unread' => 0, 'items' => []], JSON_UNESCAPED_UNICODE);
+            exit();
+        }
+    }
+
+    public function notificationStream() {
+        @set_time_limit(0);
+        @ignore_user_abort(true);
+
+        while (ob_get_level() > 0) {
+            @ob_end_flush();
+        }
+
+        header('Content-Type: text/event-stream');
+        header('Cache-Control: no-cache, no-transform');
+        header('Connection: keep-alive');
+        header('X-Accel-Buffering: no');
+
+        require_once 'models/ThongBao.php';
+
+        $userId = (int)($_SESSION['user_id'] ?? 0);
+        if ($userId <= 0) {
+            echo "event: close\n";
+            echo "data: {}\n\n";
+            @ob_flush();
+            @flush();
+            exit();
+        }
+
+        $thongBaoModel = new ThongBao();
+        $startedAt = time();
+        $lastHash = '';
+
+        while (!connection_aborted()) {
+            if ((time() - $startedAt) > 300) {
+                echo "event: close\n";
+                echo "data: {}\n\n";
+                @ob_flush();
+                @flush();
+                break;
+            }
+
+            try {
+                $items = $thongBaoModel->getByNguoiDung($userId, 50);
+                $unread = (int)$thongBaoModel->countChuaDoc($userId);
+                $payload = [
+                    'success' => true,
+                    'unread' => $unread,
+                    'items' => array_map(static function ($tb) {
+                        return [
+                            'id' => (int)($tb['id'] ?? 0),
+                            'tieu_de' => (string)($tb['tieu_de'] ?? ''),
+                            'noi_dung' => (string)($tb['noi_dung'] ?? ''),
+                            'da_doc' => (int)($tb['da_doc'] ?? 0),
+                            'thoi_gian_gui' => (string)($tb['thoi_gian_gui'] ?? ''),
+                            'created_at' => (string)($tb['created_at'] ?? ''),
+                        ];
+                    }, $items ?: []),
+                ];
+
+                $hash = md5(json_encode($payload, JSON_UNESCAPED_UNICODE));
+                if ($hash !== $lastHash) {
+                    echo "event: notification\n";
+                    echo 'data: ' . json_encode($payload, JSON_UNESCAPED_UNICODE) . "\n\n";
+                    $lastHash = $hash;
+                } else {
+                    echo ": ping\n\n";
+                }
+            } catch (Throwable $e) {
+                echo "event: notification\n";
+                echo 'data: ' . json_encode(['success' => false, 'unread' => 0, 'items' => []], JSON_UNESCAPED_UNICODE) . "\n\n";
+            }
+
+            @ob_flush();
+            @flush();
+            sleep(3);
+        }
+
+        exit();
     }
     
     // Cập nhật thông tin cá nhân
     public function capNhatThongTin() {
         require_once 'models/KhachHang.php';
         require_once 'models/NguoiDung.php';
+        $isAjaxRequest = strtolower((string)($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '')) === 'xmlhttprequest';
         
         $khachHangModel = new KhachHang();
         $nguoiDungModel = new NguoiDung();
@@ -590,6 +970,15 @@ class KhachHangController {
             if (!empty($_POST['mat_khau_moi']) && $_POST['mat_khau_moi'] === $_POST['xac_nhan_mat_khau']) {
                 $policy = validatePasswordPolicy($_POST['mat_khau_moi']);
                 if (!$policy['ok']) {
+                    if ($isAjaxRequest) {
+                        header('Content-Type: application/json; charset=utf-8');
+                        http_response_code(422);
+                        echo json_encode([
+                            'success' => false,
+                            'message' => 'Mat khau moi phai co it nhat 8 ky tu, gom chu hoa, chu thuong, so va ky tu dac biet.'
+                        ], JSON_UNESCAPED_UNICODE);
+                        exit();
+                    }
                     $_SESSION['error'] = 'Mat khau moi phai co it nhat 8 ky tu, gom chu hoa, chu thuong, so va ky tu dac biet.';
                     header('Location: index.php?act=khachHang/capNhatThongTin');
                     exit();
@@ -620,6 +1009,15 @@ class KhachHangController {
             }
             
             $_SESSION['success'] = 'Cập nhật thông tin thành công';
+            if ($isAjaxRequest) {
+                header('Content-Type: application/json; charset=utf-8');
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Cập nhật thông tin thành công',
+                    'display_name' => (string)($nguoiDungData['ho_ten'] ?? ''),
+                ], JSON_UNESCAPED_UNICODE);
+                exit();
+            }
             header('Location: index.php?act=khachHang/capNhatThongTin');
             exit();
         }

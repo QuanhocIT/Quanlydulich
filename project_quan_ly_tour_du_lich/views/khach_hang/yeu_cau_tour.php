@@ -1,202 +1,390 @@
+<?php
+$bookings = isset($bookings) && is_array($bookings) ? $bookings : [];
+$participantsByBooking = isset($participantsByBooking) && is_array($participantsByBooking) ? $participantsByBooking : [];
+$upcomingReminders = isset($upcomingReminders) && is_array($upcomingReminders) ? $upcomingReminders : [];
+
+$statusLabels = [
+    'ChoXacNhan' => 'Chờ xác nhận',
+    'DaCoc' => 'Đã cọc',
+    'HoanTat' => 'Hoàn tất',
+    'Huy' => 'Đã hủy',
+    'DaHuy' => 'Đã hủy',
+    'TuChoi' => 'Từ chối',
+];
+
+$statusClasses = [
+    'ChoXacNhan' => 'is-pending',
+    'DaCoc' => 'is-paid',
+    'HoanTat' => 'is-done',
+    'Huy' => 'is-cancelled',
+    'DaHuy' => 'is-cancelled',
+    'TuChoi' => 'is-cancelled',
+];
+
+$formatDate = static function ($value, $fallback = 'Chưa cập nhật') {
+    return !empty($value) ? date('d/m/Y', strtotime((string)$value)) : $fallback;
+};
+
+$resolveImage = static function ($image) {
+    $image = trim((string)$image);
+    if ($image === '') {
+        return 'https://images.unsplash.com/photo-1465156799763-2c087c332922?auto=format&fit=crop&w=700&q=80';
+    }
+
+    if (preg_match('/^https?:\/\//i', $image)) {
+        return $image;
+    }
+
+    return rtrim(BASE_URL, '/') . '/' . ltrim($image, '/');
+};
+
+$validBookings = array_filter($bookings, static function ($booking) {
+    return !in_array((string)($booking['trang_thai'] ?? ''), ['Huy', 'DaHuy', 'TuChoi'], true);
+});
+
+$participantMissingCount = 0;
+foreach ($bookings as $booking) {
+    $bookingId = (int)($booking['booking_id'] ?? 0);
+    if ($bookingId > 0 && empty($participantsByBooking[$bookingId])) {
+        $participantMissingCount++;
+    }
+}
+?>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Theo doi tour da dat</title>
+    <title>Theo dõi tour đã đặt</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800;900&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --trk-ink: #0f1d34;
-            --trk-muted: #607089;
-            --trk-gold: #d7ad5b;
-            --trk-gold-dark: #b98a3a;
-            --trk-card: rgba(255, 255, 255, 0.88);
-            --trk-border: rgba(15, 30, 54, 0.12);
+            --ink: #14231f;
+            --muted: #66756f;
+            --line: rgba(20, 35, 31, .12);
+            --card: rgba(255, 255, 255, .88);
+            --leaf: #17413b;
+            --teal: #0f766e;
+            --gold: #d6a851;
+            --cream: #f5ead7;
         }
+
+        * { box-sizing: border-box; }
 
         body.trk {
             min-height: 100vh;
-            color: var(--trk-ink);
-            font-family: "Manrope", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
-            background:
-                radial-gradient(1200px 620px at -8% -12%, rgba(215, 173, 91, 0.18), transparent 58%),
-                radial-gradient(900px 520px at 110% 2%, rgba(59, 130, 246, 0.14), transparent 56%),
-                linear-gradient(180deg, #f8fbff 0%, #f2f5fb 40%, #edf3fb 100%);
-        }
-
-        .trk-wrap {
-            max-width: 1240px;
-            margin: 0 auto;
-            padding: 22px 14px 42px;
-        }
-
-        .trk-hero {
-            border-radius: 24px;
-            border: 1px solid rgba(255,255,255,.5);
-            overflow: hidden;
-            background:
-                radial-gradient(circle at 18% 28%, rgba(215, 173, 91, 0.22), transparent 44%),
-                linear-gradient(115deg, rgba(8, 18, 34, 0.96), rgba(27, 48, 82, 0.88));
-            box-shadow: 0 24px 70px rgba(2, 6, 23, 0.16);
-            padding: 22px 24px;
-            position: relative;
-        }
-
-        .trk-back {
-            display: inline-flex;
-            align-items: center;
-            gap: .45rem;
-            text-decoration: none;
-            border-radius: 999px;
-            border: 1px solid rgba(255,255,255,.24);
-            background: rgba(255,255,255,.08);
-            color: rgba(255,255,255,.9);
-            padding: .46rem .72rem;
-            font-weight: 700;
-            transition: .2s ease;
-        }
-
-        .trk-back:hover {
-            color: #fff;
-            background: rgba(215, 173, 91, 0.2);
-            border-color: rgba(215, 173, 91, 0.44);
-        }
-
-        .trk-title {
-            margin: 12px 0 6px;
-            color: #fff;
-            text-align: center;
-            font-family: "Playfair Display", ui-serif, Georgia, "Times New Roman", Times, serif;
-            font-size: clamp(1.7rem, 3vw, 2.5rem);
-            letter-spacing: .2px;
-        }
-
-        .trk-sub {
             margin: 0;
-            text-align: center;
-            color: rgba(255,255,255,.82);
+            color: var(--ink);
+            font-family: "Manrope", sans-serif;
+            background:
+                radial-gradient(circle at top left, rgba(214, 168, 81, .18), transparent 30rem),
+                radial-gradient(circle at top right, rgba(15, 118, 110, .12), transparent 28rem),
+                linear-gradient(145deg, #fffaf0 0%, #eef8f5 45%, #f8fbff 100%);
         }
 
-        .trk-sub b {
-            color: rgba(215, 173, 91, 0.95);
+        .page-shell {
+            width: min(1500px, calc(100% - 48px));
+            margin: 0 auto;
+            padding: 30px 0 56px;
         }
 
-        .trk-grid {
-            margin-top: 18px;
-            row-gap: 16px;
+        .hero {
+            position: relative;
+            overflow: hidden;
+            border-radius: 32px;
+            border: 1px solid rgba(255,255,255,.62);
+            background:
+                linear-gradient(115deg, rgba(18,33,29,.94), rgba(36,82,71,.76)),
+                url('https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1800&q=80') center/cover;
+            box-shadow: 0 30px 80px rgba(18,33,29,.18);
+            color: #fff;
+            padding: 28px;
         }
 
-        .trk-card {
-            border-radius: 22px;
-            border: 1px solid var(--trk-border);
-            background: var(--trk-card);
-            backdrop-filter: blur(10px);
-            box-shadow: 0 20px 58px rgba(2, 6, 23, 0.12);
-            padding: 18px;
-            height: 100%;
-        }
-
-        .trk-card h2 {
-            margin: 0 0 12px;
+        .hero-top {
             display: flex;
             align-items: center;
-            gap: .55rem;
-            font-size: 1.24rem;
-            font-weight: 900;
+            justify-content: space-between;
+            gap: 14px;
+            position: relative;
+            z-index: 1;
         }
 
-        .trk-card h2::after {
-            content: "";
-            margin-left: auto;
-            width: 56px;
-            height: 2px;
+        .back-link,
+        .hero-action,
+        .ghost-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
             border-radius: 999px;
-            background: linear-gradient(90deg, var(--trk-gold), transparent);
+            text-decoration: none;
+            font-weight: 900;
+            white-space: nowrap;
         }
 
-        .booking-grid {
-            display: grid;
-            gap: 12px;
+        .back-link {
+            color: #fff;
+            border: 1px solid rgba(255,255,255,.28);
+            background: rgba(255,255,255,.12);
+            padding: 10px 16px;
         }
 
-        .booking-item {
-            border-radius: 16px;
-            border: 1px solid rgba(15, 30, 54, 0.1);
-            background: rgba(255,255,255,.78);
-            padding: 10px;
-            display: grid;
-            grid-template-columns: 84px 1fr;
+        .hero-actions {
+            display: flex;
+            flex-wrap: wrap;
             gap: 10px;
         }
 
+        .hero-action {
+            color: #13231f;
+            background: linear-gradient(135deg, #f0cc78, #d6a851);
+            padding: 10px 16px;
+        }
+
+        .ghost-link {
+            color: #f7dfac;
+            border: 1px solid rgba(214,168,81,.4);
+            background: rgba(255,255,255,.08);
+            padding: 10px 16px;
+        }
+
+        .hero h1 {
+            max-width: 820px;
+            margin: 44px 0 12px;
+            font-family: "Playfair Display", serif;
+            font-size: clamp(2.5rem, 5vw, 5rem);
+            line-height: .96;
+        }
+
+        .hero p {
+            max-width: 720px;
+            margin: 0;
+            color: rgba(255,255,255,.82);
+            font-size: 1.05rem;
+            line-height: 1.7;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 14px;
+            margin: 22px 0;
+        }
+
+        .stat-card,
+        .panel,
+        .booking-card {
+            border: 1px solid var(--line);
+            background: var(--card);
+            box-shadow: 0 18px 50px rgba(18,33,29,.08);
+            backdrop-filter: blur(12px);
+        }
+
+        .stat-card {
+            border-radius: 22px;
+            padding: 18px;
+        }
+
+        .stat-card span {
+            display: block;
+            color: var(--muted);
+            font-size: .78rem;
+            font-weight: 900;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+        }
+
+        .stat-card strong {
+            display: block;
+            margin-top: 8px;
+            font-size: 2rem;
+            line-height: 1;
+        }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1.65fr) minmax(340px, .85fr);
+            gap: 22px;
+            align-items: start;
+        }
+
+        .panel {
+            border-radius: 28px;
+            padding: 22px;
+        }
+
+        .panel + .panel {
+            margin-top: 22px;
+        }
+
+        .panel-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .panel-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 0;
+            font-size: 1.28rem;
+            font-weight: 900;
+        }
+
+        .panel-title i { color: var(--teal); }
+
+        .booking-list {
+            display: grid;
+            gap: 16px;
+        }
+
+        .booking-card {
+            display: grid;
+            grid-template-columns: 190px minmax(0, 1fr);
+            gap: 18px;
+            border-radius: 24px;
+            overflow: hidden;
+            padding: 14px;
+        }
+
         .booking-thumb {
-            width: 84px;
-            height: 84px;
-            border-radius: 12px;
+            width: 100%;
+            height: 170px;
+            border-radius: 18px;
             object-fit: cover;
-            border: 1px solid rgba(15,30,54,.12);
             background: #e5ebf4;
         }
 
-        .booking-name {
+        .booking-body {
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .booking-title-row {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 14px;
+            margin-bottom: 8px;
+        }
+
+        .booking-title {
             margin: 0;
-            font-size: 1.04rem;
+            font-size: 1.18rem;
             font-weight: 900;
-            color: #13213b;
-        }
-
-        .meta-row {
-            font-size: .9rem;
-            color: var(--trk-muted);
-            margin-top: 2px;
-        }
-
-        .meta-row b {
-            color: #1c2f4d;
-            font-weight: 800;
+            line-height: 1.35;
         }
 
         .status-badge {
             border-radius: 999px;
-            padding: .3rem .7rem;
+            padding: 7px 12px;
             font-size: .78rem;
             font-weight: 900;
-            border: 1px solid rgba(15,30,54,.14);
-            background: rgba(15,30,54,.08);
-            color: #223655;
-            display: inline-block;
-            margin-top: 8px;
+            border: 1px solid rgba(20,35,31,.12);
+            color: #233832;
+            background: rgba(20,35,31,.08);
+            white-space: nowrap;
         }
 
-        .status-ChoXacNhan { background: rgba(249, 115, 22, 0.16); color: #9a3412; border-color: rgba(249, 115, 22, 0.32); }
-        .status-DaCoc { background: rgba(59, 130, 246, 0.16); color: #1d4ed8; border-color: rgba(59, 130, 246, 0.32); }
-        .status-HoanTat { background: rgba(16, 185, 129, 0.16); color: #047857; border-color: rgba(16, 185, 129, 0.32); }
+        .status-badge.is-pending { color: #9a3412; background: rgba(249,115,22,.15); border-color: rgba(249,115,22,.28); }
+        .status-badge.is-paid { color: #1d4ed8; background: rgba(59,130,246,.15); border-color: rgba(59,130,246,.28); }
+        .status-badge.is-done { color: #047857; background: rgba(16,185,129,.15); border-color: rgba(16,185,129,.28); }
+        .status-badge.is-cancelled { color: #b42318; background: rgba(239,68,68,.12); border-color: rgba(239,68,68,.24); }
 
-        .participant-scroll,
-        .reminder-scroll {
-            max-height: 560px;
+        .booking-meta {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+            margin: 8px 0 14px;
+        }
+
+        .meta-item {
+            display: flex;
+            gap: 9px;
+            color: var(--muted);
+            font-size: .92rem;
+            font-weight: 700;
+            min-width: 0;
+        }
+
+        .meta-item i {
+            color: var(--teal);
+            flex: 0 0 auto;
+        }
+
+        .meta-item b {
+            color: var(--ink);
+            font-weight: 900;
+        }
+
+        .booking-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: auto;
+        }
+
+        .action-primary,
+        .action-soft {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            min-height: 42px;
+            border-radius: 999px;
+            padding: 10px 15px;
+            text-decoration: none;
+            font-size: .88rem;
+            font-weight: 900;
+        }
+
+        .action-primary {
+            background: var(--leaf);
+            color: #fff;
+        }
+
+        .action-soft {
+            background: var(--cream);
+            color: var(--leaf);
+            border: 1px solid rgba(214,168,81,.3);
+        }
+
+        .side-scroll {
+            display: grid;
+            gap: 12px;
+            max-height: 520px;
             overflow: auto;
-            padding-right: 2px;
+            padding-right: 4px;
         }
 
-        .participant-block {
-            border: 1px solid rgba(15,30,54,.1);
-            border-radius: 14px;
-            background: rgba(255,255,255,.74);
-            padding: 10px;
-            margin-bottom: 10px;
+        .side-card {
+            border: 1px solid rgba(20,35,31,.1);
+            border-radius: 18px;
+            background: rgba(255,255,255,.76);
+            padding: 14px;
         }
 
-        .participant-head {
-            font-weight: 800;
-            color: #172b4b;
-            margin-bottom: 6px;
-            font-size: .95rem;
+        .side-card h3 {
+            margin: 0 0 8px;
+            font-size: .98rem;
+            line-height: 1.45;
+            font-weight: 900;
+        }
+
+        .side-card p {
+            margin: 0 0 10px;
+            color: var(--muted);
+            font-size: .9rem;
+            line-height: 1.6;
         }
 
         .participant-list {
@@ -208,148 +396,167 @@
             gap: 4px;
         }
 
-        .reminder-item {
-            border: 1px solid rgba(15,30,54,.1);
-            border-radius: 14px;
-            background: rgba(255,255,255,.78);
-            padding: 11px 12px;
-            margin-bottom: 10px;
-            position: relative;
-        }
-
-        .reminder-item.urgent {
-            border-color: rgba(220, 53, 69, 0.28);
-            background: rgba(220, 53, 69, 0.08);
-        }
-
-        .reminder-days {
+        .days-pill {
             display: inline-flex;
             align-items: center;
-            gap: .35rem;
+            gap: 6px;
             border-radius: 999px;
-            padding: .2rem .6rem;
-            font-size: .78rem;
-            font-weight: 900;
-            background: rgba(15, 30, 54, 0.1);
+            padding: 6px 10px;
             color: #1d3354;
+            background: rgba(15,30,54,.09);
+            font-size: .8rem;
+            font-weight: 900;
         }
 
-        .reminder-item.urgent .reminder-days {
-            background: rgba(220, 53, 69, 0.18);
+        .side-card.is-urgent {
+            border-color: rgba(220,53,69,.3);
+            background: rgba(220,53,69,.08);
+        }
+
+        .side-card.is-urgent .days-pill {
             color: #9f1239;
+            background: rgba(220,53,69,.16);
         }
 
-        .empty-box {
-            border-radius: 16px;
-            border: 1px dashed rgba(15,30,54,.22);
-            background: rgba(255,255,255,.6);
-            color: var(--trk-muted);
+        .empty-state {
+            border: 1px dashed rgba(20,35,31,.22);
+            border-radius: 22px;
+            background: rgba(255,255,255,.65);
+            color: var(--muted);
             text-align: center;
-            padding: 30px 14px;
-            font-weight: 600;
+            padding: 38px 18px;
+            font-weight: 700;
         }
 
-        .helper-link {
-            margin-top: 10px;
-            display: inline-flex;
-            align-items: center;
-            gap: .45rem;
-            border-radius: 999px;
-            border: 1px solid rgba(185,138,58,.42);
-            text-decoration: none;
-            color: #865f22;
-            background: rgba(215,173,91,.12);
-            padding: .34rem .74rem;
-            font-size: .82rem;
-            font-weight: 800;
+        .empty-state i {
+            display: block;
+            margin-bottom: 10px;
+            color: var(--gold);
+            font-size: 2rem;
         }
 
-        .helper-link:hover {
-            color: #6e4e1d;
-            background: rgba(215,173,91,.2);
+        @media (max-width: 1100px) {
+            .content-grid { grid-template-columns: 1fr; }
+            .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
 
-        @media (max-width: 991.98px) {
-            .trk-card {
-                padding: 14px;
+        @media (max-width: 768px) {
+            .page-shell {
+                width: min(100% - 24px, 1500px);
+                padding-top: 18px;
             }
 
-            .booking-item {
-                grid-template-columns: 74px 1fr;
+            .hero {
+                border-radius: 24px;
+                padding: 20px;
             }
 
-            .booking-thumb {
-                width: 74px;
-                height: 74px;
+            .hero-top {
+                align-items: flex-start;
+                flex-direction: column;
             }
+
+            .hero h1 { margin-top: 28px; }
+            .stats-grid { grid-template-columns: 1fr; }
+            .booking-card { grid-template-columns: 1fr; }
+            .booking-thumb { height: 220px; }
+            .booking-meta { grid-template-columns: 1fr; }
+            .panel { padding: 18px; }
         }
     </style>
 </head>
 <body class="trk">
-<?php
-$bookings = isset($bookings) && is_array($bookings) ? $bookings : [];
-$participantsByBooking = isset($participantsByBooking) && is_array($participantsByBooking) ? $participantsByBooking : [];
-$upcomingReminders = isset($upcomingReminders) && is_array($upcomingReminders) ? $upcomingReminders : [];
+    <main class="page-shell">
+        <section class="hero">
+            <div class="hero-top">
+                <a class="back-link" href="index.php?act=khachHang/dashboard">
+                    <i class="bi bi-arrow-left"></i> Trang chủ
+                </a>
+                <div class="hero-actions">
+                    <a class="ghost-link" href="index.php?act=khachHang/danhSachTour"><i class="bi bi-compass"></i> Khám phá tour</a>
+                    <a class="hero-action" href="index.php?act=khachHang/hoaDon"><i class="bi bi-receipt"></i> Hóa đơn</a>
+                </div>
+            </div>
+            <h1>Theo dõi tour đã đặt</h1>
+            <p>Quản lý booking, thông tin người tham gia, hóa đơn và nhắc nhở khởi hành trong một màn hình rõ ràng hơn.</p>
+        </section>
 
-$statusClassMap = [
-    'ChoXacNhan' => 'status-ChoXacNhan',
-    'DaCoc' => 'status-DaCoc',
-    'HoanTat' => 'status-HoanTat',
-];
-?>
+        <?php if (isset($_SESSION['success'])): ?>
+            <div class="alert alert-success mt-3 mb-0">
+                <?php echo htmlspecialchars($_SESSION['success']); unset($_SESSION['success']); ?>
+            </div>
+        <?php endif; ?>
 
-<div class="trk-wrap">
-    <header class="trk-hero">
-        <a class="trk-back" href="index.php?act=khachHang/dashboard">
-            <i class="bi bi-arrow-left"></i> Trang chu
-        </a>
-        <h1 class="trk-title">Tour da dat cua ban</h1>
-        <p class="trk-sub">Theo doi <b>booking</b>, danh sach nguoi tham gia va nhac nho tour sap khoi hanh.</p>
-    </header>
+        <?php if (isset($_SESSION['error'])): ?>
+            <div class="alert alert-danger mt-3 mb-0">
+                <?php echo htmlspecialchars($_SESSION['error']); unset($_SESSION['error']); ?>
+            </div>
+        <?php endif; ?>
 
-    <?php if (isset($_SESSION['success'])): ?>
-        <div class="alert alert-success mt-3 mb-0">
-            <?php echo htmlspecialchars($_SESSION['success']); unset($_SESSION['success']); ?>
-        </div>
-    <?php endif; ?>
+        <section class="stats-grid" aria-label="Tổng quan booking">
+            <div class="stat-card">
+                <span>Tổng booking</span>
+                <strong><?php echo count($bookings); ?></strong>
+            </div>
+            <div class="stat-card">
+                <span>Đang hiệu lực</span>
+                <strong><?php echo count($validBookings); ?></strong>
+            </div>
+            <div class="stat-card">
+                <span>Cần nhập người tham gia</span>
+                <strong><?php echo $participantMissingCount; ?></strong>
+            </div>
+            <div class="stat-card">
+                <span>Sắp khởi hành</span>
+                <strong><?php echo count($upcomingReminders); ?></strong>
+            </div>
+        </section>
 
-    <?php if (isset($_SESSION['error'])): ?>
-        <div class="alert alert-danger mt-3 mb-0">
-            <?php echo htmlspecialchars($_SESSION['error']); unset($_SESSION['error']); ?>
-        </div>
-    <?php endif; ?>
-
-    <div class="row trk-grid">
-        <div class="col-lg-6">
-            <section class="trk-card">
-                <h2><i class="bi bi-suitcase2"></i> Tour da dat</h2>
+        <section class="content-grid">
+            <div class="panel">
+                <div class="panel-head">
+                    <h2 class="panel-title"><i class="bi bi-suitcase2"></i> Tour đã đặt</h2>
+                </div>
 
                 <?php if (!empty($bookings)): ?>
-                    <div class="booking-grid">
+                    <div class="booking-list">
                         <?php foreach ($bookings as $booking): ?>
                             <?php
                                 $bookingId = (int)($booking['booking_id'] ?? 0);
                                 $status = (string)($booking['trang_thai'] ?? 'Khac');
-                                $statusClass = $statusClassMap[$status] ?? '';
-                                $img = trim((string)($booking['hinh_anh'] ?? ''));
-                                if ($img === '') {
-                                    $img = 'https://dummyimage.com/300x300/e5ebf4/8aa0be&text=Tour';
-                                }
-                                $ngayDat = !empty($booking['ngay_dat']) ? date('d/m/Y', strtotime($booking['ngay_dat'])) : 'N/A';
-                                $ngayKhoiHanh = !empty($booking['ngay_khoi_hanh']) ? date('d/m/Y', strtotime($booking['ngay_khoi_hanh'])) : 'Chua cap nhat';
+                                $statusLabel = $statusLabels[$status] ?? $status;
+                                $statusClass = $statusClasses[$status] ?? '';
+                                $image = $resolveImage($booking['hinh_anh'] ?? '');
+                                $title = (string)($booking['ten_tour'] ?? ('Booking #' . $bookingId));
+                                $ngayDat = $formatDate($booking['ngay_dat'] ?? '', 'N/A');
+                                $ngayKhoiHanh = $formatDate($booking['ngay_khoi_hanh'] ?? '');
+                                $soNguoi = (int)($booking['so_nguoi'] ?? 0);
                                 $tongTien = (float)($booking['tong_tien'] ?? 0);
+                                $hasParticipants = !empty($participantsByBooking[$bookingId]);
                             ?>
-                            <article class="booking-item">
-                                <img class="booking-thumb" src="<?php echo htmlspecialchars($img); ?>" alt="Anh tour" loading="lazy">
-                                <div>
-                                    <p class="booking-name"><?php echo htmlspecialchars((string)($booking['ten_tour'] ?? ('Booking #' . $bookingId))); ?></p>
-                                    <div class="meta-row"><b>Booking:</b> #<?php echo $bookingId; ?> | <b>Ngay dat:</b> <?php echo htmlspecialchars($ngayDat); ?></div>
-                                    <div class="meta-row"><b>Khoi hanh:</b> <?php echo htmlspecialchars($ngayKhoiHanh); ?> | <b>So nguoi:</b> <?php echo (int)($booking['so_nguoi'] ?? 0); ?></div>
-                                    <div class="meta-row"><b>Tong tien:</b> <?php echo number_format($tongTien); ?>d</div>
-                                    <span class="status-badge <?php echo htmlspecialchars($statusClass); ?>"><?php echo htmlspecialchars($status); ?></span>
-                                    <div>
-                                        <a class="helper-link" href="index.php?act=khachHang/hoaDon&booking_id=<?php echo $bookingId; ?>">
-                                            <i class="bi bi-receipt"></i> Xem hoa don
+                            <article class="booking-card">
+                                <img class="booking-thumb" src="<?php echo htmlspecialchars($image); ?>" alt="<?php echo htmlspecialchars($title); ?>" loading="lazy">
+                                <div class="booking-body">
+                                    <div class="booking-title-row">
+                                        <h3 class="booking-title"><?php echo htmlspecialchars($title); ?></h3>
+                                        <span class="status-badge <?php echo htmlspecialchars($statusClass); ?>"><?php echo htmlspecialchars($statusLabel); ?></span>
+                                    </div>
+
+                                    <div class="booking-meta">
+                                        <div class="meta-item"><i class="bi bi-hash"></i><span>Booking: <b>#<?php echo $bookingId; ?></b></span></div>
+                                        <div class="meta-item"><i class="bi bi-calendar-plus"></i><span>Ngày đặt: <b><?php echo htmlspecialchars($ngayDat); ?></b></span></div>
+                                        <div class="meta-item"><i class="bi bi-calendar-event"></i><span>Khởi hành: <b><?php echo htmlspecialchars($ngayKhoiHanh); ?></b></span></div>
+                                        <div class="meta-item"><i class="bi bi-people"></i><span>Số người: <b><?php echo $soNguoi; ?></b></span></div>
+                                        <div class="meta-item"><i class="bi bi-cash-coin"></i><span>Tổng tiền: <b><?php echo number_format($tongTien); ?>đ</b></span></div>
+                                        <div class="meta-item"><i class="bi bi-person-vcard"></i><span>Người tham gia: <b><?php echo $hasParticipants ? 'Đã nhập' : 'Chưa nhập'; ?></b></span></div>
+                                    </div>
+
+                                    <div class="booking-actions">
+                                        <a class="action-primary" href="index.php?act=khachHang/hoaDon&booking_id=<?php echo $bookingId; ?>">
+                                            <i class="bi bi-receipt"></i> Xem hóa đơn
+                                        </a>
+                                        <a class="action-soft" href="index.php?act=khachHang/nhapThongTinThamGia&booking_id=<?php echo $bookingId; ?>">
+                                            <i class="bi bi-person-vcard"></i> <?php echo $hasParticipants ? 'Cập nhật người tham gia' : 'Nhập người tham gia'; ?>
                                         </a>
                                     </div>
                                 </div>
@@ -357,91 +564,94 @@ $statusClassMap = [
                         <?php endforeach; ?>
                     </div>
                 <?php else: ?>
-                    <div class="empty-box">
-                        Ban chua co booking nao.
-                        <div class="mt-2">
-                            <a class="helper-link" href="index.php?act=khachHang/dashboard#tours"><i class="bi bi-compass"></i> Kham pha tour</a>
+                    <div class="empty-state">
+                        <i class="bi bi-map"></i>
+                        Bạn chưa có booking nào.
+                        <div class="mt-3">
+                            <a class="action-primary" href="index.php?act=khachHang/danhSachTour">Khám phá tour</a>
                         </div>
                     </div>
                 <?php endif; ?>
-            </section>
-        </div>
+            </div>
 
-        <div class="col-lg-3">
-            <section class="trk-card">
-                <h2><i class="bi bi-people"></i> Nguoi duoc dat</h2>
-                <div class="participant-scroll">
-                    <?php if (!empty($bookings)): ?>
-                        <?php foreach ($bookings as $booking): ?>
-                            <?php
-                                $bookingId = (int)($booking['booking_id'] ?? 0);
-                                $rows = $participantsByBooking[$bookingId] ?? [];
-                            ?>
-                            <div class="participant-block">
-                                <div class="participant-head">Booking #<?php echo $bookingId; ?> - <?php echo htmlspecialchars((string)($booking['ten_tour'] ?? 'Tour')); ?></div>
-                                <?php if (!empty($rows)): ?>
-                                    <ol class="participant-list">
-                                        <?php foreach ($rows as $row): ?>
-                                            <?php
-                                                $name = trim((string)($row['ho_ten'] ?? 'Khach')); 
-                                                $doc = trim((string)($row['so_cmnd'] ?? $row['so_passport'] ?? ''));
-                                            ?>
-                                            <li>
-                                                <?php echo htmlspecialchars($name); ?>
-                                                <?php if ($doc !== ''): ?>
-                                                    - <?php echo htmlspecialchars($doc); ?>
-                                                <?php endif; ?>
-                                            </li>
-                                        <?php endforeach; ?>
-                                    </ol>
-                                <?php else: ?>
-                                    <div class="meta-row">Chua khai bao thong tin nguoi tham gia.</div>
-                                    <a class="helper-link" href="index.php?act=khachHang/nhapThongTinThamGia&booking_id=<?php echo $bookingId; ?>">
-                                        <i class="bi bi-person-vcard"></i> Nhap thong tin
-                                    </a>
-                                <?php endif; ?>
-                            </div>
-                        <?php endforeach; ?>
-                    <?php else: ?>
-                        <div class="empty-box">Chua co du lieu nguoi tham gia.</div>
-                    <?php endif; ?>
-                </div>
-            </section>
-        </div>
+            <aside>
+                <section class="panel">
+                    <div class="panel-head">
+                        <h2 class="panel-title"><i class="bi bi-people"></i> Người tham gia</h2>
+                    </div>
+                    <div class="side-scroll">
+                        <?php if (!empty($bookings)): ?>
+                            <?php foreach ($bookings as $booking): ?>
+                                <?php
+                                    $bookingId = (int)($booking['booking_id'] ?? 0);
+                                    $rows = $participantsByBooking[$bookingId] ?? [];
+                                    $title = (string)($booking['ten_tour'] ?? ('Booking #' . $bookingId));
+                                ?>
+                                <article class="side-card">
+                                    <h3>Booking #<?php echo $bookingId; ?> - <?php echo htmlspecialchars($title); ?></h3>
+                                    <?php if (!empty($rows)): ?>
+                                        <ol class="participant-list">
+                                            <?php foreach ($rows as $row): ?>
+                                                <?php
+                                                    $name = trim((string)($row['ho_ten'] ?? 'Khách'));
+                                                    $doc = trim((string)($row['so_cmnd'] ?? $row['so_passport'] ?? ''));
+                                                ?>
+                                                <li>
+                                                    <?php echo htmlspecialchars($name); ?>
+                                                    <?php if ($doc !== ''): ?>
+                                                        - <?php echo htmlspecialchars($doc); ?>
+                                                    <?php endif; ?>
+                                                </li>
+                                            <?php endforeach; ?>
+                                        </ol>
+                                    <?php else: ?>
+                                        <p>Chưa khai báo thông tin người tham gia.</p>
+                                        <a class="action-soft" href="index.php?act=khachHang/nhapThongTinThamGia&booking_id=<?php echo $bookingId; ?>">
+                                            <i class="bi bi-person-vcard"></i> Nhập thông tin
+                                        </a>
+                                    <?php endif; ?>
+                                </article>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <div class="empty-state"><i class="bi bi-person-lines-fill"></i> Chưa có dữ liệu người tham gia.</div>
+                        <?php endif; ?>
+                    </div>
+                </section>
 
-        <div class="col-lg-3">
-            <section class="trk-card">
-                <h2><i class="bi bi-alarm"></i> Nhac khoi hanh</h2>
-                <div class="reminder-scroll">
-                    <?php if (!empty($upcomingReminders)): ?>
-                        <?php foreach ($upcomingReminders as $remind): ?>
-                            <?php
-                                $days = (int)($remind['days_left'] ?? 0);
-                                $urgent = !empty($remind['is_urgent']);
-                                $bookingId = (int)($remind['booking_id'] ?? 0);
-                                $ngayKhoiHanh = !empty($remind['ngay_khoi_hanh']) ? date('d/m/Y', strtotime($remind['ngay_khoi_hanh'])) : 'N/A';
-                            ?>
-                            <article class="reminder-item <?php echo $urgent ? 'urgent' : ''; ?>">
-                                <div class="d-flex align-items-center justify-content-between gap-2">
-                                    <strong><?php echo htmlspecialchars((string)($remind['ten_tour'] ?? ('Booking #' . $bookingId))); ?></strong>
-                                    <span class="reminder-days"><i class="bi bi-clock-history"></i> <?php echo $days; ?> ngay</span>
-                                </div>
-                                <div class="meta-row mt-1"><b>Khoi hanh:</b> <?php echo htmlspecialchars($ngayKhoiHanh); ?></div>
-                                <div class="meta-row"><b>So nguoi:</b> <?php echo (int)($remind['so_nguoi'] ?? 0); ?></div>
-                                <?php if ($urgent): ?>
-                                    <div class="meta-row" style="color:#9f1239;"><b>Luu y:</b> Tour sap khoi hanh, vui long kiem tra giay to va lich trinh.</div>
-                                <?php endif; ?>
-                            </article>
-                        <?php endforeach; ?>
-                    <?php else: ?>
-                        <div class="empty-box">Khong co tour sap khoi hanh.</div>
-                    <?php endif; ?>
-                </div>
-            </section>
-        </div>
-    </div>
-</div>
+                <section class="panel">
+                    <div class="panel-head">
+                        <h2 class="panel-title"><i class="bi bi-alarm"></i> Nhắc khởi hành</h2>
+                    </div>
+                    <div class="side-scroll">
+                        <?php if (!empty($upcomingReminders)): ?>
+                            <?php foreach ($upcomingReminders as $remind): ?>
+                                <?php
+                                    $days = (int)($remind['days_left'] ?? 0);
+                                    $urgent = !empty($remind['is_urgent']);
+                                    $bookingId = (int)($remind['booking_id'] ?? 0);
+                                    $title = (string)($remind['ten_tour'] ?? ('Booking #' . $bookingId));
+                                    $ngayKhoiHanh = $formatDate($remind['ngay_khoi_hanh'] ?? '', 'N/A');
+                                ?>
+                                <article class="side-card <?php echo $urgent ? 'is-urgent' : ''; ?>">
+                                    <div class="d-flex align-items-start justify-content-between gap-2">
+                                        <h3><?php echo htmlspecialchars($title); ?></h3>
+                                        <span class="days-pill"><i class="bi bi-clock-history"></i> <?php echo $days; ?> ngày</span>
+                                    </div>
+                                    <p><b>Khởi hành:</b> <?php echo htmlspecialchars($ngayKhoiHanh); ?><br><b>Số người:</b> <?php echo (int)($remind['so_nguoi'] ?? 0); ?></p>
+                                    <?php if ($urgent): ?>
+                                        <p class="mb-0" style="color:#9f1239;"><b>Lưu ý:</b> Tour sắp khởi hành, vui lòng kiểm tra giấy tờ và lịch trình.</p>
+                                    <?php endif; ?>
+                                </article>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <div class="empty-state"><i class="bi bi-calendar-check"></i> Không có tour sắp khởi hành.</div>
+                        <?php endif; ?>
+                    </div>
+                </section>
+            </aside>
+        </section>
+    </main>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

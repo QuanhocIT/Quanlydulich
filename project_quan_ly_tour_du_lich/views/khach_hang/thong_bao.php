@@ -52,51 +52,252 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h5 class="mb-0">Bạn có <span class="text-primary"><?php echo $thongBaoChuaDoc; ?></span> thông báo chưa đọc</h5>
+                        <h5 class="mb-0">Bạn có <span class="text-primary" id="notificationUnreadCount"><?php echo $thongBaoChuaDoc; ?></span> thông báo chưa đọc</h5>
                     </div>
                 </div>
             </div>
         </div>
 
-        <?php if (!empty($thongBaoList)): ?>
-            <?php foreach ($thongBaoList as $tb): ?>
-                <div class="notification-card <?php echo empty($tb['da_doc']) || $tb['da_doc'] == 0 ? 'unread' : 'read'; ?>">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div class="flex-grow-1">
-                            <div class="d-flex align-items-center mb-2">
-                                <h5 class="mb-0 me-2"><?php echo htmlspecialchars($tb['tieu_de'] ?? ''); ?></h5>
-                                <?php if (empty($tb['da_doc']) || $tb['da_doc'] == 0): ?>
-                                    <span class="badge bg-primary">Mới</span>
-                                <?php endif; ?>
+        <div id="notificationList">
+            <?php if (!empty($thongBaoList)): ?>
+                <?php foreach ($thongBaoList as $tb): ?>
+                    <div class="notification-card <?php echo empty($tb['da_doc']) || $tb['da_doc'] == 0 ? 'unread' : 'read'; ?>" data-notification-id="<?php echo (int)($tb['id'] ?? 0); ?>">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center mb-2">
+                                    <h5 class="mb-0 me-2"><?php echo htmlspecialchars($tb['tieu_de'] ?? ''); ?></h5>
+                                    <?php if (empty($tb['da_doc']) || $tb['da_doc'] == 0): ?>
+                                        <span class="badge bg-primary">Mới</span>
+                                    <?php endif; ?>
+                                </div>
+                                <p class="text-muted mb-2"><?php echo nl2br(htmlspecialchars($tb['noi_dung'] ?? '')); ?></p>
+                                <small class="text-muted">
+                                    <i class="bi bi-clock me-1"></i>
+                                    <?php 
+                                    if (!empty($tb['thoi_gian_gui'])) {
+                                        echo date('d/m/Y H:i', strtotime($tb['thoi_gian_gui']));
+                                    } elseif (!empty($tb['created_at'])) {
+                                        echo date('d/m/Y H:i', strtotime($tb['created_at']));
+                                    }
+                                    ?>
+                                </small>
                             </div>
-                            <p class="text-muted mb-2"><?php echo nl2br(htmlspecialchars($tb['noi_dung'] ?? '')); ?></p>
-                            <small class="text-muted">
-                                <i class="bi bi-clock me-1"></i>
-                                <?php 
-                                if (!empty($tb['thoi_gian_gui'])) {
-                                    echo date('d/m/Y H:i', strtotime($tb['thoi_gian_gui']));
-                                } elseif (!empty($tb['created_at'])) {
-                                    echo date('d/m/Y H:i', strtotime($tb['created_at']));
-                                }
-                                ?>
-                            </small>
+                            <?php if (empty($tb['da_doc']) || $tb['da_doc'] == 0): ?>
+                                <button type="button" class="btn btn-sm btn-outline-primary ms-2 js-mark-read-btn" data-id="<?php echo (int)($tb['id'] ?? 0); ?>">
+                                    <i class="bi bi-check"></i> Đánh dấu đã đọc
+                                </button>
+                            <?php endif; ?>
                         </div>
-                        <?php if (empty($tb['da_doc']) || $tb['da_doc'] == 0): ?>
-                            <a href="index.php?act=khachHang/thongBao&mark_read=<?php echo $tb['id']; ?>" class="btn btn-sm btn-outline-primary ms-2">
-                                <i class="bi bi-check"></i> Đánh dấu đã đọc
-                            </a>
-                        <?php endif; ?>
                     </div>
-                </div>
-            <?php endforeach; ?>
-        <?php else: ?>
-            <div class="alert alert-info">
-                <i class="bi bi-info-circle me-2"></i>Bạn chưa có thông báo nào.
-            </div>
-        <?php endif; ?>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </div>
+
+        <div class="alert alert-info" id="notificationEmptyState" <?php if (!empty($thongBaoList)): ?>style="display:none"<?php endif; ?>>
+            <i class="bi bi-info-circle me-2"></i>Bạn chưa có thông báo nào.
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var notificationUnreadCount = document.getElementById('notificationUnreadCount');
+        var notificationList = document.getElementById('notificationList');
+        var notificationEmptyState = document.getElementById('notificationEmptyState');
+        var notificationEventSource = null;
+        var pollingTimerId = null;
+        var visiblePollingMs = 5000;
+        var hiddenPollingMs = 20000;
+
+        function escapeHtml(value) {
+            return String(value || '').replace(/[&<>'"]/g, function (char) {
+                return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\'': '&#39;', '"': '&quot;' })[char];
+            });
+        }
+
+        function formatDate(value) {
+            if (!value) return '';
+            var parsed = new Date(value.replace(' ', 'T'));
+            if (Number.isNaN(parsed.getTime())) return escapeHtml(value);
+            return parsed.toLocaleString('vi-VN', { hour12: false });
+        }
+
+        function setUnreadCount(count) {
+            if (notificationUnreadCount) {
+                notificationUnreadCount.textContent = String(Number(count || 0));
+            }
+        }
+
+        function buildNotificationHtml(item) {
+            var isUnread = Number(item.da_doc || 0) === 0;
+            var timestamp = item.thoi_gian_gui || item.created_at || '';
+            return '<div class="notification-card ' + (isUnread ? 'unread' : 'read') + '" data-notification-id="' + Number(item.id || 0) + '">' +
+                '<div class="d-flex justify-content-between align-items-start">' +
+                    '<div class="flex-grow-1">' +
+                        '<div class="d-flex align-items-center mb-2">' +
+                            '<h5 class="mb-0 me-2">' + escapeHtml(item.tieu_de || '') + '</h5>' +
+                            (isUnread ? '<span class="badge bg-primary">Mới</span>' : '') +
+                        '</div>' +
+                        '<p class="text-muted mb-2">' + escapeHtml(item.noi_dung || '').replace(/\n/g, '<br>') + '</p>' +
+                        '<small class="text-muted"><i class="bi bi-clock me-1"></i>' + formatDate(timestamp) + '</small>' +
+                    '</div>' +
+                    (isUnread ?
+                        '<button type="button" class="btn btn-sm btn-outline-primary ms-2 js-mark-read-btn" data-id="' + Number(item.id || 0) + '"><i class="bi bi-check"></i> Đánh dấu đã đọc</button>'
+                        : '') +
+                '</div>' +
+            '</div>';
+        }
+
+        function renderNotificationList(items) {
+            if (!notificationList) return;
+
+            if (!Array.isArray(items) || items.length === 0) {
+                notificationList.innerHTML = '';
+                if (notificationEmptyState) notificationEmptyState.style.display = 'block';
+                return;
+            }
+
+            if (notificationEmptyState) notificationEmptyState.style.display = 'none';
+            notificationList.innerHTML = items.map(buildNotificationHtml).join('');
+        }
+
+        async function fetchNotificationFeed() {
+            try {
+                var response = await fetch('index.php?act=khachHang/notificationFeed&_ts=' + Date.now(), {
+                    method: 'GET',
+                    credentials: 'same-origin',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                if (!response.ok) return;
+                var data = await response.json();
+                if (!data || data.success !== true) return;
+
+                setUnreadCount(data.unread || 0);
+                renderNotificationList(data.items || []);
+            } catch (error) {
+                // Bỏ qua lỗi mạng tạm thời.
+            }
+        }
+
+        function openNotificationStream() {
+            if (typeof EventSource === 'undefined') {
+                startNotificationPolling();
+                return;
+            }
+
+            if (notificationEventSource) {
+                notificationEventSource.close();
+                notificationEventSource = null;
+            }
+
+            notificationEventSource = new EventSource('index.php?act=khachHang/notificationStream');
+            notificationEventSource.addEventListener('notification', function (event) {
+                try {
+                    var payload = JSON.parse(event.data || '{}');
+                    if (!payload || payload.success !== true) return;
+                    setUnreadCount(payload.unread || 0);
+                    renderNotificationList(payload.items || []);
+                } catch (error) {
+                    // Bỏ qua payload không hợp lệ.
+                }
+            });
+
+            notificationEventSource.onerror = function () {
+                if (notificationEventSource) {
+                    notificationEventSource.close();
+                    notificationEventSource = null;
+                }
+                startNotificationPolling();
+            };
+        }
+
+        function stopNotificationStream() {
+            if (notificationEventSource) {
+                notificationEventSource.close();
+                notificationEventSource = null;
+            }
+        }
+
+        function startNotificationPolling() {
+            if (pollingTimerId) {
+                window.clearInterval(pollingTimerId);
+            }
+            var intervalMs = document.hidden ? hiddenPollingMs : visiblePollingMs;
+            pollingTimerId = window.setInterval(fetchNotificationFeed, intervalMs);
+        }
+
+        function stopNotificationPolling() {
+            if (pollingTimerId) {
+                window.clearInterval(pollingTimerId);
+                pollingTimerId = null;
+            }
+        }
+
+        function runRealtimeByVisibility() {
+            stopNotificationPolling();
+            stopNotificationStream();
+
+            if (document.hidden) {
+                startNotificationPolling();
+                return;
+            }
+
+            if (typeof EventSource !== 'undefined') {
+                openNotificationStream();
+            } else {
+                startNotificationPolling();
+            };
+        }
+
+        notificationList.addEventListener('click', async function (event) {
+            var target = event.target.closest('.js-mark-read-btn');
+            if (!target) return;
+
+            var id = Number(target.getAttribute('data-id') || 0);
+            if (id <= 0) return;
+
+            target.disabled = true;
+            try {
+                var response = await fetch('index.php?act=khachHang/thongBao&mark_read=' + id, {
+                    method: 'GET',
+                    credentials: 'same-origin',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                if (!response.ok) return;
+
+                var data = await response.json();
+                if (!data || data.success !== true) return;
+
+                var card = target.closest('.notification-card');
+                if (card) {
+                    card.classList.remove('unread');
+                    card.classList.add('read');
+                    var badge = card.querySelector('.badge.bg-primary');
+                    if (badge) badge.remove();
+                    target.remove();
+                }
+                setUnreadCount(data.unread || 0);
+            } catch (error) {
+                // Bỏ qua lỗi mạng tạm thời.
+            } finally {
+                target.disabled = false;
+            }
+        });
+
+        fetchNotificationFeed();
+        runRealtimeByVisibility();
+        document.addEventListener('visibilitychange', function () {
+            runRealtimeByVisibility();
+            if (!document.hidden) {
+                fetchNotificationFeed();
+            }
+        });
+        window.addEventListener('beforeunload', function () {
+            stopNotificationStream();
+            stopNotificationPolling();
+        });
+    });
+    </script>
 </body>
 </html>
 

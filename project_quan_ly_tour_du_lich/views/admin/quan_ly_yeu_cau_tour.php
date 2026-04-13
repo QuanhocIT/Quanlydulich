@@ -279,6 +279,37 @@ ob_start();
         color: var(--text-muted);
     }
 
+    .realtime-note {
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-top: 8px;
+    }
+
+    .admin-live-toast {
+        position: fixed;
+        right: 18px;
+        top: 86px;
+        z-index: 1200;
+        min-width: 260px;
+        max-width: min(92vw, 380px);
+        border: 1px solid rgba(16, 185, 129, 0.28);
+        border-radius: 12px;
+        background: rgba(8, 20, 16, 0.94);
+        color: #d1fae5;
+        padding: 12px 14px;
+        box-shadow: 0 16px 40px rgba(2, 6, 23, 0.35);
+        font-weight: 600;
+        opacity: 0;
+        transform: translateY(-8px);
+        pointer-events: none;
+        transition: opacity .25s ease, transform .25s ease;
+    }
+
+    .admin-live-toast.is-visible {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
     .empty-state-icon {
         font-size: 64px;
         margin-bottom: 20px;
@@ -332,15 +363,15 @@ ob_start();
 <div class="stats-grid">
     <div class="stat-card border-primary">
         <div class="stat-label">Tổng yêu cầu</div>
-        <div class="stat-value"><?php echo $tongYeuCau ?? 0; ?></div>
+        <div class="stat-value" id="statTongYeuCau"><?php echo $tongYeuCau ?? 0; ?></div>
     </div>
     <div class="stat-card border-warning">
         <div class="stat-label">Chưa xử lý</div>
-        <div class="stat-value warning"><?php echo $chuaXuLy ?? 0; ?></div>
+        <div class="stat-value warning" id="statChuaXuLy"><?php echo $chuaXuLy ?? 0; ?></div>
     </div>
     <div class="stat-card border-success">
         <div class="stat-label">Đã xử lý</div>
-        <div class="stat-value success"><?php echo ($tongYeuCau ?? 0) - ($chuaXuLy ?? 0); ?></div>
+        <div class="stat-value success" id="statDaXuLy"><?php echo ($tongYeuCau ?? 0) - ($chuaXuLy ?? 0); ?></div>
     </div>
 </div>
 
@@ -379,91 +410,291 @@ ob_start();
 
 <!-- Table -->
 <div class="table-wrapper">
-    <?php if (!empty($yeuCauList)): ?>
-        <table class="table">
-            <thead>
-                <tr>
-                    <th style="width: 50px;">#</th>
-                    <th>Khách hàng</th>
-                    <th>Thông tin yêu cầu</th>
-                    <th>Thời gian</th>
-                    <th>Trạng thái</th>
-                    <th>Hành động</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($yeuCauList as $index => $yc): ?>
-                    <?php
-                        // Parse thông tin từ nội dung
-                        $thongTin = [];
-                        foreach (explode("\n", $yc['noi_dung'] ?? '') as $row) {
-                            $kv = explode(": ", $row, 2);
-                            if (count($kv) == 2) {
-                                $thongTin[$kv[0]] = $kv[1];
-                            }
+    <div class="realtime-note px-3 pt-2">Realtime: danh sách tự làm mới mỗi 5 giây.</div>
+    <table class="table" id="yeuCauTable" <?php if (empty($yeuCauList)): ?>style="display:none"<?php endif; ?>>
+        <thead>
+            <tr>
+                <th style="width: 50px;">#</th>
+                <th>Khách hàng</th>
+                <th>Thông tin yêu cầu</th>
+                <th>Thời gian</th>
+                <th>Trạng thái</th>
+                <th>Hành động</th>
+            </tr>
+        </thead>
+        <tbody id="yeuCauTableBody">
+            <?php foreach ($yeuCauList as $index => $yc): ?>
+                <?php
+                    $thongTin = [];
+                    foreach (explode("\n", $yc['noi_dung'] ?? '') as $row) {
+                        $kv = explode(": ", $row, 2);
+                        if (count($kv) == 2) {
+                            $thongTin[$kv[0]] = $kv[1];
                         }
-                        $thoiGian = !empty($yc['created_at']) ? date('d/m/Y H:i', strtotime($yc['created_at'])) : 'N/A';
-                        $isTransferComplaint = (strpos((string)($yc['tieu_de'] ?? ''), 'Khieu nai chuyen khoan sai noi dung') === 0);
-                    ?>
-                    <tr>
-                        <td><?php echo $index + 1; ?></td>
-                        <td>
-                            <div style="font-weight: 600; margin-bottom: 5px; color: var(--text-light);">
-                                <?php echo htmlspecialchars($yc['nguoi_gui_ten'] ?? 'N/A'); ?>
-                            </div>
-                            <small style="color: var(--text-muted); font-size: 11px; display: block; line-height: 1.6;">
-                                <?php echo htmlspecialchars($yc['nguoi_gui_email'] ?? ''); ?><br>
-                                <?php echo htmlspecialchars($yc['nguoi_gui_phone'] ?? ''); ?>
-                            </small>
-                        </td>
-                        <td>
-                            <div class="request-note">
-                                <?php if ($isTransferComplaint): ?>
-                                    <div><strong>Loại:</strong> Khieu nai chuyen khoan</div>
-                                    <div><strong>Booking:</strong> <?php echo htmlspecialchars($thongTin['Booking ID'] ?? 'N/A'); ?></div>
-                                    <div><strong>Payment:</strong> <?php echo htmlspecialchars($thongTin['Payment ID'] ?? 'N/A'); ?></div>
-                                    <div><strong>Tham chieu:</strong> <?php echo htmlspecialchars($thongTin['Ma giao dich/tham chieu'] ?? 'N/A'); ?></div>
-                                    <?php if (!empty($thongTin['Noi dung khiu nai'])): ?>
-                                        <div><strong>Noi dung:</strong> <?php echo htmlspecialchars($thongTin['Noi dung khiu nai']); ?></div>
-                                    <?php endif; ?>
-                                <?php else: ?>
-                                    <strong>Địa điểm:</strong> <?php echo htmlspecialchars($thongTin['Địa điểm'] ?? 'N/A'); ?><br>
-                                    <strong>Thời gian:</strong> <?php echo htmlspecialchars($thongTin['Thời gian'] ?? 'N/A'); ?><br>
-                                    <strong>Số người:</strong> <?php echo htmlspecialchars($thongTin['Số người'] ?? 'N/A'); ?><br>
-                                    <?php if (!empty($thongTin['Yêu cầu đặc biệt'])): ?>
-                                        <strong>Yêu cầu:</strong> <?php echo htmlspecialchars($thongTin['Yêu cầu đặc biệt']); ?>
-                                    <?php endif; ?>
+                    }
+                    $thoiGian = !empty($yc['created_at']) ? date('d/m/Y H:i', strtotime($yc['created_at'])) : 'N/A';
+                    $isTransferComplaint = (strpos((string)($yc['tieu_de'] ?? ''), 'Khieu nai chuyen khoan sai noi dung') === 0);
+                ?>
+                <tr>
+                    <td><?php echo $index + 1; ?></td>
+                    <td>
+                        <div style="font-weight: 600; margin-bottom: 5px; color: var(--text-light);">
+                            <?php echo htmlspecialchars($yc['nguoi_gui_ten'] ?? 'N/A'); ?>
+                        </div>
+                        <small style="color: var(--text-muted); font-size: 11px; display: block; line-height: 1.6;">
+                            <?php echo htmlspecialchars($yc['nguoi_gui_email'] ?? ''); ?><br>
+                            <?php echo htmlspecialchars($yc['nguoi_gui_phone'] ?? ''); ?>
+                        </small>
+                    </td>
+                    <td>
+                        <div class="request-note">
+                            <?php if ($isTransferComplaint): ?>
+                                <div><strong>Loại:</strong> Khieu nai chuyen khoan</div>
+                                <div><strong>Booking:</strong> <?php echo htmlspecialchars($thongTin['Booking ID'] ?? 'N/A'); ?></div>
+                                <div><strong>Payment:</strong> <?php echo htmlspecialchars($thongTin['Payment ID'] ?? 'N/A'); ?></div>
+                                <div><strong>Tham chieu:</strong> <?php echo htmlspecialchars($thongTin['Ma giao dich/tham chieu'] ?? 'N/A'); ?></div>
+                                <?php if (!empty($thongTin['Noi dung khiu nai'])): ?>
+                                    <div><strong>Noi dung:</strong> <?php echo htmlspecialchars($thongTin['Noi dung khiu nai']); ?></div>
                                 <?php endif; ?>
-                            </div>
-                        </td>
-                        <td>
-                            <small style="color: var(--text-muted);"><?php echo $thoiGian; ?></small>
-                        </td>
-                        <td>
-                            <?php if ($yc['trang_thai'] === 'DaGui'): ?>
-                                <span class="badge badge-warning">Chờ xử lý</span>
-                            <?php elseif (strpos($yc['noi_dung'] ?? '', 'Đã xử lý') !== false): ?>
-                                <span class="badge badge-success">Đã xử lý</span>
                             <?php else: ?>
-                                <span class="badge badge-secondary"><?php echo htmlspecialchars($yc['trang_thai'] ?? 'N/A'); ?></span>
+                                <strong>Địa điểm:</strong> <?php echo htmlspecialchars($thongTin['Địa điểm'] ?? 'N/A'); ?><br>
+                                <strong>Thời gian:</strong> <?php echo htmlspecialchars($thongTin['Thời gian'] ?? 'N/A'); ?><br>
+                                <strong>Số người:</strong> <?php echo htmlspecialchars($thongTin['Số người'] ?? 'N/A'); ?><br>
+                                <?php if (!empty($thongTin['Yêu cầu đặc biệt'])): ?>
+                                    <strong>Yêu cầu:</strong> <?php echo htmlspecialchars($thongTin['Yêu cầu đặc biệt']); ?>
+                                <?php endif; ?>
                             <?php endif; ?>
-                        </td>
-                        <td>
-                            <a href="index.php?act=admin/chiTietYeuCauTour&id=<?php echo $yc['id']; ?>" class="btn btn-secondary btn-sm">
-                                👁️ Xem & Phản hồi
-                            </a>
-                        </td>
-                    </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
-    <?php else: ?>
-        <div class="empty-state">
-            <div class="empty-state-icon">📭</div>
-            <p>Chưa có yêu cầu tour nào.</p>
-        </div>
-    <?php endif; ?>
+                        </div>
+                    </td>
+                    <td>
+                        <small style="color: var(--text-muted);"><?php echo $thoiGian; ?></small>
+                    </td>
+                    <td>
+                        <?php if ($yc['trang_thai'] === 'DaGui'): ?>
+                            <span class="badge badge-warning">Chờ xử lý</span>
+                        <?php elseif (strpos($yc['noi_dung'] ?? '', 'Đã xử lý') !== false): ?>
+                            <span class="badge badge-success">Đã xử lý</span>
+                        <?php else: ?>
+                            <span class="badge badge-secondary"><?php echo htmlspecialchars($yc['trang_thai'] ?? 'N/A'); ?></span>
+                        <?php endif; ?>
+                    </td>
+                    <td>
+                        <a href="index.php?act=admin/chiTietYeuCauTour&id=<?php echo $yc['id']; ?>" class="btn btn-secondary btn-sm">
+                            👁️ Xem & Phản hồi
+                        </a>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
+        </tbody>
+    </table>
+
+    <div class="empty-state" id="yeuCauEmptyState" <?php if (!empty($yeuCauList)): ?>style="display:none"<?php endif; ?>>
+        <div class="empty-state-icon">📭</div>
+        <p>Chưa có yêu cầu tour nào.</p>
+    </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var statTongYeuCau = document.getElementById('statTongYeuCau');
+    var statChuaXuLy = document.getElementById('statChuaXuLy');
+    var statDaXuLy = document.getElementById('statDaXuLy');
+    var yeuCauTableBody = document.getElementById('yeuCauTableBody');
+    var yeuCauEmptyState = document.getElementById('yeuCauEmptyState');
+    var tableWrapper = document.querySelector('.table-wrapper');
+    var snapshotTimerId = null;
+    var visibleIntervalMs = 5000;
+    var hiddenIntervalMs = 20000;
+    var firstSnapshotLoaded = false;
+    var latestKnownIds = [];
+    var adminToastHideTimerId = null;
+
+    function escapeHtml(value) {
+        return String(value || '').replace(/[&<>'"]/g, function (char) {
+            return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\'': '&#39;', '"': '&quot;' })[char];
+        });
+    }
+
+    function parseThongTin(noiDung) {
+        var info = {};
+        String(noiDung || '').split('\n').forEach(function (line) {
+            var index = line.indexOf(': ');
+            if (index <= 0) return;
+            var key = line.slice(0, index).trim();
+            var value = line.slice(index + 2).trim();
+            info[key] = value;
+        });
+        return info;
+    }
+
+    function formatDateTime(value) {
+        if (!value) return 'N/A';
+        var date = new Date(value.replace(' ', 'T'));
+        if (Number.isNaN(date.getTime())) return escapeHtml(value);
+        return date.toLocaleString('vi-VN', { hour12: false });
+    }
+
+    function buildStatusCell(item) {
+        var trangThai = String(item.trang_thai || '');
+        if (trangThai === 'DaGui') {
+            return '<span class="badge badge-warning">Chờ xử lý</span>';
+        }
+        if (String(item.noi_dung || '').indexOf('Đã xử lý') !== -1) {
+            return '<span class="badge badge-success">Đã xử lý</span>';
+        }
+        return '<span class="badge badge-secondary">' + escapeHtml(trangThai || 'N/A') + '</span>';
+    }
+
+    function buildInfoCell(item) {
+        var info = parseThongTin(item.noi_dung || '');
+        var isTransferComplaint = String(item.tieu_de || '').indexOf('Khieu nai chuyen khoan sai noi dung') === 0;
+        if (isTransferComplaint) {
+            return '<div class="request-note">' +
+                '<div><strong>Loại:</strong> Khieu nai chuyen khoan</div>' +
+                '<div><strong>Booking:</strong> ' + escapeHtml(info['Booking ID'] || 'N/A') + '</div>' +
+                '<div><strong>Payment:</strong> ' + escapeHtml(info['Payment ID'] || 'N/A') + '</div>' +
+                '<div><strong>Tham chieu:</strong> ' + escapeHtml(info['Ma giao dich/tham chieu'] || 'N/A') + '</div>' +
+                (info['Noi dung khiu nai'] ? '<div><strong>Noi dung:</strong> ' + escapeHtml(info['Noi dung khiu nai']) + '</div>' : '') +
+            '</div>';
+        }
+
+        return '<div class="request-note">' +
+            '<strong>Địa điểm:</strong> ' + escapeHtml(info['Địa điểm'] || 'N/A') + '<br>' +
+            '<strong>Thời gian:</strong> ' + escapeHtml(info['Thời gian'] || 'N/A') + '<br>' +
+            '<strong>Số người:</strong> ' + escapeHtml(info['Số người'] || 'N/A') + '<br>' +
+            (info['Yêu cầu đặc biệt'] ? ('<strong>Yêu cầu:</strong> ' + escapeHtml(info['Yêu cầu đặc biệt'])) : '') +
+        '</div>';
+    }
+
+    function renderTable(items) {
+        if (!tableWrapper) return;
+
+        if (!Array.isArray(items) || items.length === 0) {
+            if (yeuCauTableBody) {
+                var table = yeuCauTableBody.closest('table');
+                if (table) table.style.display = 'none';
+            }
+            if (yeuCauEmptyState) {
+                yeuCauEmptyState.style.display = 'block';
+            }
+            return;
+        }
+
+        if (!yeuCauTableBody) return;
+        var table = yeuCauTableBody.closest('table');
+        if (table) table.style.display = 'table';
+        if (yeuCauEmptyState) yeuCauEmptyState.style.display = 'none';
+
+        var html = '';
+        items.forEach(function (item, index) {
+            html += '<tr>' +
+                '<td>' + (index + 1) + '</td>' +
+                '<td>' +
+                    '<div style="font-weight: 600; margin-bottom: 5px; color: var(--text-light);">' + escapeHtml(item.nguoi_gui_ten || 'N/A') + '</div>' +
+                    '<small style="color: var(--text-muted); font-size: 11px; display: block; line-height: 1.6;">' +
+                        escapeHtml(item.nguoi_gui_email || '') + '<br>' +
+                        escapeHtml(item.nguoi_gui_phone || '') +
+                    '</small>' +
+                '</td>' +
+                '<td>' + buildInfoCell(item) + '</td>' +
+                '<td><small style="color: var(--text-muted);">' + escapeHtml(formatDateTime(item.created_at || '')) + '</small></td>' +
+                '<td>' + buildStatusCell(item) + '</td>' +
+                '<td><a href="index.php?act=admin/chiTietYeuCauTour&id=' + Number(item.id || 0) + '" class="btn btn-secondary btn-sm">👁️ Xem & Phản hồi</a></td>' +
+            '</tr>';
+        });
+
+        yeuCauTableBody.innerHTML = html;
+    }
+
+    function showAdminToast(message) {
+        var existing = document.getElementById('adminLiveToast');
+        if (!existing) {
+            existing = document.createElement('div');
+            existing.id = 'adminLiveToast';
+            existing.className = 'admin-live-toast';
+            document.body.appendChild(existing);
+        }
+
+        existing.textContent = message;
+        existing.classList.add('is-visible');
+        if (adminToastHideTimerId) {
+            window.clearTimeout(adminToastHideTimerId);
+        }
+        adminToastHideTimerId = window.setTimeout(function () {
+            existing.classList.remove('is-visible');
+        }, 3200);
+    }
+
+    function getNewItemsCount(items) {
+        if (!Array.isArray(items)) return 0;
+        var currentIds = items.map(function (item) {
+            return Number(item.id || 0);
+        }).filter(function (id) { return id > 0; });
+
+        if (!firstSnapshotLoaded) {
+            latestKnownIds = currentIds;
+            return 0;
+        }
+
+        var knownSet = new Set(latestKnownIds);
+        var newCount = currentIds.filter(function (id) {
+            return !knownSet.has(id);
+        }).length;
+        latestKnownIds = currentIds;
+        return newCount;
+    }
+
+    async function refreshYeuCauSnapshot() {
+        try {
+            var params = new URLSearchParams(window.location.search);
+            params.set('act', 'admin/yeuCauTourSnapshot');
+            params.set('_ts', Date.now().toString());
+
+            var response = await fetch('index.php?' + params.toString(), {
+                method: 'GET',
+                credentials: 'same-origin',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            if (!response.ok) return;
+
+            var data = await response.json();
+            if (!data || data.success !== true) return;
+
+            if (statTongYeuCau) statTongYeuCau.textContent = String(data.tong_yeu_cau || 0);
+            if (statChuaXuLy) statChuaXuLy.textContent = String(data.chua_xu_ly || 0);
+            if (statDaXuLy) statDaXuLy.textContent = String(data.da_xu_ly || 0);
+            renderTable(data.items || []);
+
+            var newItemsCount = getNewItemsCount(data.items || []);
+            if (firstSnapshotLoaded && !document.hidden && newItemsCount > 0) {
+                showAdminToast('Có ' + newItemsCount + ' yêu cầu tour mới vừa gửi.');
+            }
+            firstSnapshotLoaded = true;
+        } catch (error) {
+            // Bỏ qua lỗi mạng tạm thời.
+        }
+    }
+
+    function restartSnapshotTimer() {
+        if (snapshotTimerId) {
+            window.clearInterval(snapshotTimerId);
+            snapshotTimerId = null;
+        }
+
+        var intervalMs = document.hidden ? hiddenIntervalMs : visibleIntervalMs;
+        snapshotTimerId = window.setInterval(refreshYeuCauSnapshot, intervalMs);
+    }
+
+    document.addEventListener('visibilitychange', function () {
+        restartSnapshotTimer();
+        if (!document.hidden) {
+            refreshYeuCauSnapshot();
+        }
+    });
+
+    restartSnapshotTimer();
+});
+</script>
 
 <?php
 $content = ob_get_clean();

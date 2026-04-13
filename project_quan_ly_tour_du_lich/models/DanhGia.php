@@ -120,6 +120,47 @@ class DanhGia {
             'Rất không hài lòng' => (int)($row['rat_khong_hai_long'] ?? 0),
         ];
     }
+
+    public function getTourRatingMapByTourIds(array $tourIds) {
+        $normalizedIds = [];
+        foreach ($tourIds as $tourId) {
+            $id = (int)$tourId;
+            if ($id > 0) {
+                $normalizedIds[$id] = $id;
+            }
+        }
+
+        if (empty($normalizedIds)) {
+            return [];
+        }
+
+        $ids = array_values($normalizedIds);
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $sql = "SELECT tour_id, AVG(diem) AS diem_tb, COUNT(*) AS so_danh_gia
+                FROM danh_gia
+                WHERE loai_danh_gia = 'Tour'
+                  AND tour_id IN ($placeholders)
+                GROUP BY tour_id";
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute($ids);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+        $ratingMap = [];
+        foreach ($rows as $row) {
+            $tourId = (int)($row['tour_id'] ?? 0);
+            if ($tourId <= 0) {
+                continue;
+            }
+
+            $ratingMap[$tourId] = [
+                'diem_tb' => (float)($row['diem_tb'] ?? 0),
+                'so_danh_gia' => (int)($row['so_danh_gia'] ?? 0),
+            ];
+        }
+
+        return $ratingMap;
+    }
     
     // Báo cáo theo tour
     public function getReportByTour($tour_id) {
@@ -392,6 +433,75 @@ class DanhGia {
             $data['loai_dich_vu'] ?? null,
             $data['diem'],
             $data['noi_dung']
+        ]);
+    }
+
+    public function existsTourReviewByKhachHang($khachHangId, $tourId) {
+        $khachHangId = (int)$khachHangId;
+        $tourId = (int)$tourId;
+        if ($khachHangId <= 0 || $tourId <= 0) {
+            return false;
+        }
+
+        $stmt = $this->conn->prepare(
+            "SELECT 1
+             FROM danh_gia
+             WHERE khach_hang_id = ?
+               AND tour_id = ?
+               AND loai_danh_gia = 'Tour'
+             LIMIT 1"
+        );
+        $stmt->execute([$khachHangId, $tourId]);
+        return (bool)$stmt->fetchColumn();
+    }
+
+    public function getTourReviewByKhachHang($khachHangId, $tourId) {
+        $khachHangId = (int)$khachHangId;
+        $tourId = (int)$tourId;
+        if ($khachHangId <= 0 || $tourId <= 0) {
+            return null;
+        }
+
+        $stmt = $this->conn->prepare(
+            "SELECT *
+             FROM danh_gia
+             WHERE khach_hang_id = ?
+               AND tour_id = ?
+               AND loai_danh_gia = 'Tour'
+             ORDER BY danh_gia_id DESC
+             LIMIT 1"
+        );
+        $stmt->execute([$khachHangId, $tourId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row ?: null;
+    }
+
+    public function updateTourReviewByKhachHang($khachHangId, $tourId, array $data) {
+        $khachHangId = (int)$khachHangId;
+        $tourId = (int)$tourId;
+        if ($khachHangId <= 0 || $tourId <= 0) {
+            return false;
+        }
+
+        $stmt = $this->conn->prepare(
+            "UPDATE danh_gia
+             SET diem = ?,
+                 noi_dung = ?,
+                 tieu_chi = ?,
+                 loai_dich_vu = ?,
+                 ngay_danh_gia = NOW()
+             WHERE khach_hang_id = ?
+               AND tour_id = ?
+               AND loai_danh_gia = 'Tour'"
+        );
+
+        return $stmt->execute([
+            (int)($data['diem'] ?? 0),
+            (string)($data['noi_dung'] ?? ''),
+            $data['tieu_chi'] ?? null,
+            $data['loai_dich_vu'] ?? null,
+            $khachHangId,
+            $tourId,
         ]);
     }
 }

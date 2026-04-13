@@ -2821,6 +2821,55 @@ class AdminController {
         
         require 'views/admin/quan_ly_yeu_cau_tour.php';
     }
+
+    public function yeuCauTourSnapshot() {
+        header('Content-Type: application/json; charset=utf-8');
+        require_once 'models/ThongBao.php';
+
+        try {
+            $thongBaoModel = new ThongBao();
+            $filters = [
+                'trang_thai' => $_GET['trang_thai'] ?? '',
+                'search' => trim((string)($_GET['search'] ?? '')),
+                'limit' => 100,
+            ];
+
+            $yeuCauList = $thongBaoModel->getYeuCauTour($filters);
+            $tongYeuCau = count($yeuCauList);
+            $chuaXuLy = (int)$thongBaoModel->countYeuCauTourChuaXuLy();
+
+            $items = array_map(static function ($yc) {
+                return [
+                    'id' => (int)($yc['id'] ?? 0),
+                    'tieu_de' => (string)($yc['tieu_de'] ?? ''),
+                    'noi_dung' => (string)($yc['noi_dung'] ?? ''),
+                    'trang_thai' => (string)($yc['trang_thai'] ?? ''),
+                    'created_at' => (string)($yc['created_at'] ?? ''),
+                    'nguoi_gui_ten' => (string)($yc['nguoi_gui_ten'] ?? ''),
+                    'nguoi_gui_email' => (string)($yc['nguoi_gui_email'] ?? ''),
+                    'nguoi_gui_phone' => (string)($yc['nguoi_gui_phone'] ?? ''),
+                ];
+            }, $yeuCauList ?: []);
+
+            echo json_encode([
+                'success' => true,
+                'tong_yeu_cau' => $tongYeuCau,
+                'chua_xu_ly' => $chuaXuLy,
+                'da_xu_ly' => max(0, $tongYeuCau - $chuaXuLy),
+                'items' => $items,
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+        } catch (Throwable $e) {
+            echo json_encode([
+                'success' => false,
+                'tong_yeu_cau' => 0,
+                'chua_xu_ly' => 0,
+                'da_xu_ly' => 0,
+                'items' => [],
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+    }
     
     /**
      * Xem chi tiết yêu cầu tour và phản hồi
@@ -2957,6 +3006,7 @@ class AdminController {
     }
 
     private function getAdminNotificationPayload($conn) {
+        require_once 'models/ThongBao.php';
         $state = $this->initAdminNotificationState($conn);
 
         $paymentsLastSeenId = (int)($state['payments_last_seen_id'] ?? 0);
@@ -2970,11 +3020,15 @@ class AdminController {
         $reviewStmt->execute([$reviewsLastSeenId]);
         $reviewCount = (int)$reviewStmt->fetchColumn();
 
+        $thongBaoModel = new ThongBao();
+        $requestCount = (int)$thongBaoModel->countYeuCauTourChuaXuLy();
+
         return [
             'success' => true,
             'payments' => $paymentCount,
             'reviews' => $reviewCount,
-            'dashboard' => $paymentCount + $reviewCount,
+            'requests' => $requestCount,
+            'dashboard' => $paymentCount + $reviewCount + $requestCount,
             'sound_enabled' => ((int)($state['sound_enabled'] ?? 1) === 1) ? 1 : 0,
         ];
     }
@@ -3032,6 +3086,7 @@ class AdminController {
                     'success' => true,
                     'payments' => 0,
                     'reviews' => 0,
+                    'requests' => 0,
                     'dashboard' => 0,
                     'sound_enabled' => ((int)($_SESSION['admin_notifications']['sound_enabled'] ?? 1) === 1) ? 1 : 0,
                 ], JSON_UNESCAPED_UNICODE);
@@ -3057,6 +3112,7 @@ class AdminController {
                 'success' => false,
                 'payments' => 0,
                 'reviews' => 0,
+                'requests' => 0,
                 'dashboard' => 0,
                 'sound_enabled' => ((int)($_SESSION['admin_notifications']['sound_enabled'] ?? 1) === 1) ? 1 : 0,
             ], JSON_UNESCAPED_UNICODE);
@@ -3089,6 +3145,7 @@ class AdminController {
                 'success' => true,
                 'payments' => 0,
                 'reviews' => 0,
+                'requests' => 0,
                 'dashboard' => 0,
                 'sound_enabled' => ((int)($_SESSION['admin_notifications']['sound_enabled'] ?? 1) === 1) ? 1 : 0,
             ];
@@ -3104,9 +3161,18 @@ class AdminController {
 
                 $metaStmt = $conn->query("SELECT
                     (SELECT COALESCE(MAX(payment_id), 0) FROM payments) AS payment_max,
-                    (SELECT COALESCE(MAX(danh_gia_id), 0) FROM danh_gia) AS review_max");
+                    (SELECT COALESCE(MAX(danh_gia_id), 0) FROM danh_gia) AS review_max,
+                    (SELECT COALESCE(MAX(id), 0) FROM thong_bao WHERE tieu_de = 'Yêu cầu tour theo mong muốn' AND vai_tro_nhan = 'Admin') AS request_max,
+                    (SELECT COUNT(*) FROM thong_bao WHERE tieu_de = 'Yêu cầu tour theo mong muốn' AND vai_tro_nhan = 'Admin' AND trang_thai = 'DaGui') AS request_pending
+                ");
                 $meta = $metaStmt->fetch(PDO::FETCH_ASSOC) ?: [];
-                $metaHash = md5((string)($meta['payment_max'] ?? '') . '|' . (string)($meta['review_max'] ?? '') . '|' . (string)($_SESSION['admin_notifications']['sound_enabled'] ?? 1));
+                $metaHash = md5(
+                    (string)($meta['payment_max'] ?? '') . '|' .
+                    (string)($meta['review_max'] ?? '') . '|' .
+                    (string)($meta['request_max'] ?? '') . '|' .
+                    (string)($meta['request_pending'] ?? '') . '|' .
+                    (string)($_SESSION['admin_notifications']['sound_enabled'] ?? 1)
+                );
 
                 if ($metaHash !== $lastMetaHash) {
                     $cachedPayload = $this->getAdminNotificationPayload($conn);
@@ -3133,6 +3199,7 @@ class AdminController {
                 'success' => false,
                 'payments' => 0,
                 'reviews' => 0,
+                'requests' => 0,
                 'dashboard' => 0,
                 'sound_enabled' => ((int)($_SESSION['admin_notifications']['sound_enabled'] ?? 1) === 1) ? 1 : 0,
             ], JSON_UNESCAPED_UNICODE) . "\n\n";
