@@ -1,6 +1,7 @@
 <?php
 $pageTitle = 'Quản lý Yêu cầu Tour';
 $currentPage = 'yeuCauTour';
+$metaRefreshSeconds = 20;
 ob_start();
 ?>
 
@@ -410,7 +411,7 @@ ob_start();
 
 <!-- Table -->
 <div class="table-wrapper">
-    <div class="realtime-note px-3 pt-2">Realtime: danh sách tự làm mới mỗi 5 giây.</div>
+    <div class="realtime-note px-3 pt-2">Realtime: snapshot mỗi 5 giây, fallback tự tải lại trang mỗi 20 giây. <span id="snapshotLastSync" style="opacity:.8">(chưa đồng bộ)</span></div>
     <table class="table" id="yeuCauTable" <?php if (empty($yeuCauList)): ?>style="display:none"<?php endif; ?>>
         <thead>
             <tr>
@@ -495,19 +496,22 @@ ob_start();
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    var statTongYeuCau = document.getElementById('statTongYeuCau');
-    var statChuaXuLy = document.getElementById('statChuaXuLy');
-    var statDaXuLy = document.getElementById('statDaXuLy');
-    var yeuCauTableBody = document.getElementById('yeuCauTableBody');
-    var yeuCauEmptyState = document.getElementById('yeuCauEmptyState');
-    var tableWrapper = document.querySelector('.table-wrapper');
-    var snapshotTimerId = null;
-    var visibleIntervalMs = 5000;
-    var hiddenIntervalMs = 20000;
-    var firstSnapshotLoaded = false;
-    var latestKnownIds = [];
-    var adminToastHideTimerId = null;
+(function () {
+    function initTourRequestRealtime() {
+        var statTongYeuCau = document.getElementById('statTongYeuCau');
+        var statChuaXuLy = document.getElementById('statChuaXuLy');
+        var statDaXuLy = document.getElementById('statDaXuLy');
+        var yeuCauTableBody = document.getElementById('yeuCauTableBody');
+        var yeuCauEmptyState = document.getElementById('yeuCauEmptyState');
+        var snapshotLastSync = document.getElementById('snapshotLastSync');
+        var tableWrapper = document.querySelector('.table-wrapper');
+        var snapshotTimerId = null;
+        var visibleIntervalMs = 5000;
+        var hiddenIntervalMs = 20000;
+        var firstSnapshotLoaded = false;
+        var latestKnownIds = [];
+        var adminToastHideTimerId = null;
+        var consecutivePollErrors = 0;
 
     function escapeHtml(value) {
         return String(value || '').replace(/[&<>'"]/g, function (char) {
@@ -653,17 +657,28 @@ document.addEventListener('DOMContentLoaded', function () {
             var response = await fetch('index.php?' + params.toString(), {
                 method: 'GET',
                 credentials: 'same-origin',
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                },
+                cache: 'no-store'
             });
             if (!response.ok) return;
 
             var data = await response.json();
             if (!data || data.success !== true) return;
 
+            consecutivePollErrors = 0;
+
             if (statTongYeuCau) statTongYeuCau.textContent = String(data.tong_yeu_cau || 0);
             if (statChuaXuLy) statChuaXuLy.textContent = String(data.chua_xu_ly || 0);
             if (statDaXuLy) statDaXuLy.textContent = String(data.da_xu_ly || 0);
             renderTable(data.items || []);
+
+            if (snapshotLastSync) {
+                var now = new Date();
+                snapshotLastSync.textContent = '(đồng bộ: ' + now.toLocaleTimeString('vi-VN', { hour12: false }) + ')';
+            }
 
             var newItemsCount = getNewItemsCount(data.items || []);
             if (firstSnapshotLoaded && !document.hidden && newItemsCount > 0) {
@@ -671,29 +686,50 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             firstSnapshotLoaded = true;
         } catch (error) {
-            // Bỏ qua lỗi mạng tạm thời.
+            consecutivePollErrors++;
+            if (consecutivePollErrors >= 3) {
+                restartSnapshotTimer();
+                consecutivePollErrors = 0;
+            }
         }
     }
 
-    function restartSnapshotTimer() {
-        if (snapshotTimerId) {
-            window.clearInterval(snapshotTimerId);
-            snapshotTimerId = null;
+        function restartSnapshotTimer() {
+            if (snapshotTimerId) {
+                window.clearTimeout(snapshotTimerId);
+                snapshotTimerId = null;
+            }
+
+            var intervalMs = document.hidden ? hiddenIntervalMs : visibleIntervalMs;
+            snapshotTimerId = window.setTimeout(function pollLoop() {
+                refreshYeuCauSnapshot().finally(function () {
+                    restartSnapshotTimer();
+                });
+            }, intervalMs);
         }
 
-        var intervalMs = document.hidden ? hiddenIntervalMs : visibleIntervalMs;
-        snapshotTimerId = window.setInterval(refreshYeuCauSnapshot, intervalMs);
-    }
+        document.addEventListener('visibilitychange', function () {
+            if (!document.hidden) {
+                refreshYeuCauSnapshot();
+            }
+            restartSnapshotTimer();
+        });
 
-    document.addEventListener('visibilitychange', function () {
-        restartSnapshotTimer();
-        if (!document.hidden) {
+        window.addEventListener('focus', function () {
             refreshYeuCauSnapshot();
-        }
-    });
+            restartSnapshotTimer();
+        });
 
-    restartSnapshotTimer();
-});
+        refreshYeuCauSnapshot();
+        restartSnapshotTimer();
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initTourRequestRealtime);
+    } else {
+        initTourRequestRealtime();
+    }
+})();
 </script>
 
 <?php

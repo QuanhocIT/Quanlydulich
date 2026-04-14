@@ -19,6 +19,9 @@ if ($isAdminRole && !empty($_SESSION['admin_sidebar_start_hidden_once'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-global-token" content="<?php echo htmlspecialchars(csrfToken('global_form'), ENT_QUOTES, 'UTF-8'); ?>">
+    <?php if (!empty($metaRefreshSeconds) && (int)$metaRefreshSeconds > 0): ?>
+        <meta http-equiv="refresh" content="<?php echo (int)$metaRefreshSeconds; ?>">
+    <?php endif; ?>
     <title><?php echo isset($pageTitle) ? $pageTitle . ' - ' : ''; ?>AVENTURA - Life's A Journey</title>
     <link rel="stylesheet" href="<?php echo BASE_URL; ?>public/css/aventura.css?v=<?php echo rawurlencode(ASSET_VERSION); ?>">
     <link rel="icon" href="<?php echo BASE_URL; ?>public/images/momo.png" type="image/png">
@@ -93,6 +96,7 @@ if ($isAdminRole && !empty($_SESSION['admin_sidebar_start_hidden_once'])) {
                             </div>
                         </li>
                         <li><a href="index.php?act=admin/danhGia" class="<?php echo (isset($currentPage) && ($currentPage === 'danhGia' || $currentPage === 'danh_gia')) ? 'active' : ''; ?>" title="Đánh giá & Phản hồi"><span class="nav-icon-bg"><i class="bi bi-chat-dots"></i></span> <span class="nav-text">Đánh giá & Phản hồi</span><span id="reviewNavBadge" class="nav-badge" title="Có <?php echo $reviewNotificationCount; ?> đánh giá mới"<?php if ($reviewNotificationCount <= 0): ?> style="display:none"<?php endif; ?>><?php echo $reviewNotificationCount; ?></span></a></li>
+                        <li><a href="index.php?act=admin/automationDashboard" class="<?php echo (isset($currentPage) && $currentPage === 'automation') ? 'active' : ''; ?>" title="Trung tâm tự động hóa"><span class="nav-icon-bg"><i class="bi bi-cpu"></i></span> <span class="nav-text">Tự động hóa Admin</span></a></li>
                         <li><a href="index.php?act=admin/notificationSettings" class="<?php echo (isset($currentPage) && $currentPage === 'notificationSettings') ? 'active' : ''; ?>" title="Cài đặt thông báo"><span class="nav-icon-bg"><i class="bi bi-bell"></i></span> <span class="nav-text">Cài đặt thông báo</span></a></li>
                     <?php elseif ($currentRole === 'HDV'): ?>
                         <li><a href="index.php?act=hdv/dashboard" class="<?php echo (isset($currentPage) && $currentPage === 'dashboard') ? 'active' : ''; ?>">Trang chủ</a></li>
@@ -211,8 +215,10 @@ if ($isAdminRole && !empty($_SESSION['admin_sidebar_start_hidden_once'])) {
         const reviewNavBadge = document.getElementById('reviewNavBadge');
         const THEME_MODES = ['dark', 'business-dark', 'soft-light'];
         const streamReconnectDelay = 5000;
+        const fallbackPollIntervalMs = 5000;
         let notificationEventSource = null;
         let streamReconnectTimer = null;
+        let notificationFallbackTimer = null;
         let previousPaymentCount = Number.parseInt(paymentNavBadge ? paymentNavBadge.textContent : '0', 10) || 0;
         let previousReviewCount = Number.parseInt(reviewNavBadge ? reviewNavBadge.textContent : '0', 10) || 0;
         let previousDashboardCount = Number.parseInt(dashboardNavBadge ? dashboardNavBadge.textContent : '0', 10) || 0;
@@ -364,6 +370,17 @@ if ($isAdminRole && !empty($_SESSION['admin_sidebar_start_hidden_once'])) {
             }
         }
 
+        function startFallbackPolling() {
+            if (notificationFallbackTimer) return;
+            notificationFallbackTimer = setInterval(fetchNotificationSnapshot, fallbackPollIntervalMs);
+        }
+
+        function stopFallbackPolling() {
+            if (!notificationFallbackTimer) return;
+            clearInterval(notificationFallbackTimer);
+            notificationFallbackTimer = null;
+        }
+
         function clearStreamReconnectTimer() {
             if (!streamReconnectTimer) return;
             clearTimeout(streamReconnectTimer);
@@ -393,6 +410,7 @@ if ($isAdminRole && !empty($_SESSION['admin_sidebar_start_hidden_once'])) {
 
             notificationEventSource.onopen = function() {
                 setRealtimeConnectionState('connected');
+                stopFallbackPolling();
             };
 
             notificationEventSource.addEventListener('notification', function(event) {
@@ -410,6 +428,8 @@ if ($isAdminRole && !empty($_SESSION['admin_sidebar_start_hidden_once'])) {
                     notificationEventSource.close();
                     notificationEventSource = null;
                 }
+                startFallbackPolling();
+                fetchNotificationSnapshot();
                 scheduleStreamReconnect();
             });
 
@@ -418,6 +438,8 @@ if ($isAdminRole && !empty($_SESSION['admin_sidebar_start_hidden_once'])) {
                     notificationEventSource.close();
                     notificationEventSource = null;
                 }
+                startFallbackPolling();
+                fetchNotificationSnapshot();
                 scheduleStreamReconnect();
             };
         }
@@ -549,12 +571,14 @@ if ($isAdminRole && !empty($_SESSION['admin_sidebar_start_hidden_once'])) {
             fetchNotificationSnapshot();
             if (typeof EventSource !== 'undefined') {
                 openNotificationStream();
+                startFallbackPolling();
             } else {
                 setRealtimeConnectionState('polling');
-                setInterval(fetchNotificationSnapshot, 5000);
+                startFallbackPolling();
             }
             window.addEventListener('beforeunload', function() {
                 clearStreamReconnectTimer();
+                stopFallbackPolling();
                 if (notificationEventSource) {
                     notificationEventSource.close();
                 }

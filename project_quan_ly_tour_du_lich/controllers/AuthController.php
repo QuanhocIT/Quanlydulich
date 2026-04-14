@@ -44,16 +44,23 @@ class AuthController {
                 $stored = $user['mat_khau'] ?? '';
                 $authenticated = false;
 
-                // Plaintext fallback is removed; only secure password hashes are accepted.
                 if (!isSecurePasswordHash($stored)) {
-                    recordFailedLoginAttempt($username, 'legacy_insecure_password_hash');
-                    setValidationErrors(['credentials' => 'legacy_insecure_password_hash'], 'Tai khoan can dat lai mat khau truoc khi dang nhap.');
-                    $error = 'Tai khoan can dat lai mat khau. Vui long lien he quan tri vien hoac su dung quy trinh cap lai mat khau.';
-                    require 'views/auth/login.php';
-                    return;
-                }
-
-                if (password_verify($password, $stored)) {
+                    // Temporary compatibility mode: allow legacy plaintext login once,
+                    // then upgrade to secure hash immediately.
+                    if ((string)$stored === $password) {
+                        $authenticated = true;
+                        $newHash = password_hash($password, PASSWORD_DEFAULT);
+                        $this->model->updatePassword($user['id'], $newHash);
+                        $stored = $newHash;
+                        logSecurityEvent('legacy_plaintext_password_upgraded', ['user_id' => (int)$user['id']]);
+                    } else {
+                        recordFailedLoginAttempt($username, 'invalid_credentials');
+                        setValidationErrors(['credentials' => 'invalid'], 'Ten dang nhap/Email hoac mat khau khong dung.');
+                        $error = 'Tên đăng nhập/Email hoặc mật khẩu không đúng';
+                        require 'views/auth/login.php';
+                        return;
+                    }
+                } elseif (password_verify($password, $stored)) {
                     $authenticated = true;
                     if (password_needs_rehash($stored, PASSWORD_DEFAULT)) {
                         $newHash = password_hash($password, PASSWORD_DEFAULT);

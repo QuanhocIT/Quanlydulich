@@ -1686,6 +1686,7 @@ function showTab(tab) {
             overflow:hidden;
             -webkit-box-orient:vertical;
             -webkit-line-clamp:3;
+            line-clamp:3;
         }
         body.luxury .home-tour-meta{
             display:grid;

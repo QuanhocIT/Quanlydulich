@@ -316,6 +316,10 @@ match ($act) {
     'admin/notificationSettings' => (new AdminController())->notificationSettings(),
     'admin/saveNotificationSettings' => (new AdminController())->saveNotificationSettings(),
     'admin/markNotificationsReadAll' => (new AdminController())->markNotificationsReadAll(),
+    'admin/automationDashboard' => (new AdminController())->automationDashboard(),
+    'admin/automationStatus' => (new AdminController())->automationStatus(),
+    'admin/runAutomationJob' => (new AdminController())->runAutomationJob(),
+    'admin/updateDecisionAssistStatus' => (new AdminController())->updateDecisionAssistStatus(),
     // Báo cáo tài chính
     'admin/baoCaoTaiChinh' => (new BaoCaoTaiChinhController())->dashboard(),
     'admin/lichSuGiaoDich' => (new BaoCaoTaiChinhController())->lichSuGiaoDich(),

@@ -68,6 +68,34 @@ Ghi chu:
 - Script tao bang `schema_migrations` tu dong neu chua ton tai.
 - Nen backup DB truoc khi chay migration tren production.
 
+## Admin Automation Jobs
+
+He thong co bo tu dong hoa ho tro Admin (SLA yeu cau tour, booking priority, doi soat, self-heal payment treo, webhook anomaly, debt reminder, departure readiness, tour health score, inbox digest, decision assist).
+
+Lenh chay nhanh:
+
+```bash
+php scripts/run_admin_automation.php all
+php scripts/run_admin_automation.php sla_tour_requests
+php scripts/run_admin_automation.php reconcile_digest
+```
+
+UI quan ly:
+
+- `index.php?act=admin/automationDashboard`
+
+Task Scheduler (Windows):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/setup_admin_automation_tasks.ps1
+```
+
+Go task scheduler:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/remove_admin_automation_tasks.ps1
+```
+
 ## Cấu hình môi trường (.env)
 
 1. Tạo file `.env` từ mẫu `.env.example`.
