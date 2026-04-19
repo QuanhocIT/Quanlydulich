@@ -553,6 +553,313 @@ ob_start();
             justify-content: center;
         }
     }
+
+    body.page-booking .content-area:has(.booking-admin-shell) {
+        padding: 34px 48px 56px;
+        background:
+            radial-gradient(circle at 10% 0%, rgba(13, 202, 240, 0.08), transparent 28%),
+            radial-gradient(circle at 100% 10%, rgba(212, 175, 55, 0.11), transparent 30%),
+            linear-gradient(180deg, rgba(255,255,255,0.018), transparent 260px);
+    }
+
+    body.page-booking .booking-admin-shell {
+        gap: 24px;
+    }
+
+    body.page-booking .booking-admin-shell .page-header-section {
+        min-height: 164px;
+        padding: 28px 34px;
+        background:
+            linear-gradient(100deg, rgba(28, 31, 33, 0.96) 0%, rgba(30, 42, 45, 0.94) 52%, rgba(119, 102, 45, 0.84) 100%),
+            url("<?php echo BASE_URL; ?>public/images/logos/hinh-nen-viet-nam-4k10.jpg");
+        background-size: cover;
+        background-position: center;
+        border: 1px solid rgba(255, 255, 255, 0.09);
+        box-shadow: 0 22px 60px rgba(0, 0, 0, 0.28);
+    }
+
+    body.page-booking .booking-admin-shell .page-header-section::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(90deg, rgba(0,0,0,0.18), rgba(0,0,0,0.04));
+        pointer-events: none;
+    }
+
+    body.page-booking .booking-admin-shell .page-header-glow {
+        display: none;
+    }
+
+    body.page-booking .booking-admin-shell .page-header-inner {
+        position: relative;
+        z-index: 2;
+        align-items: center;
+    }
+
+    body.page-booking .booking-admin-shell .page-header-main {
+        align-items: center;
+        gap: 18px;
+    }
+
+    body.page-booking .booking-admin-shell .page-header-avatar {
+        width: 74px;
+        height: 74px;
+        border-radius: 8px;
+        background: rgba(212, 175, 55, 0.18);
+        border: 1px solid rgba(255, 224, 130, 0.32);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.16), 0 16px 34px rgba(0,0,0,0.24);
+    }
+
+    body.page-booking .booking-admin-shell .page-header-title h1 {
+        font-size: 2rem;
+        line-height: 1.18;
+        letter-spacing: 0;
+        text-shadow: none;
+    }
+
+    body.page-booking .booking-admin-shell .page-header-title p {
+        max-width: 680px;
+        color: rgba(255,255,255,0.86);
+        text-shadow: none;
+    }
+
+    body.page-booking .booking-admin-shell .header-actions .btn,
+    body.page-booking .booking-admin-shell .view-switch-link,
+    body.page-booking .booking-admin-shell .filter-section .btn {
+        border-radius: 8px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+    }
+
+    body.page-booking .booking-admin-shell .header-actions .btn {
+        min-height: 46px;
+        padding-inline: 18px;
+    }
+
+    body.page-booking .booking-admin-shell .booking-view-switch {
+        gap: 12px;
+        margin-bottom: 10px;
+    }
+
+    body.page-booking .booking-admin-shell .view-switch-link {
+        min-height: 58px;
+        padding: 14px 22px;
+        background: rgba(255,255,255,0.045);
+        border: 1px solid rgba(255,255,255,0.12);
+        box-shadow: 0 10px 24px rgba(0,0,0,0.12);
+    }
+
+    body.page-booking .booking-admin-shell .view-switch-link:hover,
+    body.page-booking .booking-admin-shell .view-switch-link.active {
+        background: rgba(212, 175, 55, 0.14);
+        border-color: rgba(212, 175, 55, 0.6);
+        box-shadow: 0 16px 34px rgba(0,0,0,0.18);
+    }
+
+    body.page-booking .booking-admin-shell .stats-grid {
+        grid-template-columns: repeat(5, minmax(150px, 1fr));
+        gap: 16px;
+    }
+
+    body.page-booking .booking-admin-shell .stat-card {
+        min-height: 178px;
+        padding: 28px 22px 24px;
+        background: linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.025));
+        border-color: rgba(255, 255, 255, 0.1);
+        border-left-width: 3px;
+        box-shadow: 0 14px 32px rgba(0,0,0,0.18);
+    }
+
+    body.page-booking .booking-admin-shell .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 24px 54px rgba(0,0,0,0.24);
+    }
+
+    body.page-booking .booking-admin-shell .stat-icon {
+        margin-bottom: 22px;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
+    }
+
+    body.page-booking .booking-admin-shell .stat-value {
+        font-size: 2.35rem;
+        line-height: 1;
+        letter-spacing: 0;
+    }
+
+    body.page-booking .booking-admin-shell .stat-label {
+        margin-top: 14px;
+        line-height: 1.5;
+        letter-spacing: 0.02em;
+    }
+
+    body.page-booking .booking-admin-shell .stats-note {
+        margin-top: -4px;
+    }
+
+    body.page-booking .booking-admin-shell .stats-note-chip {
+        border-radius: 8px;
+        padding: 10px 16px;
+        background: rgba(255,255,255,0.045);
+        border-color: rgba(255,255,255,0.1);
+    }
+
+    body.page-booking .booking-admin-shell .filter-section,
+    body.page-booking .booking-admin-shell .table-wrapper {
+        background: rgba(28, 30, 31, 0.78);
+        border-color: rgba(212, 175, 55, 0.22);
+        box-shadow: 0 14px 36px rgba(0,0,0,0.18);
+    }
+
+    body.page-booking .booking-admin-shell .filter-section {
+        padding: 24px;
+    }
+
+    body.page-booking .booking-admin-shell .section-header {
+        border-bottom-color: rgba(255,255,255,0.09);
+    }
+
+    body.page-booking .booking-admin-shell .section-header .icon {
+        background: rgba(212, 175, 55, 0.14);
+        border: 1px solid rgba(212, 175, 55, 0.24);
+    }
+
+    body.page-booking .booking-admin-shell .filter-row {
+        grid-template-columns: minmax(220px, 0.8fr) minmax(260px, 1.3fr) minmax(180px, 0.7fr);
+        gap: 16px;
+    }
+
+    body.page-booking .booking-admin-shell .form-group label {
+        color: rgba(245,245,245,0.78);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+    }
+
+    body.page-booking .booking-admin-shell .form-group .input,
+    body.page-booking .booking-admin-shell .form-group .select {
+        min-height: 52px;
+        border-radius: 8px;
+        border-color: rgba(255,255,255,0.14);
+        background-color: rgba(255,255,255,0.08);
+    }
+
+    body.page-booking .booking-admin-shell .form-group .input:focus,
+    body.page-booking .booking-admin-shell .form-group .select:focus {
+        border-color: rgba(13, 202, 240, 0.58);
+        box-shadow: 0 0 0 3px rgba(13, 202, 240, 0.12);
+    }
+
+    body.page-booking .booking-admin-shell .filter-section .btn {
+        min-height: 52px;
+    }
+
+    body.page-booking .booking-admin-shell .table-wrapper {
+        border-radius: 8px;
+        overflow-x: auto;
+    }
+
+    body.page-booking .booking-admin-shell .table {
+        min-width: 1040px;
+    }
+
+    body.page-booking .booking-admin-shell .table thead {
+        background: linear-gradient(90deg, rgba(212, 175, 55, 0.14), rgba(13, 202, 240, 0.06));
+    }
+
+    body.page-booking .booking-admin-shell .table th {
+        padding: 16px;
+        letter-spacing: 0.06em;
+        white-space: nowrap;
+    }
+
+    body.page-booking .booking-admin-shell .table td {
+        padding: 16px;
+        vertical-align: middle;
+    }
+
+    body.page-booking .booking-admin-shell .table tbody tr {
+        transition: background 0.2s ease;
+    }
+
+    body.page-booking .booking-admin-shell .table tbody tr:hover {
+        background: rgba(255,255,255,0.065);
+    }
+
+    body.page-booking .booking-admin-shell .status-badge {
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        min-height: 30px;
+    }
+
+    body.page-booking .booking-admin-shell .btn-group {
+        gap: 7px;
+    }
+
+    body.page-booking .booking-admin-shell .btn-icon {
+        width: 38px;
+        min-width: 38px;
+        height: 38px;
+        border-radius: 8px;
+    }
+
+    body.page-booking .booking-admin-shell .table-toolbar,
+    body.page-booking .booking-admin-shell .pagination-shell {
+        background: rgba(255,255,255,0.02);
+    }
+
+    body.page-booking .booking-admin-shell .page-link {
+        border-radius: 8px;
+    }
+
+    body.theme-light.page-booking .booking-admin-shell .stat-card,
+    body.theme-light.page-booking .booking-admin-shell .filter-section,
+    body.theme-light.page-booking .booking-admin-shell .table-wrapper {
+        background: rgba(255,255,255,0.9) !important;
+    }
+
+    body.theme-light.page-booking .booking-admin-shell .page-header-title p {
+        color: rgba(255,255,255,0.86);
+    }
+
+    @media (max-width: 1500px) {
+        body.page-booking .booking-admin-shell .stats-grid {
+            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+        }
+    }
+
+    @media (max-width: 900px) {
+        body.page-booking .content-area:has(.booking-admin-shell) {
+            padding: 24px 18px 42px;
+        }
+
+        body.page-booking .booking-admin-shell .page-header-section {
+            padding: 24px;
+        }
+
+        body.page-booking .booking-admin-shell .page-header-inner,
+        body.page-booking .booking-admin-shell .page-header-main {
+            align-items: flex-start;
+        }
+
+        body.page-booking .booking-admin-shell .page-header-avatar {
+            width: 58px;
+            height: 58px;
+            font-size: 1.8rem;
+        }
+
+        body.page-booking .booking-admin-shell .header-actions {
+            width: 100%;
+        }
+
+        body.page-booking .booking-admin-shell .header-actions .btn {
+            flex: 1 1 180px;
+        }
+
+        body.page-booking .booking-admin-shell .filter-row {
+            grid-template-columns: 1fr;
+        }
+    }
 </style>
 
 <?php 

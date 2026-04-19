@@ -63,14 +63,14 @@ foreach ($bookings as $booking) {
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800;900&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --ink: #14231f;
-            --muted: #66756f;
-            --line: rgba(20, 35, 31, .12);
+            --ink: #0f172a;
+            --muted: #64748b;
+            --line: rgba(15, 23, 42, .12);
             --card: rgba(255, 255, 255, .88);
-            --leaf: #17413b;
-            --teal: #0f766e;
-            --gold: #d6a851;
-            --cream: #f5ead7;
+            --leaf: #15233b;
+            --teal: #20365f;
+            --gold: #d6b26d;
+            --cream: #f3ead8;
         }
 
         * { box-sizing: border-box; }
@@ -81,84 +81,108 @@ foreach ($bookings as $booking) {
             color: var(--ink);
             font-family: "Manrope", sans-serif;
             background:
-                radial-gradient(circle at top left, rgba(214, 168, 81, .18), transparent 30rem),
-                radial-gradient(circle at top right, rgba(15, 118, 110, .12), transparent 28rem),
-                linear-gradient(145deg, #fffaf0 0%, #eef8f5 45%, #f8fbff 100%);
+                radial-gradient(1200px 600px at 20% -10%, rgba(214,178,109,.16), transparent 60%),
+                radial-gradient(900px 520px at 85% 0%, rgba(11,18,32,.08), transparent 55%),
+                #f5f6f8;
         }
 
         .page-shell {
             width: min(1500px, calc(100% - 48px));
             margin: 0 auto;
-            padding: 30px 0 56px;
+            padding: 24px 0 56px;
+        }
+
+        .topbar {
+            align-items: center;
+            background: rgba(11,18,32,.92);
+            border: 1px solid rgba(214,178,109,.22);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            display: flex;
+            gap: 16px;
+            justify-content: space-between;
+            margin-bottom: 18px;
+            padding: 12px 14px;
+            box-shadow: 0 12px 34px rgba(2,6,23,.18);
+        }
+
+        .brand {
+            align-items: center;
+            color: #fff;
+            display: inline-flex;
+            font-weight: 800;
+            gap: 10px;
+            letter-spacing: .08em;
+            text-decoration: none;
+            text-transform: uppercase;
+        }
+
+        .brand-mark {
+            align-items: center;
+            background: linear-gradient(135deg, var(--leaf), var(--teal));
+            border-radius: 16px;
+            color: var(--gold);
+            display: inline-flex;
+            height: 44px;
+            justify-content: center;
+            width: 44px;
+        }
+
+        .nav-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .nav-pill {
+            align-items: center;
+            background: rgba(255,255,255,.06);
+            border: 1px solid rgba(214,178,109,.28);
+            border-radius: 999px;
+            color: rgba(255,255,255,.9);
+            display: inline-flex;
+            font-size: 14px;
+            font-weight: 700;
+            gap: 8px;
+            padding: 10px 15px;
+            text-decoration: none;
+            transition: background .2s, border-color .2s, color .2s;
+        }
+
+        .nav-pill:hover {
+            background: rgba(214,178,109,.18);
+            border-color: rgba(214,178,109,.46);
+            color: #fff;
+        }
+
+        .nav-pill.is-active {
+            background: linear-gradient(135deg, var(--gold), #e2bf78);
+            border-color: rgba(214,178,109,.72);
+            color: #132033;
+            box-shadow: 0 10px 24px rgba(185,137,61,.24);
         }
 
         .hero {
             position: relative;
             overflow: hidden;
             border-radius: 32px;
-            border: 1px solid rgba(255,255,255,.62);
+            border: 1px solid rgba(214,178,109,.2);
             background:
-                linear-gradient(115deg, rgba(18,33,29,.94), rgba(36,82,71,.76)),
+                linear-gradient(115deg, rgba(11,18,32,.93), rgba(21,35,59,.78)),
                 url('https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1800&q=80') center/cover;
-            box-shadow: 0 30px 80px rgba(18,33,29,.18);
+            box-shadow: 0 30px 80px rgba(2,6,23,.22);
             color: #fff;
             padding: 28px;
-        }
-
-        .hero-top {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 14px;
-            position: relative;
-            z-index: 1;
-        }
-
-        .back-link,
-        .hero-action,
-        .ghost-link {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            border-radius: 999px;
-            text-decoration: none;
-            font-weight: 900;
-            white-space: nowrap;
-        }
-
-        .back-link {
-            color: #fff;
-            border: 1px solid rgba(255,255,255,.28);
-            background: rgba(255,255,255,.12);
-            padding: 10px 16px;
-        }
-
-        .hero-actions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-
-        .hero-action {
-            color: #13231f;
-            background: linear-gradient(135deg, #f0cc78, #d6a851);
-            padding: 10px 16px;
-        }
-
-        .ghost-link {
-            color: #f7dfac;
-            border: 1px solid rgba(214,168,81,.4);
-            background: rgba(255,255,255,.08);
-            padding: 10px 16px;
         }
 
         .hero h1 {
             max-width: 820px;
             margin: 44px 0 12px;
             font-family: "Playfair Display", serif;
-            font-size: clamp(2.5rem, 5vw, 5rem);
-            line-height: .96;
+            font-size: clamp(2rem, 4vw, 3.35rem);
+            line-height: 1.05;
+            letter-spacing: .2px;
         }
 
         .hero p {
@@ -235,11 +259,13 @@ foreach ($bookings as $booking) {
             align-items: center;
             gap: 10px;
             margin: 0;
-            font-size: 1.28rem;
+            font-family: "Playfair Display", serif;
+            font-size: clamp(1.15rem, 2vw, 1.45rem);
+            letter-spacing: .2px;
             font-weight: 900;
         }
 
-        .panel-title i { color: var(--teal); }
+        .panel-title i { color: var(--gold); }
 
         .booking-list {
             display: grid;
@@ -348,14 +374,14 @@ foreach ($bookings as $booking) {
         }
 
         .action-primary {
-            background: var(--leaf);
+            background: linear-gradient(135deg, var(--leaf), var(--teal));
             color: #fff;
         }
 
         .action-soft {
             background: var(--cream);
-            color: var(--leaf);
-            border: 1px solid rgba(214,168,81,.3);
+            color: #17413b;
+            border: 1px solid rgba(214,178,109,.3);
         }
 
         .side-scroll {
@@ -446,14 +472,18 @@ foreach ($bookings as $booking) {
                 padding-top: 18px;
             }
 
+            .topbar {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .nav-actions {
+                justify-content: flex-start;
+            }
+
             .hero {
                 border-radius: 24px;
                 padding: 20px;
-            }
-
-            .hero-top {
-                align-items: flex-start;
-                flex-direction: column;
             }
 
             .hero h1 { margin-top: 28px; }
@@ -467,16 +497,21 @@ foreach ($bookings as $booking) {
 </head>
 <body class="trk">
     <main class="page-shell">
+        <header class="topbar">
+            <a class="brand" href="index.php?act=khachHang/dashboard">
+                <span class="brand-mark"><i class="bi bi-compass"></i></span>
+                <span>DuLichPro</span>
+            </a>
+            <nav class="nav-actions" aria-label="Điều hướng khách hàng">
+                <a class="nav-pill" href="index.php?act=khachHang/dashboard"><i class="bi bi-house"></i> Trang chủ</a>
+                <a class="nav-pill" href="index.php?act=khachHang/danhSachTour"><i class="bi bi-stars"></i> Tour nổi bật</a>
+                <a class="nav-pill is-active" href="index.php?act=khachHang/yeuCauTour"><i class="bi bi-suitcase2"></i> Tour đã đặt</a>
+                <a class="nav-pill" href="index.php?act=khachHang/capNhatThongTin"><i class="bi bi-person-gear"></i> Hồ sơ</a>
+                <a class="nav-pill" href="index.php?act=khachHang/hoaDon"><i class="bi bi-receipt"></i> Hóa đơn</a>
+            </nav>
+        </header>
+
         <section class="hero">
-            <div class="hero-top">
-                <a class="back-link" href="index.php?act=khachHang/dashboard">
-                    <i class="bi bi-arrow-left"></i> Trang chủ
-                </a>
-                <div class="hero-actions">
-                    <a class="ghost-link" href="index.php?act=khachHang/danhSachTour"><i class="bi bi-compass"></i> Khám phá tour</a>
-                    <a class="hero-action" href="index.php?act=khachHang/hoaDon"><i class="bi bi-receipt"></i> Hóa đơn</a>
-                </div>
-            </div>
             <h1>Theo dõi tour đã đặt</h1>
             <p>Quản lý booking, thông tin người tham gia, hóa đơn và nhắc nhở khởi hành trong một màn hình rõ ràng hơn.</p>
         </section>

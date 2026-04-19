@@ -717,6 +717,125 @@ ob_start();
                 min-width: 0;
             }
         }
+        body.page-nhanSu .content-area {
+            padding: 34px 48px 56px;
+            background:
+                radial-gradient(circle at 12% 8%, rgba(32, 178, 170, 0.08), transparent 28%),
+                radial-gradient(circle at 84% 16%, rgba(212, 175, 55, 0.10), transparent 30%),
+                linear-gradient(135deg, #131616 0%, #181b1c 48%, #111313 100%);
+        }
+        body.page-nhanSu .hdv-advanced-wrap {
+            max-width: 100%;
+            padding: 0;
+        }
+        body.page-nhanSu .hdv-advanced-wrap .page-header-section {
+            min-height: 190px;
+            padding: 34px 44px;
+            border: 1px solid rgba(212,175,55,.22);
+            background:
+                linear-gradient(90deg, rgba(16,22,22,.92) 0%, rgba(24,30,29,.86) 54%, rgba(212,175,55,.45) 100%),
+                url('<?php echo BASE_URL; ?>public/images/logos/hinh-nen-viet-nam-4k10.jpg') center/cover;
+            box-shadow: 0 24px 52px rgba(0,0,0,.28);
+        }
+        body.page-nhanSu .hdv-advanced-wrap .page-header-glow {
+            display: none;
+        }
+        body.page-nhanSu .hdv-advanced-wrap .page-header-avatar {
+            width: 92px;
+            height: 92px;
+            border-radius: 8px;
+            background: rgba(212,175,55,.18);
+            border: 1px solid rgba(212,175,55,.34);
+            box-shadow: 0 18px 34px rgba(0,0,0,.22);
+        }
+        body.page-nhanSu .hdv-advanced-wrap .page-header-title {
+            font-size: 2.15rem;
+            color: #ffe082;
+            letter-spacing: 0;
+        }
+        body.page-nhanSu .hdv-advanced-wrap .page-header-desc {
+            color: #f5f1df;
+            line-height: 1.6;
+        }
+        body.page-nhanSu .hdv-advanced-wrap .quick-actions .btn {
+            min-height: 58px;
+            border-radius: 8px;
+            padding: 14px 24px;
+            font-weight: 800;
+        }
+        body.page-nhanSu .hdv-advanced-wrap .stats-grid {
+            gap: 28px;
+            margin: 28px 0 34px;
+        }
+        body.page-nhanSu .hdv-advanced-wrap .stat-card,
+        body.page-nhanSu .hdv-advanced-wrap .hdv-card,
+        body.page-nhanSu .hdv-advanced-wrap .tab-pane,
+        body.page-nhanSu .hdv-advanced-wrap .notification-card,
+        body.page-nhanSu .hdv-advanced-wrap .calendar-wrap {
+            background: rgba(28, 30, 31, .80);
+            border: 1px solid rgba(212,175,55,.20);
+            border-radius: 8px;
+            box-shadow: 0 18px 38px rgba(0,0,0,.20);
+        }
+        body.page-nhanSu .hdv-advanced-wrap .stat-card {
+            min-height: 168px;
+            padding: 28px 30px;
+        }
+        body.page-nhanSu .hdv-advanced-wrap .stat-icon {
+            width: 72px;
+            height: 72px;
+            border-radius: 8px;
+        }
+        body.page-nhanSu .hdv-advanced-wrap .stat-card h2 {
+            font-size: 2.65rem;
+        }
+        body.page-nhanSu .hdv-advanced-wrap .nav-tabs {
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        body.page-nhanSu .hdv-advanced-wrap .nav-tabs .nav-link {
+            min-height: 46px;
+            border-radius: 8px;
+            font-weight: 700;
+            padding: 11px 16px;
+        }
+        body.page-nhanSu .hdv-advanced-wrap .filter-toolbar {
+            grid-template-columns: 180px 180px minmax(260px, 1fr);
+            gap: 16px;
+            margin-bottom: 18px;
+        }
+        body.page-nhanSu .hdv-advanced-wrap .filter-field .form-control,
+        body.page-nhanSu .hdv-advanced-wrap .filter-field .form-select {
+            min-height: 54px;
+            border-radius: 8px;
+            background: rgba(255,255,255,.055);
+            border-color: rgba(255,255,255,.18);
+        }
+        body.page-nhanSu .hdv-advanced-wrap .filter-field .form-control:focus,
+        body.page-nhanSu .hdv-advanced-wrap .filter-field .form-select:focus {
+            border-color: rgba(32,178,170,.72);
+            box-shadow: 0 0 0 3px rgba(32,178,170,.12);
+        }
+        body.page-nhanSu .hdv-advanced-wrap .hdv-card {
+            padding: 26px;
+            border-left-color: rgba(212,175,55,.46);
+        }
+        body.page-nhanSu .hdv-advanced-wrap .status-badge,
+        body.page-nhanSu .hdv-advanced-wrap .loai-hdv-badge {
+            border-radius: 8px;
+            font-weight: 700;
+            padding: 7px 12px;
+        }
+        @media (max-width: 1200px) {
+            body.page-nhanSu .hdv-advanced-wrap .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            body.page-nhanSu .hdv-advanced-wrap .filter-toolbar { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 768px) {
+            body.page-nhanSu .content-area { padding: 24px 18px 44px; }
+            body.page-nhanSu .hdv-advanced-wrap .page-header-section { padding: 24px; }
+            body.page-nhanSu .hdv-advanced-wrap .page-header-title { font-size: 1.6rem; }
+            body.page-nhanSu .hdv-advanced-wrap .stats-grid { grid-template-columns: 1fr; }
+        }
     </style>
 
 <div class="hdv-advanced-wrap">

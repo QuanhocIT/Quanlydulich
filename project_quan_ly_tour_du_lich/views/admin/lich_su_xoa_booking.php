@@ -175,8 +175,157 @@ ob_start();
         font-size: 12px;
         line-height: 1.6;
     }
+
+    body.page-booking .content-area:has(.deleted-booking-history-page) {
+        padding: 34px 48px 56px;
+        background:
+            radial-gradient(circle at 10% 0%, rgba(13, 202, 240, 0.08), transparent 28%),
+            radial-gradient(circle at 100% 10%, rgba(212, 175, 55, 0.11), transparent 30%),
+            linear-gradient(180deg, rgba(255,255,255,0.018), transparent 260px);
+    }
+
+    body.page-booking .deleted-booking-history-page .page-header-section {
+        min-height: 154px;
+        padding: 28px 34px;
+        background:
+            linear-gradient(100deg, rgba(28, 31, 33, 0.96) 0%, rgba(30, 42, 45, 0.94) 52%, rgba(119, 102, 45, 0.84) 100%),
+            url("<?php echo BASE_URL; ?>public/images/logos/hinh-nen-viet-nam-4k10.jpg");
+        background-size: cover;
+        background-position: center;
+        border: 1px solid rgba(255, 255, 255, 0.09);
+        box-shadow: 0 22px 60px rgba(0, 0, 0, 0.28);
+    }
+
+    body.page-booking .deleted-booking-history-page .page-header-section::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(90deg, rgba(0,0,0,0.18), rgba(0,0,0,0.04));
+        pointer-events: none;
+    }
+
+    body.page-booking .deleted-booking-history-page .page-header-glow {
+        display: none;
+    }
+
+    body.page-booking .deleted-booking-history-page .page-header-inner {
+        position: relative;
+        z-index: 2;
+        align-items: center;
+    }
+
+    body.page-booking .deleted-booking-history-page .page-header-main {
+        align-items: center;
+        gap: 18px;
+    }
+
+    body.page-booking .deleted-booking-history-page .page-header-avatar {
+        width: 74px;
+        height: 74px;
+        border-radius: 8px;
+        background: rgba(212, 175, 55, 0.18);
+        border: 1px solid rgba(255, 224, 130, 0.32);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.16), 0 16px 34px rgba(0,0,0,0.24);
+    }
+
+    body.page-booking .deleted-booking-history-page .page-header-title h1 {
+        font-size: 2rem;
+        line-height: 1.18;
+        letter-spacing: 0;
+        text-shadow: none;
+    }
+
+    body.page-booking .deleted-booking-history-page .page-header-title p {
+        max-width: 680px;
+        color: rgba(255,255,255,0.86);
+        text-shadow: none;
+    }
+
+    body.page-booking .deleted-booking-history-page .page-header-section .btn {
+        min-height: 46px;
+        padding-inline: 28px;
+        border-radius: 8px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+    }
+
+    body.page-booking .deleted-booking-history-page .table-wrapper {
+        background: rgba(28, 30, 31, 0.78);
+        border-color: rgba(212, 175, 55, 0.22);
+        border-radius: 8px;
+        overflow-x: auto;
+        box-shadow: 0 14px 36px rgba(0,0,0,0.18);
+    }
+
+    body.page-booking .deleted-booking-history-page .table {
+        min-width: 1180px;
+    }
+
+    body.page-booking .deleted-booking-history-page .table thead {
+        background: linear-gradient(90deg, rgba(212, 175, 55, 0.14), rgba(13, 202, 240, 0.06));
+    }
+
+    body.page-booking .deleted-booking-history-page .table th {
+        padding: 16px 20px;
+        letter-spacing: 0.06em;
+        white-space: nowrap;
+    }
+
+    body.page-booking .deleted-booking-history-page .table td {
+        padding: 20px;
+        vertical-align: middle;
+    }
+
+    body.page-booking .deleted-booking-history-page .table tbody tr {
+        transition: background 0.2s ease;
+    }
+
+    body.page-booking .deleted-booking-history-page .table tbody tr:hover {
+        background: rgba(255,255,255,0.065);
+    }
+
+    body.page-booking .deleted-booking-history-page .badge {
+        border-radius: 8px;
+        min-height: 30px;
+        display: inline-flex;
+        align-items: center;
+    }
+
+    body.page-booking .deleted-booking-history-page .booking-info {
+        min-width: 210px;
+        padding: 10px 12px;
+        border-radius: 8px;
+        background: rgba(255,255,255,0.035);
+        border: 1px solid rgba(255,255,255,0.07);
+    }
+
+    body.theme-light.page-booking .deleted-booking-history-page .table-wrapper {
+        background: rgba(255,255,255,0.9) !important;
+    }
+
+    @media (max-width: 900px) {
+        body.page-booking .content-area:has(.deleted-booking-history-page) {
+            padding: 24px 18px 42px;
+        }
+
+        body.page-booking .deleted-booking-history-page .page-header-section {
+            padding: 24px;
+        }
+
+        body.page-booking .deleted-booking-history-page .page-header-inner,
+        body.page-booking .deleted-booking-history-page .page-header-main {
+            align-items: flex-start;
+        }
+
+        body.page-booking .deleted-booking-history-page .page-header-avatar {
+            width: 58px;
+            height: 58px;
+            font-size: 1.8rem;
+        }
+    }
 </style>
 
+<div class="deleted-booking-history-page">
 <!-- Page Header -->
 <div class="page-header-section">
     <div class="page-header-glow"></div>
@@ -317,6 +466,8 @@ ob_start();
             <p>Chưa có lịch sử xóa booking nào</p>
         </div>
     <?php endif; ?>
+</div>
+
 </div>
 
 <?php

@@ -171,9 +171,124 @@ ob_start();
         .summary-grid { grid-template-columns: repeat(2, minmax(110px, 1fr)); }
         .pay-form { grid-template-columns: 1fr; }
     }
+    body.page-baoCaoTaiChinh .content-area {
+        padding: 34px 48px 56px;
+        background:
+            radial-gradient(circle at 12% 8%, rgba(32, 178, 170, 0.08), transparent 28%),
+            radial-gradient(circle at 84% 16%, rgba(212, 175, 55, 0.10), transparent 30%),
+            linear-gradient(135deg, #131616 0%, #181b1c 48%, #111313 100%);
+    }
+    body.page-baoCaoTaiChinh .finance-debt-page {
+        padding: 0 !important;
+    }
+    body.page-baoCaoTaiChinh .finance-debt-page .page-header-section {
+        min-height: 150px;
+        padding: 28px 34px !important;
+        border: 1px solid rgba(212, 175, 55, 0.22);
+        border-radius: 8px;
+        background:
+            linear-gradient(90deg, rgba(22,24,24,.94) 0%, rgba(34,34,25,.9) 54%, rgba(212,175,55,.48) 100%),
+            url('<?php echo BASE_URL; ?>public/images/logos/hinh-nen-viet-nam-4k10.jpg') center/cover;
+        box-shadow: 0 22px 48px rgba(0,0,0,.26);
+        display: flex;
+        align-items: center;
+        overflow: hidden;
+        position: relative;
+    }
+    body.page-baoCaoTaiChinh .finance-debt-page .page-header-section h1 {
+        color: #ffe082 !important;
+        font-size: 2.15rem !important;
+        letter-spacing: 0 !important;
+        position: relative;
+        z-index: 1;
+    }
+    body.page-baoCaoTaiChinh .finance-debt-page .report-card {
+        background: rgba(28, 30, 31, .80);
+        border: 1px solid rgba(212, 175, 55, .20);
+        border-radius: 8px;
+        box-shadow: 0 18px 38px rgba(0,0,0,.20);
+        padding: 28px;
+        margin-bottom: 22px;
+    }
+    body.page-baoCaoTaiChinh .finance-debt-page .filters-grid {
+        grid-template-columns: repeat(4, minmax(180px, 1fr)) auto;
+        gap: 18px;
+    }
+    body.page-baoCaoTaiChinh .finance-debt-page .filters-grid label {
+        color: #d4d4d4;
+        font-size: .86rem;
+        letter-spacing: .5px;
+        text-transform: uppercase;
+    }
+    body.page-baoCaoTaiChinh .finance-debt-page .filters-grid input,
+    body.page-baoCaoTaiChinh .finance-debt-page .filters-grid select {
+        min-height: 46px;
+        border-radius: 8px;
+        border-color: rgba(255,255,255,.18);
+        background: rgba(255,255,255,.055);
+    }
+    body.page-baoCaoTaiChinh .finance-debt-page .filters-grid input:focus,
+    body.page-baoCaoTaiChinh .finance-debt-page .filters-grid select:focus,
+    body.page-baoCaoTaiChinh .finance-debt-page .pay-form input:focus,
+    body.page-baoCaoTaiChinh .finance-debt-page .pay-form select:focus {
+        outline: none;
+        border-color: rgba(32,178,170,.72);
+        box-shadow: 0 0 0 3px rgba(32,178,170,.12);
+    }
+    body.page-baoCaoTaiChinh .finance-debt-page .summary-grid {
+        gap: 16px;
+    }
+    body.page-baoCaoTaiChinh .finance-debt-page .summary-box {
+        min-height: 96px;
+        border-radius: 8px;
+        border: 1px solid rgba(212,175,55,.18);
+        background: linear-gradient(135deg, rgba(255,255,255,.06), rgba(255,255,255,.025));
+        padding: 18px;
+    }
+    body.page-baoCaoTaiChinh .finance-debt-page .summary-box .label {
+        letter-spacing: .5px;
+    }
+    body.page-baoCaoTaiChinh .finance-debt-page .summary-box .value {
+        margin-top: 12px;
+        font-size: 1.65rem;
+    }
+    body.page-baoCaoTaiChinh .finance-debt-page .table {
+        min-width: 1280px;
+    }
+    body.page-baoCaoTaiChinh .finance-debt-page .table th {
+        background: linear-gradient(90deg, rgba(212,175,55,.16), rgba(255,255,255,.04));
+        color: #d4af37;
+        padding: 18px 14px;
+        text-transform: uppercase;
+        letter-spacing: .8px;
+        font-size: .82rem;
+    }
+    body.page-baoCaoTaiChinh .finance-debt-page .table td {
+        padding: 18px 14px;
+    }
+    body.page-baoCaoTaiChinh .finance-debt-page .btn {
+        min-height: 44px;
+        border-radius: 8px;
+        font-weight: 700;
+    }
+    body.page-baoCaoTaiChinh .finance-debt-page .btn-outline {
+        background: rgba(255,255,255,.055);
+        border-color: rgba(255,255,255,.18);
+    }
+    body.page-baoCaoTaiChinh .finance-debt-page .badge {
+        border-radius: 8px;
+    }
+    @media (max-width: 1200px) {
+        body.page-baoCaoTaiChinh .finance-debt-page .filters-grid { grid-template-columns: repeat(2, minmax(160px, 1fr)); }
+    }
+    @media (max-width: 768px) {
+        body.page-baoCaoTaiChinh .content-area { padding: 24px 18px 44px; }
+        body.page-baoCaoTaiChinh .finance-debt-page .page-header-section h1 { font-size: 1.65rem !important; }
+        body.page-baoCaoTaiChinh .finance-debt-page .filters-grid { grid-template-columns: 1fr; }
+    }
     </style>
 
-<div style="padding: 20px;">
+<div class="finance-debt-page" style="padding: 20px;">
     <div class="page-header-section" style="margin-bottom: 30px;">
         <h1 style="margin: 0; font-size: 2rem; color: var(--text-light);">
             <i class="fas fa-user-tie" style="color: var(--accent-gold);"></i> Tổng quan công nợ HDV

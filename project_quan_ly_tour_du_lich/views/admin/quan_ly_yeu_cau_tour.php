@@ -326,6 +326,244 @@ ob_start();
             font-size: 1.4rem;
         }
     }
+
+    body.page-yeuCauTour .content-area {
+        padding: 34px 48px 56px;
+        background:
+            radial-gradient(circle at 10% 0%, rgba(13, 202, 240, 0.08), transparent 28%),
+            radial-gradient(circle at 100% 10%, rgba(212, 175, 55, 0.11), transparent 30%),
+            linear-gradient(180deg, rgba(255,255,255,0.018), transparent 260px);
+    }
+
+    body.page-yeuCauTour .page-header-section {
+        min-height: 154px;
+        padding: 28px 34px;
+        background:
+            linear-gradient(100deg, rgba(28, 31, 33, 0.96) 0%, rgba(30, 42, 45, 0.94) 52%, rgba(119, 102, 45, 0.84) 100%),
+            url("<?php echo BASE_URL; ?>public/images/logos/hinh-nen-viet-nam-4k10.jpg");
+        background-size: cover;
+        background-position: center;
+        border: 1px solid rgba(255, 255, 255, 0.09);
+        box-shadow: 0 22px 60px rgba(0, 0, 0, 0.28);
+    }
+
+    body.page-yeuCauTour .page-header-section::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(90deg, rgba(0,0,0,0.18), rgba(0,0,0,0.04));
+        pointer-events: none;
+    }
+
+    body.page-yeuCauTour .page-header-glow {
+        display: none;
+    }
+
+    body.page-yeuCauTour .page-header-inner {
+        position: relative;
+        z-index: 2;
+        align-items: center;
+    }
+
+    body.page-yeuCauTour .page-header-main {
+        align-items: center;
+        gap: 18px;
+    }
+
+    body.page-yeuCauTour .page-header-avatar {
+        width: 74px;
+        height: 74px;
+        border-radius: 8px;
+        background: rgba(212, 175, 55, 0.18);
+        border: 1px solid rgba(255, 224, 130, 0.32);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.16), 0 16px 34px rgba(0,0,0,0.24);
+    }
+
+    body.page-yeuCauTour .page-header-title h1 {
+        font-size: 2rem;
+        line-height: 1.18;
+        letter-spacing: 0;
+        text-shadow: none;
+    }
+
+    body.page-yeuCauTour .page-header-title p {
+        max-width: 680px;
+        color: rgba(255,255,255,0.86);
+        text-shadow: none;
+    }
+
+    body.page-yeuCauTour .page-header-section .btn,
+    body.page-yeuCauTour .filter-section .btn,
+    body.page-yeuCauTour .table-wrapper .btn {
+        border-radius: 8px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+    }
+
+    body.page-yeuCauTour .page-header-section .btn {
+        min-height: 46px;
+        padding-inline: 28px;
+    }
+
+    body.page-yeuCauTour .stats-grid {
+        grid-template-columns: repeat(3, minmax(220px, 1fr));
+        gap: 24px;
+    }
+
+    body.page-yeuCauTour .stat-card {
+        min-height: 160px;
+        padding: 28px 32px;
+        background: linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.025));
+        border-color: rgba(255, 255, 255, 0.1);
+        border-left-width: 3px;
+        box-shadow: 0 14px 32px rgba(0,0,0,0.18);
+    }
+
+    body.page-yeuCauTour .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 24px 54px rgba(0,0,0,0.24);
+    }
+
+    body.page-yeuCauTour .stat-label {
+        margin-bottom: 24px;
+        letter-spacing: 0.06em;
+        line-height: 1.45;
+    }
+
+    body.page-yeuCauTour .stat-value {
+        font-size: 2.65rem;
+        line-height: 1;
+        letter-spacing: 0;
+    }
+
+    body.page-yeuCauTour .filter-section,
+    body.page-yeuCauTour .table-wrapper {
+        background: rgba(28, 30, 31, 0.78);
+        border-color: rgba(212, 175, 55, 0.22);
+        box-shadow: 0 14px 36px rgba(0,0,0,0.18);
+    }
+
+    body.page-yeuCauTour .filter-section {
+        padding: 24px 32px 28px;
+    }
+
+    body.page-yeuCauTour .filter-row {
+        grid-template-columns: minmax(260px, 1.25fr) minmax(220px, 0.9fr) minmax(180px, 0.7fr) minmax(180px, 0.7fr);
+        gap: 18px;
+    }
+
+    body.page-yeuCauTour .form-group label {
+        color: rgba(245,245,245,0.78);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+    }
+
+    body.page-yeuCauTour .form-group .input,
+    body.page-yeuCauTour .form-group .select {
+        min-height: 52px;
+        border-radius: 8px;
+        border-color: rgba(255,255,255,0.14);
+        background-color: rgba(255,255,255,0.08);
+    }
+
+    body.page-yeuCauTour .form-group .input:focus,
+    body.page-yeuCauTour .form-group .select:focus {
+        border-color: rgba(13, 202, 240, 0.58);
+        box-shadow: 0 0 0 3px rgba(13, 202, 240, 0.12);
+    }
+
+    body.page-yeuCauTour .filter-section .btn {
+        min-height: 52px;
+    }
+
+    body.page-yeuCauTour .table-wrapper {
+        border-radius: 8px;
+        overflow-x: auto;
+    }
+
+    body.page-yeuCauTour .realtime-note {
+        padding: 16px 20px !important;
+        margin: 0;
+        background: rgba(255,255,255,0.025);
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+
+    body.page-yeuCauTour .table {
+        min-width: 980px;
+    }
+
+    body.page-yeuCauTour .table thead {
+        background: linear-gradient(90deg, rgba(212, 175, 55, 0.14), rgba(13, 202, 240, 0.06));
+    }
+
+    body.page-yeuCauTour .table th {
+        padding: 16px 20px;
+        letter-spacing: 0.06em;
+        white-space: nowrap;
+    }
+
+    body.page-yeuCauTour .table td {
+        padding: 18px 20px;
+        vertical-align: middle;
+    }
+
+    body.page-yeuCauTour .table tbody tr {
+        transition: background 0.2s ease;
+    }
+
+    body.page-yeuCauTour .table tbody tr:hover {
+        background: rgba(255,255,255,0.065);
+    }
+
+    body.page-yeuCauTour .request-note {
+        max-width: 420px;
+        padding: 10px 12px;
+        border-radius: 8px;
+        background: rgba(255,255,255,0.035);
+        border: 1px solid rgba(255,255,255,0.07);
+    }
+
+    body.page-yeuCauTour .badge {
+        border-radius: 8px;
+        min-height: 30px;
+        display: inline-flex;
+        align-items: center;
+    }
+
+    body.theme-light.page-yeuCauTour .stat-card,
+    body.theme-light.page-yeuCauTour .filter-section,
+    body.theme-light.page-yeuCauTour .table-wrapper {
+        background: rgba(255,255,255,0.9) !important;
+    }
+
+    @media (max-width: 1200px) {
+        body.page-yeuCauTour .stats-grid,
+        body.page-yeuCauTour .filter-row {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 900px) {
+        body.page-yeuCauTour .content-area {
+            padding: 24px 18px 42px;
+        }
+
+        body.page-yeuCauTour .page-header-section {
+            padding: 24px;
+        }
+
+        body.page-yeuCauTour .page-header-inner,
+        body.page-yeuCauTour .page-header-main {
+            align-items: flex-start;
+        }
+
+        body.page-yeuCauTour .page-header-avatar {
+            width: 58px;
+            height: 58px;
+            font-size: 1.8rem;
+        }
+    }
 </style>
 
 <!-- Page Header -->

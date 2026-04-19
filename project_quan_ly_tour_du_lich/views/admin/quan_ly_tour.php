@@ -263,6 +263,121 @@ ob_start();
             grid-template-columns: 1fr;
         }
     }
+    body.page-quanLyTour .content-area {
+        padding: 34px 48px 56px;
+        background:
+            radial-gradient(circle at 12% 8%, rgba(32, 178, 170, 0.08), transparent 28%),
+            radial-gradient(circle at 84% 16%, rgba(212, 175, 55, 0.10), transparent 30%),
+            linear-gradient(135deg, #131616 0%, #181b1c 48%, #111313 100%);
+    }
+    body.page-quanLyTour .page-header {
+        min-height: 154px;
+        padding: 34px 40px;
+        border: 1px solid rgba(212,175,55,.22);
+        background:
+            linear-gradient(90deg, rgba(16,22,22,.92) 0%, rgba(24,30,29,.86) 54%, rgba(212,175,55,.45) 100%),
+            url('<?php echo BASE_URL; ?>public/images/logos/hinh-nen-viet-nam-4k10.jpg') center/cover;
+        box-shadow: 0 24px 52px rgba(0,0,0,.28);
+    }
+    body.page-quanLyTour .page-header-glow {
+        display: none;
+    }
+    body.page-quanLyTour .page-header-avatar {
+        width: 84px;
+        height: 84px;
+        border-radius: 8px;
+        background: rgba(212,175,55,.18);
+        border: 1px solid rgba(212,175,55,.34);
+        box-shadow: 0 18px 34px rgba(0,0,0,.22);
+    }
+    body.page-quanLyTour .page-header h2 {
+        font-size: 2.05rem;
+        letter-spacing: 0;
+        color: #ffe082;
+    }
+    body.page-quanLyTour .page-header p {
+        color: #f5f1df;
+        line-height: 1.6;
+    }
+    body.page-quanLyTour .page-header .btn {
+        min-height: 56px;
+        border-radius: 8px;
+        padding: 14px 28px;
+        font-weight: 800;
+    }
+    body.page-quanLyTour .filter-section,
+    body.page-quanLyTour .table-wrapper {
+        background: rgba(28,30,31,.80);
+        border: 1px solid rgba(212,175,55,.20);
+        border-radius: 8px;
+        box-shadow: 0 18px 38px rgba(0,0,0,.20);
+    }
+    body.page-quanLyTour .filter-section {
+        padding: 28px 30px;
+        margin-bottom: 30px;
+    }
+    body.page-quanLyTour .filter-row {
+        gap: 18px;
+    }
+    body.page-quanLyTour .form-group label {
+        color: #d4d4d4;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+    }
+    body.page-quanLyTour .form-group .input,
+    body.page-quanLyTour .form-group .select {
+        min-height: 48px;
+        border-radius: 8px;
+        background: rgba(255,255,255,.055);
+        border-color: rgba(255,255,255,.18);
+    }
+    body.page-quanLyTour .form-group .input:focus,
+    body.page-quanLyTour .form-group .select:focus {
+        border-color: rgba(32,178,170,.72);
+        box-shadow: 0 0 0 3px rgba(32,178,170,.12);
+    }
+    body.page-quanLyTour .filter-section .btn {
+        min-height: 48px;
+        border-radius: 8px;
+        font-weight: 800;
+    }
+    body.page-quanLyTour .table-wrapper {
+        overflow-x: auto;
+    }
+    body.page-quanLyTour .table {
+        min-width: 1180px;
+    }
+    body.page-quanLyTour .table thead {
+        background: linear-gradient(90deg, rgba(212,175,55,.16), rgba(255,255,255,.04));
+    }
+    body.page-quanLyTour .table th {
+        padding: 18px 20px;
+        color: #d4af37;
+    }
+    body.page-quanLyTour .table td {
+        padding: 20px;
+        vertical-align: middle;
+    }
+    body.page-quanLyTour .badge {
+        border-radius: 8px;
+        padding: 8px 12px;
+        font-weight: 700;
+    }
+    body.page-quanLyTour .btn-group {
+        gap: 8px;
+        justify-content: center;
+    }
+    body.page-quanLyTour .btn-sm {
+        min-height: 40px;
+        border-radius: 8px;
+        padding: 8px 12px;
+        font-weight: 700;
+    }
+    @media (max-width: 768px) {
+        body.page-quanLyTour .content-area { padding: 24px 18px 44px; }
+        body.page-quanLyTour .page-header { padding: 24px; }
+        body.page-quanLyTour .page-header h2 { font-size: 1.55rem; }
+    }
 </style>
 
 <div class="page-header">

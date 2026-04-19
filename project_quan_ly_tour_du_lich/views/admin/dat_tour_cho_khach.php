@@ -309,7 +309,7 @@ ob_start();
         backdrop-filter: blur(10px);
     }
 
-    .tour-summary-card .header {
+    .tour-summary-card .summary-card-header {
         background: rgba(212, 175, 55, 0.2);
         color: var(--accent-gold);
         padding: 15px;
@@ -481,6 +481,11 @@ ob_start();
         gap: 30px;
     }
 
+    .booking-side-panel {
+        position: sticky;
+        top: 88px;
+    }
+
     @media (max-width: 992px) {
         .two-column-layout {
             grid-template-columns: 1fr;
@@ -505,6 +510,307 @@ ob_start();
 
     .hidden {
         display: none !important;
+    }
+
+    body.page-booking .content-area:has(#datTourForm) {
+        padding: 34px 48px 56px;
+        background:
+            radial-gradient(circle at 10% 0%, rgba(13, 202, 240, 0.08), transparent 28%),
+            radial-gradient(circle at 100% 10%, rgba(212, 175, 55, 0.11), transparent 30%),
+            linear-gradient(180deg, rgba(255,255,255,0.018), transparent 260px);
+    }
+
+    body.page-booking .content-area:has(#datTourForm) .page-header-section {
+        min-height: 154px;
+        padding: 28px 34px;
+        background:
+            linear-gradient(100deg, rgba(28, 31, 33, 0.96) 0%, rgba(30, 42, 45, 0.94) 52%, rgba(119, 102, 45, 0.84) 100%),
+            url("<?php echo BASE_URL; ?>public/images/logos/hinh-nen-viet-nam-4k10.jpg");
+        background-size: cover;
+        background-position: center;
+        border: 1px solid rgba(255, 255, 255, 0.09);
+        box-shadow: 0 22px 60px rgba(0, 0, 0, 0.28);
+    }
+
+    body.page-booking .content-area:has(#datTourForm) .page-header-section::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(90deg, rgba(0,0,0,0.18), rgba(0,0,0,0.04));
+        pointer-events: none;
+    }
+
+    body.page-booking .content-area:has(#datTourForm) .page-header-glow {
+        display: none;
+    }
+
+    body.page-booking .content-area:has(#datTourForm) .page-header-inner {
+        position: relative;
+        z-index: 2;
+        align-items: center;
+    }
+
+    body.page-booking .content-area:has(#datTourForm) .page-header-main {
+        align-items: center;
+        gap: 18px;
+    }
+
+    body.page-booking .content-area:has(#datTourForm) .page-header-avatar {
+        width: 74px;
+        height: 74px;
+        border-radius: 8px;
+        background: rgba(212, 175, 55, 0.18);
+        border: 1px solid rgba(255, 224, 130, 0.32);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.16), 0 16px 34px rgba(0,0,0,0.24);
+    }
+
+    body.page-booking .content-area:has(#datTourForm) .page-header-title h1 {
+        font-size: 2rem;
+        line-height: 1.18;
+        letter-spacing: 0;
+        text-shadow: none;
+    }
+
+    body.page-booking .content-area:has(#datTourForm) .page-header-title p {
+        max-width: 680px;
+        color: rgba(255,255,255,0.86);
+        text-shadow: none;
+    }
+
+    body.page-booking .content-area:has(#datTourForm) .page-header-section .btn,
+    body.page-booking .content-area:has(#datTourForm) .view-switch-link,
+    body.page-booking .content-area:has(#datTourForm) .form-section .btn {
+        border-radius: 8px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+    }
+
+    body.page-booking .content-area:has(#datTourForm) .page-header-section .btn {
+        min-height: 46px;
+        padding-inline: 28px;
+    }
+
+    body.page-booking .content-area:has(#datTourForm) .booking-view-switch {
+        gap: 12px;
+        margin-bottom: 34px;
+    }
+
+    body.page-booking .content-area:has(#datTourForm) .view-switch-link {
+        min-height: 58px;
+        padding: 14px 22px;
+        background: rgba(255,255,255,0.045);
+        border: 1px solid rgba(255,255,255,0.12);
+        box-shadow: 0 10px 24px rgba(0,0,0,0.12);
+    }
+
+    body.page-booking .content-area:has(#datTourForm) .view-switch-link:hover,
+    body.page-booking .content-area:has(#datTourForm) .view-switch-link.active {
+        background: rgba(212, 175, 55, 0.14);
+        border-color: rgba(212, 175, 55, 0.6);
+        color: var(--accent-gold);
+        box-shadow: 0 16px 34px rgba(0,0,0,0.18);
+    }
+
+    body.page-booking .content-area:has(#datTourForm) .step-indicator {
+        margin: 6px 0 34px;
+        padding: 0 44px;
+    }
+
+    body.page-booking .content-area:has(#datTourForm) .step-indicator::before {
+        top: 24px;
+        background: linear-gradient(90deg, rgba(212, 175, 55, 0.45), rgba(255,255,255,0.12), rgba(255,255,255,0.12));
+    }
+
+    body.page-booking .content-area:has(#datTourForm) .step-circle {
+        width: 50px;
+        height: 50px;
+        border-radius: 999px;
+        background: rgba(255,255,255,0.045);
+        box-shadow: 0 12px 28px rgba(0,0,0,0.18);
+    }
+
+    body.page-booking .content-area:has(#datTourForm) .step.active .step-circle {
+        box-shadow: 0 14px 30px rgba(212,175,55,0.18);
+    }
+
+    body.page-booking .content-area:has(#datTourForm) .step-label {
+        margin-top: 4px;
+        font-size: 13px;
+    }
+
+    body.page-booking .content-area:has(#datTourForm) .two-column-layout {
+        grid-template-columns: minmax(0, 2.1fr) minmax(320px, 0.9fr);
+        gap: 38px;
+        align-items: start;
+    }
+
+    body.page-booking .content-area:has(#datTourForm) .form-section,
+    body.page-booking .content-area:has(#datTourForm) .tour-summary-card,
+    body.page-booking .content-area:has(#datTourForm) .quick-tips {
+        background: rgba(28, 30, 31, 0.78);
+        border-color: rgba(212, 175, 55, 0.22);
+        box-shadow: 0 14px 36px rgba(0,0,0,0.18);
+    }
+
+    body.page-booking .content-area:has(#datTourForm) .form-section {
+        padding: 32px 38px;
+    }
+
+    body.page-booking .content-area:has(#datTourForm) .form-section-header {
+        border-bottom-color: rgba(255,255,255,0.09);
+    }
+
+    body.page-booking .content-area:has(#datTourForm) .form-section-header .icon {
+        width: 70px;
+        height: 70px;
+        background: rgba(212, 175, 55, 0.14);
+        border: 1px solid rgba(212, 175, 55, 0.24);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
+    }
+
+    body.page-booking .content-area:has(#datTourForm) .form-section-header h3 {
+        font-size: 21px;
+        line-height: 1.3;
+    }
+
+    body.page-booking .content-area:has(#datTourForm) .form-row {
+        gap: 22px 24px;
+    }
+
+    body.page-booking .content-area:has(#datTourForm) .form-group label {
+        color: rgba(245,245,245,0.78);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+    }
+
+    body.page-booking .content-area:has(#datTourForm) .form-group .input,
+    body.page-booking .content-area:has(#datTourForm) .form-group .select,
+    body.page-booking .content-area:has(#datTourForm) .form-group textarea {
+        min-height: 52px;
+        border-radius: 8px;
+        border-color: rgba(255,255,255,0.14);
+        background-color: rgba(255,255,255,0.08);
+    }
+
+    body.page-booking .content-area:has(#datTourForm) .form-group textarea {
+        min-height: 130px;
+    }
+
+    body.page-booking .content-area:has(#datTourForm) .form-group .input:focus,
+    body.page-booking .content-area:has(#datTourForm) .form-group .select:focus,
+    body.page-booking .content-area:has(#datTourForm) .form-group textarea:focus {
+        border-color: rgba(13, 202, 240, 0.58);
+        box-shadow: 0 0 0 3px rgba(13, 202, 240, 0.12);
+    }
+
+    body.page-booking .content-area:has(#datTourForm) .customer-type-card {
+        border-radius: 8px;
+        border-width: 1px;
+        background: rgba(255,255,255,0.045);
+        box-shadow: 0 14px 30px rgba(0,0,0,0.16);
+    }
+
+    body.page-booking .content-area:has(#datTourForm) .customer-type-card:hover,
+    body.page-booking .content-area:has(#datTourForm) .customer-type-card.active {
+        transform: translateY(-4px);
+        box-shadow: 0 20px 44px rgba(0,0,0,0.22);
+    }
+
+    body.page-booking .content-area:has(#datTourForm) .submit-section {
+        background: rgba(255,255,255,0.035);
+        border-top-color: rgba(255,255,255,0.09);
+    }
+
+    body.page-booking .content-area:has(#datTourForm) .booking-side-panel {
+        position: sticky;
+        top: 88px;
+    }
+
+    body.page-booking .content-area:has(#datTourForm) .tour-summary-card {
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    body.page-booking .content-area:has(#datTourForm) .tour-summary-card .summary-card-header {
+        position: static;
+        inset: auto;
+        width: auto;
+        min-height: 0;
+        display: block;
+        margin: -25px -25px 22px;
+        border-radius: 0;
+        padding: 16px 20px;
+        background: linear-gradient(90deg, rgba(212, 175, 55, 0.22), rgba(13, 202, 240, 0.08));
+        border-bottom: 1px solid rgba(212, 175, 55, 0.22);
+        box-shadow: none;
+        backdrop-filter: none;
+    }
+
+    body.page-booking .content-area:has(#datTourForm) .summary-item {
+        gap: 16px;
+        border-bottom-color: rgba(255,255,255,0.08);
+    }
+
+    body.page-booking .content-area:has(#datTourForm) .summary-value {
+        text-align: right;
+        word-break: break-word;
+    }
+
+    body.page-booking .content-area:has(#datTourForm) .total-price {
+        border-radius: 8px;
+        background: rgba(212, 175, 55, 0.12);
+    }
+
+    body.page-booking .content-area:has(#datTourForm) .quick-tips {
+        border-radius: 8px;
+        background: rgba(255, 193, 7, 0.08);
+    }
+
+    body.theme-light.page-booking .content-area:has(#datTourForm) .form-section,
+    body.theme-light.page-booking .content-area:has(#datTourForm) .tour-summary-card,
+    body.theme-light.page-booking .content-area:has(#datTourForm) .quick-tips {
+        background: rgba(255,255,255,0.9) !important;
+    }
+
+    @media (max-width: 1200px) {
+        body.page-booking .content-area:has(#datTourForm) .two-column-layout {
+            grid-template-columns: 1fr;
+        }
+
+        body.page-booking .content-area:has(#datTourForm) .booking-side-panel {
+            position: static;
+        }
+    }
+
+    @media (max-width: 900px) {
+        body.page-booking .content-area:has(#datTourForm) {
+            padding: 24px 18px 42px;
+        }
+
+        body.page-booking .content-area:has(#datTourForm) .page-header-section,
+        body.page-booking .content-area:has(#datTourForm) .form-section {
+            padding: 24px;
+        }
+
+        body.page-booking .content-area:has(#datTourForm) .page-header-inner,
+        body.page-booking .content-area:has(#datTourForm) .page-header-main {
+            align-items: flex-start;
+        }
+
+        body.page-booking .content-area:has(#datTourForm) .page-header-avatar {
+            width: 58px;
+            height: 58px;
+            font-size: 1.8rem;
+        }
+
+        body.page-booking .content-area:has(#datTourForm) .step-indicator {
+            padding: 0;
+        }
+
+        body.page-booking .content-area:has(#datTourForm) .step-label {
+            font-size: 12px;
+        }
     }
 </style>
 
@@ -777,10 +1083,10 @@ ob_start();
 
     <!-- Sidebar -->
     <div>
-        <div style="position: sticky; top: 20px;">
+        <div class="booking-side-panel">
             <!-- Tour Summary -->
             <div class="tour-summary-card">
-                <div class="header">
+                <div class="summary-card-header">
                     📋 Tóm tắt đặt tour
                 </div>
                 <div id="tour-summary">

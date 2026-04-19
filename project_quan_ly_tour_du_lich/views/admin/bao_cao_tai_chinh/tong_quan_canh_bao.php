@@ -84,9 +84,89 @@ ob_start();
         .mt-3 {
             margin-top: 1rem;
         }
+        body.page-baoCaoTaiChinh .content-area {
+            padding: 34px 48px 56px;
+            background:
+                radial-gradient(circle at 12% 8%, rgba(32, 178, 170, 0.08), transparent 28%),
+                radial-gradient(circle at 84% 16%, rgba(212, 175, 55, 0.10), transparent 30%),
+                linear-gradient(135deg, #131616 0%, #181b1c 48%, #111313 100%);
+        }
+        body.page-baoCaoTaiChinh .finance-warning-page {
+            max-width: 1080px !important;
+            padding: 0 !important;
+        }
+        body.page-baoCaoTaiChinh .finance-warning-page .page-header-section {
+            min-height: 150px;
+            padding: 28px 34px !important;
+            border: 1px solid rgba(212, 175, 55, 0.22);
+            border-radius: 8px;
+            background:
+                linear-gradient(90deg, rgba(22,24,24,.94) 0%, rgba(34,34,25,.9) 54%, rgba(212,175,55,.48) 100%),
+                url('<?php echo BASE_URL; ?>public/images/logos/hinh-nen-viet-nam-4k10.jpg') center/cover;
+            box-shadow: 0 22px 48px rgba(0,0,0,.26);
+            display: flex;
+            align-items: center;
+            overflow: hidden;
+        }
+        body.page-baoCaoTaiChinh .finance-warning-page .page-header-section h1 {
+            color: #ffe082 !important;
+            font-size: 2.05rem !important;
+            letter-spacing: 0 !important;
+            line-height: 1.3;
+        }
+        body.page-baoCaoTaiChinh .finance-warning-page .report-card,
+        body.page-baoCaoTaiChinh .finance-warning-page .alert {
+            background: rgba(28, 30, 31, .80);
+            border: 1px solid rgba(212, 175, 55, .20);
+            border-radius: 8px;
+            box-shadow: 0 18px 38px rgba(0,0,0,.20);
+        }
+        body.page-baoCaoTaiChinh .finance-warning-page .report-card {
+            overflow-x: auto;
+            padding: 30px;
+        }
+        body.page-baoCaoTaiChinh .finance-warning-page .table {
+            min-width: 880px;
+        }
+        body.page-baoCaoTaiChinh .finance-warning-page .table th {
+            background: linear-gradient(90deg, rgba(212,175,55,.16), rgba(255,255,255,.04));
+            color: #d4af37;
+            padding: 18px 16px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: .84rem;
+        }
+        body.page-baoCaoTaiChinh .finance-warning-page .table td {
+            padding: 20px 16px;
+            vertical-align: middle;
+        }
+        body.page-baoCaoTaiChinh .finance-warning-page .badge {
+            border-radius: 8px;
+            padding: 8px 12px;
+            display: inline-flex;
+            align-items: center;
+            min-height: 34px;
+        }
+        body.page-baoCaoTaiChinh .finance-warning-page .btn-info {
+            min-height: 44px;
+            border-radius: 8px;
+            background: rgba(13,110,253,.18);
+            color: #68b5ff;
+            font-weight: 700;
+        }
+        body.page-baoCaoTaiChinh .finance-warning-page .alert-info {
+            background: rgba(13, 110, 253, .12);
+            color: #68b5ff;
+            padding: 20px 22px;
+            font-weight: 600;
+        }
+        @media (max-width: 992px) {
+            body.page-baoCaoTaiChinh .content-area { padding: 24px 18px 44px; }
+            body.page-baoCaoTaiChinh .finance-warning-page .page-header-section h1 { font-size: 1.55rem !important; }
+        }
     </style>
 
-<div style="padding: 20px; max-width: 900px; margin: 0 auto;">
+<div class="finance-warning-page" style="padding: 20px; max-width: 900px; margin: 0 auto;">
     <div class="page-header-section" style="margin-bottom: 30px;">
         <h1 style="margin: 0; font-size: 2rem; color: var(--text-light);">
             <i class="fa fa-exclamation-triangle" style="color: #dc3545;"></i> Tổng quan các dự toán có cảnh báo

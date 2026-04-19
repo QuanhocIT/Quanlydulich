@@ -317,6 +317,251 @@ ob_start();
             grid-template-columns: 1fr;
         }
     }
+
+    body.page-lichKhoiHanh .content-area {
+        padding: 34px 48px 56px;
+        background:
+            radial-gradient(circle at 10% 0%, rgba(13, 202, 240, 0.08), transparent 28%),
+            radial-gradient(circle at 100% 10%, rgba(212, 175, 55, 0.11), transparent 30%),
+            linear-gradient(180deg, rgba(255,255,255,0.018), transparent 260px);
+    }
+
+    body.page-lichKhoiHanh .page-header-section {
+        min-height: 154px;
+        padding: 28px 34px;
+        background:
+            linear-gradient(100deg, rgba(28, 31, 33, 0.96) 0%, rgba(30, 42, 45, 0.94) 52%, rgba(119, 102, 45, 0.84) 100%),
+            url("<?php echo BASE_URL; ?>public/images/logos/hinh-nen-viet-nam-4k10.jpg");
+        background-size: cover;
+        background-position: center;
+        border: 1px solid rgba(255, 255, 255, 0.09);
+        box-shadow: 0 22px 60px rgba(0, 0, 0, 0.28);
+    }
+
+    body.page-lichKhoiHanh .page-header-section::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(90deg, rgba(0,0,0,0.18), rgba(0,0,0,0.04));
+        pointer-events: none;
+    }
+
+    body.page-lichKhoiHanh .page-header-glow {
+        display: none;
+    }
+
+    body.page-lichKhoiHanh .page-header-avatar {
+        width: 74px;
+        height: 74px;
+        border-radius: 8px;
+        background: rgba(212, 175, 55, 0.18);
+        border: 1px solid rgba(255, 224, 130, 0.32);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.16), 0 16px 34px rgba(0,0,0,0.24);
+    }
+
+    body.page-lichKhoiHanh .page-header-section h1 {
+        font-size: 2rem;
+        line-height: 1.18;
+        letter-spacing: 0;
+        text-shadow: none;
+    }
+
+    body.page-lichKhoiHanh .page-header-section p {
+        max-width: 620px;
+        color: rgba(255,255,255,0.86);
+        text-shadow: none;
+    }
+
+    body.page-lichKhoiHanh .stats-grid {
+        grid-template-columns: repeat(5, minmax(150px, 1fr));
+        gap: 16px;
+    }
+
+    body.page-lichKhoiHanh .stat-card {
+        min-height: 126px;
+        padding: 22px;
+        background: linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.025));
+        border-color: rgba(255, 255, 255, 0.1);
+        border-left-width: 3px;
+        box-shadow: 0 14px 32px rgba(0,0,0,0.18);
+    }
+
+    body.page-lichKhoiHanh .stat-value {
+        font-size: 2.35rem;
+        letter-spacing: 0;
+    }
+
+    body.page-lichKhoiHanh .stat-label {
+        letter-spacing: 0.06em;
+        line-height: 1.45;
+    }
+
+    body.page-lichKhoiHanh .filter-section {
+        padding: 24px;
+        background: rgba(28, 30, 31, 0.78);
+        border-color: rgba(212, 175, 55, 0.22);
+        box-shadow: 0 14px 36px rgba(0,0,0,0.18);
+    }
+
+    body.page-lichKhoiHanh .filter-row {
+        grid-template-columns: minmax(240px, 1.4fr) minmax(170px, 0.9fr) minmax(160px, 0.8fr) minmax(160px, 0.8fr) minmax(170px, 0.9fr);
+        gap: 16px;
+    }
+
+    body.page-lichKhoiHanh .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        color: rgba(245,245,245,0.78);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+    }
+
+    body.page-lichKhoiHanh .form-group .input,
+    body.page-lichKhoiHanh .form-group .select {
+        min-height: 52px;
+        border-radius: 8px;
+        border-color: rgba(255,255,255,0.14);
+        background-color: rgba(255,255,255,0.08);
+    }
+
+    body.page-lichKhoiHanh .form-group .input:focus,
+    body.page-lichKhoiHanh .form-group .select:focus {
+        border-color: rgba(13, 202, 240, 0.58);
+        box-shadow: 0 0 0 3px rgba(13, 202, 240, 0.12);
+    }
+
+    body.page-lichKhoiHanh .filter-section .btn {
+        min-height: 52px;
+        border-radius: 8px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+    }
+
+    body.page-lichKhoiHanh .schedule-grid {
+        grid-template-columns: repeat(auto-fit, minmax(460px, 1fr));
+        gap: 22px;
+    }
+
+    body.page-lichKhoiHanh .schedule-card {
+        position: relative;
+        padding: 26px;
+        border-radius: 8px;
+        background: linear-gradient(180deg, rgba(255,255,255,0.065), rgba(255,255,255,0.028));
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 18px 42px rgba(0,0,0,0.2);
+        overflow: hidden;
+    }
+
+    body.page-lichKhoiHanh .schedule-card::before {
+        content: "";
+        position: absolute;
+        inset: 0 0 auto 0;
+        height: 3px;
+        background: linear-gradient(90deg, var(--accent-gold), #0dcaf0, #10b981);
+        opacity: 0.85;
+    }
+
+    body.page-lichKhoiHanh .schedule-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 24px 54px rgba(0,0,0,0.26);
+    }
+
+    body.page-lichKhoiHanh .date-badge {
+        min-width: 92px;
+        border-radius: 8px;
+        background: rgba(212, 175, 55, 0.12);
+        border-color: rgba(212, 175, 55, 0.34);
+    }
+
+    body.page-lichKhoiHanh .tour-badge,
+    body.page-lichKhoiHanh .status-badge,
+    body.page-lichKhoiHanh .warning-badge {
+        border-radius: 8px;
+    }
+
+    body.page-lichKhoiHanh .tour-title {
+        font-size: 20px;
+        line-height: 1.35;
+        letter-spacing: 0;
+        color: rgba(255,255,255,0.92);
+    }
+
+    body.page-lichKhoiHanh .tour-info-grid {
+        gap: 12px 16px;
+        padding: 14px;
+        border-radius: 8px;
+        background: rgba(255,255,255,0.035);
+        border: 1px solid rgba(255,255,255,0.07);
+    }
+
+    body.page-lichKhoiHanh .tour-info-item {
+        min-width: 0;
+        line-height: 1.45;
+    }
+
+    body.page-lichKhoiHanh .tour-info-item strong {
+        white-space: nowrap;
+    }
+
+    body.page-lichKhoiHanh .schedule-card .btn {
+        border-radius: 8px;
+        font-weight: 700;
+    }
+
+    body.theme-light.page-lichKhoiHanh .schedule-card,
+    body.theme-light.page-lichKhoiHanh .filter-section,
+    body.theme-light.page-lichKhoiHanh .stat-card {
+        background: rgba(255,255,255,0.9) !important;
+    }
+
+    body.theme-light.page-lichKhoiHanh .tour-title,
+    body.theme-light.page-lichKhoiHanh .tour-info-item strong {
+        color: #1e2a3b;
+    }
+
+    @media (max-width: 1500px) {
+        body.page-lichKhoiHanh .stats-grid {
+            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+        }
+    }
+
+    @media (max-width: 900px) {
+        body.page-lichKhoiHanh .content-area {
+            padding: 24px 18px 42px;
+        }
+
+        body.page-lichKhoiHanh .page-header-section {
+            padding: 24px;
+            align-items: flex-start;
+        }
+
+        body.page-lichKhoiHanh .page-header-avatar {
+            width: 58px;
+            height: 58px;
+            font-size: 1.8rem;
+        }
+
+        body.page-lichKhoiHanh .schedule-grid {
+            grid-template-columns: 1fr;
+        }
+
+        body.page-lichKhoiHanh .schedule-card {
+            flex-direction: column;
+        }
+
+        body.page-lichKhoiHanh .date-badge {
+            width: 100%;
+            display: flex;
+            align-items: baseline;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        body.page-lichKhoiHanh .tour-info-grid {
+            grid-template-columns: 1fr;
+        }
+    }
 </style>
 
 <!-- Page Header -->

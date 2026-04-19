@@ -36,13 +36,13 @@ $getImage = static function ($tour, $index) use ($fallbackImages) {
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --ink: #12211d;
-            --muted: #63716d;
-            --line: rgba(18, 33, 29, 0.12);
-            --cream: #fbf5e8;
-            --leaf: #245247;
-            --leaf-2: #0f766e;
-            --gold: #d99f3e;
+            --ink: #0f172a;
+            --muted: #64748b;
+            --line: rgba(15, 23, 42, 0.12);
+            --cream: #f5f6f8;
+            --leaf: #15233b;
+            --leaf-2: #20365f;
+            --gold: #d6b26d;
             --sand: #f2dfbd;
         }
         * { box-sizing: border-box; }
@@ -51,165 +51,201 @@ $getImage = static function ($tour, $index) use ($fallbackImages) {
             color: var(--ink);
             font-family: "Manrope", sans-serif;
             background:
-                radial-gradient(circle at top left, rgba(217,159,62,.22), transparent 28rem),
-                linear-gradient(145deg, #fffaf0 0%, #eef8f5 42%, #f8fbff 100%);
+                radial-gradient(1200px 600px at 20% -10%, rgba(214,178,109,.16), transparent 60%),
+                radial-gradient(900px 520px at 85% 0%, rgba(11,18,32,.08), transparent 55%),
+                #f5f6f8;
             min-height: 100vh;
         }
-        .tour-shell { padding: 24px 0 56px; }
+        .tour-shell { padding: 16px 0 40px; }
+        .layout-shell {
+            width: min(1380px, calc(100% - 36px));
+            margin: 0 auto;
+        }
         .topbar {
             align-items: center;
+            background: rgba(11,18,32,.92);
+            border: 1px solid rgba(214,178,109,.22);
+            border-radius: 16px;
+            backdrop-filter: blur(10px);
             display: flex;
-            gap: 16px;
+            gap: 12px;
             justify-content: space-between;
-            margin-bottom: 22px;
+            margin-bottom: 16px;
+            padding: 10px 12px;
+            box-shadow: 0 12px 34px rgba(2,6,23,.18);
         }
         .brand {
             align-items: center;
-            color: var(--ink);
+            color: #fff;
             display: inline-flex;
             font-weight: 800;
-            gap: 10px;
-            letter-spacing: .08em;
+            gap: 8px;
+            letter-spacing: .06em;
             text-decoration: none;
             text-transform: uppercase;
         }
         .brand-mark {
             align-items: center;
-            background: var(--leaf);
-            border-radius: 16px;
-            color: #fff;
+            background: linear-gradient(135deg, var(--leaf), var(--leaf-2));
+            border-radius: 13px;
+            color: var(--gold);
             display: inline-flex;
-            height: 44px;
+            height: 38px;
             justify-content: center;
-            width: 44px;
+            width: 38px;
         }
         .nav-actions {
             display: flex;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 8px;
             justify-content: flex-end;
         }
         .nav-pill {
             align-items: center;
-            background: rgba(255,255,255,.72);
-            border: 1px solid var(--line);
+            background: rgba(255,255,255,.06);
+            border: 1px solid rgba(214,178,109,.28);
             border-radius: 999px;
-            color: var(--ink);
+            color: rgba(255,255,255,.9);
             display: inline-flex;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 700;
             gap: 8px;
-            padding: 10px 15px;
+            padding: 8px 12px;
             text-decoration: none;
+            transition: background .2s, border-color .2s, color .2s;
+        }
+        .nav-pill:hover {
+            background: rgba(214,178,109,.18);
+            border-color: rgba(214,178,109,.46);
+            color: #fff;
+        }
+        .nav-pill.is-active {
+            background: linear-gradient(135deg, var(--gold), #e2bf78);
+            border-color: rgba(214,178,109,.72);
+            color: #132033;
+            box-shadow: 0 10px 24px rgba(185,137,61,.24);
         }
         .hero {
             background:
-                linear-gradient(115deg, rgba(18,33,29,.9), rgba(36,82,71,.74)),
+                linear-gradient(115deg, rgba(11,18,32,.93), rgba(21,35,59,.78)),
                 url('https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1800&q=80') center/cover;
-            border-radius: 34px;
-            box-shadow: 0 30px 80px rgba(36,82,71,.22);
+            border-radius: 26px;
+            box-shadow: 0 24px 62px rgba(2,6,23,.22);
             color: #fff;
-            margin-bottom: 26px;
+            margin-bottom: 18px;
             overflow: hidden;
-            padding: 48px;
+            padding: 32px;
             position: relative;
         }
         .hero::after {
-            background: rgba(255,255,255,.13);
+            background: rgba(214,178,109,.14);
             border-radius: 999px;
             content: "";
-            height: 280px;
+            height: 220px;
             position: absolute;
-            right: -90px;
-            top: -90px;
-            width: 280px;
+            right: -70px;
+            top: -70px;
+            width: 220px;
         }
-        .hero-content { max-width: 760px; position: relative; z-index: 1; }
+        .hero-content { max-width: 680px; position: relative; z-index: 1; }
         .eyebrow {
-            color: #f9d287;
-            font-size: 13px;
+            color: var(--gold);
+            font-size: 11.5px;
             font-weight: 800;
-            letter-spacing: .18em;
+            letter-spacing: .15em;
             text-transform: uppercase;
         }
         .hero h1 {
             font-family: "Playfair Display", serif;
-            font-size: clamp(2.5rem, 6vw, 5.4rem);
-            line-height: .94;
-            margin: 12px 0 18px;
-            max-width: 720px;
+            font-size: clamp(2rem, 4.6vw, 4.1rem);
+            line-height: .92;
+            margin: 10px 0 14px;
+            max-width: 620px;
+            letter-spacing: -.02em;
         }
         .hero p {
             color: rgba(255,255,255,.84);
-            font-size: 1.05rem;
-            line-height: 1.75;
-            max-width: 640px;
+            font-size: .95rem;
+            line-height: 1.65;
+            max-width: 560px;
         }
         .search-panel {
-            background: rgba(255,255,255,.92);
-            border: 1px solid rgba(255,255,255,.72);
-            border-radius: 24px;
-            box-shadow: 0 18px 50px rgba(18,33,29,.12);
-            margin-top: -62px;
-            padding: 18px;
+            background:
+                radial-gradient(circle at top left, rgba(220,176,93,.12), transparent 26%),
+                linear-gradient(180deg, rgba(255,255,255,.98), rgba(247,244,238,.96));
+            border: 1px solid rgba(22,34,58,.08);
+            border-radius: 18px;
+            box-shadow: 0 14px 40px rgba(10,18,38,.14);
+            margin-top: -46px;
+            padding: 14px;
             position: relative;
             z-index: 3;
         }
         .filter-grid {
             display: grid;
             gap: 12px;
-            grid-template-columns: minmax(220px, 1.4fr) repeat(3, minmax(150px, 1fr)) auto;
+            grid-template-columns: minmax(190px, 1.3fr) repeat(3, minmax(135px, 1fr)) auto;
         }
         .field label {
             color: var(--muted);
             display: block;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 800;
             letter-spacing: .08em;
-            margin-bottom: 6px;
+            margin-bottom: 5px;
             text-transform: uppercase;
         }
         .field input,
         .field select {
-            background: #fff;
-            border: 1px solid var(--line);
-            border-radius: 15px;
+            background: rgba(255,255,255,.92);
+            border: 1px solid rgba(24,40,70,.12);
+            border-radius: 12px;
             color: var(--ink);
             font-weight: 700;
-            min-height: 48px;
-            padding: 10px 13px;
+            min-height: 42px;
+            padding: 8px 11px;
+            font-size: 14px;
             width: 100%;
+        }
+        .field input:focus,
+        .field select:focus {
+            border-color: rgba(214,178,109,.72);
+            box-shadow: 0 0 0 .2rem rgba(214,178,109,.18);
+            outline: 0;
         }
         .filter-submit {
             align-self: end;
-            background: var(--leaf);
+            background: linear-gradient(135deg, var(--leaf), var(--leaf-2));
             border: 0;
-            border-radius: 15px;
-            color: #fff;
+            border-radius: 12px;
+            color: #f7e5b6;
             font-weight: 800;
-            min-height: 48px;
-            padding: 0 22px;
+            min-height: 42px;
+            padding: 0 18px;
+            box-shadow: 0 14px 28px rgba(21,35,59,.22);
         }
         .quick-stats {
             display: grid;
-            gap: 14px;
+            gap: 10px;
             grid-template-columns: repeat(3, minmax(0, 1fr));
-            margin: 26px 0;
+            margin: 20px 0;
         }
         .stat-card {
-            background: rgba(255,255,255,.76);
+            background: rgba(255,255,255,.86);
             border: 1px solid var(--line);
-            border-radius: 22px;
-            padding: 18px;
+            border-radius: 16px;
+            padding: 14px;
+            box-shadow: 0 10px 30px rgba(2,6,23,.07);
         }
         .stat-card strong {
             display: block;
-            font-size: 28px;
+            font-size: 1.6rem;
             line-height: 1;
+            font-weight: 900;
         }
         .stat-card span {
             color: var(--muted);
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 700;
         }
         .section-head {
@@ -217,12 +253,23 @@ $getImage = static function ($tour, $index) use ($fallbackImages) {
             display: flex;
             gap: 18px;
             justify-content: space-between;
-            margin: 28px 0 18px;
+            margin: 22px 0 14px;
         }
         .section-head h2 {
             font-family: "Playfair Display", serif;
-            font-size: clamp(2rem, 4vw, 3rem);
+            font-size: clamp(1.6rem, 3.4vw, 2.4rem);
             margin: 0;
+            position: relative;
+            padding-bottom: .25rem;
+        }
+        .section-head h2::after {
+            content: "";
+            display: block;
+            width: 64px;
+            height: 2px;
+            margin-top: .45rem;
+            background: linear-gradient(90deg, var(--gold), transparent);
+            border-radius: 999px;
         }
         .section-head p {
             color: var(--muted);
@@ -230,21 +277,21 @@ $getImage = static function ($tour, $index) use ($fallbackImages) {
         }
         .tour-grid {
             display: grid;
-            gap: 22px;
+            gap: 18px;
             grid-template-columns: repeat(3, minmax(0, 1fr));
         }
         .tour-card {
-            background: rgba(255,255,255,.82);
-            border: 1px solid var(--line);
-            border-radius: 28px;
-            box-shadow: 0 18px 50px rgba(18,33,29,.08);
+            background: linear-gradient(180deg,#ffffff,#fbfdfa);
+            border: 1px solid rgba(15,23,42,.10);
+            border-radius: 22px;
+            box-shadow: 0 22px 64px rgba(2,6,23,.10);
             display: flex;
             flex-direction: column;
             overflow: hidden;
             transition: transform .22s ease, box-shadow .22s ease;
         }
         .tour-card:hover {
-            box-shadow: 0 28px 70px rgba(18,33,29,.14);
+            box-shadow: 0 30px 78px rgba(2,6,23,.16);
             transform: translateY(-6px);
         }
         .tour-media {
@@ -259,7 +306,7 @@ $getImage = static function ($tour, $index) use ($fallbackImages) {
             width: 100%;
         }
         .type-badge {
-            background: rgba(18,33,29,.78);
+            background: rgba(23,65,59,.9);
             border: 1px solid rgba(255,255,255,.28);
             border-radius: 999px;
             color: #fff;
@@ -274,20 +321,20 @@ $getImage = static function ($tour, $index) use ($fallbackImages) {
             display: flex;
             flex: 1;
             flex-direction: column;
-            padding: 20px;
+            padding: 16px;
         }
         .tour-title {
-            font-size: 1.15rem;
+            font-size: 1rem;
             font-weight: 800;
-            line-height: 1.35;
+            line-height: 1.42;
             margin: 0 0 10px;
         }
         .tour-desc {
             color: var(--muted);
             display: -webkit-box;
-            font-size: 14px;
-            line-height: 1.65;
-            margin: 0 0 16px;
+            font-size: .85rem;
+            line-height: 1.6;
+            margin: 0 0 14px;
             overflow: hidden;
             -webkit-box-orient: vertical;
             -webkit-line-clamp: 3;
@@ -295,16 +342,16 @@ $getImage = static function ($tour, $index) use ($fallbackImages) {
         }
         .meta-list {
             display: grid;
-            gap: 9px;
+            gap: 8px;
             margin-top: auto;
         }
         .meta-item {
             align-items: center;
             color: #31423d;
             display: flex;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 700;
-            gap: 9px;
+            gap: 8px;
         }
         .meta-item i { color: var(--leaf-2); }
         .meta-item.rating {
@@ -323,12 +370,12 @@ $getImage = static function ($tour, $index) use ($fallbackImages) {
             display: flex;
             gap: 12px;
             justify-content: space-between;
-            margin-top: 18px;
-            padding-top: 18px;
+            margin-top: 14px;
+            padding-top: 14px;
         }
         .price {
             color: #a15c08;
-            font-size: 1.2rem;
+            font-size: 1.05rem;
             font-weight: 900;
         }
         .price span {
@@ -348,20 +395,20 @@ $getImage = static function ($tour, $index) use ($fallbackImages) {
             align-items: center;
             border-radius: 999px;
             display: inline-flex;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 900;
             gap: 6px;
             justify-content: center;
-            min-height: 40px;
-            padding: 9px 13px;
+            min-height: 36px;
+            padding: 8px 11px;
             text-decoration: none;
             white-space: nowrap;
         }
-        .btn-main { background: var(--leaf); color: #fff; }
-        .btn-soft { background: #f4ead7; color: var(--leaf); }
+        .btn-main { background: linear-gradient(135deg, var(--leaf), var(--leaf-2)); color: #fff; }
+        .btn-soft { background: #f3ead8; color: #17413b; border:1px solid rgba(214,178,109,.26); }
         .empty-state {
-            background: rgba(255,255,255,.82);
-            border: 1px dashed rgba(36,82,71,.32);
+            background: rgba(255,255,255,.86);
+            border: 1px dashed rgba(214,178,109,.46);
             border-radius: 28px;
             padding: 46px 24px;
             text-align: center;
@@ -371,8 +418,8 @@ $getImage = static function ($tour, $index) use ($fallbackImages) {
             font-size: 44px;
         }
         .mobile-cta {
-            background: rgba(255,255,255,.94);
-            border-top: 1px solid var(--line);
+            background: rgba(11,18,32,.92);
+            border-top: 1px solid rgba(214,178,109,.24);
             bottom: 0;
             display: none;
             gap: 10px;
@@ -382,6 +429,22 @@ $getImage = static function ($tour, $index) use ($fallbackImages) {
             right: 0;
             z-index: 20;
         }
+        .js-reveal {
+            opacity: 0;
+            transform: translateY(22px);
+            transition: opacity .6s ease, transform .6s ease;
+        }
+        .js-reveal.is-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .js-reveal {
+                opacity: 1;
+                transform: none;
+                transition: none;
+            }
+        }
         @media (max-width: 1100px) {
             .filter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
             .filter-submit { grid-column: 1 / -1; }
@@ -389,10 +452,11 @@ $getImage = static function ($tour, $index) use ($fallbackImages) {
         }
         @media (max-width: 768px) {
             .tour-shell { padding-bottom: 86px; }
+            .layout-shell { width: min(100% - 24px, 1500px); }
             .topbar { align-items: flex-start; flex-direction: column; }
             .nav-actions { justify-content: flex-start; }
-            .hero { border-radius: 24px; padding: 34px 22px 78px; }
-            .search-panel { margin-top: -52px; }
+            .hero { border-radius: 20px; padding: 26px 18px 64px; }
+            .search-panel { margin-top: -40px; }
             .filter-grid,
             .quick-stats,
             .tour-grid { grid-template-columns: 1fr; }
@@ -406,7 +470,7 @@ $getImage = static function ($tour, $index) use ($fallbackImages) {
 </head>
 <body>
     <main class="tour-shell">
-        <div class="container">
+        <div class="layout-shell">
             <header class="topbar">
                 <a class="brand" href="index.php?act=khachHang/dashboard">
                     <span class="brand-mark"><i class="bi bi-compass"></i></span>
@@ -414,12 +478,14 @@ $getImage = static function ($tour, $index) use ($fallbackImages) {
                 </a>
                 <nav class="nav-actions" aria-label="Điều hướng khách hàng">
                     <a class="nav-pill" href="index.php?act=khachHang/dashboard"><i class="bi bi-house"></i> Trang chủ</a>
+                    <a class="nav-pill is-active" href="index.php?act=khachHang/danhSachTour"><i class="bi bi-stars"></i> Tour nổi bật</a>
                     <a class="nav-pill" href="index.php?act=khachHang/yeuCauTour"><i class="bi bi-suitcase2"></i> Tour đã đặt</a>
-                    <a class="nav-pill" href="index.php?act=khachHang/dashboard#home"><i class="bi bi-magic"></i> Tour theo yêu cầu</a>
+                    <a class="nav-pill" href="index.php?act=khachHang/capNhatThongTin"><i class="bi bi-person-gear"></i> Hồ sơ</a>
+                    <a class="nav-pill" href="index.php?act=khachHang/hoaDon"><i class="bi bi-receipt"></i> Hóa đơn</a>
                 </nav>
             </header>
 
-            <section class="hero">
+            <section class="hero js-reveal">
                 <div class="hero-content">
                     <div class="eyebrow">Khám phá hành trình mới</div>
                     <h1>Chọn tour nhanh hơn, tự tin đặt hơn.</h1>
@@ -427,7 +493,7 @@ $getImage = static function ($tour, $index) use ($fallbackImages) {
                 </div>
             </section>
 
-            <form class="search-panel" method="GET" action="index.php">
+            <form class="search-panel js-reveal" method="GET" action="index.php">
                 <input type="hidden" name="act" value="khachHang/danhSachTour">
                 <div class="filter-grid">
                     <div class="field">
@@ -466,22 +532,22 @@ $getImage = static function ($tour, $index) use ($fallbackImages) {
             </form>
 
             <section class="quick-stats" aria-label="Tổng quan tour">
-                <div class="stat-card">
+                <div class="stat-card js-reveal">
                     <strong><?php echo count($tours); ?></strong>
                     <span>Tour phù hợp bộ lọc</span>
                 </div>
-                <div class="stat-card">
+                <div class="stat-card js-reveal">
                     <strong><?php echo count(array_filter($tours, static fn($tour) => ($tour['loai_tour'] ?? '') === 'TrongNuoc')); ?></strong>
                     <span>Hành trình trong nước</span>
                 </div>
-                <div class="stat-card">
+                <div class="stat-card js-reveal">
                     <strong><?php echo count(array_filter($tours, static fn($tour) => ($tour['loai_tour'] ?? '') === 'QuocTe')); ?></strong>
                     <span>Hành trình quốc tế</span>
                 </div>
             </section>
 
             <section>
-                <div class="section-head">
+                <div class="section-head js-reveal">
                     <div>
                         <h2>Tour đang mở bán</h2>
                         <p>Thông tin được rút gọn để khách so sánh nhanh trước khi vào chi tiết.</p>
@@ -509,7 +575,7 @@ $getImage = static function ($tour, $index) use ($fallbackImages) {
                                     $ratingRounded = 5;
                                 }
                             ?>
-                            <article class="tour-card">
+                            <article class="tour-card js-reveal">
                                 <div class="tour-media">
                                     <img src="<?php echo htmlspecialchars($getImage($tour, $index)); ?>" alt="<?php echo htmlspecialchars((string)($tour['ten_tour'] ?? 'Tour')); ?>" loading="lazy">
                                     <span class="type-badge"><?php echo htmlspecialchars($typeLabel); ?></span>
@@ -550,7 +616,7 @@ $getImage = static function ($tour, $index) use ($fallbackImages) {
                         <?php endforeach; ?>
                     </div>
                 <?php else: ?>
-                    <div class="empty-state">
+                    <div class="empty-state js-reveal">
                         <i class="bi bi-map"></i>
                         <h3 class="mt-3">Chưa tìm thấy tour phù hợp</h3>
                         <p class="text-muted mb-4">Bạn có thể xóa bộ lọc hoặc gửi yêu cầu riêng để đội tư vấn thiết kế hành trình phù hợp hơn.</p>
@@ -565,5 +631,29 @@ $getImage = static function ($tour, $index) use ($fallbackImages) {
         <a class="btn-soft flex-fill" href="index.php?act=khachHang/dashboard"><i class="bi bi-house"></i> Trang chủ</a>
         <a class="btn-main flex-fill" href="#q"><i class="bi bi-search"></i> Tìm tour</a>
     </div>
+
+    <script>
+        (function () {
+            var revealEls = document.querySelectorAll('.js-reveal');
+            if (!revealEls.length) return;
+
+            var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            if (reduced || !('IntersectionObserver' in window)) {
+                revealEls.forEach(function (el) { el.classList.add('is-visible'); });
+                return;
+            }
+
+            var observer = new IntersectionObserver(function (entries, io) {
+                entries.forEach(function (entry) {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('is-visible');
+                        io.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.12, rootMargin: '0px 0px -30px 0px' });
+
+            revealEls.forEach(function (el) { observer.observe(el); });
+        })();
+    </script>
 </body>
 </html>

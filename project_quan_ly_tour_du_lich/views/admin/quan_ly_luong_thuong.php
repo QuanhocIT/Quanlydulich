@@ -184,6 +184,110 @@ ob_start();
         .luong-filter-grid { grid-template-columns: repeat(2, 1fr); }
         .luong-filter-grid .form-group { grid-column: span 2 !important; }
     }
+    body.page-luongThuong .content-area {
+        padding: 34px 48px 56px;
+        background:
+            radial-gradient(circle at 12% 8%, rgba(32, 178, 170, 0.08), transparent 28%),
+            radial-gradient(circle at 84% 16%, rgba(212, 175, 55, 0.10), transparent 30%),
+            linear-gradient(135deg, #131616 0%, #181b1c 48%, #111313 100%);
+    }
+    body.page-luongThuong .luong-header {
+        min-height: 150px;
+        padding: 34px 40px;
+        border: 1px solid rgba(212,175,55,.22);
+        background:
+            linear-gradient(90deg, rgba(16,22,22,.92) 0%, rgba(24,30,29,.86) 54%, rgba(212,175,55,.45) 100%),
+            url('<?php echo BASE_URL; ?>public/images/logos/hinh-nen-viet-nam-4k10.jpg') center/cover;
+        box-shadow: 0 24px 52px rgba(0,0,0,.28);
+    }
+    body.page-luongThuong .luong-header-glow {
+        display: none;
+    }
+    body.page-luongThuong .luong-header-avatar {
+        width: 84px;
+        height: 84px;
+        border-radius: 8px;
+        background: rgba(212,175,55,.18);
+        border: 1px solid rgba(212,175,55,.34);
+        box-shadow: 0 18px 34px rgba(0,0,0,.22);
+    }
+    body.page-luongThuong .luong-title {
+        font-size: 2.05rem;
+        letter-spacing: 0;
+    }
+    body.page-luongThuong .luong-subtitle {
+        color: #f5f1df;
+        line-height: 1.6;
+    }
+    body.page-luongThuong .luong-filter-card,
+    body.page-luongThuong .luong-table,
+    body.page-luongThuong .tao-luong-form {
+        background: rgba(28,30,31,.80);
+        border: 1px solid rgba(212,175,55,.20);
+        border-radius: 8px;
+        box-shadow: 0 18px 38px rgba(0,0,0,.20);
+    }
+    body.page-luongThuong .luong-filter-card {
+        padding: 28px 30px;
+        margin-bottom: 26px;
+    }
+    body.page-luongThuong .luong-filter-grid {
+        gap: 18px;
+    }
+    body.page-luongThuong .luong-filter-grid label {
+        color: #d4d4d4;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+    }
+    body.page-luongThuong .luong-filter-grid select,
+    body.page-luongThuong .luong-filter-grid input[type=number],
+    body.page-luongThuong .luong-filter-grid input[type=text],
+    body.page-luongThuong .tao-luong-form input,
+    body.page-luongThuong .tao-luong-form select {
+        min-height: 44px;
+        border-radius: 8px;
+        background: rgba(255,255,255,.055);
+        border-color: rgba(255,255,255,.18);
+        color: var(--text-light);
+    }
+    body.page-luongThuong .luong-filter-grid select:focus,
+    body.page-luongThuong .luong-filter-grid input:focus,
+    body.page-luongThuong .tao-luong-form input:focus,
+    body.page-luongThuong .tao-luong-form select:focus {
+        border-color: rgba(32,178,170,.72);
+        box-shadow: 0 0 0 3px rgba(32,178,170,.12);
+    }
+    body.page-luongThuong .btn-gold {
+        min-height: 44px;
+        border-radius: 8px;
+        padding: 10px 18px;
+        font-weight: 800;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+    body.page-luongThuong .luong-table {
+        overflow: hidden;
+        min-width: 1120px;
+    }
+    body.page-luongThuong .table-responsive {
+        overflow-x: auto;
+        border-radius: 8px;
+        box-shadow: 0 18px 38px rgba(0,0,0,.18);
+    }
+    body.page-luongThuong .luong-table th {
+        background: linear-gradient(90deg, rgba(212,175,55,.16), rgba(255,255,255,.04));
+        padding: 18px 14px;
+    }
+    body.page-luongThuong .luong-table td {
+        padding: 18px 14px;
+    }
+    @media (max-width: 768px) {
+        body.page-luongThuong .content-area { padding: 24px 18px 44px; }
+        body.page-luongThuong .luong-header { padding: 24px; }
+        body.page-luongThuong .luong-title { font-size: 1.55rem; }
+    }
 </style>
 <?php $isAdminRole = hasRole('Admin'); ?>
 <div class="luong-container">

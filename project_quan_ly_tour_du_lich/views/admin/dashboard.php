@@ -590,6 +590,256 @@ ob_start();
         }
     }
 
+    body.page-dashboard .content-area {
+        padding: 34px 48px 56px;
+        background:
+            radial-gradient(circle at 12% 8%, rgba(32, 178, 170, 0.08), transparent 28%),
+            radial-gradient(circle at 84% 16%, rgba(212, 175, 55, 0.10), transparent 30%),
+            linear-gradient(135deg, #131616 0%, #181b1c 48%, #111313 100%);
+    }
+
+    body.page-dashboard .welcome-admin {
+        min-height: 168px;
+        border-radius: 8px;
+        padding: 34px 40px;
+        margin-bottom: 42px;
+        border: 1px solid rgba(212, 175, 55, 0.22);
+        background:
+            linear-gradient(90deg, rgba(22,24,24,.94) 0%, rgba(34,34,25,.9) 54%, rgba(212,175,55,.48) 100%),
+            url('<?php echo BASE_URL; ?>public/images/logos/hinh-nen-viet-nam-4k10.jpg') center/cover;
+        box-shadow: 0 24px 52px rgba(0, 0, 0, .26);
+    }
+
+    body.page-dashboard .welcome-glow,
+    body.page-dashboard .chart-box::after,
+    body.page-dashboard .kpi-alert-card::before {
+        display: none;
+    }
+
+    body.page-dashboard .welcome-avatar {
+        width: 84px;
+        height: 84px;
+        border-radius: 8px;
+        background: linear-gradient(135deg, #ffe082, #d4af37);
+        color: #211b08;
+        box-shadow: 0 14px 26px rgba(212,175,55,.22);
+        flex: 0 0 auto;
+    }
+
+    body.page-dashboard .welcome-title {
+        color: #ffe082;
+        font-size: 2.25rem;
+        letter-spacing: 0;
+    }
+
+    body.page-dashboard .welcome-desc {
+        color: #f7f0d0;
+        font-size: 1.04rem;
+        line-height: 1.65;
+        max-width: 920px;
+    }
+
+    body.page-dashboard .kpi-alerts-section {
+        gap: 24px;
+        margin: 0 0 42px;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    body.page-dashboard .kpi-alert-card,
+    body.page-dashboard .quick-filters-section,
+    body.page-dashboard .chart-box,
+    body.page-dashboard .feature-card,
+    body.page-dashboard .report-card {
+        border-radius: 8px;
+        background: rgba(28, 30, 31, .80);
+        border: 1px solid rgba(212, 175, 55, .20);
+        box-shadow: 0 18px 38px rgba(0,0,0,.20);
+    }
+
+    body.page-dashboard .kpi-alert-card {
+        min-height: 220px;
+        padding: 30px;
+        border-width: 1px;
+    }
+
+    body.page-dashboard .kpi-alert-card.warning,
+    body.page-dashboard .kpi-alert-card.critical {
+        background: linear-gradient(135deg, rgba(239, 68, 68, .12), rgba(28,30,31,.84));
+    }
+
+    body.page-dashboard .kpi-alert-card.success {
+        background: linear-gradient(135deg, rgba(16, 185, 129, .11), rgba(28,30,31,.84));
+    }
+
+    body.page-dashboard .kpi-alert-label {
+        color: #d4d4d4;
+        font-size: .9rem;
+        letter-spacing: 1px;
+    }
+
+    body.page-dashboard .kpi-alert-number {
+        font-size: 3.15rem;
+        line-height: 1.1;
+        margin-top: 26px;
+    }
+
+    body.page-dashboard .kpi-alert-detail {
+        color: #d8d8d8;
+        font-size: .98rem;
+        min-height: 30px;
+    }
+
+    body.page-dashboard .kpi-alert-action a {
+        border-radius: 8px;
+        min-height: 48px;
+        padding: 12px 16px;
+        display: inline-flex;
+        align-items: center;
+        font-weight: 800;
+    }
+
+    body.page-dashboard .quick-filters-section {
+        padding: 28px 30px;
+        margin-bottom: 36px;
+    }
+
+    body.page-dashboard .quick-filters-title {
+        font-size: 1.1rem;
+        margin-bottom: 22px;
+    }
+
+    body.page-dashboard .quick-filters-form {
+        display: grid;
+        grid-template-columns: 1fr 1fr minmax(260px, 2fr) minmax(220px, 1.2fr) auto;
+        gap: 18px;
+        align-items: end;
+    }
+
+    body.page-dashboard .quick-filter-group {
+        width: 100%;
+    }
+
+    body.page-dashboard .quick-filter-label {
+        color: #d4d4d4;
+        letter-spacing: 1px;
+    }
+
+    body.page-dashboard .quick-filter-input,
+    body.page-dashboard .quick-filter-select {
+        width: 100%;
+        min-width: 0;
+        min-height: 46px;
+        border-radius: 8px;
+        background: rgba(255,255,255,.055);
+        border-color: rgba(255,255,255,.18);
+        color: var(--text-light);
+    }
+
+    body.page-dashboard .quick-filter-input:focus,
+    body.page-dashboard .quick-filter-select:focus {
+        border-color: rgba(32,178,170,.72);
+        box-shadow: 0 0 0 3px rgba(32,178,170,.12);
+    }
+
+    body.page-dashboard .quick-filter-btn {
+        min-height: 46px;
+        margin-top: 0;
+        border-radius: 8px;
+        background: #d4af37;
+        color: #111;
+        font-weight: 800;
+        white-space: nowrap;
+    }
+
+    body.page-dashboard .report-card {
+        padding: 0;
+        border: 0;
+        background: transparent;
+        box-shadow: none;
+    }
+
+    body.page-dashboard .chart-grid {
+        gap: 24px;
+    }
+
+    body.page-dashboard .chart-box {
+        padding: 28px;
+        overflow: hidden;
+    }
+
+    body.page-dashboard .chart-title {
+        color: #ffe082;
+        letter-spacing: 0;
+    }
+
+    body.page-dashboard .chart-kicker {
+        color: #d4af37;
+    }
+
+    body.page-dashboard .chart-canvas-wrap {
+        border-radius: 8px;
+    }
+
+    body.page-dashboard .feature-card {
+        padding: 26px;
+    }
+
+    body.page-dashboard .feature-icon {
+        border-radius: 8px;
+    }
+
+    @media (max-width: 1280px) {
+        body.page-dashboard .kpi-alerts-section {
+            grid-template-columns: 1fr;
+        }
+
+        body.page-dashboard .quick-filters-form {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        body.page-dashboard .quick-filter-btn {
+            width: 100%;
+        }
+    }
+
+    @media (max-width: 768px) {
+        body.page-dashboard .content-area {
+            padding: 24px 18px 44px;
+        }
+
+        body.page-dashboard .welcome-admin {
+            padding: 24px;
+            margin-bottom: 28px;
+        }
+
+        body.page-dashboard .welcome-avatar {
+            width: 64px;
+            height: 64px;
+        }
+
+        body.page-dashboard .welcome-title {
+            font-size: 1.6rem;
+        }
+
+        body.page-dashboard .kpi-alert-card {
+            min-height: 180px;
+            padding: 24px;
+        }
+
+        body.page-dashboard .kpi-alert-number {
+            font-size: 2.45rem;
+            margin-top: 18px;
+        }
+
+        body.page-dashboard .quick-filters-form {
+            grid-template-columns: 1fr;
+        }
+
+        body.page-dashboard .chart-box {
+            padding: 22px;
+        }
+    }
+
 </style>
 
 <div class="welcome-admin">

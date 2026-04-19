@@ -99,6 +99,30 @@ if ($soChoConLai !== null && $soChoToiDa !== null && $soChoToiDa > 0) {
 } elseif ($soChoToiDa !== null && $soChoToiDa > 0) {
     $soChoHienThi = (string)$soChoToiDa;
 }
+
+$seatPercentRemain = null;
+if ($soChoConLai !== null && $soChoToiDa !== null && $soChoToiDa > 0) {
+    $seatPercentRemain = (int)round(($soChoConLai / $soChoToiDa) * 100);
+    if ($seatPercentRemain < 0) {
+        $seatPercentRemain = 0;
+    }
+    if ($seatPercentRemain > 100) {
+        $seatPercentRemain = 100;
+    }
+}
+
+$soKhachDaDatHienThi = null;
+$tiLeLapDayHienThi = null;
+if ($soChoConLai !== null && $soChoToiDa !== null && $soChoToiDa > 0) {
+    $soKhachDaDatHienThi = max(0, $soChoToiDa - $soChoConLai);
+    $tiLeLapDayHienThi = (int)round(($soKhachDaDatHienThi / $soChoToiDa) * 100);
+}
+
+$danhGiaAvgHero = isset($danhGiaTourAvg) ? (float)$danhGiaTourAvg : 0;
+$danhGiaCountHero = isset($danhGiaTourCount) ? (int)$danhGiaTourCount : 0;
+if ($danhGiaCountHero <= 0 && !empty($danhGiaTourList) && is_array($danhGiaTourList)) {
+    $danhGiaCountHero = count($danhGiaTourList);
+}
 ?>
 <!DOCTYPE html>
 <html lang="vi">
@@ -176,6 +200,37 @@ if ($soChoConLai !== null && $soChoToiDa !== null && $soChoToiDa > 0) {
             color:#fff;
             background:rgba(214,178,109,.14);
             border-color:rgba(214,178,109,.32);
+        }
+        .tourlux-back.is-active{
+            background:linear-gradient(135deg, var(--lx-gold), #e2bf78);
+            border-color:rgba(214,178,109,.72);
+            color:#132033;
+            box-shadow:0 10px 24px rgba(185,137,61,.22);
+        }
+        .tourlux-hero-topbar{
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:12px;
+            flex-wrap:wrap;
+        }
+        .tourlux-brand{
+            display:inline-flex;
+            align-items:center;
+            gap:.52rem;
+            color:#fff;
+            text-decoration:none;
+            font-family:"Playfair Display", ui-serif, Georgia, "Times New Roman", Times, serif;
+            font-size:1.95rem;
+            font-weight:700;
+            letter-spacing:.3px;
+        }
+        .tourlux-brand i{ color: var(--lx-gold); }
+        .tourlux-top-actions{
+            display:flex;
+            align-items:center;
+            gap:.55rem;
+            flex-wrap:wrap;
         }
         .tourlux-kicker{
             letter-spacing:.18em;
@@ -304,6 +359,21 @@ if ($soChoConLai !== null && $soChoToiDa !== null && $soChoToiDa > 0) {
             vertical-align:middle;
         }
         .table td{ vertical-align:middle; }
+        .data-grid-table{
+            border-radius:16px;
+            overflow:hidden;
+        }
+        .data-grid-table thead th{
+            background:linear-gradient(180deg, rgba(11,18,32,.06), rgba(11,18,32,.03));
+            border-bottom:1px solid rgba(15,23,42,.14);
+            white-space:nowrap;
+        }
+        .data-grid-table tbody tr:nth-child(even){
+            background:rgba(214,178,109,.05);
+        }
+        .data-grid-table tbody tr:hover{
+            background:rgba(214,178,109,.10);
+        }
 
         .price{
             font-size:2.1rem;
@@ -414,6 +484,111 @@ if ($soChoConLai !== null && $soChoToiDa !== null && $soChoToiDa > 0) {
             font-size:1.35rem;
             justify-self:end;
         }
+        .tour-seat-meter{
+            margin-top:.68rem;
+            border-top:1px dashed rgba(15,23,42,.14);
+            padding-top:.68rem;
+        }
+        .tour-seat-meter-head{
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            font-size:.82rem;
+            color:#475569;
+            font-weight:700;
+            margin-bottom:6px;
+        }
+        .tour-seat-bar{
+            height:9px;
+            width:100%;
+            border-radius:999px;
+            background:rgba(15,23,42,.08);
+            overflow:hidden;
+        }
+        .tour-seat-progress{
+            height:100%;
+            border-radius:999px;
+            background:linear-gradient(90deg, #17413b, #2f7d74);
+            transition: width .35s ease;
+        }
+
+        .tour-copy{
+            font-size:1.02rem;
+            line-height:1.8;
+            color:#334155;
+        }
+        .tourlux-stats{
+            display:grid;
+            grid-template-columns:repeat(3, minmax(0, 1fr));
+            gap:10px;
+            margin-top:14px;
+            max-width:760px;
+        }
+        .tourlux-stat{
+            border:1px solid rgba(255,255,255,.18);
+            background:rgba(255,255,255,.08);
+            backdrop-filter: blur(10px);
+            border-radius:14px;
+            padding:10px 12px;
+            display:flex;
+            align-items:flex-start;
+            gap:8px;
+        }
+        .tourlux-stat i{
+            color:rgba(214,178,109,.95);
+            font-size:1.02rem;
+            transform:translateY(1px);
+        }
+        .tourlux-stat-k{
+            font-size:.72rem;
+            color:rgba(255,255,255,.64);
+            text-transform:uppercase;
+            letter-spacing:.08em;
+            font-weight:800;
+        }
+        .tourlux-stat-v{
+            color:#fff;
+            font-size:.98rem;
+            font-weight:900;
+            line-height:1.2;
+            margin-top:2px;
+        }
+
+        .timeline-list{
+            display:grid;
+            gap:12px;
+        }
+        .timeline-item{
+            display:grid;
+            grid-template-columns: 76px 1fr;
+            gap:12px;
+            align-items:start;
+            background:rgba(255,255,255,.82);
+            border:1px solid rgba(15,23,42,.10);
+            border-radius:14px;
+            padding:12px;
+            box-shadow:0 8px 24px rgba(2,6,23,.06);
+        }
+        .timeline-day{
+            border-radius:12px;
+            background:linear-gradient(135deg, #15233b, #20365f);
+            color:#f7e5b6;
+            text-align:center;
+            padding:10px 8px;
+            font-weight:900;
+            font-size:.86rem;
+            letter-spacing:.03em;
+        }
+        .timeline-place{
+            font-weight:800;
+            color:#13213a;
+            margin-bottom:3px;
+        }
+        .timeline-activity{
+            color:#475569;
+            line-height:1.55;
+            font-size:.95rem;
+        }
         @media (max-width: 576px){
             .tour-info-row{ grid-template-columns: 120px 1fr; }
             .tour-info-row.price .k,
@@ -441,47 +616,85 @@ if ($soChoConLai !== null && $soChoToiDa !== null && $soChoToiDa > 0) {
             border:2px solid rgba(245,246,248,.92);
         }
         .related-card{
-            flex:0 0 260px;
+            flex:0 0 296px;
             scroll-snap-align:start;
-            border-radius:18px;
+            border-radius:22px;
             overflow:hidden;
-            border:1px solid rgba(255,255,255,.58);
-            background:rgba(255,255,255,.78);
+            border:1px solid rgba(15,23,42,.10);
+            background:linear-gradient(180deg,#ffffff,#fbfdfa);
             box-shadow:0 18px 54px rgba(2,6,23,.10);
-            transition: transform .18s, box-shadow .18s;
+            transition: transform .22s, box-shadow .22s;
+            display:flex;
+            flex-direction:column;
         }
         .related-card:hover{
-            transform: translateY(-3px);
-            box-shadow:0 24px 70px rgba(2,6,23,.13);
+            transform: translateY(-5px);
+            box-shadow:0 26px 74px rgba(2,6,23,.16);
         }
         .related-card img{
             width:100%;
-            height:150px;
+            height:176px;
             object-fit:cover;
             display:block;
             filter:saturate(1.05) contrast(1.02);
+            transition:transform .35s ease;
         }
-        .related-body{ padding: 12px 12px 14px 12px; }
+        .related-card:hover img{
+            transform:scale(1.04);
+        }
+        .related-body{ padding: 14px 14px 16px 14px; display:flex; flex-direction:column; flex:1; }
         .related-name{
             font-weight:900;
             letter-spacing:.1px;
             margin:0 0 6px 0;
             line-height:1.2;
-            font-size:1.02rem;
+            font-size:1.05rem;
         }
         .related-meta{
             color:var(--lx-muted);
-            font-size:.95rem;
-            min-height: 38px;
-            margin-bottom:10px;
+            font-size:.92rem;
+            min-height: 42px;
+            margin-bottom:12px;
         }
         .related-price{
             font-weight:900;
             color:#b42318;
+            font-size:1.05rem;
+        }
+        .related-actions{
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            margin-top:auto;
+            gap:8px;
+        }
+        .related-badge{
+            display:inline-flex;
+            align-items:center;
+            border-radius:999px;
+            background:rgba(214,178,109,.18);
+            color:#7a561f;
+            border:1px solid rgba(214,178,109,.34);
+            padding:4px 10px;
+            font-size:.74rem;
+            font-weight:800;
         }
         @media (min-width: 992px){
             .related-scroller{ flex-wrap:wrap; overflow:visible; }
             .related-card{ flex:1 1 calc(33.333% - 14px); max-width:calc(33.333% - 14px); }
+        }
+
+        .js-reveal{
+            opacity:0;
+            transform:translateY(20px);
+            transition:opacity .55s ease, transform .55s ease;
+        }
+        .js-reveal.is-visible{
+            opacity:1;
+            transform:translateY(0);
+        }
+        @media (prefers-reduced-motion: reduce){
+            .js-reveal{ opacity:1; transform:none; transition:none; }
         }
 
         /* REVIEWS */
@@ -551,14 +764,82 @@ if ($soChoConLai !== null && $soChoToiDa !== null && $soChoToiDa > 0) {
             margin-top:10px;
             line-height:1.5;
         }
+
+        .review-form-shell{
+            margin-top:14px;
+            border:1px solid rgba(15,23,42,.10);
+            background:linear-gradient(180deg, rgba(255,255,255,.86), rgba(255,255,255,.70));
+            border-radius:18px;
+            padding:16px;
+            box-shadow:0 10px 28px rgba(2,6,23,.06);
+        }
+        .review-form-shell .form-label{
+            font-weight:800;
+            color:#1e293b;
+            margin-bottom:.48rem;
+        }
+        .review-form-shell .form-select,
+        .review-form-shell .form-control{
+            border-radius:14px;
+            border:1px solid rgba(15,23,42,.16);
+            background:rgba(255,255,255,.95);
+            min-height:48px;
+            padding:10px 12px;
+        }
+        .review-form-shell .form-control{ min-height:134px; }
+        .review-form-shell .form-select:focus,
+        .review-form-shell .form-control:focus{
+            border-color:rgba(214,178,109,.72);
+            box-shadow:0 0 0 .2rem rgba(214,178,109,.18);
+        }
+        .review-score-hints{
+            margin-top:.55rem;
+            display:flex;
+            flex-wrap:wrap;
+            gap:6px;
+        }
+        .review-score-chip{
+            border:1px solid rgba(214,178,109,.34);
+            background:rgba(214,178,109,.12);
+            color:#7a561f;
+            border-radius:999px;
+            padding:3px 9px;
+            font-size:.74rem;
+            font-weight:700;
+        }
+        .review-form-footnote{
+            color:#64748b;
+            font-size:.86rem;
+            font-weight:600;
+        }
+
+        @media (max-width: 991.98px){
+            .tourlux-stats{ grid-template-columns:1fr; max-width:none; }
+            #dat-tour{ margin-top: 2px; }
+            .tourlux-sticky{ position:static !important; top:auto !important; }
+            .tour-action-stack .btn{ min-height:50px; font-size:.98rem; }
+        }
     </style>
 </head>
 <body class="tourlux">
     <header class="tourlux-hero" style="--hero-img: url('<?php echo htmlspecialchars($anhDaiDien); ?>');">
         <div class="container">
-            <a class="tourlux-back" href="index.php?act=khachHang/dashboard">
-                <i class="bi bi-arrow-left"></i> Quay lại
-            </a>
+            <div class="tourlux-hero-topbar">
+                <a class="tourlux-brand" href="index.php?act=khachHang/dashboard" aria-label="Trang chủ DuLichPro">
+                    <i class="bi bi-star-fill"></i> DuLichPro
+                </a>
+                <div class="tourlux-top-actions">
+                    <a class="tourlux-back" href="index.php?act=khachHang/dashboard">
+                        <i class="bi bi-house-door"></i> Trang chủ
+                    </a>
+                    <a class="tourlux-back is-active" href="index.php?act=khachHang/danhSachTour">
+                        <i class="bi bi-stars"></i> Tour nổi bật
+                    </a>
+                    <a class="tourlux-back" href="javascript:history.back()">
+                        <i class="bi bi-arrow-left"></i> Quay lại
+                    </a>
+                </div>
+            </div>
 
             <div class="tourlux-kicker">Chi tiết tour</div>
             <div class="row align-items-end g-4 mt-0">
@@ -578,6 +859,30 @@ if ($soChoConLai !== null && $soChoToiDa !== null && $soChoToiDa > 0) {
                         <?php if (!empty($soChoHienThi) && $soChoHienThi !== 'Chưa cập nhật'): ?>
                             <span class="chip"><i class="bi bi-people"></i> Còn <?php echo htmlspecialchars((string)$soChoHienThi); ?> chỗ</span>
                         <?php endif; ?>
+                    </div>
+
+                    <div class="tourlux-stats">
+                        <div class="tourlux-stat">
+                            <i class="bi bi-star-fill"></i>
+                            <div>
+                                <div class="tourlux-stat-k">Đánh giá trung bình</div>
+                                <div class="tourlux-stat-v"><?php echo number_format($danhGiaAvgHero, 1); ?>/5 (<?php echo (int)$danhGiaCountHero; ?>)</div>
+                            </div>
+                        </div>
+                        <div class="tourlux-stat">
+                            <i class="bi bi-person-check-fill"></i>
+                            <div>
+                                <div class="tourlux-stat-k">Khách đã đặt</div>
+                                <div class="tourlux-stat-v"><?php echo $soKhachDaDatHienThi !== null ? (int)$soKhachDaDatHienThi . ' khách' : 'Đang cập nhật'; ?></div>
+                            </div>
+                        </div>
+                        <div class="tourlux-stat">
+                            <i class="bi bi-bar-chart-fill"></i>
+                            <div>
+                                <div class="tourlux-stat-k">Tỉ lệ lấp chỗ</div>
+                                <div class="tourlux-stat-v"><?php echo $tiLeLapDayHienThi !== null ? (int)$tiLeLapDayHienThi . '%' : 'Đang cập nhật'; ?></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -620,7 +925,7 @@ if ($soChoConLai !== null && $soChoToiDa !== null && $soChoToiDa > 0) {
 
         <div class="row g-4">
             <div class="col-lg-8">
-                <div class="panel mb-4">
+                <div class="panel mb-4 js-reveal">
                     <div class="panel-body">
                         <img id="mainTourImage" src="<?php echo htmlspecialchars($anhDaiDien); ?>" class="tourlux-mainimg" alt="Ảnh tour">
 
@@ -645,21 +950,21 @@ if ($soChoConLai !== null && $soChoToiDa !== null && $soChoToiDa > 0) {
                     </div>
                 </div>
 
-                <div class="panel mb-4">
+                <div class="panel mb-4 js-reveal">
                     <div class="panel-body">
                         <h3 class="panel-title"><i class="bi bi-info-circle"></i> Mô tả tour</h3>
-                        <div class="mt-3 text-muted-2">
+                        <div class="mt-3 tour-copy">
                             <?php echo nl2br(htmlspecialchars($tour['mo_ta'] ?? 'Chưa có mô tả.')); ?>
                         </div>
                     </div>
                 </div>
 
-                <div class="panel mb-4">
+                <div class="panel mb-4 js-reveal">
                     <div class="panel-body">
                         <h3 class="panel-title"><i class="bi bi-calendar-event"></i> Thông tin khởi hành</h3>
                         <div class="mt-3">
                             <?php if (!empty($lichKhoiHanhList)): ?>
-                                <table class="table table-bordered table-sm mb-0">
+                                <table class="table table-bordered table-sm mb-0 data-grid-table">
                                     <thead>
                                         <tr>
                                             <th>Ngày khởi hành</th>
@@ -686,7 +991,7 @@ if ($soChoConLai !== null && $soChoToiDa !== null && $soChoToiDa > 0) {
                     </div>
                 </div>
 
-                <div class="panel mb-4">
+                <div class="panel mb-4 js-reveal">
                     <div class="panel-body">
                         <h3 class="panel-title"><i class="bi bi-person-badge-fill"></i> Hướng dẫn viên</h3>
                         <div class="mt-3">
@@ -712,29 +1017,22 @@ if ($soChoConLai !== null && $soChoToiDa !== null && $soChoToiDa > 0) {
                     </div>
                 </div>
 
-                <div class="panel mb-4">
+                <div class="panel mb-4 js-reveal">
                     <div class="panel-body">
                         <h3 class="panel-title"><i class="bi bi-list-task"></i> Lịch trình chi tiết</h3>
                         <div class="mt-3">
                             <?php if (!empty($lichTrinhList)): ?>
-                                <table class="table table-bordered table-sm mb-0">
-                                    <thead>
-                                        <tr>
-                                            <th>Ngày</th>
-                                            <th>Địa điểm</th>
-                                            <th>Hoạt động</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
+                                <div class="timeline-list">
                                     <?php foreach ($lichTrinhList as $lt): ?>
-                                        <tr>
-                                            <td><?php echo $lt['ngay_thu']; ?></td>
-                                            <td><?php echo htmlspecialchars($lt['dia_diem']); ?></td>
-                                            <td><?php echo htmlspecialchars($lt['hoat_dong']); ?></td>
-                                        </tr>
+                                        <article class="timeline-item">
+                                            <div class="timeline-day">Ngày <?php echo (int)($lt['ngay_thu'] ?? 0); ?></div>
+                                            <div>
+                                                <div class="timeline-place"><i class="bi bi-geo-alt me-1"></i><?php echo htmlspecialchars($lt['dia_diem'] ?? 'Đang cập nhật'); ?></div>
+                                                <div class="timeline-activity"><?php echo htmlspecialchars($lt['hoat_dong'] ?? 'Đang cập nhật hoạt động'); ?></div>
+                                            </div>
+                                        </article>
                                     <?php endforeach; ?>
-                                    </tbody>
-                                </table>
+                                </div>
                             <?php else: ?>
                                 <div class="text-muted-2"><i class="bi bi-x-circle me-1"></i> Chưa cập nhật lịch trình.</div>
                             <?php endif; ?>
@@ -743,7 +1041,7 @@ if ($soChoConLai !== null && $soChoToiDa !== null && $soChoToiDa > 0) {
                 </div>
 
                 <?php if (!empty($tour['nhat_ky'])): ?>
-                    <div class="panel mb-4">
+                    <div class="panel mb-4 js-reveal">
                         <div class="panel-body">
                             <h3 class="panel-title"><i class="bi bi-journal-text"></i> Nhật ký tour</h3>
                             <ul class="mt-3 mb-0 text-muted-2">
@@ -756,7 +1054,7 @@ if ($soChoConLai !== null && $soChoToiDa !== null && $soChoToiDa > 0) {
                 <?php endif; ?>
 
                 <?php if (!empty($tour['yeu_cau_dac_biet'])): ?>
-                    <div class="panel mb-4">
+                    <div class="panel mb-4 js-reveal">
                         <div class="panel-body">
                             <h3 class="panel-title"><i class="bi bi-star-fill"></i> Yêu cầu đặc biệt</h3>
                             <ul class="mt-3 mb-0 text-muted-2">
@@ -798,6 +1096,17 @@ if ($soChoConLai !== null && $soChoToiDa !== null && $soChoToiDa > 0) {
                                 <div class="tour-info-row"><span class="k">Khởi hành sau:</span><span class="v"><?php echo htmlspecialchars($khoiHanhSauHienThi); ?></span></div>
                                 <div class="tour-info-row"><span class="k">Thời gian:</span><span class="v"><?php echo htmlspecialchars($thoiGianHienThi); ?></span></div>
                                 <div class="tour-info-row"><span class="k">Số chỗ còn:</span><span class="v"><?php echo htmlspecialchars((string)$soChoHienThi); ?></span></div>
+                                <?php if ($seatPercentRemain !== null): ?>
+                                    <div class="tour-seat-meter">
+                                        <div class="tour-seat-meter-head">
+                                            <span>Tỉ lệ chỗ còn</span>
+                                            <span><?php echo (int)$seatPercentRemain; ?>%</span>
+                                        </div>
+                                        <div class="tour-seat-bar" aria-hidden="true">
+                                            <div class="tour-seat-progress" style="width: <?php echo (int)$seatPercentRemain; ?>%;"></div>
+                                        </div>
+                                    </div>
+                                <?php endif; ?>
                                 <div class="tour-info-row price"><span class="k">Giá/khách:</span><span class="v"><?php echo number_format($tour['gia_tour'] ?? $tour['gia_co_ban'] ?? 0); ?>đ</span></div>
                             </div>
 
@@ -815,7 +1124,7 @@ if ($soChoConLai !== null && $soChoToiDa !== null && $soChoToiDa > 0) {
                                 </div>
                             </div>
 
-                            <div class="d-grid gap-2">
+                            <div class="d-grid gap-2 tour-action-stack">
                                 <?php if ($isBookingLockedBy48h): ?>
                                     <button type="button" class="btn btn-lux py-3" disabled>
                                         <i class="bi bi-lock me-1"></i> Tạm khóa đặt tour
@@ -836,7 +1145,7 @@ if ($soChoConLai !== null && $soChoToiDa !== null && $soChoToiDa > 0) {
         </div>
 
         <?php if (!empty($danhGiaTourList)): ?>
-            <div class="panel mb-4">
+            <div class="panel mb-4 js-reveal">
                 <div class="panel-body">
                     <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
                         <h3 class="panel-title"><i class="bi bi-chat-quote"></i> Phản hồi khách hàng</h3>
@@ -893,7 +1202,7 @@ if ($soChoConLai !== null && $soChoToiDa !== null && $soChoToiDa > 0) {
             </div>
         <?php endif; ?>
 
-        <div class="panel mb-4">
+        <div class="panel mb-4 js-reveal">
             <div class="panel-body">
                 <h3 class="panel-title"><i class="bi bi-pencil-square"></i> Đánh giá tour này</h3>
 
@@ -908,7 +1217,7 @@ if ($soChoConLai !== null && $soChoToiDa !== null && $soChoToiDa > 0) {
                             Bạn đã đánh giá tour này. Bạn có thể chỉnh sửa đánh giá bên dưới.
                         </div>
                     <?php endif; ?>
-                    <form class="mt-3" method="post" action="index.php?act=khachHang/guiDanhGia">
+                    <form class="review-form-shell" method="post" action="index.php?act=khachHang/guiDanhGia">
                         <input type="hidden" name="loai_danh_gia" value="Tour">
                         <input type="hidden" name="tour_id" value="<?php echo (int)($tour['tour_id'] ?? 0); ?>">
                         <input type="hidden" name="tieu_chi" value="ChatLuongTour">
@@ -925,6 +1234,12 @@ if ($soChoConLai !== null && $soChoToiDa !== null && $soChoToiDa > 0) {
                                     <option value="2" <?php echo $existingDiem === 2 ? 'selected' : ''; ?>>2 - Chưa hài lòng</option>
                                     <option value="1" <?php echo $existingDiem === 1 ? 'selected' : ''; ?>>1 - Không hài lòng</option>
                                 </select>
+                                <div class="review-score-hints">
+                                    <span class="review-score-chip">5: Xuất sắc</span>
+                                    <span class="review-score-chip">4: Tốt</span>
+                                    <span class="review-score-chip">3: Ổn</span>
+                                    <span class="review-score-chip">2-1: Cần cải thiện</span>
+                                </div>
                             </div>
                             <div class="col-md-8">
                                 <label class="form-label fw-bold">Nội dung đánh giá</label>
@@ -936,7 +1251,7 @@ if ($soChoConLai !== null && $soChoToiDa !== null && $soChoToiDa > 0) {
                             <button type="submit" class="btn btn-lux px-4">
                                 <i class="bi bi-send me-1"></i> <?php echo !empty($daDanhGiaTourNay) ? 'Cập nhật đánh giá' : 'Gửi đánh giá'; ?>
                             </button>
-                            <span class="text-muted-2 align-self-center">Chỉ hiển thị khi bạn đã đặt và hoàn thành tour.</span>
+                            <span class="review-form-footnote align-self-center">Chỉ hiển thị khi bạn đã đặt và hoàn thành tour.</span>
                         </div>
                     </form>
                 <?php elseif (empty($daDatTourNay)): ?>
@@ -954,7 +1269,7 @@ if ($soChoConLai !== null && $soChoToiDa !== null && $soChoToiDa > 0) {
         </div>
 
         <?php if (!empty($tourCungLoai)): ?>
-            <div class="panel mb-4">
+            <div class="panel mb-4 js-reveal">
                 <div class="panel-body">
                     <h3 class="panel-title"><i class="bi bi-stars"></i> Tour cùng loại</h3>
                     <div class="related-scroller mt-2" aria-label="Danh sách tour cùng loại">
@@ -977,13 +1292,13 @@ if ($soChoConLai !== null && $soChoToiDa !== null && $soChoToiDa > 0) {
                                     <div class="d-flex align-items-start justify-content-between gap-2">
                                         <h4 class="related-name"><?php echo htmlspecialchars($t['ten_tour'] ?? 'Tour'); ?></h4>
                                         <?php if (!empty($t['loai_tour'])): ?>
-                                            <span class="badge" style="background:rgba(214,178,109,.22); color:#7a561f; border:1px solid rgba(214,178,109,.35);">
+                                            <span class="related-badge">
                                                 <?php echo htmlspecialchars($t['loai_tour']); ?>
                                             </span>
                                         <?php endif; ?>
                                     </div>
                                     <div class="related-meta"><i class="bi bi-geo-alt me-1"></i><?php echo htmlspecialchars($moTa); ?></div>
-                                    <div class="d-flex align-items-center justify-content-between">
+                                    <div class="related-actions">
                                         <div class="related-price"><?php echo number_format((float)$gia); ?>đ</div>
                                         <a class="btn btn-lux-outline btn-sm px-3" href="index.php?act=khachHang/chiTietTour&id=<?php echo urlencode((string)$tid); ?>">
                                             <i class="bi bi-info-circle me-1"></i> Xem
@@ -1000,6 +1315,28 @@ if ($soChoConLai !== null && $soChoToiDa !== null && $soChoToiDa > 0) {
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        (function () {
+            var revealEls = document.querySelectorAll('.js-reveal');
+            if (!revealEls || revealEls.length === 0) return;
+
+            var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            if (reduced || !('IntersectionObserver' in window)) {
+                revealEls.forEach(function (el) { el.classList.add('is-visible'); });
+                return;
+            }
+
+            var io = new IntersectionObserver(function (entries, observer) {
+                entries.forEach(function (entry) {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('is-visible');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.12, rootMargin: '0px 0px -30px 0px' });
+
+            revealEls.forEach(function (el) { io.observe(el); });
+        })();
+
         (function () {
             var mainImg = document.getElementById('mainTourImage');
             if (!mainImg) return;

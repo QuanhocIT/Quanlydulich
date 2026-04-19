@@ -8,37 +8,228 @@
     <title>Hóa đơn - Khách hàng</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
     <style>
-        body {
-            background: #f5f7fa;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        :root {
+            --ink: #0f172a;
+            --muted: #64748b;
+            --line: rgba(15, 23, 42, 0.12);
+            --leaf: #15233b;
+            --leaf-2: #20365f;
+            --gold: #d6b26d;
+        }
+        body.invoice-page {
+            background:
+                radial-gradient(1200px 600px at 20% -10%, rgba(214,178,109,.16), transparent 60%),
+                radial-gradient(900px 520px at 85% 0%, rgba(11,18,32,.08), transparent 55%),
+                #f5f6f8;
+            color: var(--ink);
+            font-family: "Manrope", sans-serif;
+            min-height: 100vh;
+        }
+        .invoice-shell { padding: 24px 0 56px; }
+        .layout-shell {
+            width: min(1500px, calc(100% - 48px));
+            margin: 0 auto;
+        }
+        .topbar {
+            align-items: center;
+            background: rgba(11,18,32,.92);
+            border: 1px solid rgba(214,178,109,.22);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            display: flex;
+            gap: 16px;
+            justify-content: space-between;
+            margin-bottom: 22px;
+            padding: 12px 14px;
+            box-shadow: 0 12px 34px rgba(2,6,23,.18);
+        }
+        .brand {
+            align-items: center;
+            color: #fff;
+            display: inline-flex;
+            font-weight: 800;
+            gap: 10px;
+            letter-spacing: .08em;
+            text-decoration: none;
+            text-transform: uppercase;
+        }
+        .brand-mark {
+            align-items: center;
+            background: linear-gradient(135deg, var(--leaf), var(--leaf-2));
+            border-radius: 16px;
+            color: var(--gold);
+            display: inline-flex;
+            height: 44px;
+            justify-content: center;
+            width: 44px;
+        }
+        .nav-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+        .nav-pill {
+            align-items: center;
+            background: rgba(255,255,255,.06);
+            border: 1px solid rgba(214,178,109,.28);
+            border-radius: 999px;
+            color: rgba(255,255,255,.9);
+            display: inline-flex;
+            font-size: 14px;
+            font-weight: 700;
+            gap: 8px;
+            padding: 10px 15px;
+            text-decoration: none;
+            transition: background .2s, border-color .2s, color .2s;
+        }
+        .nav-pill:hover {
+            background: rgba(214,178,109,.18);
+            border-color: rgba(214,178,109,.46);
+            color: #fff;
+        }
+        .nav-pill.is-active {
+            background: linear-gradient(135deg, var(--gold), #e2bf78);
+            border-color: rgba(214,178,109,.72);
+            color: #132033;
+            box-shadow: 0 10px 24px rgba(185,137,61,.24);
+        }
+        .hero {
+            background:
+                linear-gradient(115deg, rgba(11,18,32,.93), rgba(21,35,59,.78)),
+                url('https://images.unsplash.com/photo-1522202222206-b750505f51f0?auto=format&fit=crop&w=1800&q=80') center/cover;
+            border: 1px solid rgba(214,178,109,.2);
+            border-radius: 32px;
+            box-shadow: 0 30px 80px rgba(2,6,23,.22);
+            color: #fff;
+            margin-bottom: 18px;
+            overflow: hidden;
+            padding: 34px 30px;
+            position: relative;
+        }
+        .hero::after {
+            background: rgba(214,178,109,.14);
+            border-radius: 999px;
+            content: "";
+            height: 260px;
+            position: absolute;
+            right: -86px;
+            top: -86px;
+            width: 260px;
+        }
+        .hero-content {
+            max-width: 760px;
+            position: relative;
+            z-index: 1;
+        }
+        .hero h1 {
+            font-family: "Playfair Display", serif;
+            font-size: clamp(2rem, 4vw, 3.25rem);
+            line-height: 1.05;
+            margin: 0 0 10px;
+            letter-spacing: .2px;
+        }
+        .hero p {
+            color: rgba(255,255,255,.84);
+            font-size: 1rem;
+            margin: 0;
+            line-height: 1.75;
+        }
+        .hero-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 18px;
+        }
+        .hero-btn {
+            align-items: center;
+            border-radius: 999px;
+            display: inline-flex;
+            font-weight: 800;
+            gap: 8px;
+            padding: 10px 16px;
+            text-decoration: none;
+        }
+        .hero-btn.main {
+            background: linear-gradient(135deg, var(--gold), #e2bf78);
+            color: #132033;
+            box-shadow: 0 10px 24px rgba(185,137,61,.24);
+        }
+        .hero-btn.ghost {
+            background: rgba(255,255,255,.08);
+            border: 1px solid rgba(214,178,109,.35);
+            color: #f7e5b6;
         }
         .invoice-card {
-            background: white;
-            border-radius: 1rem;
+            background: rgba(255,255,255,.9);
+            border: 1px solid var(--line);
+            border-radius: 24px;
             padding: 2rem;
-            box-shadow: 0 0.25rem 0.5rem rgba(0,0,0,0.1);
+            box-shadow: 0 14px 38px rgba(2,6,23,.1);
         }
         .invoice-header {
-            border-bottom: 2px solid #e9ecef;
+            border-bottom: 1px solid rgba(15,23,42,.12);
             padding-bottom: 1rem;
             margin-bottom: 2rem;
         }
+        .card {
+            border: 1px solid var(--line);
+            border-radius: 20px;
+            box-shadow: 0 14px 38px rgba(2,6,23,.08);
+            overflow: hidden;
+        }
+        .card-header {
+            background: rgba(255,255,255,.85);
+            border-bottom: 1px solid var(--line);
+            font-weight: 800;
+        }
+        .alert {
+            border-radius: 16px;
+            box-shadow: 0 10px 26px rgba(15,23,42,.1);
+        }
+        @media (max-width: 992px) {
+            .topbar { align-items: flex-start; flex-direction: column; }
+            .nav-actions { justify-content: flex-start; }
+        }
+        @media (max-width: 768px) {
+            .invoice-shell { padding-bottom: 34px; }
+            .layout-shell { width: min(100% - 24px, 1500px); }
+            .hero { border-radius: 24px; padding: 28px 20px; }
+            .invoice-card { padding: 1.2rem; }
+        }
     </style>
 </head>
-<body>
-    <div class="container py-5">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2><i class="bi bi-receipt me-2"></i>Hóa đơn & Thanh toán</h2>
-            <div class="d-flex gap-2">
-                <a href="index.php?act=khachHang/lichSuThanhToan" class="btn btn-outline-primary">
-                    <i class="bi bi-clock-history me-2"></i>Lịch sử thanh toán
-                </a>
-                <a href="index.php?act=khachHang/dashboard" class="btn btn-outline-secondary">
-                    <i class="bi bi-arrow-left me-2"></i>Quay lại
-                </a>
+<body class="invoice-page">
+    <main class="invoice-shell">
+    <div class="layout-shell">
+        <header class="topbar">
+            <a class="brand" href="index.php?act=khachHang/dashboard">
+                <span class="brand-mark"><i class="bi bi-compass"></i></span>
+                <span>DuLichPro</span>
+            </a>
+            <nav class="nav-actions" aria-label="Điều hướng khách hàng">
+                <a class="nav-pill" href="index.php?act=khachHang/dashboard"><i class="bi bi-house"></i> Trang chủ</a>
+                <a class="nav-pill" href="index.php?act=khachHang/danhSachTour"><i class="bi bi-stars"></i> Tour nổi bật</a>
+                <a class="nav-pill" href="index.php?act=khachHang/yeuCauTour"><i class="bi bi-suitcase2"></i> Tour đã đặt</a>
+                <a class="nav-pill" href="index.php?act=khachHang/capNhatThongTin"><i class="bi bi-person-gear"></i> Hồ sơ</a>
+                <a class="nav-pill is-active" href="index.php?act=khachHang/hoaDon"><i class="bi bi-receipt"></i> Hóa đơn</a>
+            </nav>
+        </header>
+
+        <section class="hero">
+            <div class="hero-content">
+                <h1>Hóa đơn và thanh toán</h1>
+                <p>Theo dõi trạng thái giao dịch, xem chi tiết hóa đơn và hoàn tất thanh toán trực tuyến trong cùng một màn hình.</p>
+                <div class="hero-actions">
+                    <a href="index.php?act=khachHang/lichSuThanhToan" class="hero-btn main"><i class="bi bi-clock-history"></i> Lịch sử thanh toán</a>
+                    <a href="index.php?act=khachHang/yeuCauTour" class="hero-btn ghost"><i class="bi bi-arrow-left"></i> Quay lại tour đã đặt</a>
+                </div>
             </div>
-        </div>
+        </section>
 
         <?php if (isset($_SESSION['success'])): ?>
             <div class="alert alert-success alert-dismissible fade show">
@@ -289,6 +480,7 @@
             </div>
         <?php endif; ?>
     </div>
+    </main>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <?php if (!empty($latestPayment) && (($latestPayment['status'] ?? '') === 'DangXuLy')): ?>

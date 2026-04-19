@@ -291,8 +291,114 @@ ob_start();
                 width: 100%;
             }
         }
+        body.page-tour .content-area {
+            padding: 34px 48px 56px;
+            background:
+                radial-gradient(circle at 12% 8%, rgba(32, 178, 170, 0.08), transparent 28%),
+                radial-gradient(circle at 84% 16%, rgba(212, 175, 55, 0.10), transparent 30%),
+                linear-gradient(135deg, #131616 0%, #181b1c 48%, #111313 100%);
+        }
+        body.page-tour .tour-form-page {
+            padding: 0 !important;
+        }
+        body.page-tour .tour-form-page .page-header-section {
+            min-height: 154px;
+            padding: 34px 40px !important;
+            border: 1px solid rgba(212,175,55,.22);
+            border-radius: 8px;
+            background:
+                linear-gradient(90deg, rgba(16,22,22,.92) 0%, rgba(24,30,29,.86) 54%, rgba(212,175,55,.45) 100%),
+                url('<?php echo BASE_URL; ?>public/images/logos/hinh-nen-viet-nam-4k10.jpg') center/cover;
+            box-shadow: 0 24px 52px rgba(0,0,0,.28);
+        }
+        body.page-tour .tour-form-page .page-header-section h1 {
+            color: #ffe082 !important;
+            font-size: 2.05rem !important;
+            letter-spacing: 0;
+        }
+        body.page-tour .tour-form-page .page-header-section p {
+            color: #f5f1df !important;
+            line-height: 1.6;
+        }
+        body.page-tour .tour-form-page .page-header-section a {
+            min-height: 56px;
+            border-radius: 8px !important;
+            padding: 14px 28px !important;
+            font-weight: 800 !important;
+            background: rgba(255,255,255,.08) !important;
+        }
+        body.page-tour .tour-form-page .form-section,
+        body.page-tour .tour-form-page .card,
+        body.page-tour .tour-form-page .alert {
+            background: rgba(28,30,31,.80);
+            border: 1px solid rgba(212,175,55,.20);
+            border-radius: 8px;
+            box-shadow: 0 18px 38px rgba(0,0,0,.20);
+        }
+        body.page-tour .tour-form-page .form-section {
+            padding: 30px;
+        }
+        body.page-tour .tour-form-page .form-section-title {
+            color: #ffe082;
+            font-size: 1.2rem;
+            letter-spacing: .2px;
+            border-bottom-color: rgba(212,175,55,.18);
+        }
+        body.page-tour .tour-form-page .form-label,
+        body.page-tour .tour-form-page .form-group label {
+            color: #e8e8e8;
+            font-weight: 700;
+        }
+        body.page-tour .tour-form-page .form-control,
+        body.page-tour .tour-form-page .form-select,
+        body.page-tour .tour-form-page .input-group-text {
+            min-height: 46px;
+            border-radius: 8px;
+            background: rgba(255,255,255,.055);
+            border-color: rgba(255,255,255,.18);
+        }
+        body.page-tour .tour-form-page textarea.form-control {
+            min-height: 104px;
+        }
+        body.page-tour .tour-form-page .form-control:focus,
+        body.page-tour .tour-form-page .form-select:focus {
+            border-color: rgba(32,178,170,.72);
+            box-shadow: 0 0 0 3px rgba(32,178,170,.12);
+        }
+        body.page-tour .tour-form-page .image-item {
+            border: 1px solid rgba(255,255,255,.10);
+            border-radius: 8px;
+            padding: 14px;
+            background: rgba(255,255,255,.035);
+        }
+        body.page-tour .tour-form-page .lich-trinh-item {
+            border-radius: 8px;
+            border-color: rgba(212,175,55,.18);
+            background: rgba(255,255,255,.035);
+        }
+        body.page-tour .tour-form-page .lich-trinh-item .card-header {
+            border-radius: 8px 8px 0 0;
+            background: linear-gradient(90deg, rgba(212,175,55,.14), rgba(255,255,255,.04));
+        }
+        body.page-tour .tour-form-page .btn {
+            border-radius: 8px;
+            font-weight: 800;
+        }
+        body.page-tour .tour-form-page .btn-action-group {
+            border: 1px solid rgba(212,175,55,.18);
+            border-radius: 8px;
+            padding: 18px;
+            background: rgba(18,20,20,.90);
+            box-shadow: 0 -10px 28px rgba(0,0,0,.20);
+        }
+        @media (max-width: 768px) {
+            body.page-tour .content-area { padding: 24px 18px 44px; }
+            body.page-tour .tour-form-page .page-header-section { padding: 24px !important; }
+            body.page-tour .tour-form-page .page-header-section h1 { font-size: 1.55rem !important; }
+            body.page-tour .tour-form-page .form-section { padding: 22px; }
+        }
     </style>
-<div style="padding: 20px;">
+<div class="tour-form-page" style="padding: 20px;">
     <!-- Header -->
     <div class="page-header-section" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; margin-bottom: 30px;">
         <div>

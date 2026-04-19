@@ -428,6 +428,183 @@ ob_start();
             padding: 14px 18px;
         }
     }
+
+    body.page-danhGia .content-area {
+        padding: 34px 48px 56px;
+        background:
+            radial-gradient(circle at 10% 0%, rgba(13, 202, 240, 0.08), transparent 28%),
+            radial-gradient(circle at 100% 10%, rgba(212, 175, 55, 0.11), transparent 30%),
+            linear-gradient(180deg, rgba(255,255,255,0.018), transparent 260px);
+    }
+
+    body.page-danhGia .review-page-wrap {
+        max-width: 100%;
+        padding: 0;
+    }
+
+    body.page-danhGia .page-header-section {
+        min-height: 154px;
+        padding: 28px 34px;
+        background:
+            linear-gradient(100deg, rgba(28, 31, 33, 0.96) 0%, rgba(30, 42, 45, 0.94) 52%, rgba(119, 102, 45, 0.84) 100%),
+            url("<?php echo BASE_URL; ?>public/images/logos/hinh-nen-viet-nam-4k10.jpg");
+        background-size: cover;
+        background-position: center;
+        border: 1px solid rgba(255,255,255,0.09);
+        border-radius: 8px;
+        box-shadow: 0 22px 60px rgba(0,0,0,0.28);
+        position: relative;
+        overflow: hidden;
+    }
+
+    body.page-danhGia .page-header-section::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(90deg, rgba(0,0,0,0.18), rgba(0,0,0,0.04));
+        pointer-events: none;
+    }
+
+    body.page-danhGia .page-header-section > div {
+        position: relative;
+        z-index: 2;
+    }
+
+    body.page-danhGia .page-header-section h2 {
+        color: #ffe082 !important;
+        font-size: 2rem !important;
+        line-height: 1.18;
+        letter-spacing: 0;
+    }
+
+    body.page-danhGia .page-header-section p {
+        color: rgba(255,255,255,0.86) !important;
+    }
+
+    body.page-danhGia .stats-grid {
+        grid-template-columns: repeat(4, minmax(190px, 1fr));
+        gap: 24px;
+    }
+
+    body.page-danhGia .stat-card {
+        min-height: 158px;
+        padding: 28px 32px;
+        background: linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.025));
+        border-color: rgba(255,255,255,0.1);
+        border-left-width: 3px;
+        border-radius: 8px;
+        box-shadow: 0 14px 32px rgba(0,0,0,0.18);
+    }
+
+    body.page-danhGia .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 24px 54px rgba(0,0,0,0.24);
+    }
+
+    body.page-danhGia .stat-icon {
+        border-radius: 8px;
+    }
+
+    body.page-danhGia .filter-section,
+    body.page-danhGia .section-card {
+        background: rgba(28, 30, 31, 0.78);
+        border-color: rgba(212, 175, 55, 0.22);
+        border-radius: 8px;
+        box-shadow: 0 14px 36px rgba(0,0,0,0.18);
+    }
+
+    body.page-danhGia .filter-section {
+        padding: 24px 32px 28px;
+    }
+
+    body.page-danhGia .filter-section h5,
+    body.page-danhGia .section-header {
+        border-bottom-color: rgba(255,255,255,0.09);
+    }
+
+    body.page-danhGia .section-header {
+        background: linear-gradient(90deg, rgba(212, 175, 55, 0.14), rgba(13, 202, 240, 0.06));
+        padding: 20px 24px;
+    }
+
+    body.page-danhGia input[type="text"],
+    body.page-danhGia input[type="date"],
+    body.page-danhGia select,
+    body.page-danhGia textarea {
+        min-height: 52px;
+        border-radius: 8px;
+        border-color: rgba(255,255,255,0.14);
+        background-color: rgba(255,255,255,0.08);
+    }
+
+    body.page-danhGia input[type="text"]:focus,
+    body.page-danhGia input[type="date"]:focus,
+    body.page-danhGia select:focus,
+    body.page-danhGia textarea:focus {
+        border-color: rgba(13, 202, 240, 0.58);
+        box-shadow: 0 0 0 3px rgba(13, 202, 240, 0.12);
+    }
+
+    body.page-danhGia .btn-custom,
+    body.page-danhGia .btn-secondary-custom,
+    body.page-danhGia .btn-action {
+        border-radius: 8px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+    }
+
+    body.page-danhGia .btn-custom,
+    body.page-danhGia .btn-secondary-custom {
+        min-height: 46px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    body.page-danhGia .section-card > div:last-child {
+        overflow-x: auto;
+    }
+
+    body.page-danhGia .table-custom {
+        min-width: 1180px;
+    }
+
+    body.page-danhGia .table-custom thead th {
+        padding: 16px 20px;
+        color: var(--accent-gold);
+        background: rgba(212, 175, 55, 0.08);
+        white-space: nowrap;
+    }
+
+    body.page-danhGia .table-custom tbody td {
+        padding: 18px 20px;
+        vertical-align: middle;
+    }
+
+    body.page-danhGia .badge-custom,
+    body.page-danhGia .score-pill {
+        border-radius: 8px;
+        min-height: 30px;
+        display: inline-flex;
+        align-items: center;
+    }
+
+    @media (max-width: 1300px) {
+        body.page-danhGia .stats-grid {
+            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+        }
+    }
+
+    @media (max-width: 900px) {
+        body.page-danhGia .content-area {
+            padding: 24px 18px 42px;
+        }
+
+        body.page-danhGia .page-header-section,
+        body.page-danhGia .filter-section {
+            padding: 24px;
+        }
+    }
 </style>
 
 <div class="review-page-wrap">

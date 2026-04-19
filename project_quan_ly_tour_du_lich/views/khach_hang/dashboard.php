@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
@@ -169,22 +169,22 @@
 
             <!-- LEFT CONTENT -->
             <div class="col-lg-6 text-white hero-main-copy">
-                <h5 class="text-warning fw-bold">WELCOME TO CALIFORNIA</h5>
+                <h5 class="text-warning fw-bold" style="letter-spacing:.18em; text-transform:uppercase;">Hành trình đẳng cấp &mdash; Trải nghiệm đích thực</h5>
 
                 <h1 class="display-4 fw-bold">
-                    Great location <br> even better service
+                    Khám phá thế giới <br> cùng DuLichPro
                 </h1>
 
-                <p class="mt-3">
-                    Enjoy the sun and the beaches of California with our friendly staff.
-                    Whether you want a short weekend break or a long luxurious vacation.
+                <p class="mt-3" style="font-size:1.08rem; line-height:1.75; color:rgba(255,255,255,.86);">
+                    Hàng trăm tour trong nước và quốc tế chất lượng cao. Đội ngũ hướng dẫn viên chuyên nghiệp,
+                    dịch vụ tận tâm &mdash; đồng hành cùng bạn trên mỗi hành trình.
                 </p>
 
                 <div class="row mt-4">
-                    <div class="col-6 col-md-3"><div class="feature">⭐ Five-star quality</div></div>
-                    <div class="col-6 col-md-3"><div class="feature">📍 Great location</div></div>
-                    <div class="col-6 col-md-3"><div class="feature">🎁 Special offers</div></div>
-                    <div class="col-6 col-md-3"><div class="feature">👨‍👩‍👧 Kids friendly</div></div>
+                    <div class="col-6 col-md-3"><div class="feature"><i class="bi bi-patch-check-fill me-1" style="color:#f6dfab;"></i> Dịch vụ 5 sao</div></div>
+                    <div class="col-6 col-md-3"><div class="feature"><i class="bi bi-geo-alt-fill me-1" style="color:#f6dfab;"></i> Điểm đến đa dạng</div></div>
+                    <div class="col-6 col-md-3"><div class="feature"><i class="bi bi-gift-fill me-1" style="color:#f6dfab;"></i> Ưu đãi hấp dẫn</div></div>
+                    <div class="col-6 col-md-3"><div class="feature"><i class="bi bi-people-fill me-1" style="color:#f6dfab;"></i> Phù hợp gia đình</div></div>
                 </div>
             </div>
 
@@ -192,7 +192,8 @@
             <div class="col-lg-5 offset-lg-1">
                 <div class="booking-box text-white">
 
-                    <h4 class="text-warning fw-bold mb-3">Tour của tôi</h4>
+                    <h4 class="text-warning fw-bold mb-1">Gửi yêu cầu tour</h4>
+                    <p class="small" style="color:rgba(255,255,255,.68); margin-bottom:.9rem;">Điền thông tin &mdash; chúng tôi tư vấn hành trình phù hợp nhất cho bạn.</p>
 
                     <form method="POST" action="index.php?act=khachHang/guiYeuCauTour" id="quickTourRequestForm">
                         <input type="hidden" name="_csrf_global" value="<?php echo htmlspecialchars(csrfToken('global_form'), ENT_QUOTES, 'UTF-8'); ?>">
@@ -248,11 +249,11 @@
 
 /* TAB MENU */
 .multiTabMenu-bar {
-    background: rgba(255,255,255,0.84);
-    border: 1px solid rgba(15,23,42,0.08);
+    background: linear-gradient(135deg, rgba(11,18,32,.96), rgba(21,35,59,.92));
+    border: 1px solid rgba(214,178,109,.18);
     border-radius: 999px !important;
     padding: 12px !important;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.92), 0 12px 30px rgba(15,23,42,0.08);
+    box-shadow: 0 16px 36px rgba(2,6,23,.18);
 }
 
 .multiTabMenu-item {
@@ -262,22 +263,26 @@
     justify-content: center;
     gap: 10px;
     transition: all 0.25s ease;
-    border: 1px solid transparent;
-    color: #17233c;
+    border: 1px solid rgba(214,178,109,.16);
+    color: rgba(255,255,255,.86);
+    border-radius: 999px !important;
+    background: rgba(255,255,255,.04);
+    font-size: .92rem;
+    font-weight: 800;
 }
 
 .multiTabMenu-item:hover {
-    background: rgba(214,178,109,0.12);
-    color: #0f2748;
-    border-color: rgba(214,178,109,0.26);
+    background: rgba(214,178,109,0.14);
+    color: #fff;
+    border-color: rgba(214,178,109,0.34);
     transform: translateY(-1px);
 }
 
 .multiTabMenu-item.active {
-    background: linear-gradient(135deg, #15233b, #20365f) !important;
-    color: #f7e5b6 !important;
-    box-shadow: 0 14px 28px rgba(21,35,59,0.28);
-    border-color: rgba(214,178,109,0.34);
+    background: linear-gradient(135deg, #d6b26d, #e2bf78) !important;
+    color: #132033 !important;
+    box-shadow: 0 12px 26px rgba(185,137,61,.24);
+    border-color: rgba(214,178,109,0.62);
 }
 
 /* INPUT + SELECT */
@@ -612,154 +617,337 @@ function showTab(tab) {
 
 <main class="luxury-content">
     <div class="container mt-5">
-            <!-- Section: Trải nghiệm cho mọi người (đặt bên ngoài, trên cùng) -->
+            <!-- Section: Trải nghiệm cho mọi người -->
             <div class="mt-5" id="experiences">
-                <h2 class="fw-bold mb-4">Trải nghiệm cho mọi người</h2>
-                <div class="row g-4">
-                    <div class="col-md-4">
-                        <div class="experience-card position-relative rounded-4 shadow-sm" style="height:320px;">
-                            <img src="https://blog.ehl.edu/hs-fs/hubfs/1440x960-singapore-bay.jpg?width=1440&height=960&name=1440x960-singapore-bay.jpg" alt="Sing - Thái" class="w-100 h-100 object-fit-cover rounded-4">
-                            <div class="experience-overlay position-absolute top-0 start-0 w-100 h-100 d-flex flex-column justify-content-end p-4 rounded-4" style="background: linear-gradient(120deg,rgba(0,123,255,0.7) 60%,rgba(0,0,0,0.2) 100%);">
-                                <h3 class="fw-bold text-white mb-2">Chốt Gấp Kèo Sing - Thái</h3>
-                                <div class="mb-2 text-white fs-5">Deal du lịch HOT nhất Singapore & Thái Lan</div>
-                                <a href="#" class="btn btn-light rounded-pill px-4 fw-bold">Khám phá</a>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="experience-card position-relative rounded-4 shadow-sm" style="height:320px;">
-                            <img src="https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=crop&w=800&q=80" alt="Càng Mua Càng Hời" class="w-100 h-100 object-fit-cover rounded-4">
-                            <div class="experience-overlay position-absolute top-0 start-0 w-100 h-100 d-flex flex-column justify-content-end p-4 rounded-4" style="background: linear-gradient(120deg,rgba(255,165,0,0.7) 60%,rgba(0,0,0,0.2) 100%);">
-                                <h3 class="fw-bold text-white mb-2">Càng Mua Càng Hời</h3>
-                                <div class="mb-2 text-white fs-5">Ưu đãi hấp dẫn. Càng mua nhiều - càng thêm lợi.</div>
-                                <a href="#" class="btn btn-light rounded-pill px-4 fw-bold">Khám phá</a>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="experience-card position-relative rounded-4 shadow-sm" style="height:320px;">
-                            <img src="https://epacket.vn/wp-content/uploads/2023/09/Hoa-Ky1.jpg" alt="Zone Châu Âu - Hoa Kỳ" class="w-100 h-100 object-fit-cover rounded-4">
-                            <div class="experience-overlay position-absolute top-0 start-0 w-100 h-100 d-flex flex-column justify-content-end p-4 rounded-4" style="background: linear-gradient(120deg,rgba(0,180,180,0.7) 60%,rgba(0,0,0,0.2) 100%);">
-                                <h3 class="fw-bold text-white mb-2">Zone Châu Âu - Hoa Kỳ</h3>
-                                <div class="mb-2 text-white fs-5">Gợi ý du lịch hàng đầu Châu Âu và Hoa Kỳ.</div>
-                                <a href="#" class="btn btn-light rounded-pill px-4 fw-bold">Khám phá</a>
-                            </div>
-                        </div>
+                <div class="d-flex align-items-flex-end justify-content-between mb-2 flex-wrap gap-2">
+                    <div>
+                        <h2 class="fw-bold mb-1">Trải nghiệm cho mọi người</h2>
+                        <p class="text-muted mb-0" style="font-size:.95rem;">Những hành trình được yêu thích nhất &mdash; dành cho mọi phong cách du lịch</p>
                     </div>
                 </div>
+
+                <div class="exp-grid mt-4">
+                    <!-- Card 1: lớn bên trái -->
+                    <a href="index.php?act=khachHang/danhSachTour" class="exp-card exp-card--large">
+                        <img src="https://images.unsplash.com/photo-1525625293386-3f8f99389edd?w=900&q=80" alt="Singapore & Thái Lan" loading="lazy">
+                        <div class="exp-card-overlay">
+                            <span class="exp-badge"><i class="bi bi-fire me-1"></i>HOT</span>
+                            <div class="exp-card-body">
+                                <div class="exp-tag">SINGAPORE &amp; THÁI LAN</div>
+                                <h3 class="exp-title">Chốt Gấp Kèo<br>Sing &ndash; Thái</h3>
+                                <p class="exp-desc">Deal du lịch hot nhất, giá ưu đãi có hạn</p>
+                                <span class="exp-cta">Khám phá <i class="bi bi-arrow-right ms-1"></i></span>
+                            </div>
+                        </div>
+                    </a>
+
+                    <!-- Card 2: nhỏ trên phải -->
+                    <a href="index.php?act=khachHang/danhSachTour" class="exp-card exp-card--small exp-card--amber">
+                        <img src="https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=700&q=80" alt="Càng Mua Càng Hời" loading="lazy">
+                        <div class="exp-card-overlay">
+                            <span class="exp-badge exp-badge--gold"><i class="bi bi-tag-fill me-1"></i>ƯU ĐÃI</span>
+                            <div class="exp-card-body">
+                                <div class="exp-tag">KHUYẾN MÃI</div>
+                                <h3 class="exp-title">Càng Mua<br>Càng Hời</h3>
+                                <p class="exp-desc">Nhóm từ 2 người &mdash; giảm ngay 15%</p>
+                                <span class="exp-cta">Xem ưu đãi <i class="bi bi-arrow-right ms-1"></i></span>
+                            </div>
+                        </div>
+                    </a>
+
+                    <!-- Card 3: nhỏ dưới phải -->
+                    <a href="index.php?act=khachHang/danhSachTour" class="exp-card exp-card--small exp-card--teal">
+                        <img src="https://images.unsplash.com/photo-1499856871958-5b9627545d1a?w=700&q=80" alt="Châu Âu - Hoa Kỳ" loading="lazy">
+                        <div class="exp-card-overlay">
+                            <span class="exp-badge exp-badge--teal"><i class="bi bi-globe2 me-1"></i>QUỐC TẾ</span>
+                            <div class="exp-card-body">
+                                <div class="exp-tag">CHÂU ÂU &amp; HOA KỲ</div>
+                                <h3 class="exp-title">Zone Tây<br>Phương</h3>
+                                <p class="exp-desc">Paris, Rome, New York &mdash; trải nghiệm đỉnh cao</p>
+                                <span class="exp-cta">Khám phá ngay <i class="bi bi-arrow-right ms-1"></i></span>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+
                 <style>
-                    .experience-card {
-                        transition: transform 0.2s, box-shadow 0.2s;
-                        cursor: pointer;
-                        height: 320px;
-                        display: flex;
-                        flex-direction: column;
-                        justify-content: flex-end;
+                .exp-grid {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    grid-template-rows: 220px 220px;
+                    gap: 16px;
+                }
+                .exp-card--large {
+                    grid-row: 1 / 3;
+                }
+                .exp-card {
+                    display: block;
+                    position: relative;
+                    border-radius: 24px;
+                    overflow: hidden;
+                    text-decoration: none;
+                    background: #0f1f1b;
+                    box-shadow: 0 12px 40px rgba(2,6,23,.13);
+                    transition: transform .28s ease, box-shadow .28s ease;
+                }
+                .exp-card:hover {
+                    transform: translateY(-6px);
+                    box-shadow: 0 24px 64px rgba(2,6,23,.22);
+                }
+                .exp-card img {
+                    position: absolute;
+                    inset: 0;
+                    width: 100%; height: 100%;
+                    object-fit: cover;
+                    display: block;
+                    transition: transform .5s ease, filter .35s ease;
+                    filter: brightness(.78) saturate(1.05);
+                }
+                .exp-card:hover img {
+                    transform: scale(1.055);
+                    filter: brightness(.68) saturate(1.12);
+                }
+                .exp-card-overlay {
+                    position: absolute;
+                    inset: 0;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: flex-end;
+                    padding: 26px;
+                    background: linear-gradient(180deg, rgba(0,0,0,0) 30%, rgba(11,18,32,.88) 100%);
+                    pointer-events: none;
+                }
+                .exp-card--small .exp-card-overlay {
+                    padding: 20px;
+                }
+                .exp-badge {
+                    position: absolute;
+                    top: 18px; left: 18px;
+                    background: rgba(239,68,68,.88);
+                    color: #fff;
+                    font-size: .72rem;
+                    font-weight: 800;
+                    letter-spacing: .07em;
+                    padding: 5px 12px;
+                    border-radius: 999px;
+                    text-transform: uppercase;
+                    backdrop-filter: blur(4px);
+                    pointer-events: none;
+                }
+                .exp-badge--gold { background: rgba(214,178,109,.92); color: #132033; }
+                .exp-badge--teal { background: rgba(4,122,120,.92); color: #fff; }
+                .exp-tag {
+                    font-size: .68rem;
+                    font-weight: 800;
+                    letter-spacing: .14em;
+                    color: rgba(214,178,109,.90);
+                    text-transform: uppercase;
+                    margin-bottom: 6px;
+                }
+                .exp-title {
+                    font-family: "Playfair Display", Georgia, serif;
+                    font-size: 1.55rem;
+                    font-weight: 700;
+                    color: #fff;
+                    line-height: 1.18;
+                    margin: 0 0 8px;
+                }
+                .exp-card--small .exp-title { font-size: 1.2rem; }
+                .exp-desc {
+                    font-size: .84rem;
+                    color: rgba(255,255,255,.78);
+                    margin: 0 0 14px;
+                    line-height: 1.5;
+                }
+                .exp-card--small .exp-desc { display: none; }
+                .exp-cta {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 4px;
+                    background: rgba(255,255,255,.15);
+                    border: 1px solid rgba(255,255,255,.3);
+                    color: #fff;
+                    font-size: .8rem;
+                    font-weight: 800;
+                    padding: 8px 16px;
+                    border-radius: 999px;
+                    backdrop-filter: blur(6px);
+                    pointer-events: auto;
+                    transition: background .2s, border-color .2s;
+                    text-decoration: none;
+                }
+                .exp-card:hover .exp-cta {
+                    background: rgba(214,178,109,.88);
+                    border-color: rgba(214,178,109,.9);
+                    color: #132033;
+                }
+
+                @media (max-width: 767px) {
+                    .exp-grid {
+                        grid-template-columns: 1fr;
+                        grid-template-rows: 280px 200px 200px;
                     }
-                    .experience-card:hover {
-                        transform: translateY(-8px) scale(1.03);
-                        box-shadow: 0 8px 32px rgba(0,0,0,0.18);
-                    }
-                    .experience-overlay {
-                        pointer-events: none;
-                    }
-                    .experience-overlay .btn {
-                        pointer-events: auto;
-                    }
-                    @media (max-width: 768px) {
-                        .experience-card { height: 180px; }
-                        .experience-overlay { padding: 0.5rem; }
-                        .experience-overlay h3 { font-size: 1.1rem; }
-                        .experience-overlay .fs-5 { font-size: 0.95rem !important; }
-                    }
+                    .exp-card--large { grid-row: 1; }
+                    .exp-card--small .exp-desc { display: block; }
+                }
                 </style>
             </div>
-                <!-- Section: Bạn muốn đi đâu chơi? (Demo tĩnh kiểu Klook) -->
-                <div class="mt-5">
-                    <h2 class="fw-bold mb-4 text-center">Bạn muốn đi đâu chơi?</h2>
-                    <div class="container">
-                        <div class="row justify-content-center g-4">
-                            <div class="col-lg-2 col-md-4 col-6 d-flex justify-content-center">
-                                <div class="destination-card position-relative rounded-4 shadow-sm w-100" style="height:260px; max-width:180px;">
-                                    <img src="https://ik.imagekit.io/tvlk/blog/2021/11/kinh-nghiem-du-lich-thuong-hai-cover.jpg" alt="Thượng Hải" class="w-100 h-100 object-fit-cover rounded-4">
-                                    <div class="destination-overlay position-absolute bottom-0 start-0 w-100 p-3 rounded-bottom-4" style="background: linear-gradient(180deg,rgba(0,0,0,0) 40%,rgba(0,0,0,0.7) 100%);">
-                                        <h5 class="fw-bold text-white mb-1">Thượng Hải</h5>
-                                        <small class="text-light fs-6">225 hoạt động</small>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-lg-2 col-md-4 col-6 d-flex justify-content-center">
-                                <div class="destination-card position-relative rounded-4 shadow-sm w-100" style="height:260px; max-width:180px;">
-                                    <img src="https://cly.1cdn.vn/2022/02/15/thu-do-bang-coc.jpg" alt="Bangkok" class="w-100 h-100 object-fit-cover rounded-4">
-                                    <div class="destination-overlay position-absolute bottom-0 start-0 w-100 p-3 rounded-bottom-4" style="background: linear-gradient(180deg,rgba(0,0,0,0) 40%,rgba(0,0,0,0.7) 100%);">
-                                        <h5 class="fw-bold text-white mb-1">Bangkok</h5>
-                                        <small class="text-light fs-6">581 hoạt động</small>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-lg-2 col-md-4 col-6 d-flex justify-content-center">
-                                <div class="destination-card position-relative rounded-4 shadow-sm w-100" style="height:260px; max-width:180px;">
-                                    <img src="https://vietnamdiscovery.com/wp-content/uploads/2020/12/Golden-Bridge-Featured.jpg" alt="Đà Nẵng" class="w-100 h-100 object-fit-cover rounded-4">
-                                    <div class="destination-overlay position-absolute bottom-0 start-0 w-100 p-3 rounded-bottom-4" style="background: linear-gradient(180deg,rgba(0,0,0,0) 40%,rgba(0,0,0,0.7) 100%);">
-                                        <h5 class="fw-bold text-white mb-1">Đà Nẵng</h5>
-                                        <small class="text-light fs-6">146 hoạt động</small>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-lg-2 col-md-4 col-6 d-flex justify-content-center">
-                                <div class="destination-card position-relative rounded-4 shadow-sm w-100" style="height:260px; max-width:180px;">
-                                    <img src="https://tse3.mm.bing.net/th/id/OIP.1puCYdr07Y7nQ9_AhECDagHaLH?rs=1&pid=ImgDetMain&o=7&rm=3" alt="Hà Nội" class="w-100 h-100 object-fit-cover rounded-4">
-                                    <div class="destination-overlay position-absolute bottom-0 start-0 w-100 p-3 rounded-bottom-4" style="background: linear-gradient(180deg,rgba(0,0,0,0) 40%,rgba(0,0,0,0.7) 100%);">
-                                        <h5 class="fw-bold text-white mb-1">Hà Nội</h5>
-                                        <small class="text-light fs-6">154 hoạt động</small>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-lg-2 col-md-4 col-6 d-flex justify-content-center">
-                                <div class="destination-card position-relative rounded-4 shadow-sm w-100" style="height:260px; max-width:180px;">
-                                    <img src="https://st.ielts-fighter.com/src/ielts-fighter-image/2023/01/09/5e6dbb91-3dab-4500-9a28-b9599aa12949.png" alt="TP. Hồ Chí Minh" class="w-100 h-100 object-fit-cover rounded-4">
-                                    <div class="destination-overlay position-absolute bottom-0 start-0 w-100 p-3 rounded-bottom-4" style="background: linear-gradient(180deg,rgba(0,0,0,0) 40%,rgba(0,0,0,0.7) 100%);">
-                                        <h5 class="fw-bold text-white mb-1">TP. Hồ Chí Minh</h5>
-                                        <small class="text-light fs-6">240 hoạt động</small>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-lg-2 col-md-4 col-6 d-flex justify-content-center">
-                                <div class="destination-card position-relative rounded-4 shadow-sm w-100" style="height:260px; max-width:180px;">
-                                    <img src="https://ik.imagekit.io/tvlk/blog/2022/12/du-lich-dai-bac-10.jpg?tr=dpr-2,w-675" alt="Đài Bắc" class="w-100 h-100 object-fit-cover rounded-4">
-                                    <div class="destination-overlay position-absolute bottom-0 start-0 w-100 p-3 rounded-bottom-4" style="background: linear-gradient(180deg,rgba(0,0,0,0) 40%,rgba(0,0,0,0.7) 100%);">
-                                        <h5 class="fw-bold text-white mb-1">Đài Bắc</h5>
-                                        <small class="text-light fs-6">394 hoạt động</small>
-                                    </div>
-                                </div>
-                            </div>
+                <!-- Section: Bạn muốn đi đâu chơi? -->
+                <div class="mt-5 dest-section">
+                    <div class="d-flex align-items-flex-end justify-content-between mb-4 flex-wrap gap-2">
+                        <div>
+                            <h2 class="fw-bold mb-1">Bạn muốn đi đâu chơi?</h2>
+                            <p class="text-muted mb-0" style="font-size:.95rem;">Chọn điểm đến &mdash; chúng tôi lo phần còn lại</p>
                         </div>
+                        <a href="index.php?act=khachHang/danhSachTour" class="dest-see-all-btn">
+                            Xem tất cả <i class="bi bi-arrow-right ms-1"></i>
+                        </a>
                     </div>
-                    <style>
-                        .destination-card {
-                            transition: transform 0.2s, box-shadow 0.2s;
-                            cursor: pointer;
-                            height: 260px;
-                            display: flex;
-                            flex-direction: column;
-                            justify-content: flex-end;
-                            max-width: 180px;
-                        }
-                        .destination-card:hover {
-                            transform: translateY(-8px) scale(1.04);
-                            box-shadow: 0 8px 32px rgba(0,0,0,0.18);
-                        }
-                        .destination-overlay {
-                            pointer-events: none;
-                        }
-                        @media (max-width: 768px) {
-                            .destination-card { height: 140px; max-width: 100px; }
-                            .destination-overlay { padding: 0.5rem; }
-                            .destination-overlay h5 { font-size: 0.95rem; }
-                        }
-                    </style>
+
+                    <div class="dest-scroll-track">
+                        <?php
+                        $destinations = [
+                            ['name'=>'Thượng Hải',     'count'=>'225 tour',  'tag'=>'Quốc tế',   'img'=>'https://images.unsplash.com/photo-1548919973-5cef591cdbc9?w=600&q=80'],
+                            ['name'=>'Bangkok',         'count'=>'581 tour',  'tag'=>'Quốc tế',   'img'=>'https://images.unsplash.com/photo-1563492065599-3520f775eeed?w=600&q=80'],
+                            ['name'=>'Đà Nẵng',        'count'=>'146 tour',  'tag'=>'Trong nước','img'=>'https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?w=600&q=80'],
+                            ['name'=>'Hà Nội',         'count'=>'154 tour',  'tag'=>'Trong nước','img'=>'https://images.unsplash.com/photo-1555921015-5532091f6026?w=600&q=80'],
+                            ['name'=>'TP. Hồ Chí Minh','count'=>'240 tour', 'tag'=>'Trong nước','img'=>'https://images.unsplash.com/photo-1583417319070-4a69db38a482?w=600&q=80'],
+                            ['name'=>'Đài Bắc',        'count'=>'394 tour',  'tag'=>'Quốc tế',   'img'=>'https://images.unsplash.com/photo-1470004914212-05527e49370b?w=600&q=80'],
+                            ['name'=>'Phú Quốc',       'count'=>'88 tour',   'tag'=>'Trong nước','img'=>'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&q=80'],
+                            ['name'=>'Hội An',         'count'=>'112 tour',  'tag'=>'Trong nước','img'=>'https://images.unsplash.com/photo-1528127269322-539801943592?w=600&q=80'],
+                        ];
+                        foreach ($destinations as $d): ?>
+                        <a href="index.php?act=khachHang/danhSachTour" class="dest-card" aria-label="<?php echo htmlspecialchars($d['name']); ?>">
+                            <div class="dest-card-img">
+                                <img src="<?php echo htmlspecialchars($d['img']); ?>" alt="<?php echo htmlspecialchars($d['name']); ?>" loading="lazy">
+                                <span class="dest-tag"><?php echo htmlspecialchars($d['tag']); ?></span>
+                            </div>
+                            <div class="dest-card-body">
+                                <div class="dest-name"><?php echo htmlspecialchars($d['name']); ?></div>
+                                <div class="dest-count"><i class="bi bi-compass me-1"></i><?php echo htmlspecialchars($d['count']); ?></div>
+                            </div>
+                        </a>
+                        <?php endforeach; ?>
+                    </div>
                 </div>
-        <h2 class="mb-4 fw-bold" id="tours">Tour trong nước</h2>
+
+                <style>
+                .dest-section { position: relative; }
+
+                .dest-see-all-btn {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 4px;
+                    padding: 9px 20px;
+                    border-radius: 999px;
+                    border: 1.5px solid rgba(214,178,109,.55);
+                    color: #9a6e1c;
+                    font-size: .88rem;
+                    font-weight: 700;
+                    text-decoration: none;
+                    background: rgba(214,178,109,.08);
+                    transition: background .2s, color .2s, border-color .2s;
+                    white-space: nowrap;
+                }
+                .dest-see-all-btn:hover {
+                    background: #d6b26d;
+                    color: #132033;
+                    border-color: #d6b26d;
+                }
+
+                .dest-scroll-track {
+                    display: flex;
+                    gap: 16px;
+                    overflow-x: auto;
+                    overflow-y: hidden;
+                    scroll-snap-type: x mandatory;
+                    -webkit-overflow-scrolling: touch;
+                    overscroll-behavior-x: contain;
+                    padding-bottom: 12px;
+                }
+                .dest-scroll-track::-webkit-scrollbar { height: 6px; }
+                .dest-scroll-track::-webkit-scrollbar-track { background: rgba(15,23,42,.07); border-radius: 999px; }
+                .dest-scroll-track::-webkit-scrollbar-thumb { background: rgba(214,178,109,.55); border-radius: 999px; }
+
+                .dest-card {
+                    flex: 0 0 200px;
+                    scroll-snap-align: start;
+                    border-radius: 20px;
+                    overflow: hidden;
+                    text-decoration: none;
+                    display: flex;
+                    flex-direction: column;
+                    background: #fff;
+                    border: 1px solid rgba(15,23,42,.07);
+                    box-shadow: 0 8px 28px rgba(2,6,23,.09);
+                    transition: transform .25s ease, box-shadow .25s ease;
+                }
+                .dest-card:hover {
+                    transform: translateY(-8px);
+                    box-shadow: 0 20px 52px rgba(2,6,23,.17);
+                }
+                .dest-card-img {
+                    position: relative;
+                    height: 220px;
+                    overflow: hidden;
+                    background: #e8edf3;
+                }
+                .dest-card-img img {
+                    width: 100%; height: 100%;
+                    object-fit: cover;
+                    display: block;
+                    transition: transform .4s ease;
+                }
+                .dest-card:hover .dest-card-img img {
+                    transform: scale(1.06);
+                }
+                .dest-tag {
+                    position: absolute;
+                    top: 12px; left: 12px;
+                    background: rgba(11,18,32,.72);
+                    color: #f7e5b6;
+                    font-size: .72rem;
+                    font-weight: 800;
+                    letter-spacing: .06em;
+                    padding: 5px 11px;
+                    border-radius: 999px;
+                    backdrop-filter: blur(4px);
+                    text-transform: uppercase;
+                }
+                .dest-card-body {
+                    padding: 14px 16px;
+                    background: #fff;
+                }
+                .dest-name {
+                    font-family: "Playfair Display", Georgia, serif;
+                    font-size: 1.05rem;
+                    font-weight: 700;
+                    color: #0f1f1b;
+                    margin-bottom: 5px;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                }
+                .dest-count {
+                    font-size: .8rem;
+                    font-weight: 700;
+                    color: #047a78;
+                }
+
+                @media (max-width: 576px) {
+                    .dest-card { flex: 0 0 160px; }
+                    .dest-card-img { height: 170px; }
+                    .dest-name { font-size: .92rem; }
+                }
+                </style>
+
+        <div class="home-section-head mb-4" id="tours">
+            <div>
+                <h2 class="mb-1 fw-bold">Tour trong nước</h2>
+                <p class="text-muted mb-0 home-section-copy">Khám phá vẻ đẹp quê hương qua từng hành trình</p>
+            </div>
+            <a class="home-section-link" href="index.php?act=khachHang/danhSachTour&loai_tour=TrongNuoc">Xem tất cả <i class="bi bi-arrow-right ms-1"></i></a>
+        </div>
         <?php
         $renderHomeTourCard = static function ($tour, $fallbackImage, $typeLabel) {
             $tourId = (int)($tour['tour_id'] ?? $tour['id'] ?? 0);
@@ -840,7 +1028,13 @@ function showTab(tab) {
         <?php else: ?>
         <div class="alert alert-info">Hiện chưa có tour trong nước nào.</div>
         <?php endif; ?>
-        <h2 class="mb-4 fw-bold mt-5">Tour quốc tế</h2>
+        <div class="home-section-head mt-5 mb-4">
+            <div>
+                <h2 class="mb-1 fw-bold">Tour quốc tế</h2>
+                <p class="text-muted mb-0 home-section-copy">Bay cao, đi xa &mdash; trải nghiệm tinh hoa thế giới</p>
+            </div>
+            <a class="home-section-link" href="index.php?act=khachHang/danhSachTour&loai_tour=QuocTe">Xem tất cả <i class="bi bi-arrow-right ms-1"></i></a>
+        </div>
         <?php if (!empty($tourQuocTe)): ?>
         <div class="d-flex flex-row flex-nowrap overflow-x-auto overflow-y-hidden pb-2 luxury-scroll">
             <?php foreach ($tourQuocTe as $tour): ?>
@@ -877,134 +1071,139 @@ function showTab(tab) {
         <div class="alert alert-info">Hiện chưa có tour quốc tế nào.</div>
 
         <?php endif; ?>
-        <!-- Ưu đãi đặc biệt: 4 mục tĩnh đẹp -->
-        <div class="special-offer-section d-flex justify-content-center align-items-stretch gap-2 my-5 flex-nowrap overflow-x-auto" style="width:100%;">
-            <div class="special-offer-box text-center p-4 flex-fill">
-                <div class="offer-icon mb-3">
-                    <svg width="48" height="48" fill="none"><circle cx="24" cy="24" r="24" fill="#fffbe6"/><path d="M16 24l6 6 10-10" stroke="#ff9800" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <!-- Ưu đãi đặc biệt -->
+        <div class="benefit-bar my-5">
+            <div class="benefit-item">
+                <div class="benefit-icon"><i class="bi bi-patch-check-fill"></i></div>
+                <div>
+                    <div class="benefit-title">Giảm 10% cho khách mới</div>
+                    <div class="benefit-desc">Đặt tour lần đầu &mdash; nhận ưu đãi ngay</div>
                 </div>
-                <h3 class="fw-bold mb-2" style="color:#ff9800;">Giảm 10% cho khách mới</h3>
-                <div class="offer-desc mb-2">Đăng ký tài khoản và đặt tour lần đầu để nhận ưu đãi ngay.</div>
-                <div class="offer-note text-muted mt-2" style="font-size: 0.98rem;">Áp dụng đến hết 31/12/2025.</div>
             </div>
-            <div class="special-offer-box text-center p-4 flex-fill">
-                <div class="offer-icon mb-3">
-                    <svg width="48" height="48" fill="none"><circle cx="24" cy="24" r="24" fill="#e3f2fd"/><path d="M24 14v20M14 24h20" stroke="#2196f3" stroke-width="3.2" stroke-linecap="round"/></svg>
+            <div class="benefit-divider"></div>
+            <div class="benefit-item">
+                <div class="benefit-icon"><i class="bi bi-people-fill"></i></div>
+                <div>
+                    <div class="benefit-title">Voucher 500.000đ nhóm</div>
+                    <div class="benefit-desc">Từ 5 người trở lên &mdash; áp dụng tức thì</div>
                 </div>
-                <h3 class="fw-bold mb-2" style="color:#2196f3;">Tặng voucher 500.000đ</h3>
-                <div class="offer-desc mb-2">Nhóm từ 5 người trở lên sẽ nhận voucher giảm giá khi đặt tour.</div>
-                <div class="offer-note text-muted mt-2" style="font-size: 0.98rem;">Không cộng dồn với ưu đãi khác.</div>
             </div>
-            <div class="special-offer-box text-center p-4 flex-fill">
-                <div class="offer-icon mb-3">
-                    <svg width="48" height="48" fill="none"><circle cx="24" cy="24" r="24" fill="#e8f5e9"/><path d="M24 16a8 8 0 100 16 8 8 0 000-16zm0 0v8l5 3" stroke="#43a047" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <div class="benefit-divider"></div>
+            <div class="benefit-item">
+                <div class="benefit-icon"><i class="bi bi-arrow-counterclockwise"></i></div>
+                <div>
+                    <div class="benefit-title">Hoàn tiền 100% nếu hủy</div>
+                    <div class="benefit-desc">Hủy trước 7 ngày &mdash; hoàn toàn bộ</div>
                 </div>
-                <h3 class="fw-bold mb-2" style="color:#43a047;">Hoàn tiền 100% nếu hủy</h3>
-                <div class="offer-desc mb-2">Hủy tour trước 7 ngày sẽ được hoàn tiền toàn bộ.</div>
-                <div class="offer-note text-muted mt-2" style="font-size: 0.98rem;">Xem chi tiết điều kiện hoàn tiền.</div>
             </div>
-            <div class="special-offer-box text-center p-4 flex-fill">
-                <div class="offer-icon mb-3">
-                    <svg width="48" height="48" fill="none"><circle cx="24" cy="24" r="24" fill="#f3e5f5"/><path d="M24 16l8 8-8 8-8-8z" stroke="#8e24aa" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <div class="benefit-divider"></div>
+            <div class="benefit-item">
+                <div class="benefit-icon"><i class="bi bi-headset"></i></div>
+                <div>
+                    <div class="benefit-title">Tư vấn miễn phí 7/7</div>
+                    <div class="benefit-desc">Chuyên gia hỗ trợ từ 7:00 &ndash; 22:00</div>
                 </div>
-                <h3 class="fw-bold mb-2" style="color:#8e24aa;">Tặng quà lưu niệm</h3>
-                <div class="offer-desc mb-2">Nhận ngay quà tặng đặc biệt khi hoàn thành tour cùng Aventura.</div>
-                <div class="offer-note text-muted mt-2" style="font-size: 0.98rem;">Áp dụng cho mọi khách hàng, số lượng có hạn.</div>
-            </div>
-            <!-- New offer 5 -->
-            <div class="special-offer-box text-center p-4 flex-fill">
-                <div class="offer-icon mb-3">
-                    <svg width="48" height="48" fill="none"><circle cx="24" cy="24" r="24" fill="#fffde7"/><path d="M24 18v12M18 24h12" stroke="#ffb300" stroke-width="3.2" stroke-linecap="round"/></svg>
-                </div>
-                <h3 class="fw-bold mb-2" style="color:#ffb300;">Miễn phí tư vấn tour</h3>
-                <div class="offer-desc mb-2">Đội ngũ chuyên gia hỗ trợ tư vấn miễn phí mọi tour.</div>
-                <div class="offer-note text-muted mt-2" style="font-size: 0.98rem;">Áp dụng cho mọi khách hàng.</div>
-            </div>
-            <!-- New offer 6 -->
-            <div class="special-offer-box text-center p-4 flex-fill">
-                <div class="offer-icon mb-3">
-                    <svg width="48" height="48" fill="none"><circle cx="24" cy="24" r="24" fill="#e0f7fa"/><path d="M24 20l6 6-6 6-6-6z" stroke="#00bcd4" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                </div>
-                <h3 class="fw-bold mb-2" style="color:#00bcd4;">Ưu đãi sinh nhật</h3>
-                <div class="offer-desc mb-2">Khách hàng sinh nhật tháng này nhận ưu đãi đặc biệt.</div>
-                <div class="offer-note text-muted mt-2" style="font-size: 0.98rem;">Vui lòng cung cấp thông tin sinh nhật.</div>
             </div>
         </div>
 <style>
-.special-offer-section {
-    width: 100%;
-    gap: 12px;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    padding-bottom: 8px;
+.benefit-bar {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+    background: transparent;
+    border-radius: 0;
+    padding: 0;
+    border: 0;
+    box-shadow: none;
 }
-.special-offer-box {
-    background: linear-gradient(120deg, #fffbe6 60%, #ffe0b2 100%);
+.benefit-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    background: linear-gradient(180deg, rgba(255,255,255,.94), rgba(250,247,241,.96));
+    border: 1px solid rgba(15,23,42,.08);
+    border-radius: 22px;
+    padding: 20px 18px;
+    min-height: 108px;
+    box-shadow: 0 12px 34px rgba(2,6,23,.08);
+    transition: transform .22s ease, box-shadow .22s ease;
+}
+.benefit-item:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 48px rgba(2,6,23,.12);
+}
+.benefit-icon {
+    width: 54px;
+    height: 54px;
+    flex-shrink: 0;
+    background: linear-gradient(135deg, rgba(214,178,109,.18), rgba(214,178,109,.1));
+    border: 1px solid rgba(214,178,109,.34);
     border-radius: 16px;
-    box-shadow: 0 4px 24px rgba(255,193,7,0.10);
-    min-width: 200px;
-    max-width: 220px;
-    width: 100%;
-    border: 2px solid #ffe082;
-    transition: box-shadow 0.2s, transform 0.2s;
-    margin-bottom: 0;
     display: flex;
-    flex-direction: column;
     align-items: center;
-    padding: 1.1rem 0.7rem;
-}
-.special-offer-box:nth-child(2) {
-    background: linear-gradient(120deg, #e3f2fd 60%, #bbdefb 100%);
-    border-color: #90caf9;
-}
-.special-offer-box:nth-child(3) {
-    background: linear-gradient(120deg, #e8f5e9 60%, #c8e6c9 100%);
-    border-color: #a5d6a7;
-}
-.special-offer-box:nth-child(4) {
-    background: linear-gradient(120deg, #f3e5f5 60%, #e1bee7 100%);
-    border-color: #ce93d8;
-}
-.special-offer-box:hover {
-    box-shadow: 0 8px 32px rgba(212,175,55,0.18);
-    transform: translateY(-3px) scale(1.01);
-}
-.offer-icon {
-    display: flex;
     justify-content: center;
-    align-items: center;
+    font-size: 1.2rem;
+    color: #d6b26d;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.68);
 }
-.offer-desc {
-    font-size: 1.08rem;
-    color: #b26a00;
+.benefit-title {
+    font-family: "Playfair Display", Georgia, serif;
+    font-size: 1.02rem;
+    font-weight: 700;
+    color: #132033;
+    line-height: 1.3;
+    margin-bottom: 5px;
 }
-.special-offer-box:nth-child(2) .offer-desc { color: #1565c0; }
-.special-offer-box:nth-child(3) .offer-desc { color: #388e3c; }
-.special-offer-box:nth-child(4) .offer-desc { color: #6a1b9a; }
+.benefit-desc {
+    font-size: .84rem;
+    color: #64748b;
+    font-weight: 600;
+    line-height: 1.5;
+}
+.benefit-divider {
+    display: none;
+}
 @media (max-width: 1100px) {
-    .special-offer-section { flex-direction: column; align-items: center; gap: 10px; }
-    .special-offer-box { max-width: 98vw; min-width: 0; }
+    .benefit-bar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
-@media (max-width: 600px) {
-    .special-offer-box { padding: 0.7rem; border-radius: 10px; min-width: 0; }
-    .offer-desc { font-size: 0.95rem; }
+@media (max-width: 576px) {
+    .benefit-bar { grid-template-columns: 1fr; gap: 12px; }
+    .benefit-item { min-height: 0; padding: 16px 15px; border-radius: 18px; }
+    .benefit-icon { width: 48px; height: 48px; border-radius: 14px; }
+    .benefit-title { font-size: .96rem; }
 }
 </style>
         <div class="mt-5" id="reviews">
-            <h2 class="fw-bold mb-4">Đánh giá khách hàng</h2>
-            <div class="row g-4">
+            <div class="d-flex align-items-flex-end justify-content-between mb-2 flex-wrap gap-2">
+                <div>
+                    <h2 class="fw-bold mb-1">Đánh giá khách hàng</h2>
+                    <p class="text-muted mb-0" style="font-size:.95rem;">Chia sẻ chân thực từ những hành khách đã đồng hành cùng chúng tôi</p>
+                </div>
+            </div>
+            <div class="row g-4 mt-1">
                 <?php foreach ($danhGiaTot as $dg): ?>
+                <?php
+                    $diem = (int)($dg['diem'] ?? 0);
+                    $ten  = htmlspecialchars($dg['ten_khach_hang'] ?? $dg['ten'] ?? 'Ẩn danh');
+                    $anh  = htmlspecialchars($dg['anh'] ?? ($dg['anh_dai_dien'] ?? 'https://ui-avatars.com/api/?name=' . urlencode($dg['ten_khach_hang'] ?? 'User') . '&background=d6b26d&color=132033&size=80'));
+                    $noi  = htmlspecialchars($dg['noi_dung'] ?? '');
+                    $loai = htmlspecialchars($dg['tieu_chi'] ?? $dg['loai_danh_gia'] ?? '');
+                ?>
                 <div class="col-md-4">
-                    <div class="card review-card">
-                        <div class="card-body">
-                            <p class="fst-italic">“<?php echo htmlspecialchars($dg['noi_dung'] ?? $dg['noi_dung'] ?? ''); ?>”</p>
-                            <div class="d-flex align-items-center mt-3">
-                                <img src="<?php echo htmlspecialchars($dg['anh'] ?? ($dg['anh_dai_dien'] ?? 'https://randomuser.me/api/portraits/men/1.jpg')); ?>" class="rounded-circle me-2" width="40" height="40">
-                                <span class="fw-bold"><?php echo htmlspecialchars($dg['ten_khach_hang'] ?? $dg['ten'] ?? 'Ẩn danh'); ?></span>
-                            </div>
-                            <div class="mt-2">
-                                <span class="badge bg-info text-dark">Tiêu chí: <?php echo htmlspecialchars($dg['tieu_chi'] ?? $dg['loai_danh_gia'] ?? ''); ?></span>
-                                <span class="badge bg-success ms-2">Đánh giá: <?php echo htmlspecialchars($dg['diem'] ?? $dg['diem'] ?? ''); ?>*</span>
+                    <div class="rv-card">
+                        <div class="rv-quote">&ldquo;</div>
+                        <p class="rv-text"><?php echo $noi; ?></p>
+                        <div class="rv-stars">
+                            <?php for ($s = 1; $s <= 5; $s++): ?>
+                                <i class="bi <?php echo $s <= $diem ? 'bi-star-fill' : 'bi-star'; ?>"></i>
+                            <?php endfor; ?>
+                            <span class="rv-score"><?php echo $diem; ?>/5</span>
+                        </div>
+                        <div class="rv-footer">
+                            <img class="rv-avatar" src="<?php echo $anh; ?>" alt="<?php echo $ten; ?>" width="44" height="44">
+                            <div>
+                                <div class="rv-name"><?php echo $ten; ?></div>
+                                <?php if ($loai): ?><div class="rv-tag"><?php echo $loai; ?></div><?php endif; ?>
                             </div>
                         </div>
                     </div>
@@ -1012,18 +1211,59 @@ function showTab(tab) {
                 <?php endforeach; ?>
             </div>
         </div>
+        <style>
+        .rv-card {
+            background: #fff;
+            border: 1px solid rgba(15,23,42,.08);
+            border-radius: 22px;
+            padding: 28px 26px 22px;
+            box-shadow: 0 10px 36px rgba(2,6,23,.08);
+            position: relative;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            transition: transform .22s ease, box-shadow .22s ease;
+        }
+        .rv-card:hover { transform: translateY(-5px); box-shadow: 0 22px 56px rgba(2,6,23,.14); }
+        .rv-quote {
+            font-size: 5rem;
+            line-height: .7;
+            color: rgba(214,178,109,.28);
+            font-family: Georgia, serif;
+            font-weight: 900;
+            margin-bottom: 8px;
+            user-select: none;
+        }
+        .rv-text { font-size: .95rem; color: #334155; line-height: 1.7; flex: 1; margin-bottom: 16px; }
+        .rv-stars { display: flex; align-items: center; gap: 3px; margin-bottom: 18px; color: #d6b26d; font-size: .95rem; }
+        .rv-score { font-size: .78rem; font-weight: 800; color: #94a3b8; margin-left: 6px; }
+        .rv-footer { display: flex; align-items: center; gap: 12px; border-top: 1px solid rgba(15,23,42,.07); padding-top: 16px; }
+        .rv-avatar { border-radius: 999px; object-fit: cover; outline: 2px solid rgba(214,178,109,.4); outline-offset: 2px; }
+        .rv-name { font-weight: 800; font-size: .92rem; color: #0f172a; }
+        .rv-tag { font-size: .75rem; font-weight: 700; color: #d6b26d; text-transform: uppercase; letter-spacing: .07em; margin-top: 2px; }
+        </style>
     </div>
 
     <!-- Section: Địa danh nổi bật dạng grid -->
     <div class="container mt-5" id="places">
-        <h2 class="fw-bold mb-4 text-center">Địa danh nổi bật</h2>
+        <div class="home-section-head mb-4">
+            <div>
+                <h2 class="fw-bold mb-1">Địa danh nổi bật</h2>
+                <p class="text-muted mb-0 home-section-copy">Những điểm đến tạo cảm hứng cho hành trình tiếp theo của bạn</p>
+            </div>
+            <a class="home-section-link" href="index.php?act=khachHang/danhSachTour">Khám phá tour <i class="bi bi-arrow-right ms-1"></i></a>
+        </div>
         <div class="featured-places-grid">
             <?php if (!empty($danhSachDiaDanh)): ?>
-                <?php foreach ($danhSachDiaDanh as $diaDanh): ?>
+                <?php foreach ($danhSachDiaDanh as $index => $diaDanh): ?>
                     <div class="featured-place-card">
                         <img src="<?php echo htmlspecialchars($diaDanh['hinh_anh']); ?>" alt="<?php echo htmlspecialchars($diaDanh['ten']); ?>">
                         <div class="featured-place-overlay">
-                            <span class="featured-place-name"><?php echo htmlspecialchars($diaDanh['ten']); ?></span>
+                            <span class="featured-place-badge">Điểm đến <?php echo (int)$index + 1; ?></span>
+                            <div class="featured-place-copy">
+                                <span class="featured-place-name"><?php echo htmlspecialchars($diaDanh['ten']); ?></span>
+                                <span class="featured-place-sub">Khám phá hành trình cảm hứng</span>
+                            </div>
                         </div>
                     </div>
                 <?php endforeach; ?>
@@ -1072,10 +1312,10 @@ function showTab(tab) {
     
     .featured-place-card {
         position: relative;
-        border-radius: 18px;
+        border-radius: 24px;
         overflow: hidden;
-        box-shadow: 0 4px 24px rgba(0,0,0,0.10);
-        transition: transform 0.18s, box-shadow 0.18s;
+        box-shadow: 0 18px 54px rgba(2,6,23,.10);
+        transition: transform 0.22s, box-shadow 0.22s;
         cursor: pointer;
         min-height: 220px;
         background: #eee;
@@ -1086,53 +1326,75 @@ function showTab(tab) {
         object-fit: cover;
         display: block;
         min-height: 220px;
-        filter: brightness(0.95);
-        transition: filter 0.18s;
+        filter: brightness(0.9);
+        transition: transform .35s ease, filter .22s ease;
     }
     .featured-place-card:hover {
-        transform: scale(1.03);
-        box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+        transform: translateY(-6px);
+        box-shadow: 0 26px 72px rgba(2,6,23,.16);
     }
     .featured-place-card:hover img {
+        transform: scale(1.04);
         filter: brightness(1);
     }
     .featured-place-card .featured-place-overlay {
-        opacity: 0;
-        transition: opacity 0.2s;
-    }
-    .featured-place-card:hover .featured-place-overlay {
         opacity: 1;
-    }
-    .featured-place-name {
-        opacity: 0;
         transition: opacity 0.2s;
-    }
-    .featured-place-card:hover .featured-place-name {
-        opacity: 1;
     }
     .featured-place-overlay {
         position: absolute;
         top: 0; left: 0; width: 100%; height: 100%;
         display: flex;
-        justify-content: center;
-        align-items: center;
+        justify-content: space-between;
+        align-items: flex-end;
+        padding: 18px;
         pointer-events: none;
+        background: linear-gradient(180deg, rgba(0,0,0,0) 34%, rgba(11,18,32,.82) 100%);
     }
 
+    .featured-place-badge {
+        position: absolute;
+        left: 18px;
+        top: 18px;
+        display: inline-flex;
+        align-items: center;
+        border-radius: 999px;
+        background: rgba(23,65,59,.92);
+        color: #fff;
+        padding: 7px 12px;
+        font-size: .72rem;
+        font-weight: 800;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        border: 1px solid rgba(255,255,255,.18);
+        box-shadow: 0 10px 26px rgba(0,0,0,.16);
+    }
+    .featured-place-copy {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
     .featured-place-name {
         color: #fff;
-        font-size: 2rem;
-        font-weight: bold;
+        font-size: 1.7rem;
+        font-weight: 700;
+        font-family: "Playfair Display", Georgia, serif;
         text-shadow: 0 2px 8px rgba(0,0,0,0.18);
-        letter-spacing: 1px;
-        text-transform: uppercase;
-        padding: 0.5rem 1.2rem;
-        border-radius: 12px;
-        background: rgba(0,0,0,0.38);
+        letter-spacing: .2px;
+        text-transform: none;
+        padding: 0;
+        border-radius: 0;
+        background: transparent;
         pointer-events: auto;
     }
+    .featured-place-sub {
+        color: rgba(255,255,255,.72);
+        font-size: .88rem;
+        font-weight: 600;
+    }
     @media (max-width: 600px) {
-        .featured-place-name { font-size: 1.1rem; padding: 0.3rem 0.7rem; }
+        .featured-place-name { font-size: 1.1rem; }
+        .featured-place-sub { font-size: .76rem; }
         .featured-place-card { min-height: 120px; }
     }
     </style>
@@ -1207,6 +1469,44 @@ function showTab(tab) {
             margin-top:.5rem;
             background:linear-gradient(90deg,var(--lx-gold), transparent);
             border-radius:999px;
+        }
+        body.luxury .home-section-head{
+            display:flex;
+            align-items:flex-end;
+            justify-content:space-between;
+            gap:14px;
+            flex-wrap:wrap;
+        }
+        body.luxury .home-section-head h2{
+            margin:0;
+        }
+        body.luxury .home-section-head h2::after{
+            margin-top:.45rem;
+        }
+        body.luxury .home-section-copy{
+            font-size:.95rem;
+            color:var(--lx-muted) !important;
+            margin-top:.15rem;
+        }
+        body.luxury .home-section-link{
+            display:inline-flex;
+            align-items:center;
+            gap:4px;
+            padding:10px 18px;
+            border-radius:999px;
+            border:1px solid rgba(214,178,109,.44);
+            color:#9a6e1c;
+            text-decoration:none;
+            font-size:.86rem;
+            font-weight:800;
+            background:rgba(214,178,109,.08);
+            transition:background .2s, border-color .2s, color .2s;
+            white-space:nowrap;
+        }
+        body.luxury .home-section-link:hover{
+            background:#d6b26d;
+            border-color:#d6b26d;
+            color:#132033;
         }
 
         body.luxury .luxury-nav{
@@ -2149,16 +2449,37 @@ function showTab(tab) {
         </button>
     </div>
     
-    <footer class="footer text-center" id="support">
+    <footer class="footer" id="support">
         <div class="container">
-            <p class="mb-2">&copy; 2025 DuLichPro. All rights reserved.</p>
-            <a href="#" class="me-3">Chính sách bảo mật</a>
-            <a href="#">Liên hệ hỗ trợ</a>
-            <a href="tel:0346858035">0346858035</a>
-            <a href="https://www.facebook.com/quan.le.703104?mibextid=wwXIfr&rdid=8WBCL51N50RpNmIP&share_url=https%3A%2F%2Fwww.facebook.com%2Fshare%2F1AxgBcMUrw%2F%3Fmibextid%3DwwXIfr">Facebook</a>
+            <div class="row gy-4 text-start">
+                <div class="col-md-4">
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <i class="bi bi-star-fill" style="color:#d6b26d; font-size:1.3rem;"></i>
+                        <span style="font-family:'Playfair Display',serif; font-size:1.35rem; font-weight:700; color:#fff; letter-spacing:.5px;">DuLichPro</span>
+                    </div>
+                    <p style="color:rgba(255,255,255,.65); font-size:.92rem; line-height:1.7; margin:0;">Hành trình đẳng cấp &mdash; trải nghiệm đích thực. Chúng tôi đồng hành cùng bạn trên mọi nẻo đường.</p>
+                </div>
+                <div class="col-md-4">
+                    <h6 style="color:#d6b26d; font-weight:700; letter-spacing:.08em; text-transform:uppercase; margin-bottom:14px;">Liên kết nhanh</h6>
+                    <ul class="list-unstyled mb-0" style="display:flex; flex-direction:column; gap:8px;">
+                        <li><a href="#home"><i class="bi bi-chevron-right me-1" style="font-size:.75rem;"></i>Trang chủ</a></li>
+                        <li><a href="index.php?act=khachHang/danhSachTour"><i class="bi bi-chevron-right me-1" style="font-size:.75rem;"></i>Tour nổi bật</a></li>
+                        <li><a href="#reviews"><i class="bi bi-chevron-right me-1" style="font-size:.75rem;"></i>Đánh giá</a></li>
+                        <li><a href="#"><i class="bi bi-chevron-right me-1" style="font-size:.75rem;"></i>Chính sách bảo mật</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h6 style="color:#d6b26d; font-weight:700; letter-spacing:.08em; text-transform:uppercase; margin-bottom:14px;">Liên hệ hỗ trợ</h6>
+                    <ul class="list-unstyled mb-0" style="display:flex; flex-direction:column; gap:10px;">
+                        <li style="color:rgba(255,255,255,.72); font-size:.92rem;"><i class="bi bi-telephone-fill me-2" style="color:#d6b26d;"></i><a href="tel:0346858035">0346 858 035</a></li>
+                        <li style="color:rgba(255,255,255,.72); font-size:.92rem;"><i class="bi bi-facebook me-2" style="color:#d6b26d;"></i><a href="https://www.facebook.com/quan.le.703104" target="_blank" rel="noopener">Trang Facebook</a></li>
+                        <li style="color:rgba(255,255,255,.72); font-size:.92rem;"><i class="bi bi-clock-fill me-2" style="color:#d6b26d;"></i>Hỗ trợ 7:00 &ndash; 22:00 hàng ngày</li>
+                    </ul>
+                </div>
+            </div>
+            <hr style="border-color:rgba(255,255,255,.12); margin:28px 0 18px;">
+            <p class="mb-0 text-center" style="color:rgba(255,255,255,.45); font-size:.84rem;">&copy; 2026 DuLichPro &mdash; Bản quyền thuộc về DuLichPro. Thiết kế với <i class="bi bi-heart-fill" style="color:#d6b26d;"></i> tại Việt Nam.</p>
         </div>
-        <!-- Section: Trải nghiệm cho mọi người -->
-
     </footer>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>

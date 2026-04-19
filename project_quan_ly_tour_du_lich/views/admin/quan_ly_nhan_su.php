@@ -458,6 +458,208 @@ ob_start();
     .btn-close-white {
         color: white;
     }
+
+    body.page-nhanSu .content-area {
+        padding: 34px 48px 56px;
+        background:
+            radial-gradient(circle at 10% 0%, rgba(13, 202, 240, 0.08), transparent 28%),
+            radial-gradient(circle at 100% 10%, rgba(212, 175, 55, 0.11), transparent 30%),
+            linear-gradient(180deg, rgba(255,255,255,0.018), transparent 260px);
+    }
+
+    body.page-nhanSu .page-header-nhansu {
+        min-height: 154px;
+        padding: 28px 34px;
+        background:
+            linear-gradient(100deg, rgba(28, 31, 33, 0.96) 0%, rgba(30, 42, 45, 0.94) 52%, rgba(119, 102, 45, 0.84) 100%),
+            url("<?php echo BASE_URL; ?>public/images/logos/hinh-nen-viet-nam-4k10.jpg");
+        background-size: cover;
+        background-position: center;
+        border: 1px solid rgba(255, 255, 255, 0.09);
+        box-shadow: 0 22px 60px rgba(0, 0, 0, 0.28);
+    }
+
+    body.page-nhanSu .page-header-nhansu::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(90deg, rgba(0,0,0,0.18), rgba(0,0,0,0.04));
+        pointer-events: none;
+    }
+
+    body.page-nhanSu .page-header-nhansu .header-glow {
+        display: none;
+    }
+
+    body.page-nhanSu .page-header-nhansu .header-avatar {
+        width: 74px;
+        height: 74px;
+        border-radius: 8px;
+        background: rgba(212, 175, 55, 0.18);
+        border: 1px solid rgba(255, 224, 130, 0.32);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.16), 0 16px 34px rgba(0,0,0,0.24);
+    }
+
+    body.page-nhanSu .page-header-nhansu .header-title {
+        font-size: 2rem;
+        line-height: 1.18;
+        letter-spacing: 0;
+        text-shadow: none;
+    }
+
+    body.page-nhanSu .page-header-nhansu .header-desc {
+        color: rgba(255,255,255,0.86);
+        text-shadow: none;
+    }
+
+    body.page-nhanSu .page-header-nhansu .btn,
+    body.page-nhanSu .filter-section .btn,
+    body.page-nhanSu .role-tab,
+    body.page-nhanSu .table-wrapper .btn {
+        border-radius: 8px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+    }
+
+    body.page-nhanSu .page-header-nhansu .btn {
+        min-height: 46px;
+        padding-inline: 22px;
+    }
+
+    body.page-nhanSu .stats-grid {
+        grid-template-columns: repeat(4, minmax(190px, 1fr));
+        gap: 24px;
+    }
+
+    body.page-nhanSu .stat-card {
+        min-height: 158px;
+        padding: 28px 32px;
+        background: linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.025));
+        border-color: rgba(255, 255, 255, 0.1);
+        border-left-width: 3px;
+        box-shadow: 0 14px 32px rgba(0,0,0,0.18);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+    }
+
+    body.page-nhanSu .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 24px 54px rgba(0,0,0,0.24);
+    }
+
+    body.page-nhanSu .stat-value {
+        font-size: 2.65rem;
+        line-height: 1;
+    }
+
+    body.page-nhanSu .filter-section,
+    body.page-nhanSu .table-wrapper {
+        background: rgba(28, 30, 31, 0.78);
+        border-color: rgba(212, 175, 55, 0.22);
+        box-shadow: 0 14px 36px rgba(0,0,0,0.18);
+    }
+
+    body.page-nhanSu .filter-section {
+        padding: 24px 32px 28px;
+    }
+
+    body.page-nhanSu .form-group label {
+        color: rgba(245,245,245,0.78);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+    }
+
+    body.page-nhanSu .form-group .input,
+    body.page-nhanSu .form-group .select,
+    body.page-nhanSu .form-group textarea {
+        min-height: 52px;
+        border-radius: 8px;
+        border-color: rgba(255,255,255,0.14);
+        background-color: rgba(255,255,255,0.08);
+    }
+
+    body.page-nhanSu .form-group .input:focus,
+    body.page-nhanSu .form-group .select:focus,
+    body.page-nhanSu .form-group textarea:focus {
+        border-color: rgba(13, 202, 240, 0.58);
+        box-shadow: 0 0 0 3px rgba(13, 202, 240, 0.12);
+    }
+
+    body.page-nhanSu .role-tabs {
+        gap: 12px;
+    }
+
+    body.page-nhanSu .role-tab {
+        min-height: 56px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border-width: 1px;
+        background: rgba(255,255,255,0.045);
+        box-shadow: 0 10px 24px rgba(0,0,0,0.12);
+    }
+
+    body.page-nhanSu .role-tab.active,
+    body.page-nhanSu .role-tab:hover {
+        background: rgba(212, 175, 55, 0.14);
+        border-color: rgba(212, 175, 55, 0.6);
+        box-shadow: 0 16px 34px rgba(0,0,0,0.18);
+    }
+
+    body.page-nhanSu .table-wrapper {
+        border-radius: 8px;
+        overflow-x: auto;
+    }
+
+    body.page-nhanSu .table {
+        min-width: 1100px;
+    }
+
+    body.page-nhanSu .table thead {
+        background: linear-gradient(90deg, rgba(212, 175, 55, 0.14), rgba(13, 202, 240, 0.06));
+    }
+
+    body.page-nhanSu .table th {
+        padding: 16px 20px;
+        letter-spacing: 0.06em;
+        white-space: nowrap;
+    }
+
+    body.page-nhanSu .table td {
+        padding: 18px 20px;
+        vertical-align: middle;
+    }
+
+    body.page-nhanSu .role-badge,
+    body.page-nhanSu .hdv-chip {
+        border-radius: 8px;
+    }
+
+    @media (max-width: 1300px) {
+        body.page-nhanSu .stats-grid {
+            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+        }
+    }
+
+    @media (max-width: 900px) {
+        body.page-nhanSu .content-area {
+            padding: 24px 18px 42px;
+        }
+
+        body.page-nhanSu .page-header-nhansu {
+            padding: 24px;
+            align-items: flex-start;
+        }
+
+        body.page-nhanSu .page-header-nhansu .header-avatar {
+            width: 58px;
+            height: 58px;
+            font-size: 1.8rem;
+        }
+    }
 </style>
 
 <!-- Page Header -->
