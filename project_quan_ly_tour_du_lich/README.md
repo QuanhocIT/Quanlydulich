@@ -83,6 +83,7 @@ php scripts/run_admin_automation.php reconcile_digest
 UI quan ly:
 
 - `index.php?act=admin/automationDashboard`
+- Dashboard co cong tac bat/tat toan bo automation. Khi tat, job chay tay va script `run_admin_automation.php` se bo qua thuc thi cho toi khi bat lai.
 
 Task Scheduler (Windows):
 

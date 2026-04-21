@@ -884,6 +884,118 @@ body.page-dashboard svg {
   max-width: 100% !important;
 }
 
+body.role-admin {
+  --admin-motion-distance: 22px;
+  --admin-motion-duration: 0.58s;
+  --admin-motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --admin-hover-shadow: 0 24px 48px rgba(0, 0, 0, 0.16);
+}
+
+@keyframes adminSurfacePulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.18);
+  }
+  100% {
+    box-shadow: 0 0 0 14px rgba(212, 175, 55, 0);
+  }
+}
+
+body.role-admin .admin-reveal {
+  opacity: 0;
+  transform: translateY(var(--admin-motion-distance));
+  filter: blur(10px);
+  transition:
+    opacity var(--admin-motion-duration) var(--admin-motion-ease),
+    transform var(--admin-motion-duration) var(--admin-motion-ease),
+    filter var(--admin-motion-duration) var(--admin-motion-ease);
+  transition-delay: var(--admin-reveal-delay, 0ms);
+}
+
+body.role-admin .admin-reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0);
+}
+
+body.role-admin .admin-hover-lift {
+  transition:
+    transform 0.24s ease,
+    box-shadow 0.24s ease,
+    border-color 0.24s ease,
+    background-color 0.24s ease;
+  will-change: transform;
+}
+
+body.role-admin .admin-hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--admin-hover-shadow);
+  border-color: rgba(212, 175, 55, 0.28);
+}
+
+body.role-admin .page-header,
+body.role-admin .page-header-section,
+body.role-admin .welcome-admin,
+body.role-admin .auto-hero {
+  position: relative;
+  overflow: hidden;
+}
+
+body.role-admin .page-header::after,
+body.role-admin .page-header-section::after,
+body.role-admin .welcome-admin::after,
+body.role-admin .auto-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, transparent 0%, rgba(212, 175, 55, 0.08) 48%, transparent 100%);
+  transform: translateX(-100%);
+  transition: transform 0.75s ease;
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+body.role-admin .page-header:hover::after,
+body.role-admin .page-header-section:hover::after,
+body.role-admin .welcome-admin:hover::after,
+body.role-admin .auto-hero:hover::before {
+  transform: translateX(100%);
+}
+
+body.role-admin .auto-chip,
+body.role-admin .notification-badge,
+body.role-admin .nav-badge.is-pulse {
+  animation: adminSurfacePulse 0.8s ease;
+}
+
+@keyframes adminStatusBadgePulse {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(212, 175, 55, 0);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 6px rgba(212, 175, 55, 0.08);
+  }
+}
+
+body.role-admin .table tbody tr,
+body.role-admin .aventura-table tbody tr {
+  transition: transform 0.22s ease, background-color 0.22s ease, box-shadow 0.22s ease;
+}
+
+body.role-admin .table tbody tr:hover,
+body.role-admin .aventura-table tbody tr:hover {
+  transform: translateX(3px);
+}
+
+body.role-admin .badge-danger,
+body.role-admin .badge-warning,
+body.role-admin .aventura-badge.badge-danger,
+body.role-admin .aventura-badge.badge-warning {
+  animation: adminStatusBadgePulse 2s ease-in-out infinite;
+}
+
 /* Cards */
 .card {
   background: rgba(45, 45, 45, 0.5);
@@ -1087,4 +1199,20 @@ body.page-dashboard svg {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--accent-gold);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.role-admin .admin-reveal,
+  body.role-admin .admin-reveal.is-visible,
+  body.role-admin .admin-hover-lift,
+  body.role-admin .page-header::after,
+  body.role-admin .page-header-section::after,
+  body.role-admin .welcome-admin::after,
+  body.role-admin .auto-hero::before {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+    filter: none !important;
+  }
 }

@@ -3274,12 +3274,19 @@ class AdminController {
             'tourHealthCount'  => 0,
             'priorityCount'    => 0,
             'latestRun'        => null,
+            'automationEnabled'=> true,
+            'automationUpdatedAt' => null,
             'schedulerInterval'=> 15,
             'timestamp'        => date('Y-m-d H:i:s'),
         ];
 
         try {
             $conn = connectDB();
+            require_once __DIR__ . '/../services/AdminAutomationService.php';
+            $service = new AdminAutomationService($conn);
+            $controlState = $service->getAutomationControlState();
+            $data['automationEnabled'] = !empty($controlState['enabled']);
+            $data['automationUpdatedAt'] = $controlState['updated_at'] ?? null;
 
             $data['eventsCount'] = (int)$conn
                 ->query("SELECT COUNT(*) FROM automation_events")
@@ -3318,12 +3325,15 @@ class AdminController {
         requireRole('Admin');
 
         $conn = connectDB();
+        require_once __DIR__ . '/../services/AdminAutomationService.php';
+        $service = new AdminAutomationService($conn);
 
         $jobRuns = [];
         $events = [];
         $priorityBookings = [];
         $tourHealth = [];
         $decisionAssist = [];
+        $automationControlState = $service->getAutomationControlState();
 
         try {
             $stmt = $conn->query("SELECT run_id, job_name, is_success, affected_count, message, duration_ms, created_at
@@ -3400,6 +3410,29 @@ class AdminController {
         require 'views/admin/automation_dashboard.php';
     }
 
+    public function toggleAutomation() {
+        requireRole('Admin');
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+            header('Location: index.php?act=admin/automationDashboard');
+            exit;
+        }
+        $this->requirePostCsrf('admin/automationDashboard');
+
+        $enabled = requestString('enabled', '1', 'POST') === '1';
+
+        require_once __DIR__ . '/../services/AdminAutomationService.php';
+        $conn = connectDB();
+        $service = new AdminAutomationService($conn);
+        $service->setAutomationEnabled($enabled);
+
+        $_SESSION['success'] = $enabled
+            ? 'Đã bật lại toàn bộ tự động hóa.'
+            : 'Đã tạm tắt toàn bộ tự động hóa. Job tay và job nền sẽ bị bỏ qua cho đến khi bật lại.';
+
+        header('Location: index.php?act=admin/automationDashboard');
+        exit;
+    }
+
     public function runAutomationJob() {
         requireRole('Admin');
         if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
@@ -3432,6 +3465,12 @@ class AdminController {
         require_once __DIR__ . '/../services/AdminAutomationService.php';
         $conn = connectDB();
         $service = new AdminAutomationService($conn);
+
+        if (!$service->isAutomationEnabled()) {
+            $_SESSION['error'] = 'Tự động hóa đang tạm tắt. Hãy bật lại trước khi chạy job.';
+            header('Location: index.php?act=admin/automationDashboard');
+            exit;
+        }
 
         if ($job === 'all') {
             $results = $service->runAll();

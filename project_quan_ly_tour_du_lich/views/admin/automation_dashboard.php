@@ -80,6 +80,12 @@ ob_start();
     white-space: nowrap;
 }
 
+.auto-chip.error {
+    border-color: rgba(239, 68, 68, 0.32);
+    background: rgba(239, 68, 68, 0.12);
+    color: #fca5a5;
+}
+
 .auto-metrics {
     margin-top: 16px;
     display: grid;
@@ -92,6 +98,15 @@ ob_start();
     border-radius: 14px;
     padding: 12px 14px;
     background: rgba(8, 13, 20, 0.34);
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
+}
+
+.auto-metric:hover {
+    transform: translateY(-2px);
+    border-color: rgba(212, 175, 55, 0.28);
+    box-shadow: 0 18px 36px rgba(0, 0, 0, 0.16);
 }
 
 .auto-metric-label {
@@ -106,6 +121,7 @@ ob_start();
     font-size: 1.42rem;
     color: #f8fafc;
     font-weight: 700;
+    font-variant-numeric: tabular-nums;
 }
 
 .auto-layout {
@@ -134,6 +150,82 @@ ob_start();
     color: var(--auto-muted);
     font-size: 0.9rem;
     margin: 0 0 12px;
+}
+
+.auto-flash-stack {
+    display: grid;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.auto-flash {
+    border-radius: 14px;
+    padding: 12px 14px;
+    border: 1px solid rgba(255,255,255,0.12);
+    font-size: 0.9rem;
+}
+
+.auto-flash.success {
+    background: rgba(34, 197, 94, 0.12);
+    border-color: rgba(34, 197, 94, 0.3);
+    color: #bbf7d0;
+}
+
+.auto-flash.error {
+    background: rgba(239, 68, 68, 0.12);
+    border-color: rgba(239, 68, 68, 0.3);
+    color: #fecaca;
+}
+
+.auto-toggle-form {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-top: 14px;
+}
+
+.auto-toggle-btn {
+    min-width: 170px;
+}
+
+.auto-toggle-btn.off {
+    border-color: rgba(239, 68, 68, 0.42);
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.28), rgba(239, 68, 68, 0.14));
+}
+
+.auto-toggle-btn.on {
+    border-color: rgba(34, 197, 94, 0.42);
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.24), rgba(34, 197, 94, 0.12));
+}
+
+.auto-status-banner {
+    margin-top: 14px;
+    border-radius: 14px;
+    padding: 13px 14px;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(8, 13, 20, 0.28);
+}
+
+.auto-status-banner strong {
+    display: block;
+    color: #f8fafc;
+    margin-bottom: 5px;
+}
+
+.auto-status-banner.off {
+    border-color: rgba(239, 68, 68, 0.28);
+    background: rgba(127, 29, 29, 0.16);
+}
+
+.auto-status-banner.on {
+    border-color: rgba(34, 197, 94, 0.24);
+    background: rgba(20, 83, 45, 0.16);
+}
+
+.auto-status-meta {
+    color: #a5b4c4;
+    font-size: 0.82rem;
 }
 
 .auto-job-form {
@@ -179,6 +271,13 @@ ob_start();
     background: linear-gradient(135deg, rgba(212, 175, 55, 0.34), rgba(212, 175, 55, 0.18));
 }
 
+.auto-btn:disabled,
+.auto-btn[disabled] {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none;
+}
+
 .auto-btn-link {
     display: inline-flex;
     align-items: center;
@@ -203,6 +302,15 @@ ob_start();
     border: 1px solid rgba(255,255,255,0.12);
     background: rgba(8, 13, 20, 0.32);
     padding: 12px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
+}
+
+.auto-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(212, 175, 55, 0.28);
+    box-shadow: 0 18px 34px rgba(0, 0, 0, 0.15);
 }
 
 .auto-card h5 {
@@ -216,6 +324,28 @@ ob_start();
     color: #f8fafc;
     font-size: 1.45rem;
     font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+@keyframes autoMetricPulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(246, 211, 101, 0.24);
+        border-color: rgba(212, 175, 55, 0.2);
+    }
+    40% {
+        box-shadow: 0 0 0 10px rgba(246, 211, 101, 0);
+        border-color: rgba(246, 211, 101, 0.48);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(246, 211, 101, 0);
+        border-color: rgba(212, 175, 55, 0.2);
+    }
+}
+
+.auto-metric.is-live-update,
+.auto-card.is-live-update,
+.auto-chip.is-live-update {
+    animation: autoMetricPulse 0.9s ease;
 }
 
 .auto-card-note {
@@ -276,8 +406,48 @@ ob_start();
     background: rgba(0,0,0,0.14);
 }
 
+.js-auto-motion .auto-table tbody tr {
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.38s ease, transform 0.38s ease, box-shadow 0.22s ease;
+}
+
+.js-auto-motion .auto-table tbody tr.is-row-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.auto-table tbody tr td {
+    transition: background-color 0.22s ease, transform 0.22s ease;
+}
+
 .auto-table tr:hover td {
     background: rgba(255,255,255,0.03);
+}
+
+.auto-table tbody tr:hover td {
+    transform: translateX(2px);
+}
+
+.auto-table tbody tr[data-row-state="high"] td:first-child,
+.auto-table tbody tr[data-row-state="error"] td:first-child,
+.auto-table tbody tr[data-row-state="open"] td:first-child {
+    box-shadow: inset 3px 0 0 rgba(239, 68, 68, 0.75);
+}
+
+.auto-table tbody tr[data-row-state="medium"] td:first-child,
+.auto-table tbody tr[data-row-state="ignored"] td:first-child {
+    box-shadow: inset 3px 0 0 rgba(245, 158, 11, 0.75);
+}
+
+.auto-table tbody tr[data-row-state="low"] td:first-child,
+.auto-table tbody tr[data-row-state="ok"] td:first-child,
+.auto-table tbody tr[data-row-state="done"] td:first-child {
+    box-shadow: inset 3px 0 0 rgba(34, 197, 94, 0.72);
+}
+
+.auto-table tbody tr[data-row-fresh="true"] td {
+    background: linear-gradient(90deg, rgba(246, 211, 101, 0.08), transparent 38%);
 }
 
 .auto-badge {
@@ -288,6 +458,56 @@ ob_start();
     font-size: 0.76rem;
     font-weight: 700;
     text-transform: uppercase;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.auto-badge::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(120deg, transparent, rgba(255,255,255,0.34), transparent);
+    transform: translateX(-130%);
+    opacity: 0;
+}
+
+@keyframes autoBadgePulse {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(255,255,255,0);
+    }
+    50% {
+        transform: scale(1.06);
+        box-shadow: 0 0 0 6px rgba(255,255,255,0.06);
+    }
+}
+
+.auto-badge.is-live-pulse,
+.auto-badge.high,
+.auto-badge.error {
+    animation: autoBadgePulse 1.8s ease-in-out infinite;
+}
+
+.auto-badge.medium {
+    animation: autoBadgePulse 2.4s ease-in-out infinite;
+}
+
+.auto-badge.is-live-pulse::after,
+.auto-badge.high::after,
+.auto-badge.error::after,
+.auto-badge.medium::after {
+    opacity: 1;
+    animation: autoBadgeSweep 2.2s linear infinite;
+}
+
+@keyframes autoBadgeSweep {
+    0% {
+        transform: translateX(-130%);
+    }
+    100% {
+        transform: translateX(130%);
+    }
 }
 
 .auto-badge.high {
@@ -315,6 +535,21 @@ ob_start();
     color: #fecaca;
 }
 
+.auto-badge.open {
+    background: rgba(239, 68, 68, 0.18);
+    color: #fda4af;
+}
+
+.auto-badge.done {
+    background: rgba(34, 197, 94, 0.2);
+    color: #86efac;
+}
+
+.auto-badge.ignored {
+    background: rgba(245, 158, 11, 0.18);
+    color: #fde68a;
+}
+
 .inline-form {
     display: inline-flex;
     gap: 8px;
@@ -324,6 +559,20 @@ ob_start();
 .auto-empty {
     padding: 16px;
     color: #a7b7c8;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .auto-metric,
+    .auto-card,
+    .auto-table tbody tr,
+    .auto-table tbody tr td,
+    .auto-badge,
+    .auto-badge::after {
+        animation: none !important;
+        transition: none !important;
+        transform: none !important;
+        opacity: 1 !important;
+    }
 }
 
 @media (max-width: 1180px) {
@@ -369,6 +618,8 @@ $eventsCount = count($events ?? []);
 $priorityCount = count($priorityBookings ?? []);
 $tourHealthCount = count($tourHealth ?? []);
 $decisionCount = count($decisionAssist ?? []);
+$automationEnabled = !empty($automationControlState['enabled']);
+$automationUpdatedAt = (string)($automationControlState['updated_at'] ?? '');
 $highSeverityCount = 0;
 foreach (($events ?? []) as $eventItem) {
     if ((string)($eventItem['severity'] ?? '') === 'high') {
@@ -388,6 +639,17 @@ if (!empty($latestRun)) {
 ?>
 
 <div class="auto-shell">
+    <?php if (isset($_SESSION['success']) || isset($_SESSION['error'])): ?>
+        <div class="auto-flash-stack">
+            <?php if (isset($_SESSION['success'])): ?>
+                <div class="auto-flash success"><?php echo htmlspecialchars((string)$_SESSION['success'], ENT_QUOTES, 'UTF-8'); unset($_SESSION['success']); ?></div>
+            <?php endif; ?>
+            <?php if (isset($_SESSION['error'])): ?>
+                <div class="auto-flash error"><?php echo htmlspecialchars((string)$_SESSION['error'], ENT_QUOTES, 'UTF-8'); unset($_SESSION['error']); ?></div>
+            <?php endif; ?>
+        </div>
+    <?php endif; ?>
+
     <section class="auto-hero">
         <div class="auto-hero-top">
             <div>
@@ -395,9 +657,9 @@ if (!empty($latestRun)) {
                 <h2 class="auto-title">Trung tâm Tự động hóa Admin</h2>
                 <p class="auto-desc">Theo dõi sức khỏe hệ thống theo thời gian gần thực, chạy job ngay khi cần, và xử lý cảnh báo vận hành trên cùng một màn hình.</p>
             </div>
-            <span class="auto-chip" id="autoLiveChip">
+            <span class="auto-chip<?php echo $automationEnabled ? '' : ' error'; ?>" id="autoLiveChip" data-automation-enabled="<?php echo $automationEnabled ? '1' : '0'; ?>">
                 <i class="bi bi-activity"></i>
-                <span id="autoLiveLabel">Đang tải...</span>
+                <span id="autoLiveLabel"><?php echo $automationEnabled ? 'Auto • đang bật' : 'Auto • đang tắt'; ?></span>
             </span>
         </div>
 
@@ -425,17 +687,36 @@ if (!empty($latestRun)) {
         <section class="auto-panel">
             <h4>Chạy Job Ngay</h4>
             <p class="auto-panel-sub">Chọn job để thực thi thủ công khi cần xử lý nhanh hoặc xác thực trạng thái automation.</p>
+            <div class="auto-status-banner <?php echo $automationEnabled ? 'on' : 'off'; ?>" id="am-automationBanner">
+                <strong id="am-automationTitle"><?php echo $automationEnabled ? 'Tự động hóa đang bật' : 'Tự động hóa đang tạm tắt'; ?></strong>
+                <div id="am-automationDesc"><?php echo $automationEnabled ? 'Scheduler và thao tác chạy tay đang hoạt động bình thường.' : 'Mọi job automation sẽ bị bỏ qua cho đến khi admin bật lại.'; ?></div>
+                <?php if ($automationUpdatedAt !== ''): ?>
+                    <div class="auto-status-meta" id="am-automationMeta">Cập nhật lúc <?php echo htmlspecialchars($automationUpdatedAt, ENT_QUOTES, 'UTF-8'); ?></div>
+                <?php else: ?>
+                    <div class="auto-status-meta" id="am-automationMeta">Chưa có lịch sử thay đổi gần đây.</div>
+                <?php endif; ?>
+            </div>
+
+            <form method="post" action="index.php?act=admin/toggleAutomation" class="auto-toggle-form">
+                <input type="hidden" name="_csrf_token" value="<?php echo htmlspecialchars(csrfToken('admin_form'), ENT_QUOTES, 'UTF-8'); ?>">
+                <input type="hidden" name="enabled" value="<?php echo $automationEnabled ? '0' : '1'; ?>">
+                <button type="submit" class="auto-btn auto-toggle-btn <?php echo $automationEnabled ? 'off' : 'on'; ?>" id="am-toggleBtn">
+                    <?php echo $automationEnabled ? 'Tắt tạm automation' : 'Bật lại automation'; ?>
+                </button>
+                <span class="auto-status-meta">Công tắc này tác động cả job nền CLI và nút Run Job trong admin.</span>
+            </form>
+
             <form method="post" action="index.php?act=admin/runAutomationJob" class="auto-job-form">
                 <input type="hidden" name="_csrf_token" value="<?php echo htmlspecialchars(csrfToken('admin_form'), ENT_QUOTES, 'UTF-8'); ?>">
                 <div style="flex:1;min-width:220px;">
                     <label for="job">Chọn job</label>
-                    <select id="job" name="job">
+                    <select id="job" name="job"<?php echo $automationEnabled ? '' : ' disabled'; ?>>
                         <?php foreach (($availableJobs ?? []) as $job): ?>
                             <option value="<?php echo htmlspecialchars($job, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($job, ENT_QUOTES, 'UTF-8'); ?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>
-                <button type="submit" class="auto-btn">Run Job</button>
+                <button type="submit" class="auto-btn" id="am-runJobBtn"<?php echo $automationEnabled ? '' : ' disabled'; ?>>Run Job</button>
             </form>
 
             <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
@@ -496,8 +777,9 @@ if (!empty($latestRun)) {
                 </thead>
                 <tbody>
                 <?php if (!empty($jobRuns)): ?>
-                    <?php foreach ($jobRuns as $run): ?>
-                        <tr>
+                    <?php foreach ($jobRuns as $runIndex => $run): ?>
+                        <?php $runState = ((int)($run['is_success'] ?? 0) === 1) ? 'ok' : 'error'; ?>
+                        <tr data-row-state="<?php echo $runState; ?>"<?php if ($runIndex === 0): ?> data-row-fresh="true"<?php endif; ?>>
                             <td><?php echo (int)($run['run_id'] ?? 0); ?></td>
                             <td><?php echo htmlspecialchars((string)($run['job_name'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></td>
                             <td>
@@ -540,11 +822,12 @@ if (!empty($latestRun)) {
                 </thead>
                 <tbody>
                 <?php if (!empty($events)): ?>
-                    <?php foreach ($events as $event): ?>
-                        <tr>
+                    <?php foreach ($events as $eventIndex => $event): ?>
+                        <?php $severityState = (string)($event['severity'] ?? 'low'); ?>
+                        <tr data-row-state="<?php echo htmlspecialchars($severityState, ENT_QUOTES, 'UTF-8'); ?>"<?php if ($eventIndex === 0): ?> data-row-fresh="true"<?php endif; ?>>
                             <td><?php echo (int)($event['event_id'] ?? 0); ?></td>
                             <td><?php echo htmlspecialchars((string)($event['job_name'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></td>
-                            <td><span class="auto-badge <?php echo htmlspecialchars((string)($event['severity'] ?? 'low'), ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars((string)($event['severity'] ?? 'low'), ENT_QUOTES, 'UTF-8'); ?></span></td>
+                            <td><span class="auto-badge <?php echo htmlspecialchars($severityState, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($severityState, ENT_QUOTES, 'UTF-8'); ?></span></td>
                             <td><?php echo htmlspecialchars((string)($event['title'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></td>
                             <td><?php echo htmlspecialchars((string)($event['message'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></td>
                             <td><?php echo htmlspecialchars((string)($event['created_at'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></td>
@@ -577,12 +860,13 @@ if (!empty($latestRun)) {
                 </thead>
                 <tbody>
                 <?php if (!empty($decisionAssist)): ?>
-                    <?php foreach ($decisionAssist as $assist): ?>
-                        <tr>
+                    <?php foreach ($decisionAssist as $assistIndex => $assist): ?>
+                        <?php $assistStatus = (string)($assist['status'] ?? 'open'); ?>
+                        <tr data-row-state="<?php echo htmlspecialchars($assistStatus, ENT_QUOTES, 'UTF-8'); ?>"<?php if ($assistIndex === 0): ?> data-row-fresh="true"<?php endif; ?>>
                             <td><?php echo (int)($assist['assist_id'] ?? 0); ?></td>
                             <td><?php echo htmlspecialchars((string)($assist['entity_type'] ?? ''), ENT_QUOTES, 'UTF-8'); ?> #<?php echo (int)($assist['entity_id'] ?? 0); ?></td>
                             <td><?php echo htmlspecialchars((string)($assist['recommendation_text'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></td>
-                            <td><?php echo htmlspecialchars((string)($assist['status'] ?? 'open'), ENT_QUOTES, 'UTF-8'); ?></td>
+                            <td><span class="auto-badge <?php echo htmlspecialchars($assistStatus, ENT_QUOTES, 'UTF-8'); ?><?php echo $assistStatus === 'open' ? ' is-live-pulse' : ''; ?>"><?php echo htmlspecialchars($assistStatus, ENT_QUOTES, 'UTF-8'); ?></span></td>
                             <td><?php echo htmlspecialchars((string)($assist['updated_at'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></td>
                             <td>
                                 <form method="post" action="index.php?act=admin/updateDecisionAssistStatus" class="inline-form">
@@ -611,9 +895,14 @@ if (!empty($latestRun)) {
 (function () {
     'use strict';
 
+    document.documentElement.classList.add('js-auto-motion');
+
     const POLL_INTERVAL = 30; // giây
     const STATUS_URL = 'index.php?act=admin/automationStatus';
     const SCHEDULER_INTERVAL_MIN = 15;
+    const metricAnimationFrames = new Map();
+    const initialLiveChip = document.getElementById('autoLiveChip');
+    let automationEnabled = !!(initialLiveChip && initialLiveChip.dataset.automationEnabled === '1');
 
     let secondsToNextRefresh = POLL_INTERVAL;
     let countdownTimer = null;
@@ -640,10 +929,14 @@ if (!empty($latestRun)) {
         const secsToScheduler = calcNextScheduledRun();
 
         if (countEl) {
-            countEl.textContent = `Cập nhật sau ${formatSecsToTime(secondsToNextRefresh)} · Job tự động sau ${formatSecsToTime(secsToScheduler)}`;
+            countEl.textContent = automationEnabled
+                ? `Cập nhật sau ${formatSecsToTime(secondsToNextRefresh)} · Job tự động sau ${formatSecsToTime(secsToScheduler)}`
+                : `Automation đang tắt · Cập nhật sau ${formatSecsToTime(secondsToNextRefresh)}`;
         }
         if (liveLabel) {
-            liveLabel.textContent = `Auto • ${formatSecsToTime(secondsToNextRefresh)}`;
+            liveLabel.textContent = automationEnabled
+                ? `Auto • ${formatSecsToTime(secondsToNextRefresh)}`
+                : 'Auto • đang tắt';
         }
         secondsToNextRefresh--;
         if (secondsToNextRefresh < 0) {
@@ -652,22 +945,151 @@ if (!empty($latestRun)) {
         }
     }
 
-    function setVal(id, val) {
-        const el = document.getElementById(id);
-        if (el) {
-            if (el.textContent !== String(val)) {
-                el.textContent = val;
-                el.style.transition = 'color 0.3s';
-                el.style.color = '#f6d365';
-                setTimeout(() => { el.style.color = ''; }, 1200);
+    function pulseSurface(element) {
+        if (!element) return;
+        element.classList.remove('is-live-update');
+        void element.offsetWidth;
+        element.classList.add('is-live-update');
+        window.setTimeout(function () {
+            element.classList.remove('is-live-update');
+        }, 950);
+    }
+
+    function pulseBadge(element) {
+        if (!element) return;
+        element.classList.remove('is-live-pulse');
+        void element.offsetWidth;
+        element.classList.add('is-live-pulse');
+    }
+
+    function applyAutomationState(enabled, updatedAt) {
+        automationEnabled = !!enabled;
+
+        const chip = document.getElementById('autoLiveChip');
+        const banner = document.getElementById('am-automationBanner');
+        const title = document.getElementById('am-automationTitle');
+        const desc = document.getElementById('am-automationDesc');
+        const meta = document.getElementById('am-automationMeta');
+        const toggleBtn = document.getElementById('am-toggleBtn');
+        const runBtn = document.getElementById('am-runJobBtn');
+        const jobSelect = document.getElementById('job');
+
+        if (chip) {
+            chip.dataset.automationEnabled = automationEnabled ? '1' : '0';
+            chip.classList.toggle('error', !automationEnabled);
+            chip.style.borderColor = automationEnabled ? 'rgba(34,197,94,0.55)' : 'rgba(239,68,68,0.5)';
+            chip.style.background = automationEnabled ? 'rgba(34,197,94,0.18)' : 'rgba(239,68,68,0.14)';
+        }
+
+        if (banner) {
+            banner.classList.toggle('on', automationEnabled);
+            banner.classList.toggle('off', !automationEnabled);
+        }
+
+        if (title) {
+            title.textContent = automationEnabled ? 'Tự động hóa đang bật' : 'Tự động hóa đang tạm tắt';
+        }
+
+        if (desc) {
+            desc.textContent = automationEnabled
+                ? 'Scheduler và thao tác chạy tay đang hoạt động bình thường.'
+                : 'Mọi job automation sẽ bị bỏ qua cho đến khi admin bật lại.';
+        }
+
+        if (meta) {
+            meta.textContent = updatedAt ? `Cập nhật lúc ${updatedAt}` : 'Chưa có lịch sử thay đổi gần đây.';
+        }
+
+        if (toggleBtn) {
+            toggleBtn.textContent = automationEnabled ? 'Tắt tạm automation' : 'Bật lại automation';
+            toggleBtn.classList.toggle('off', automationEnabled);
+            toggleBtn.classList.toggle('on', !automationEnabled);
+            const enabledInput = toggleBtn.form ? toggleBtn.form.querySelector('input[name="enabled"]') : null;
+            if (enabledInput) {
+                enabledInput.value = automationEnabled ? '0' : '1';
             }
+        }
+
+        if (runBtn) {
+            runBtn.disabled = !automationEnabled;
+        }
+
+        if (jobSelect) {
+            jobSelect.disabled = !automationEnabled;
         }
     }
 
+    function animateNumber(el, nextValue) {
+        if (!el) return;
+
+        const parsedNext = Number(nextValue);
+        if (!Number.isFinite(parsedNext)) {
+            el.textContent = nextValue;
+            return;
+        }
+
+        const currentValue = Number(el.dataset.currentValue ?? el.textContent ?? 0);
+        if (Number.isFinite(currentValue) && currentValue === parsedNext) {
+            el.dataset.currentValue = String(parsedNext);
+            return;
+        }
+
+        const existingFrame = metricAnimationFrames.get(el);
+        if (existingFrame) {
+            window.cancelAnimationFrame(existingFrame);
+        }
+
+        const startValue = Number.isFinite(currentValue) ? currentValue : 0;
+        const change = parsedNext - startValue;
+        const duration = Math.min(900, 420 + Math.abs(change) * 60);
+        const startTime = performance.now();
+        const wrapper = el.closest('.auto-metric, .auto-card');
+
+        pulseSurface(wrapper);
+
+        function step(now) {
+            const progress = Math.min((now - startTime) / duration, 1);
+            const eased = 1 - Math.pow(1 - progress, 3);
+            const current = Math.round(startValue + change * eased);
+            el.textContent = String(current);
+
+            if (progress < 1) {
+                metricAnimationFrames.set(el, window.requestAnimationFrame(step));
+                return;
+            }
+
+            el.textContent = String(parsedNext);
+            el.dataset.currentValue = String(parsedNext);
+            metricAnimationFrames.delete(el);
+        }
+
+        el.dataset.currentValue = String(startValue);
+        metricAnimationFrames.set(el, window.requestAnimationFrame(step));
+    }
+
+    function setVal(id, val) {
+        const el = document.getElementById(id);
+        if (!el) return;
+
+        if (el.textContent !== String(val)) {
+            animateNumber(el, val);
+        }
+    }
+
+
+    function initTableMotion() {
+        const rows = document.querySelectorAll('.auto-table tbody tr');
+        rows.forEach(function (row, index) {
+            window.setTimeout(function () {
+                row.classList.add('is-row-visible');
+            }, Math.min(index, 12) * 45);
+        });
+    }
     function fetchStatus() {
         fetch(STATUS_URL, { credentials: 'same-origin' })
             .then(r => r.json())
             .then(function (d) {
+                applyAutomationState(d.automationEnabled !== false, d.automationUpdatedAt || null);
                 setVal('am-eventsCount', d.eventsCount);
                 setVal('am-highSeverity', d.highSeverityCount);
                 setVal('am-decisionCount', d.decisionCount);
@@ -680,16 +1102,19 @@ if (!empty($latestRun)) {
                 const runEl = document.getElementById('am-latestRun');
                 if (runEl && d.latestRun) {
                     const ok = d.latestRun.is_success == 1;
-                    runEl.textContent = (ok ? 'Lần chạy gần nhất: OK' : 'Lần chạy gần nhất: ERROR')
+                    const nextText = (ok ? 'Lần chạy gần nhất: OK' : 'Lần chạy gần nhất: ERROR')
                         + ' · ' + (d.latestRun.job_name || '')
                         + ' · ' + (d.latestRun.created_at || '');
-                    runEl.className = 'auto-badge ' + (ok ? 'ok' : 'error');
+                    if (runEl.textContent !== nextText || !runEl.classList.contains(ok ? 'ok' : 'error')) {
+                        runEl.textContent = nextText;
+                        runEl.className = 'auto-badge ' + (ok ? 'ok' : 'error') + ' is-live-pulse';
+                        pulseBadge(runEl);
+                    }
                 }
 
                 const chip = document.getElementById('autoLiveChip');
                 if (chip) {
-                    chip.style.borderColor = 'rgba(34,197,94,0.55)';
-                    chip.style.background = 'rgba(34,197,94,0.18)';
+                    pulseSurface(chip);
                 }
             })
             .catch(function () {
@@ -697,12 +1122,21 @@ if (!empty($latestRun)) {
                 if (chip) {
                     chip.style.borderColor = 'rgba(239,68,68,0.5)';
                     chip.style.background = 'rgba(239,68,68,0.14)';
+                    pulseSurface(chip);
                 }
             });
     }
 
     // Khởi động polling ngay khi trang load
     document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.auto-metric-value, .auto-card-value').forEach(function (element) {
+            const initialValue = Number(element.textContent);
+            if (Number.isFinite(initialValue)) {
+                element.dataset.currentValue = String(initialValue);
+            }
+        });
+        applyAutomationState(automationEnabled, <?php echo json_encode($automationUpdatedAt !== '' ? $automationUpdatedAt : null, JSON_UNESCAPED_UNICODE); ?>);
+        initTableMotion();
         fetchStatus();
         countdownTimer = setInterval(updateDown, 1000);
         updateDown();

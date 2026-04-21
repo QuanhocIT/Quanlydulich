@@ -5,10 +5,67 @@ require_once __DIR__ . '/../services/PaymentReconcileService.php';
 
 class AdminAutomationService {
     private $conn;
+    private const ENABLED_SETTING_KEY = 'automation_enabled';
 
     public function __construct($conn) {
         $this->conn = $conn;
         $this->ensureAutomationTables();
+    }
+
+    public function getAutomationControlState() {
+        $enabled = $this->isAutomationEnabled();
+        $updatedAt = null;
+
+        try {
+            $stmt = $this->conn->prepare(
+                "SELECT updated_at
+                 FROM automation_settings
+                 WHERE setting_key = ?
+                 LIMIT 1"
+            );
+            $stmt->execute([self::ENABLED_SETTING_KEY]);
+            $updatedAt = $stmt->fetchColumn() ?: null;
+        } catch (Throwable $e) {
+            $updatedAt = null;
+        }
+
+        return [
+            'enabled' => $enabled,
+            'updated_at' => $updatedAt,
+        ];
+    }
+
+    public function isAutomationEnabled() {
+        try {
+            $stmt = $this->conn->prepare(
+                "SELECT setting_value
+                 FROM automation_settings
+                 WHERE setting_key = ?
+                 LIMIT 1"
+            );
+            $stmt->execute([self::ENABLED_SETTING_KEY]);
+            $value = $stmt->fetchColumn();
+            if ($value === false) {
+                $this->setAutomationEnabled(true);
+                return true;
+            }
+
+            return ((string)$value) !== '0';
+        } catch (Throwable $e) {
+            return true;
+        }
+    }
+
+    public function setAutomationEnabled($enabled) {
+        $normalized = $enabled ? '1' : '0';
+        $stmt = $this->conn->prepare(
+            "INSERT INTO automation_settings (setting_key, setting_value, updated_at)
+             VALUES (?, ?, NOW())
+             ON DUPLICATE KEY UPDATE
+                setting_value = VALUES(setting_value),
+                updated_at = VALUES(updated_at)"
+        );
+        $stmt->execute([self::ENABLED_SETTING_KEY, $normalized]);
     }
 
     public function runAll() {
@@ -36,6 +93,21 @@ class AdminAutomationService {
     public function runJob($jobName) {
         $jobName = trim((string)$jobName);
         $startedAt = microtime(true);
+
+        if (!$this->isAutomationEnabled()) {
+            $durationMs = round((microtime(true) - $startedAt) * 1000, 1);
+            $message = 'Automation is temporarily disabled by admin.';
+            $this->logRun($jobName, true, 0, $message, $durationMs);
+
+            return [
+                'ok' => true,
+                'skipped' => true,
+                'job' => $jobName,
+                'message' => $message,
+                'affected' => 0,
+                'duration_ms' => $durationMs,
+            ];
+        }
 
         try {
             $result = match ($jobName) {
@@ -779,6 +851,21 @@ class AdminAutomationService {
                 KEY idx_entity (entity_type, entity_id)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
         );
+
+        $this->conn->exec(
+            "CREATE TABLE IF NOT EXISTS automation_settings (
+                setting_key VARCHAR(64) NOT NULL,
+                setting_value VARCHAR(255) NOT NULL,
+                updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (setting_key)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+        );
+
+        $stmt = $this->conn->prepare(
+            "INSERT IGNORE INTO automation_settings (setting_key, setting_value, updated_at)
+             VALUES (?, '1', NOW())"
+        );
+        $stmt->execute([self::ENABLED_SETTING_KEY]);
     }
 
     private function logRun($jobName, $isSuccess, $affectedCount, $message, $durationMs) {

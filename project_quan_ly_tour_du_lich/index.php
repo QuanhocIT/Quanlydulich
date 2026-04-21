@@ -318,6 +318,7 @@ match ($act) {
     'admin/markNotificationsReadAll' => (new AdminController())->markNotificationsReadAll(),
     'admin/automationDashboard' => (new AdminController())->automationDashboard(),
     'admin/automationStatus' => (new AdminController())->automationStatus(),
+    'admin/toggleAutomation' => (new AdminController())->toggleAutomation(),
     'admin/runAutomationJob' => (new AdminController())->runAutomationJob(),
     'admin/updateDecisionAssistStatus' => (new AdminController())->updateDecisionAssistStatus(),
     // Báo cáo tài chính

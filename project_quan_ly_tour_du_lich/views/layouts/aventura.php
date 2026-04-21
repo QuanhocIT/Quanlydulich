@@ -11,6 +11,18 @@ if ($isAdminRole && !empty($_SESSION['admin_sidebar_start_hidden_once'])) {
     unset($_SESSION['admin_sidebar_start_hidden_once']);
 }
 
+$bodyClasses = [];
+if (isset($currentPage)) {
+    $bodyClasses[] = 'page-' . preg_replace('/[^a-zA-Z0-9_-]/', '', (string)$currentPage);
+}
+if ($currentRole !== null) {
+    $roleClass = strtolower((string)$currentRole);
+    $bodyClasses[] = 'role-' . preg_replace('/[^a-z0-9_-]/', '', $roleClass);
+}
+if ($isAdminRole) {
+    $bodyClasses[] = 'is-admin';
+}
+
 
 ?>
 <!DOCTYPE html>
@@ -32,7 +44,7 @@ if ($isAdminRole && !empty($_SESSION['admin_sidebar_start_hidden_once'])) {
         <?php endforeach; ?>
     <?php endif; ?>
 </head>
-<body class="<?php echo isset($currentPage) ? 'page-' . htmlspecialchars($currentPage) : ''; ?>">
+<body class="<?php echo htmlspecialchars(trim(implode(' ', array_filter($bodyClasses))), ENT_QUOTES, 'UTF-8'); ?>">
     <div class="container">
         <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">
@@ -502,6 +514,98 @@ if ($isAdminRole && !empty($_SESSION['admin_sidebar_start_hidden_once'])) {
             return 'dark';
         }
 
+        function initAdminMotion() {
+            if (!isAdminUser) return;
+
+            const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            const revealSelectors = [
+                '.content-area > *',
+                '.content-area .page-header',
+                '.content-area .page-header-section',
+                '.content-area .welcome-admin',
+                '.content-area .auto-hero',
+                '.content-area .auto-panel',
+                '.content-area .auto-table-panel',
+                '.content-area .auto-card',
+                '.content-area .chart-box',
+                '.content-area .filter-section',
+                '.content-area .table-wrapper',
+                '.content-area .info-card',
+                '.content-area .form-card',
+                '.content-area .schedule-card',
+                '.content-area .stat-card',
+                '.content-area .report-section',
+                '.content-area .card'
+            ];
+            const hoverSelector = '.auto-panel, .auto-table-panel, .auto-card, .chart-box, .filter-section, .table-wrapper, .info-card, .form-card, .schedule-card, .stat-card, .report-section, .card';
+            const seen = new Set();
+            const revealTargets = [];
+            const nonVisualTags = new Set(['SCRIPT', 'STYLE', 'LINK', 'META']);
+
+            revealSelectors.forEach(function(selector) {
+                document.querySelectorAll(selector).forEach(function(element) {
+                    if (seen.has(element)) return;
+                    if (element.closest('thead, tbody, tr, td, th')) return;
+                    if (nonVisualTags.has(element.tagName)) return;
+                    if (element.getClientRects().length === 0) return;
+                    seen.add(element);
+                    revealTargets.push(element);
+                });
+            });
+
+            if (revealTargets.length === 0) {
+                return;
+            }
+
+            revealTargets.forEach(function(element, index) {
+                element.classList.add('admin-reveal');
+                element.style.setProperty('--admin-reveal-delay', Math.min(index, 10) * 55 + 'ms');
+
+                if (element.matches(hoverSelector) && !element.matches('.feature-card')) {
+                    element.classList.add('admin-hover-lift');
+                }
+            });
+
+            if (reduceMotion || !('IntersectionObserver' in window)) {
+                revealTargets.forEach(function(element) {
+                    element.classList.add('is-visible');
+                    element.style.removeProperty('--admin-reveal-delay');
+                });
+                return;
+            }
+
+            function revealIfInViewport(element) {
+                const rect = element.getBoundingClientRect();
+                if (rect.bottom <= 0 || rect.top >= window.innerHeight) {
+                    return false;
+                }
+
+                element.classList.add('is-visible');
+                return true;
+            }
+
+            const revealObserver = new IntersectionObserver(function(entries, observer) {
+                entries.forEach(function(entry) {
+                    if (!entry.isIntersecting) return;
+                    entry.target.classList.add('is-visible');
+                    observer.unobserve(entry.target);
+                });
+            }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
+
+            revealTargets.forEach(function(element) {
+                revealIfInViewport(element);
+                revealObserver.observe(element);
+            });
+
+            window.setTimeout(function() {
+                revealTargets.forEach(function(element) {
+                    if (!element.classList.contains('is-visible')) {
+                        element.classList.add('is-visible');
+                    }
+                });
+            }, 700);
+        }
+
         if (sidebar) {
             const shouldStartCollapsed = forceSidebarHiddenOnLoad
                 ? true
@@ -518,6 +622,7 @@ if ($isAdminRole && !empty($_SESSION['admin_sidebar_start_hidden_once'])) {
         localStorage.setItem(STORAGE_KEYS.themeMode, appliedTheme);
         applySidebarState();
         setThemeIcon(appliedTheme);
+        initAdminMotion();
 
         // Nav parent-child: cho phép mở nhiều menu con cùng lúc
         document.querySelectorAll('.nav-parent > .nav-toggle').forEach(toggle => {

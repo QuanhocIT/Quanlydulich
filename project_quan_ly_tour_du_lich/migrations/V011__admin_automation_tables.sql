@@ -63,4 +63,14 @@ CREATE TABLE IF NOT EXISTS admin_decision_assist (
     KEY idx_entity (entity_type, entity_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS automation_settings (
+    setting_key VARCHAR(64) NOT NULL,
+    setting_value VARCHAR(255) NOT NULL,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (setting_key)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT IGNORE INTO automation_settings (setting_key, setting_value, updated_at)
+VALUES ('automation_enabled', '1', NOW());
+
 SELECT 'DONE: admin automation tables migration executed' AS migration_message;

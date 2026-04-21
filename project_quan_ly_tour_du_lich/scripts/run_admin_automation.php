@@ -37,6 +37,11 @@ if (!in_array($job, $availableJobs, true)) {
 $conn = getPDOConnection();
 $service = new AdminAutomationService($conn);
 
+if (!$service->isAutomationEnabled()) {
+    echo "[SKIPPED] automation is disabled by admin switch.\n";
+    exit(0);
+}
+
 $startedAt = microtime(true);
 
 if ($job === 'all') {
