@@ -52,8 +52,14 @@ ob_start();
 
 <div style="padding: 20px; max-width: 1400px; margin: 0 auto;">
     <?php
-    $exportExcelUrl = 'index.php?' . http_build_query(['act' => 'admin/baoCaoTaiChinh/xuatBaoCao', 'loai' => 'thu_chi_tour', 'format' => 'excel']);
-    $exportPdfUrl = 'index.php?' . http_build_query(['act' => 'admin/baoCaoTaiChinh/xuatBaoCao', 'loai' => 'thu_chi_tour', 'format' => 'pdf']);
+    $exportBaseQuery = [
+        'act' => 'admin/baoCaoTaiChinh/xuatBaoCao',
+        'loai' => 'thu_chi_tour',
+        'tu_ngay' => $tuNgay ?? '',
+        'den_ngay' => $denNgay ?? '',
+    ];
+    $exportExcelUrl = 'index.php?' . http_build_query($exportBaseQuery + ['format' => 'excel']);
+    $exportPdfUrl = 'index.php?' . http_build_query($exportBaseQuery + ['format' => 'pdf']);
     ?>
     <div class="page-header-section" style="margin-bottom: 30px;">
         <h1 style="margin: 0 0 10px 0; font-size: 2rem; color: var(--text-light);">
@@ -71,6 +77,21 @@ ob_start();
             </a>
         </div>
     </div>
+
+    <form method="get" action="index.php" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:20px;">
+        <input type="hidden" name="act" value="admin/thuChiTour">
+        <div>
+            <label for="tu_ngay" style="display:block;color:var(--text-muted);margin-bottom:6px;">Từ ngày</label>
+            <input id="tu_ngay" name="tu_ngay" type="date" value="<?= htmlspecialchars($tuNgay ?? '') ?>" style="padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(45,45,45,.5);color:var(--text-light);">
+        </div>
+        <div>
+            <label for="den_ngay" style="display:block;color:var(--text-muted);margin-bottom:6px;">Đến ngày</label>
+            <input id="den_ngay" name="den_ngay" type="date" value="<?= htmlspecialchars($denNgay ?? '') ?>" style="padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(45,45,45,.5);color:var(--text-light);">
+        </div>
+        <button type="submit" class="btn">
+            <i class="fas fa-filter"></i> Lọc
+        </button>
+    </form>
     
     <div class="report-card">
             <table>
@@ -87,7 +108,7 @@ ob_start();
                 </thead>
                 <tbody>
                     <?php if(empty($tours)): ?>
-                        <tr><td colspan="5" style="text-align: center; color: #999;">Chưa có tour nào</td></tr>
+                        <tr><td colspan="7" style="text-align: center; color: #999;">Chưa có tour nào</td></tr>
                     <?php else: ?>
                         <?php foreach($tours as $tour): ?>
                             <tr>
@@ -114,7 +135,7 @@ ob_start();
                                     <?php endif; ?>
                                 </td>
                                 <td>
-                                    <a href="index.php?act=admin/thuChiTour&tour_id=<?= $tour['tour_id'] ?>" class="btn" style="padding: 6px 12px; font-size: 13px;">
+                                    <a href="index.php?act=admin/giaoDichTheoTour&tour_id=<?= (int)$tour['tour_id'] ?>" class="btn" style="padding: 6px 12px; font-size: 13px;">
                                         <i class="fas fa-eye"></i> Chi tiết
                                     </a>
                                 </td>

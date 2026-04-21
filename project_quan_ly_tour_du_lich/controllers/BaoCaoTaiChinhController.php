@@ -17,26 +17,9 @@ use Dompdf\Options;
 class BaoCaoTaiChinhController {
         // Hiển thị thu chi từng tour
         public function thuChiTour() {
-            // Lấy tổng thu chi theo tour bằng truy vấn gộp để tránh N+1 query.
-            $tourStats = $this->giaoDichModel->getThuChiTatCaTour();
-            $thuChiTours = [];
-            foreach ($tourStats as $stat) {
-                $tongThu = (float)($stat['tong_thu'] ?? 0);
-                $tongChi = (float)($stat['tong_chi'] ?? 0);
-
-                $tour = [
-                    'tour_id' => $stat['tour_id'] ?? null,
-                    'ten_tour' => $stat['ten_tour'] ?? '',
-                    'loai_tour' => $stat['loai_tour'] ?? '',
-                ];
-
-                $thuChiTours[] = [
-                    'tour' => $tour,
-                    'tong_thu' => $tongThu,
-                    'tong_chi' => $tongChi,
-                    'loi_nhuan' => $tongThu - $tongChi
-                ];
-            }
+            $tuNgay = $this->normalizeDate($_GET['tu_ngay'] ?? date('Y-m-01'));
+            $denNgay = $this->normalizeDate($_GET['den_ngay'] ?? date('Y-m-t'));
+            $tours = $this->buildTourFinancialRows($tuNgay, $denNgay);
             require __DIR__ . '/../views/admin/bao_cao_tai_chinh/thu_chi_tour.php';
         }
     private $giaoDichModel;
@@ -90,10 +73,45 @@ class BaoCaoTaiChinhController {
 
     // Hiển thị toàn bộ giao dịch của một tour
     public function giaoDichTheoTour() {
-        $tourId = $_GET['tour_id'] ?? null;
-        if ($tourId) {
+        $tourId = (int)($_GET['tour_id'] ?? 0);
+        if ($tourId > 0) {
             $giaoDichs = $this->giaoDichModel->getByTourId($tourId);
             $tour = $this->tourModel->findById($tourId);
+
+            $tongThu = 0.0;
+            $tongChiGD = 0.0;
+            foreach ($giaoDichs as $gd) {
+                $soTien = (float)($gd['so_tien'] ?? 0);
+                if (($gd['loai'] ?? '') === 'Thu') {
+                    $tongThu += $soTien;
+                } elseif (($gd['loai'] ?? '') === 'Chi') {
+                    $tongChiGD += $soTien;
+                }
+            }
+
+            $conn = $this->giaoDichModel->conn;
+            $stmtChiPhi = $conn->prepare("SELECT COALESCE(SUM(so_tien), 0)
+                                         FROM chi_phi_thuc_te
+                                         WHERE tour_id = ? AND trang_thai = 'DaDuyet'");
+            $stmtChiPhi->execute([$tourId]);
+            $tongChiThucTe = (float)$stmtChiPhi->fetchColumn();
+
+            $stmtBookings = $conn->prepare("SELECT
+                                                b.booking_id,
+                                                b.ngay_dat,
+                                                b.tong_tien,
+                                                b.trang_thai,
+                                                nd.ho_ten
+                                            FROM booking b
+                                            LEFT JOIN khach_hang kh ON kh.khach_hang_id = b.khach_hang_id
+                                            LEFT JOIN nguoi_dung nd ON nd.id = kh.nguoi_dung_id
+                                            WHERE b.tour_id = ?
+                                              AND (b.trang_thai IS NULL OR b.trang_thai <> 'DaHuy')
+                                            ORDER BY b.ngay_dat DESC, b.booking_id DESC");
+            $stmtBookings->execute([$tourId]);
+            $bookings = $stmtBookings->fetchAll(PDO::FETCH_ASSOC);
+
+            $loiNhuan = $tongThu - $tongChiGD - $tongChiThucTe;
             require __DIR__ . '/../views/admin/bao_cao_tai_chinh/chi_tiet_thu_chi_tour.php';
         } else {
             $_SESSION['error'] = 'Không tìm thấy tour.';
@@ -354,7 +372,8 @@ class BaoCaoTaiChinhController {
         }
         unset($item);
 
-        if ((($_GET['export'] ?? '') === 'csv')) {
+        $exportType = strtolower(trim((string)($_REQUEST['export'] ?? '')));
+        if ($exportType === 'csv') {
             $this->exportCongNoHdvCsv($congNoHDV);
             return;
         }
@@ -376,8 +395,14 @@ class BaoCaoTaiChinhController {
     private function exportCongNoHdvCsv(array $rows): void {
         $fileName = 'cong-no-hdv-' . date('Ymd-His') . '.csv';
 
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+
         header('Content-Type: text/csv; charset=UTF-8');
         header('Content-Disposition: attachment; filename="' . $fileName . '"');
+        header('Pragma: no-cache');
+        header('Expires: 0');
 
         $out = fopen('php://output', 'w');
         if ($out === false) {
@@ -425,30 +450,29 @@ class BaoCaoTaiChinhController {
     
     // Báo cáo lãi lỗ từng tour
     public function laiLoTour() {
-        $tuNgay = $_GET['tu_ngay'] ?? date('Y-m-01');
-        $denNgay = $_GET['den_ngay'] ?? date('Y-m-t');
-        
-        $tours = $this->tourModel->getOptions(500);
-        
+        $tuNgay = $this->normalizeDate($_GET['tu_ngay'] ?? date('Y-m-01'));
+        $denNgay = $this->normalizeDate($_GET['den_ngay'] ?? date('Y-m-t'));
+
         $baoCao = [];
-        foreach ($tours as $tour) {
-            $tongThu = $this->giaoDichModel->getTongThuByTour($tour['tour_id']);
-            $tongChi = $this->giaoDichModel->getTongChiByTour($tour['tour_id']);
-            $loiNhuan = $tongThu - $tongChi;
-            $tyLe = $tongThu > 0 ? ($loiNhuan / $tongThu * 100) : 0;
-            
+        foreach ($this->buildTourFinancialRows($tuNgay, $denNgay) as $tour) {
+            $doanhThu = (float)($tour['tong_thu'] ?? 0);
+            $chiPhi = (float)($tour['tong_chi_thuc_te'] ?? 0);
+            $loiNhuan = $doanhThu - $chiPhi;
             $baoCao[] = [
-                'tour' => $tour,
-                'doanh_thu' => $tongThu,
-                'chi_phi' => $tongChi,
+                'tour' => [
+                    'tour_id' => $tour['tour_id'] ?? null,
+                    'ten_tour' => $tour['ten_tour'] ?? '',
+                    'loai_tour' => $tour['loai_tour'] ?? '',
+                ],
+                'doanh_thu' => $doanhThu,
+                'chi_phi' => $chiPhi,
                 'loi_nhuan' => $loiNhuan,
-                'ty_suat' => $tyLe
+                'ty_suat' => $doanhThu > 0 ? ($loiNhuan / $doanhThu * 100) : 0,
             ];
         }
-        
-        // Sắp xếp theo lợi nhuận giảm dần
+
         usort($baoCao, function($a, $b) {
-            return $b['loi_nhuan'] - $a['loi_nhuan'];
+            return (float)$b['loi_nhuan'] <=> (float)$a['loi_nhuan'];
         });
         
         require __DIR__ . '/../views/admin/bao_cao_tai_chinh/lai_lo_tour.php';
@@ -481,12 +505,15 @@ class BaoCaoTaiChinhController {
     }
 
     private function buildExportPayload($loaiBaoCao) {
+        $tuNgay = $this->normalizeDate($_GET['tu_ngay'] ?? date('Y-m-01'));
+        $denNgay = $this->normalizeDate($_GET['den_ngay'] ?? date('Y-m-t'));
+
         switch ($loaiBaoCao) {
             case 'lai_lo_tour':
                 $rows = [];
-                foreach ($this->tourModel->getOptions(500) as $tour) {
-                    $doanhThu = (float)$this->giaoDichModel->getTongThuByTour($tour['tour_id']);
-                    $chiPhi = (float)$this->giaoDichModel->getTongChiByTour($tour['tour_id']);
+                foreach ($this->buildTourFinancialRows($tuNgay, $denNgay) as $tour) {
+                    $doanhThu = (float)($tour['tong_thu'] ?? 0);
+                    $chiPhi = (float)($tour['tong_chi_thuc_te'] ?? 0);
                     $loiNhuan = $doanhThu - $chiPhi;
                     $tySuat = $doanhThu > 0 ? ($loiNhuan / $doanhThu * 100) : 0;
                     $rows[] = [
@@ -499,7 +526,9 @@ class BaoCaoTaiChinhController {
                 }
 
                 usort($rows, function ($left, $right) {
-                    return strcmp((string)$left[0], (string)$right[0]);
+                    $leftValue = (float)str_replace([' VND', ',', ' '], '', (string)$left[3]);
+                    $rightValue = (float)str_replace([' VND', ',', ' '], '', (string)$right[3]);
+                    return $rightValue <=> $leftValue;
                 });
 
                 return [
@@ -509,11 +538,11 @@ class BaoCaoTaiChinhController {
                 ];
 
             case 'thu_chi_tour':
-                $stats = $this->giaoDichModel->getThuChiTatCaTour();
+                $stats = $this->buildTourFinancialRows($tuNgay, $denNgay);
                 $rows = [];
                 foreach ($stats as $stat) {
                     $tongThu = (float)($stat['tong_thu'] ?? 0);
-                    $tongChi = (float)($stat['tong_chi'] ?? 0);
+                    $tongChi = (float)($stat['tong_chi_thuc_te'] ?? 0);
                     $rows[] = [
                         (string)($stat['ten_tour'] ?? ''),
                         (string)($stat['loai_tour'] ?? ''),
@@ -659,6 +688,96 @@ class BaoCaoTaiChinhController {
         }
 
         return 'index.php?act=admin/baoCaoTaiChinh';
+    }
+
+    private function normalizeDate($value) {
+        $raw = trim((string)$value);
+        if ($raw === '') {
+            return '';
+        }
+
+        $date = DateTime::createFromFormat('Y-m-d', $raw);
+        if ($date === false) {
+            return '';
+        }
+
+        return $date->format('Y-m-d');
+    }
+
+    private function buildTourFinancialRows($startDate = '', $endDate = '') {
+        $stats = $this->giaoDichModel->getThuChiTatCaTour($startDate ?: null, $endDate ?: null);
+        $conn = $this->giaoDichModel->conn;
+
+        $chiPhiSql = "SELECT tour_id, COALESCE(SUM(so_tien), 0) AS tong_chi_thuc_te
+                      FROM chi_phi_thuc_te
+                      WHERE trang_thai = 'DaDuyet'";
+        $chiPhiParams = [];
+        if ($startDate !== '') {
+            $chiPhiSql .= ' AND ngay_phat_sinh >= ?';
+            $chiPhiParams[] = $startDate;
+        }
+        if ($endDate !== '') {
+            $chiPhiSql .= ' AND ngay_phat_sinh <= ?';
+            $chiPhiParams[] = $endDate;
+        }
+        $chiPhiSql .= ' GROUP BY tour_id';
+        $stmtChiPhi = $conn->prepare($chiPhiSql);
+        $stmtChiPhi->execute($chiPhiParams);
+
+        $chiPhiByTour = [];
+        foreach ($stmtChiPhi->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $chiPhiByTour[(int)($row['tour_id'] ?? 0)] = (float)($row['tong_chi_thuc_te'] ?? 0);
+        }
+
+        $stmtDuToan = $conn->prepare("SELECT tour_id, COALESCE(SUM(tong_du_toan), 0) AS tong_du_toan
+                                      FROM du_toan_tour
+                                      GROUP BY tour_id");
+        $stmtDuToan->execute();
+
+        $duToanByTour = [];
+        foreach ($stmtDuToan->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $duToanByTour[(int)($row['tour_id'] ?? 0)] = (float)($row['tong_du_toan'] ?? 0);
+        }
+
+        $rows = [];
+        foreach ($stats as $stat) {
+            $tourId = (int)($stat['tour_id'] ?? 0);
+            if ($tourId <= 0) {
+                continue;
+            }
+
+            $tongThu = (float)($stat['tong_thu'] ?? 0);
+            $tongChiGD = (float)($stat['tong_chi'] ?? 0);
+            $tongChiThucTe = (float)($chiPhiByTour[$tourId] ?? 0);
+            $tongDuToan = (float)($duToanByTour[$tourId] ?? 0);
+            $status = 'AnToan';
+
+            if ($tongDuToan > 0) {
+                if ($tongChiThucTe > $tongDuToan) {
+                    $status = 'VuotDuToan';
+                } elseif ($tongChiThucTe >= ($tongDuToan * 0.9)) {
+                    $status = 'GanVuot';
+                }
+            }
+
+            $rows[] = [
+                'tour_id' => $tourId,
+                'ten_tour' => (string)($stat['ten_tour'] ?? ''),
+                'loai_tour' => (string)($stat['loai_tour'] ?? ''),
+                'tong_thu' => $tongThu,
+                'tong_chi_giao_dich' => $tongChiGD,
+                'tong_chi_thuc_te' => $tongChiThucTe,
+                'tong_du_toan' => $tongDuToan,
+                'loi_nhuan' => $tongThu - $tongChiThucTe,
+                'status' => $status,
+            ];
+        }
+
+        usort($rows, function ($a, $b) {
+            return (float)$b['loi_nhuan'] <=> (float)$a['loi_nhuan'];
+        });
+
+        return $rows;
     }
     
     // Helper: Lấy top tours theo doanh thu
@@ -1111,15 +1230,14 @@ class BaoCaoTaiChinhController {
 
             if (!empty($bookingIds)) {
                 $placeholders = implode(',', array_fill(0, count($bookingIds), '?'));
-                $sqlHistory = "SELECT
-                                    b.booking_id,
-                                    gdtc.ngay_giao_dich AS ngay,
-                                    gdtc.so_tien
-                               FROM booking b
-                               INNER JOIN giao_dich_tai_chinh gdtc ON gdtc.tour_id = b.tour_id
-                               WHERE b.booking_id IN ($placeholders)
+                                $sqlHistory = "SELECT
+                                                                        gdtc.booking_id,
+                                                                        gdtc.ngay_giao_dich AS ngay,
+                                                                        gdtc.so_tien
+                                                             FROM giao_dich_tai_chinh gdtc
+                                                             WHERE gdtc.booking_id IN ($placeholders)
                                                                  AND gdtc.loai = 'Thu'
-                               ORDER BY b.booking_id ASC, gdtc.ngay_giao_dich ASC";
+                                                             ORDER BY gdtc.booking_id ASC, gdtc.ngay_giao_dich ASC";
                 $stmtHistory = $conn->prepare($sqlHistory);
                 $stmtHistory->execute($bookingIds);
                 $historyRows = $stmtHistory->fetchAll(PDO::FETCH_ASSOC);

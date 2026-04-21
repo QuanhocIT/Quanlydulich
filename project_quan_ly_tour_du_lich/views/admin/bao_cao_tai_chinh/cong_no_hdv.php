@@ -343,7 +343,7 @@ ob_start();
             <div class="filters-actions">
                 <button type="submit" class="btn"><i class="fas fa-filter"></i> Lọc</button>
                 <a class="btn btn-outline" href="index.php?act=admin/congNo"><i class="fas fa-rotate-left"></i> Xóa lọc</a>
-                <a class="btn btn-outline" href="index.php?act=admin/congNo&export=csv&hdv_id=<?= (int)($filters['hdv_id'] ?? 0) ?>&tour_id=<?= (int)($filters['tour_id'] ?? 0) ?>&status=<?= urlencode((string)($filters['status'] ?? '')) ?>&keyword=<?= urlencode((string)($filters['keyword'] ?? '')) ?>"><i class="fas fa-file-csv"></i> Xuất CSV</a>
+                <button type="submit" name="export" value="csv" class="btn btn-outline"><i class="fas fa-file-csv"></i> Xuất CSV</button>
             </div>
         </form>
     </div>

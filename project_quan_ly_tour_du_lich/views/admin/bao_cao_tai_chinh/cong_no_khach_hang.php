@@ -1,64 +1,114 @@
 <?php
-// $congNoKhachHang được truyền từ controller
+$pageTitle = 'Cong no khach hang';
+$currentPage = 'baoCaoTaiChinh';
+ob_start();
 ?>
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Công nợ khách hàng</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body { min-height: 100vh;}
-        .main-card {max-width: 80%; margin: 40px auto; background: #dcd4d4ff; border-radius: 18px; box-shadow: 0 8px 32px rgba(120,120,180,0.12); padding: 32px;}
-        .table th, .table td {vertical-align: middle;}
-        .table th {background: #9c99a3ff; color: #fff;}
-        .table td {background: #f8fafc;}
-        .fw-bold {font-weight: bold;}
-    </style>
-</head>
-<body>
-    <div class="main-card">
-        <h2 class="mb-4" style="color:#6a4bc6;"><i class="fas fa-user-friends"></i> Công nợ khách hàng (chỉ cọc)</h2>
-        <div class="table-responsive">
-            <table class="table table-bordered align-middle">
-                <thead>
-                    <tr>
-                        <th>Khách hàng</th>
-                        <th>Email</th>
-                        <th>SĐT</th>
-                        <th>Tour</th>
-                        <th>Số tiền nợ</th>
-                        <th>Ngày đặt</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php
-                    if (empty($congNoKhachHang)) {
-                        echo '<tr><td colspan="6" class="text-center text-muted">Không có công nợ nào</td></tr>';
-                    } else {
-                        foreach ($congNoKhachHang as $row) {
-                            echo '<tr>';
-                            echo '<td>' . htmlspecialchars($row['ten_khach_hang'] ?? 'N/A') . '</td>';
-                            echo '<td>' . htmlspecialchars($row['email'] ?? '') . '</td>';
-                            echo '<td>' . htmlspecialchars($row['so_dien_thoai'] ?? '') . '</td>';
-                            echo '<td>' . htmlspecialchars($row['ten_tour']) . '</td>';
-                            echo '<td class="text-danger fw-bold">' . number_format($row['cong_no']) . 'đ</td>';
-                            echo '<td>';
-                            if (!empty($row['lich_su_thanh_toan'])) {
-                                foreach ($row['lich_su_thanh_toan'] as $ls) {
-                                    echo '<div style="font-size:13px;color:#6a4bc6">' . date('d/m/Y', strtotime($ls['ngay'])) . ': ' . number_format($ls['so_tien']) . 'đ</div>';
-                                }
-                            }
-                            echo '</td>';
-                            echo '</tr>';
-                        }
-                    }
-                    ?>
-                </tbody>
-            </table>
-        </div>
+<style>
+    .report-card {
+        background: rgba(45, 45, 45, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+        padding: 25px;
+        backdrop-filter: blur(10px);
+        overflow-x: auto;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        color: var(--text-light);
+    }
+    th, td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        vertical-align: top;
+    }
+    th {
+        background: rgba(45, 45, 45, 0.7);
+        color: var(--text-light);
+        font-weight: 600;
+    }
+    tr:hover {
+        background: rgba(255, 255, 255, 0.05);
+    }
+    .debt-value {
+        color: #ef4444;
+        font-weight: 700;
+    }
+    .history-item {
+        font-size: 13px;
+        color: var(--text-muted);
+        margin-bottom: 4px;
+    }
+    .btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 8px;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--accent-gold);
+        color: #000;
+        font-weight: 500;
+    }
+</style>
+
+<div style="padding: 20px; max-width: 1400px; margin: 0 auto;">
+    <div class="page-header-section" style="margin-bottom: 30px;">
+        <h1 style="margin: 0 0 10px 0; font-size: 2rem; color: var(--text-light);">
+            <i class="fas fa-user-friends" style="color: var(--accent-gold);"></i> Cong no khach hang
+        </h1>
+        <a href="index.php?act=admin/congNo" class="btn">
+            <i class="fas fa-arrow-left"></i> Quay lai cong no HDV
+        </a>
     </div>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
-</body>
-</html>
+
+    <div class="report-card">
+        <table>
+            <thead>
+                <tr>
+                    <th>Khach hang</th>
+                    <th>Email</th>
+                    <th>So dien thoai</th>
+                    <th>Tour</th>
+                    <th>Cong no</th>
+                    <th>Lich su thanh toan</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php if (empty($congNoKhachHang)): ?>
+                    <tr>
+                        <td colspan="6" style="text-align:center;color:#999;">Khong co cong no nao</td>
+                    </tr>
+                <?php else: ?>
+                    <?php foreach ($congNoKhachHang as $row): ?>
+                        <tr>
+                            <td><?= htmlspecialchars($row['ten_khach_hang'] ?? 'N/A') ?></td>
+                            <td><?= htmlspecialchars($row['email'] ?? '') ?></td>
+                            <td><?= htmlspecialchars($row['so_dien_thoai'] ?? '') ?></td>
+                            <td><?= htmlspecialchars($row['ten_tour'] ?? 'N/A') ?></td>
+                            <td class="debt-value"><?= number_format((float)($row['cong_no'] ?? 0)) ?>đ</td>
+                            <td>
+                                <?php if (!empty($row['lich_su_thanh_toan'])): ?>
+                                    <?php foreach ($row['lich_su_thanh_toan'] as $ls): ?>
+                                        <div class="history-item">
+                                            <?= date('d/m/Y', strtotime((string)($ls['ngay'] ?? 'now'))) ?>: <?= number_format((float)($ls['so_tien'] ?? 0)) ?>đ
+                                        </div>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <span style="color: var(--text-muted);">Chua thanh toan</span>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<?php
+$content = ob_get_clean();
+require __DIR__ . '/../../layouts/aventura.php';
+?>

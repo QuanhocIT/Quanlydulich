@@ -1,0 +1,145 @@
+/* Unified style for financial report pages (page-baoCaoTaiChinh). */
+
+body.page-baoCaoTaiChinh .content-area {
+  padding: 34px 48px 56px;
+  background:
+    radial-gradient(circle at 12% 8%, rgba(32, 178, 170, 0.08), transparent 28%),
+    radial-gradient(circle at 84% 16%, rgba(212, 175, 55, 0.1), transparent 30%),
+    linear-gradient(135deg, #131616 0%, #181b1c 48%, #111313 100%);
+}
+
+body.page-baoCaoTaiChinh .content-area > div {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+body.page-baoCaoTaiChinh .page-header-section {
+  min-height: 150px;
+  padding: 28px 34px !important;
+  border: 1px solid rgba(212, 175, 55, 0.22);
+  border-radius: 8px;
+  background:
+    linear-gradient(90deg, rgba(22, 24, 24, 0.94) 0%, rgba(34, 34, 25, 0.9) 54%, rgba(212, 175, 55, 0.48) 100%),
+    url('../images/logos/hinh-nen-viet-nam-4k10.jpg') center/cover;
+  box-shadow: 0 22px 48px rgba(0, 0, 0, 0.26);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+}
+
+body.page-baoCaoTaiChinh .page-header-section::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.35));
+  pointer-events: none;
+}
+
+body.page-baoCaoTaiChinh .page-header-section > * {
+  position: relative;
+  z-index: 1;
+}
+
+body.page-baoCaoTaiChinh .page-header-section h1 {
+  color: #ffe082 !important;
+  font-size: 2.1rem !important;
+  letter-spacing: 0;
+}
+
+body.page-baoCaoTaiChinh .stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 24px;
+  margin-bottom: 30px;
+}
+
+body.page-baoCaoTaiChinh .stat-card,
+body.page-baoCaoTaiChinh .report-card,
+body.page-baoCaoTaiChinh .info-card,
+body.page-baoCaoTaiChinh .stat-box {
+  background: rgba(28, 30, 31, 0.8) !important;
+  border: 1px solid rgba(212, 175, 55, 0.2) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 18px 38px rgba(0, 0, 0, 0.2);
+}
+
+body.page-baoCaoTaiChinh .stat-card {
+  min-height: 112px;
+  border-left: 5px solid var(--accent-gold) !important;
+  padding: 26px !important;
+}
+
+body.page-baoCaoTaiChinh .report-card,
+body.page-baoCaoTaiChinh .info-card {
+  padding: 30px !important;
+  overflow-x: auto;
+}
+
+body.page-baoCaoTaiChinh table {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--text-light);
+  min-width: 980px;
+}
+
+body.page-baoCaoTaiChinh table th,
+body.page-baoCaoTaiChinh table td {
+  padding: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  text-align: left;
+  vertical-align: middle;
+}
+
+body.page-baoCaoTaiChinh table th {
+  background: linear-gradient(90deg, rgba(212, 175, 55, 0.16), rgba(255, 255, 255, 0.04)) !important;
+  color: #d4af37 !important;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+body.page-baoCaoTaiChinh table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+body.page-baoCaoTaiChinh .btn,
+body.page-baoCaoTaiChinh button,
+body.page-baoCaoTaiChinh a[style*='accent-gold'] {
+  min-height: 44px;
+  border-radius: 8px !important;
+  font-weight: 700 !important;
+  box-shadow: 0 10px 22px rgba(212, 175, 55, 0.14);
+}
+
+body.page-baoCaoTaiChinh input,
+body.page-baoCaoTaiChinh select,
+body.page-baoCaoTaiChinh textarea {
+  border: 1px solid rgba(212, 175, 55, 0.28) !important;
+  background: rgba(20, 23, 23, 0.75) !important;
+  color: var(--text-light) !important;
+  border-radius: 8px;
+}
+
+body.page-baoCaoTaiChinh .badge-thu,
+body.page-baoCaoTaiChinh .badge-chi {
+  border-radius: 8px;
+  font-weight: 700;
+  padding: 7px 12px;
+}
+
+@media (max-width: 992px) {
+  body.page-baoCaoTaiChinh .content-area {
+    padding: 24px 18px 44px;
+  }
+
+  body.page-baoCaoTaiChinh .page-header-section h1 {
+    font-size: 1.65rem !important;
+  }
+
+  body.page-baoCaoTaiChinh table {
+    min-width: 860px;
+  }
+}

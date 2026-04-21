@@ -1045,6 +1045,81 @@ public function themYeuCauDacBiet() {
     exit();
 }
 
+    public function suaYeuCauDacBiet() {
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+            header('Location: index.php?act=lichKhoiHanh/index');
+            exit();
+        }
+
+        $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+        $lichKhoiHanhId = isset($_POST['lich_khoi_hanh_id']) ? (int)$_POST['lich_khoi_hanh_id'] : 0;
+
+        if ($id <= 0) {
+            $_SESSION['error'] = 'Yêu cầu đặc biệt không hợp lệ.';
+            header('Location: index.php?act=lichKhoiHanh/chiTiet&id=' . $lichKhoiHanhId);
+            exit();
+        }
+
+        $loaiMap = [
+            'ThucPham' => 'an_uong',
+            'YTe' => 'suc_khoe',
+            'DichVu' => 'phong_o',
+            'NguNgu' => 'phong_o',
+            'AnToan' => 'an_toan',
+            'Khac' => 'khac'
+        ];
+        $mucDoMap = [
+            'RatCao' => 'khan_cap',
+            'Cao' => 'cao',
+            'Trung' => 'trung_binh',
+            'Thap' => 'thap'
+        ];
+        $trangThaiMap = [
+            'Moi' => 'moi',
+            'DangXuLy' => 'dang_xu_ly',
+            'HoanTat' => 'da_giai_quyet',
+            'KhongTheXuLy' => 'khong_the_thuc_hien'
+        ];
+
+        $loaiInput = $_POST['loai_yeu_cau'] ?? 'Khac';
+        $mucDoInput = $_POST['muc_do_uu_tien'] ?? 'Trung';
+        $trangThaiInput = $_POST['trang_thai'] ?? 'Moi';
+        $noiDung = trim((string)($_POST['noi_dung'] ?? ''));
+
+        if ($noiDung === '') {
+            $_SESSION['error'] = 'Nội dung yêu cầu không được để trống.';
+            header('Location: index.php?act=lichKhoiHanh/chiTiet&id=' . $lichKhoiHanhId);
+            exit();
+        }
+
+        $conn = connectDB();
+        $sql = "UPDATE yeu_cau_dac_biet
+                SET loai_yeu_cau = ?,
+                    muc_do_uu_tien = ?,
+                    trang_thai = ?,
+                    mo_ta = ?,
+                    ngay_cap_nhat = NOW()
+                WHERE id = ?";
+
+        $stmt = $conn->prepare($sql);
+        $ok = $stmt->execute([
+            $loaiMap[$loaiInput] ?? 'khac',
+            $mucDoMap[$mucDoInput] ?? 'trung_binh',
+            $trangThaiMap[$trangThaiInput] ?? 'moi',
+            $noiDung,
+            $id
+        ]);
+
+        if ($ok) {
+            $_SESSION['success'] = 'Đã cập nhật yêu cầu đặc biệt.';
+        } else {
+            $_SESSION['error'] = 'Không thể cập nhật yêu cầu đặc biệt.';
+        }
+
+        header('Location: index.php?act=lichKhoiHanh/chiTiet&id=' . $lichKhoiHanhId);
+        exit();
+    }
+
     public function xoaYeuCauDacBiet() {
         if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
             header('Location: index.php?act=lichKhoiHanh/index');
@@ -1194,6 +1269,63 @@ public function themYeuCauDacBiet() {
         // Quay về chi tiết lịch khởi hành
         header('Location: index.php?act=lichKhoiHanh/chiTiet&id=' . $lichId);
         exit;
+    }
+
+    public function suaNhatKy() {
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+            header('Location: index.php?act=lichKhoiHanh/index');
+            exit();
+        }
+
+        $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+        $lichKhoiHanhId = isset($_POST['lich_khoi_hanh_id']) ? (int)$_POST['lich_khoi_hanh_id'] : 0;
+        $loaiSuKien = trim((string)($_POST['loai_su_kien'] ?? ''));
+        $noiDung = trim((string)($_POST['noi_dung'] ?? ''));
+        $thoiGian = trim((string)($_POST['thoi_gian_su_kien'] ?? ''));
+
+        if ($id <= 0 || $noiDung === '') {
+            $_SESSION['error'] = 'Thông tin nhật ký không hợp lệ.';
+            header('Location: index.php?act=lichKhoiHanh/chiTiet&id=' . $lichKhoiHanhId);
+            exit();
+        }
+
+        $conn = connectDB();
+        $stmt = $conn->prepare('SELECT id, tour_id, nhan_su_id FROM nhat_ky_tour WHERE id = ? LIMIT 1');
+        $stmt->execute([$id]);
+        $existing = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$existing) {
+            $_SESSION['error'] = 'Không tìm thấy nhật ký cần sửa.';
+            header('Location: index.php?act=lichKhoiHanh/chiTiet&id=' . $lichKhoiHanhId);
+            exit();
+        }
+
+        $contentToSave = $noiDung;
+        if ($loaiSuKien !== '') {
+            $contentToSave = $loaiSuKien . ' - ' . $noiDung;
+        }
+
+        $ngayGhi = date('Y-m-d H:i:s');
+        if ($thoiGian !== '') {
+            $ngayGhi = date('Y-m-d H:i:s', strtotime(str_replace('T', ' ', $thoiGian)));
+        }
+
+        require_once 'models/NhatKyTour.php';
+        $nhatKyModel = new NhatKyTour();
+        $ok = $nhatKyModel->update($id, (int)($existing['nhan_su_id'] ?? 0), [
+            'tour_id' => (int)($existing['tour_id'] ?? 0),
+            'noi_dung' => $contentToSave,
+            'ngay_ghi' => $ngayGhi,
+        ]);
+
+        if ($ok) {
+            $_SESSION['success'] = 'Đã cập nhật nhật ký.';
+        } else {
+            $_SESSION['error'] = 'Không thể cập nhật nhật ký.';
+        }
+
+        header('Location: index.php?act=lichKhoiHanh/chiTiet&id=' . $lichKhoiHanhId);
+        exit();
     }
 
     public function xoaNhatKy() {
