@@ -293,6 +293,21 @@ body.theme-business-dark {
   display: none;
 }
 
+.mobile-sidebar-close {
+  display: none;
+}
+
+@keyframes mobileSidebarSheetIn {
+  0% {
+    transform: translateX(calc(-100% - 20px)) scale(0.98);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+  }
+}
+
 .nav-group-label {
   color: var(--text-muted);
   font-size: 11px;
@@ -1121,6 +1136,11 @@ body.role-admin .aventura-badge.badge-warning {
 }
 
 @media (max-width: 768px) {
+  body.mobile-sidebar-scroll-lock {
+    overflow: hidden;
+    touch-action: none;
+  }
+
   .container {
     flex-direction: column;
   }
@@ -1131,7 +1151,7 @@ body.role-admin .aventura-badge.badge-warning {
     padding: 15px;
     flex-wrap: wrap;
     gap: 10px;
-    z-index: 420;
+    z-index: 460;
   }
 
   .header-left,
@@ -1150,9 +1170,9 @@ body.role-admin .aventura-badge.badge-warning {
   .sidebar {
     width: min(320px, calc(100vw - 18px));
     max-width: calc(100vw - 18px);
-    height: calc(100dvh - 86px);
+    height: min(calc(100dvh - var(--mobile-header-height, 88px) - 16px), 640px);
     position: fixed;
-    top: 72px;
+    top: calc(var(--mobile-header-height, 88px) + 8px);
     left: 10px;
     margin-left: 0 !important;
     padding: 18px 16px 24px;
@@ -1166,10 +1186,33 @@ body.role-admin .aventura-badge.badge-warning {
     pointer-events: none;
   }
 
-  body:not(.sidebar-hidden) .sidebar {
+  body.mobile-sidebar-open .sidebar {
     transform: translateX(0) !important;
     opacity: 1 !important;
     pointer-events: auto !important;
+    animation: mobileSidebarSheetIn 0.24s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  .mobile-sidebar-close {
+    display: inline-flex;
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.07);
+    color: var(--text-light);
+    z-index: 2;
+  }
+
+  .mobile-sidebar-close:hover {
+    background: rgba(212, 175, 55, 0.2);
+    border-color: rgba(212, 175, 55, 0.55);
+    color: var(--accent-gold);
   }
 
   .main-content {
@@ -1205,7 +1248,7 @@ body.role-admin .aventura-badge.badge-warning {
 
   .sidebar .nav {
     display: block !important;
-    margin-top: 8px;
+    margin-top: 0 !important;
     list-style: none;
   }
 
@@ -1223,41 +1266,67 @@ body.role-admin .aventura-badge.badge-warning {
     padding-right: 4px;
   }
 
-  body:not(.sidebar-hidden) .sidebar .logo-subtitle,
-  body:not(.sidebar-hidden) .sidebar .nav-group-label,
-  body:not(.sidebar-hidden) .sidebar .nav,
-  body:not(.sidebar-hidden) .sidebar .nav .nav-text,
-  body:not(.sidebar-hidden) .sidebar .expand-icon,
-  body:not(.sidebar-hidden) .sidebar .nav-badge,
-  body:not(.sidebar-hidden) .sidebar .nav-child-menu,
-  body:not(.sidebar-hidden) .sidebar #realtimeStatus {
+  body.mobile-sidebar-open .sidebar .nav-group-label,
+  body.mobile-sidebar-open .sidebar .nav,
+  body.mobile-sidebar-open .sidebar .nav .nav-text,
+  body.mobile-sidebar-open .sidebar .expand-icon,
+  body.mobile-sidebar-open .sidebar .nav-badge,
+  body.mobile-sidebar-open .sidebar .nav-child-menu,
+  body.mobile-sidebar-open .sidebar #realtimeStatus,
+  .sidebar:not(.collapsed) .nav-group-label,
+  .sidebar:not(.collapsed) .nav,
+  .sidebar:not(.collapsed) .nav .nav-text,
+  .sidebar:not(.collapsed) .expand-icon,
+  .sidebar:not(.collapsed) .nav-badge,
+  .sidebar:not(.collapsed) .nav-child-menu {
     display: block !important;
     opacity: 1 !important;
     visibility: visible !important;
   }
 
-  body:not(.sidebar-hidden) .sidebar .nav a,
-  body:not(.sidebar-hidden) .sidebar .nav-toggle {
+  body.mobile-sidebar-open .sidebar .nav a,
+  body.mobile-sidebar-open .sidebar .nav-toggle {
     display: flex !important;
   }
 
-  body:not(.sidebar-hidden) .sidebar .nav-badge {
+  body.mobile-sidebar-open .sidebar .nav-badge {
     display: inline-flex !important;
   }
 
-  body:not(.sidebar-hidden) .sidebar .expand-icon {
+  body.mobile-sidebar-open .sidebar .expand-icon {
     display: inline-flex !important;
     margin-left: auto;
   }
 
-  body:not(.sidebar-hidden) .sidebar .realtime-status {
+  body.mobile-sidebar-open .sidebar .realtime-status {
     display: none !important;
   }
 
-  body:not(.sidebar-hidden) .sidebar .text-widget,
-  body:not(.sidebar-hidden) .sidebar .social-icons,
-  body:not(.sidebar-hidden) .sidebar .copyright {
+  .sidebar:not(.collapsed) .logo,
+  .sidebar:not(.collapsed) .logo-subtitle,
+  .sidebar:not(.collapsed) .realtime-status,
+  body.mobile-sidebar-open .sidebar .text-widget,
+  body.mobile-sidebar-open .sidebar .social-icons,
+  body.mobile-sidebar-open .sidebar .copyright {
     display: none !important;
+  }
+
+  .sidebar:not(.collapsed) .text-widget,
+  .sidebar:not(.collapsed) .social-icons,
+  .sidebar:not(.collapsed) .copyright {
+    display: none !important;
+  }
+
+  .sidebar:not(.collapsed) .nav,
+  .sidebar:not(.collapsed) .nav-group-label,
+  .sidebar:not(.collapsed) .nav a,
+  .sidebar:not(.collapsed) .nav-toggle,
+  .sidebar:not(.collapsed) .nav .nav-text,
+  .sidebar:not(.collapsed) .expand-icon,
+  .sidebar:not(.collapsed) .nav-badge,
+  .sidebar:not(.collapsed) .nav-child-menu {
+    opacity: 1 !important;
+    visibility: visible !important;
   }
 
   .sidebar.collapsed {
@@ -1276,17 +1345,20 @@ body.role-admin .aventura-badge.badge-warning {
   .mobile-sidebar-backdrop {
     display: block;
     position: fixed;
-    inset: 0;
+    top: var(--mobile-header-height, 88px);
+    right: 0;
+    bottom: 0;
+    left: 0;
     z-index: 340;
-    background: rgba(4, 8, 15, 0.56);
-    backdrop-filter: blur(4px);
+    background: rgba(4, 8, 15, 0.38);
+    backdrop-filter: blur(2px);
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.22s ease;
     border: 0;
   }
 
-  body:not(.sidebar-hidden) .mobile-sidebar-backdrop {
+  body.mobile-sidebar-open .mobile-sidebar-backdrop {
     opacity: 1;
     pointer-events: auto;
   }
@@ -1301,6 +1373,66 @@ body.role-admin .aventura-badge.badge-warning {
   .sidebar-toggle {
     position: relative;
     z-index: 430;
+  }
+}
+
+@media (max-width: 390px) {
+  .sidebar {
+    width: calc(100vw - 14px);
+    max-width: calc(100vw - 14px);
+    left: 7px;
+    top: calc(var(--mobile-header-height, 88px) + 6px);
+    height: min(calc(100dvh - var(--mobile-header-height, 88px) - 14px), 620px);
+    padding: 14px 12px 18px;
+    border-radius: 18px;
+  }
+
+  .sidebar .logo {
+    font-size: 30px;
+    margin-left: 8px;
+    margin-bottom: 18px;
+  }
+
+  .sidebar .nav {
+    margin-top: 4px;
+  }
+
+  .sidebar .nav li {
+    margin-bottom: 8px;
+  }
+
+  .sidebar .nav a {
+    min-height: 40px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    gap: 10px;
+    font-size: 14px;
+  }
+
+  .sidebar .nav-icon-bg {
+    width: 24px;
+    min-width: 24px;
+    height: 24px;
+    border-radius: 6px;
+  }
+
+  .sidebar .nav-group-label {
+    font-size: 10px;
+    padding-top: 10px;
+    padding-bottom: 6px;
+  }
+
+  .sidebar .nav-child-menu a {
+    font-size: 13px;
+    min-height: 36px;
+  }
+
+  .mobile-sidebar-close {
+    top: 8px;
+    right: 8px;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
   }
 }
 
@@ -1335,5 +1467,9 @@ body.role-admin .aventura-badge.badge-warning {
     transform: none !important;
     opacity: 1 !important;
     filter: none !important;
+  }
+
+  body.mobile-sidebar-open .sidebar {
+    animation: none !important;
   }
 }

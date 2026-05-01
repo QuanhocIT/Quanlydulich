@@ -65,6 +65,9 @@ if ($realtimeWsEnabled && isset($_SESSION['user_id']) && $currentRole !== null) 
         <aside class="sidebar" id="sidebar">
             <div class="logo">AVENTURA</div>
             <div class="logo-subtitle">LIFE'S A JOURNEY</div>
+            <button type="button" class="mobile-sidebar-close" id="mobileSidebarClose" aria-label="Đóng menu điều hướng">
+                <i class="bi bi-x-lg"></i>
+            </button>
             <?php if ($isAdminRole): ?>
                 <div id="realtimeStatus" class="realtime-status is-connecting" title="Trạng thái kết nối thông báo realtime">
                     <span id="realtimeStatusDot" class="realtime-status-dot"></span>
@@ -237,6 +240,7 @@ if ($realtimeWsEnabled && isset($_SESSION['user_id']) && $currentRole !== null) 
         const sidebarToggle = document.getElementById('sidebarToggle');
         const sidebarTheme = document.getElementById('sidebarTheme');
         const mobileSidebarBackdrop = document.getElementById('mobileSidebarBackdrop');
+        const mobileSidebarClose = document.getElementById('mobileSidebarClose');
         const realtimeStatus = document.getElementById('realtimeStatus');
         const realtimeStatusText = document.getElementById('realtimeStatusText');
         const dashboardNavBadge = document.getElementById('dashboardNavBadge');
@@ -564,10 +568,74 @@ if ($realtimeWsEnabled && isset($_SESSION['user_id']) && $currentRole !== null) 
             }
         }
 
+        function enforceMobileSidebarNavVisibility(isMobileOpen) {
+            if (!sidebar) return;
+
+            const nav = sidebar.querySelector('.nav');
+            if (nav) {
+                if (isMobileOpen) {
+                    nav.style.setProperty('display', 'block', 'important');
+                    nav.style.setProperty('opacity', '1', 'important');
+                    nav.style.setProperty('visibility', 'visible', 'important');
+                    nav.style.setProperty('margin-top', '0', 'important');
+                } else {
+                    nav.style.removeProperty('display');
+                    nav.style.removeProperty('opacity');
+                    nav.style.removeProperty('visibility');
+                    nav.style.removeProperty('margin-top');
+                }
+            }
+
+            sidebar.querySelectorAll('.nav li, .nav a, .nav-toggle, .nav-text, .expand-icon, .nav-group-label, .nav-child-menu').forEach(function(node) {
+                if (isMobileOpen) {
+                    node.style.setProperty('opacity', '1', 'important');
+                    node.style.setProperty('visibility', 'visible', 'important');
+                } else {
+                    node.style.removeProperty('opacity');
+                    node.style.removeProperty('visibility');
+                }
+            });
+
+            sidebar.querySelectorAll('.nav a, .nav-toggle').forEach(function(node) {
+                if (isMobileOpen) {
+                    node.style.setProperty('display', 'flex', 'important');
+                    node.style.setProperty('align-items', 'center', 'important');
+                } else {
+                    node.style.removeProperty('display');
+                    node.style.removeProperty('align-items');
+                }
+            });
+
+            sidebar.querySelectorAll('.text-widget, .social-icons, .copyright, .logo-subtitle, .realtime-status').forEach(function(node) {
+                if (isMobileOpen) {
+                    node.style.setProperty('display', 'none', 'important');
+                } else {
+                    node.style.removeProperty('display');
+                }
+            });
+        }
+
         function applySidebarState() {
             if (!sidebar) return;
             const isCollapsed = sidebar.classList.contains('collapsed');
+            const isMobile = window.innerWidth <= 768;
+            const isMobileOpen = isMobile && !isCollapsed;
+
             document.body.classList.toggle('sidebar-hidden', isCollapsed);
+            document.body.classList.toggle('mobile-sidebar-open', isMobileOpen);
+            document.body.classList.toggle('mobile-sidebar-scroll-lock', isMobileOpen);
+
+            if (!isMobile) {
+                document.body.classList.remove('mobile-sidebar-open', 'mobile-sidebar-scroll-lock');
+            }
+
+            if (isMobileOpen) {
+                // Always show nav from the top when opening mobile sidebar.
+                sidebar.scrollTop = 0;
+            }
+
+            enforceMobileSidebarNavVisibility(isMobileOpen);
+
             setSidebarIcon();
         }
 
@@ -622,6 +690,20 @@ if ($realtimeWsEnabled && isset($_SESSION['user_id']) && $currentRole !== null) 
                     button.setAttribute('title', button.dataset.desktopTitle);
                 }
             });
+        }
+
+        function updateMobileHeaderMetrics() {
+            const header = document.querySelector('.header');
+            if (!header) return;
+
+            if (window.innerWidth > 768) {
+                document.body.style.removeProperty('--mobile-header-height');
+                return;
+            }
+
+            const rect = header.getBoundingClientRect();
+            const headerHeight = Math.max(64, Math.ceil(rect.height || 0));
+            document.body.style.setProperty('--mobile-header-height', headerHeight + 'px');
         }
 
         function initAdminMotion() {
@@ -733,6 +815,7 @@ if ($realtimeWsEnabled && isset($_SESSION['user_id']) && $currentRole !== null) 
         applySidebarState();
         setThemeIcon(appliedTheme);
         syncMobileUtilityTitles();
+        updateMobileHeaderMetrics();
         initAdminMotion();
 
         // Nav parent-child: cho phép mở nhiều menu con cùng lúc
@@ -773,6 +856,27 @@ if ($realtimeWsEnabled && isset($_SESSION['user_id']) && $currentRole !== null) 
             });
         }
 
+        if (mobileSidebarClose && sidebar) {
+            mobileSidebarClose.addEventListener('click', function() {
+                if (window.innerWidth > 768) return;
+                sidebar.classList.add('collapsed');
+                applySidebarState();
+                localStorage.setItem(STORAGE_KEYS.sidebarCollapsed, '1');
+            });
+        }
+
+        if (sidebar) {
+            sidebar.querySelectorAll('.nav a').forEach(function(link) {
+                if (link.classList.contains('nav-toggle')) return;
+                link.addEventListener('click', function() {
+                    if (window.innerWidth > 768) return;
+                    sidebar.classList.add('collapsed');
+                    applySidebarState();
+                    localStorage.setItem(STORAGE_KEYS.sidebarCollapsed, '1');
+                });
+            });
+        }
+
         // Dark/Light mode toggle
         if (sidebarTheme) {
             sidebarTheme.addEventListener('click', function() {
@@ -785,8 +889,21 @@ if ($realtimeWsEnabled && isset($_SESSION['user_id']) && $currentRole !== null) 
             });
         }
 
-        window.addEventListener('resize', syncMobileUtilityTitles, { passive: true });
-        window.addEventListener('resize', setSidebarIcon, { passive: true });
+        window.addEventListener('resize', function() {
+            updateMobileHeaderMetrics();
+            syncMobileUtilityTitles();
+            applySidebarState();
+        }, { passive: true });
+
+        document.addEventListener('keydown', function(event) {
+            if (event.key !== 'Escape') return;
+            if (window.innerWidth > 768) return;
+            if (!sidebar || sidebar.classList.contains('collapsed')) return;
+
+            sidebar.classList.add('collapsed');
+            applySidebarState();
+            localStorage.setItem(STORAGE_KEYS.sidebarCollapsed, '1');
+        });
 
         if (isAdminUser) {
             ['pointerdown', 'keydown'].forEach(function(eventName) {

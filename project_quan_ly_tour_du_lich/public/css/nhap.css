@@ -521,9 +521,44 @@ right: 0;
 top: 0;
 margin-top: 20px;
   }
-.nav {
-display: none;
-  }
+
+/* Mobile sidebar: always prioritize navigation visibility */
+.sidebar {
+max-height: calc(100dvh - 86px);
+overflow-y: auto;
+}
+
+.sidebar .nav {
+display: block !important;
+margin-top: 0 !important;
+list-style: none;
+}
+
+.sidebar .nav-group-label,
+.sidebar .nav li,
+.sidebar .nav a,
+.sidebar .nav .nav-text,
+.sidebar .expand-icon,
+.sidebar .nav-child-menu {
+display: block !important;
+opacity: 1 !important;
+visibility: visible !important;
+}
+
+.sidebar .nav a,
+.sidebar .nav-toggle {
+display: flex !important;
+align-items: center;
+gap: 10px;
+}
+
+.sidebar .text-widget,
+.sidebar .social-icons,
+.sidebar .copyright,
+.sidebar .logo-subtitle,
+.sidebar .realtime-status {
+display: none !important;
+}
 }
 /* Scrollbar */
 ::-webkit-scrollbar {
