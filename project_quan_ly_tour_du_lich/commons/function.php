@@ -10,7 +10,7 @@ function connectDB() {
     return getPDOConnection();
 }
 
-function dbColumnExists($tableName, $columnName, $conn = null) {
+function dbColumnExists(string $tableName, string $columnName, ?PDO $conn = null) {
     static $columnCache = [];
 
     $tableName = trim((string)$tableName);
@@ -46,7 +46,7 @@ function cacheBaseDir() {
     return $dir;
 }
 
-function cacheFilePath($key) {
+function cacheFilePath(string $key) {
     $normalizedKey = trim((string)$key);
     if ($normalizedKey === '') {
         $normalizedKey = 'default';
@@ -55,7 +55,7 @@ function cacheFilePath($key) {
     return cacheBaseDir() . '/' . sha1($normalizedKey) . '.json';
 }
 
-function cacheRemember($key, $ttlSeconds, callable $resolver, $forceRefresh = false) {
+function cacheRemember(string $key, int $ttlSeconds, callable $resolver, bool $forceRefresh = false) {
     $ttlSeconds = max(1, (int)$ttlSeconds);
     $cachePath = cacheFilePath($key);
 
@@ -78,14 +78,14 @@ function cacheRemember($key, $ttlSeconds, callable $resolver, $forceRefresh = fa
     return $value;
 }
 
-function cacheForget($key) {
+function cacheForget(string $key) {
     $cachePath = cacheFilePath($key);
     if (is_file($cachePath)) {
         @unlink($cachePath);
     }
 }
 
-function cacheForgetByPrefix($prefix) {
+function cacheForgetByPrefix(string $prefix) {
     $prefix = trim((string)$prefix);
     if ($prefix === '') {
         return;
@@ -111,7 +111,7 @@ function cacheForgetByPrefix($prefix) {
     }
 }
 
-function ensureAdminNotificationStateTable($conn = null) {
+function ensureAdminNotificationStateTable(?PDO $conn = null) {
     static $initialized = false;
 
     $pdo = $conn instanceof PDO ? $conn : connectDB();
@@ -134,7 +134,7 @@ function ensureAdminNotificationStateTable($conn = null) {
     return true;
 }
 
-function getAdminNotificationBaseline($conn = null) {
+function getAdminNotificationBaseline(?PDO $conn = null) {
     $pdo = $conn instanceof PDO ? $conn : connectDB();
 
     $paymentsLastSeenId = 0;
@@ -159,7 +159,7 @@ function getAdminNotificationBaseline($conn = null) {
     ];
 }
 
-function getAdminNotificationState($userId, $conn = null) {
+function getAdminNotificationState(int $userId, ?PDO $conn = null) {
     $default = [
         'payments_last_seen_id' => 0,
         'reviews_last_seen_id' => 0,
@@ -198,7 +198,7 @@ function getAdminNotificationState($userId, $conn = null) {
     return $state;
 }
 
-function saveAdminNotificationState($userId, array $updates, $conn = null) {
+function saveAdminNotificationState(int $userId, array $updates, ?PDO $conn = null) {
     $userId = (int)$userId;
     if ($userId <= 0) {
         return [
@@ -238,8 +238,212 @@ function saveAdminNotificationState($userId, array $updates, $conn = null) {
     return $state;
 }
 
+function realtimeWebSocketEnabled() {
+    return defined('REALTIME_WS_ENABLED') && REALTIME_WS_ENABLED;
+}
+
+function realtimeWebSocketPublicUrl() {
+    $url = defined('REALTIME_WS_PUBLIC_URL') ? trim((string)REALTIME_WS_PUBLIC_URL) : '';
+    return rtrim($url, '/');
+}
+
+function realtimeBase64UrlEncode(string $data) {
+    return rtrim(strtr(base64_encode((string)$data), '+/', '-_'), '=');
+}
+
+function realtimeBase64UrlDecode(string $data) {
+    $normalized = strtr((string)$data, '-_', '+/');
+    $padding = strlen($normalized) % 4;
+    if ($padding > 0) {
+        $normalized .= str_repeat('=', 4 - $padding);
+    }
+    $decoded = base64_decode($normalized, true);
+    return ($decoded === false) ? null : $decoded;
+}
+
+function buildRealtimeAuthToken(int $userId, string $role, string $scope = 'notifications', ?int $ttlSeconds = null) {
+    $userId = (int)$userId;
+    $role = trim((string)$role);
+    $scope = trim((string)$scope);
+    if ($userId <= 0 || $role === '' || $scope === '') {
+        return '';
+    }
+
+    $secret = defined('REALTIME_HMAC_SECRET') ? (string)REALTIME_HMAC_SECRET : '';
+    if ($secret === '') {
+        return '';
+    }
+
+    $ttl = $ttlSeconds !== null ? (int)$ttlSeconds : (defined('REALTIME_TOKEN_TTL_SECONDS') ? (int)REALTIME_TOKEN_TTL_SECONDS : 120);
+    $ttl = max(30, $ttl);
+    $now = time();
+    $payload = [
+        'uid' => $userId,
+        'role' => $role,
+        'scope' => $scope,
+        'iat' => $now,
+        'exp' => $now + $ttl,
+        'nonce' => bin2hex(random_bytes(8)),
+    ];
+
+    $encodedPayload = realtimeBase64UrlEncode(json_encode($payload, JSON_UNESCAPED_UNICODE));
+    $signature = hash_hmac('sha256', $encodedPayload, $secret, true);
+    return $encodedPayload . '.' . realtimeBase64UrlEncode($signature);
+}
+
+function verifyRealtimeAuthToken(string $token, string $expectedScope = 'notifications') {
+    $token = trim((string)$token);
+    if ($token === '' || strpos($token, '.') === false) {
+        return null;
+    }
+
+    [$encodedPayload, $encodedSignature] = explode('.', $token, 2);
+    if ($encodedPayload === '' || $encodedSignature === '') {
+        return null;
+    }
+
+    $secret = defined('REALTIME_HMAC_SECRET') ? (string)REALTIME_HMAC_SECRET : '';
+    if ($secret === '') {
+        return null;
+    }
+
+    $expectedSignature = hash_hmac('sha256', $encodedPayload, $secret, true);
+    $providedSignature = realtimeBase64UrlDecode($encodedSignature);
+    if ($providedSignature === null || !hash_equals($expectedSignature, $providedSignature)) {
+        return null;
+    }
+
+    $payloadJson = realtimeBase64UrlDecode($encodedPayload);
+    if ($payloadJson === null) {
+        return null;
+    }
+
+    $payload = json_decode($payloadJson, true);
+    if (!is_array($payload)) {
+        return null;
+    }
+
+    $uid = (int)($payload['uid'] ?? 0);
+    $role = trim((string)($payload['role'] ?? ''));
+    $scope = trim((string)($payload['scope'] ?? ''));
+    $exp = (int)($payload['exp'] ?? 0);
+    if ($uid <= 0 || $role === '' || $scope === '' || $exp <= time()) {
+        return null;
+    }
+    if ($expectedScope !== '' && $scope !== $expectedScope) {
+        return null;
+    }
+
+    return [
+        'user_id' => $uid,
+        'role' => $role,
+        'scope' => $scope,
+        'iat' => (int)($payload['iat'] ?? 0),
+        'exp' => $exp,
+    ];
+}
+
+function getRealtimeNotificationPayload(string $role, int $userId, ?PDO $conn = null) {
+    $role = trim((string)$role);
+    $userId = (int)$userId;
+    $pdo = $conn instanceof PDO ? $conn : connectDB();
+
+    if ($userId <= 0) {
+        return ['success' => false];
+    }
+
+    if ($role === 'Admin') {
+        require_once __DIR__ . '/../models/ThongBao.php';
+
+        $state = getAdminNotificationState($userId, $pdo);
+        $paymentsLastSeenId = (int)($state['payments_last_seen_id'] ?? 0);
+        $reviewsLastSeenId = (int)($state['reviews_last_seen_id'] ?? 0);
+
+        $paymentStmt = $pdo->prepare('SELECT COUNT(*) FROM payments WHERE payment_id > ?');
+        $paymentStmt->execute([$paymentsLastSeenId]);
+        $paymentCount = (int)$paymentStmt->fetchColumn();
+
+        $reviewStmt = $pdo->prepare('SELECT COUNT(*) FROM danh_gia WHERE danh_gia_id > ?');
+        $reviewStmt->execute([$reviewsLastSeenId]);
+        $reviewCount = (int)$reviewStmt->fetchColumn();
+
+        $thongBaoModel = new ThongBao();
+        $requestCount = (int)$thongBaoModel->countYeuCauTourChuaXuLy();
+
+        return [
+            'success' => true,
+            'payments' => $paymentCount,
+            'reviews' => $reviewCount,
+            'requests' => $requestCount,
+            'dashboard' => $paymentCount + $reviewCount + $requestCount,
+            'sound_enabled' => ((int)($state['sound_enabled'] ?? 1) === 1) ? 1 : 0,
+        ];
+    }
+
+    if ($role === 'KhachHang') {
+        require_once __DIR__ . '/../models/ThongBao.php';
+        $thongBaoModel = new ThongBao();
+
+        $items = $thongBaoModel->getByNguoiDung($userId, 50);
+        $unread = (int)$thongBaoModel->countChuaDoc($userId);
+
+        return [
+            'success' => true,
+            'unread' => $unread,
+            'items' => array_map(static function ($tb) {
+                return [
+                    'id' => (int)($tb['id'] ?? 0),
+                    'tieu_de' => (string)($tb['tieu_de'] ?? ''),
+                    'noi_dung' => (string)($tb['noi_dung'] ?? ''),
+                    'da_doc' => (int)($tb['da_doc'] ?? 0),
+                    'thoi_gian_gui' => (string)($tb['thoi_gian_gui'] ?? ''),
+                    'created_at' => (string)($tb['created_at'] ?? ''),
+                ];
+            }, $items ?: []),
+        ];
+    }
+
+    if ($role === 'HDV') {
+        $nhanSuStmt = $pdo->prepare("SELECT nhan_su_id FROM nhan_su WHERE nguoi_dung_id = ? AND vai_tro = 'HDV' LIMIT 1");
+        $nhanSuStmt->execute([$userId]);
+        $nhanSuId = (int)$nhanSuStmt->fetchColumn();
+        if ($nhanSuId <= 0) {
+            return ['success' => false, 'unread' => 0];
+        }
+
+        $countStmt = $pdo->prepare('SELECT COUNT(*) FROM thong_bao_hdv WHERE nhan_su_id = ? AND da_xem = 0');
+        $countStmt->execute([$nhanSuId]);
+        $unread = (int)$countStmt->fetchColumn();
+
+        return [
+            'success' => true,
+            'unread' => $unread,
+        ];
+    }
+
+    if ($role === 'NhaCungCap') {
+        $supplierStmt = $pdo->prepare('SELECT id_nha_cung_cap FROM nha_cung_cap WHERE nguoi_dung_id = ? LIMIT 1');
+        $supplierStmt->execute([$userId]);
+        $nhaCungCapId = (int)$supplierStmt->fetchColumn();
+        if ($nhaCungCapId <= 0) {
+            return ['success' => false, 'pending' => 0];
+        }
+
+        $pendingStmt = $pdo->prepare("SELECT COUNT(*) FROM phan_bo_dich_vu WHERE nha_cung_cap_id = ? AND trang_thai = 'ChoXacNhan'");
+        $pendingStmt->execute([$nhaCungCapId]);
+        $pending = (int)$pendingStmt->fetchColumn();
+
+        return [
+            'success' => true,
+            'pending' => $pending,
+        ];
+    }
+
+    return ['success' => false];
+}
+
 // Upload file
-function uploadFile($file, $folderSave) {
+function uploadFile(array $file, string $folderSave) {
     if (!isset($file['tmp_name']) || !is_uploaded_file($file['tmp_name'])) {
         return null;
     }
@@ -265,7 +469,7 @@ function uploadFile($file, $folderSave) {
 }
 
 // Delete file
-function deleteFile($file) {
+function deleteFile(string $file) {
     if (empty($file)) {
         return false;
     }
@@ -280,14 +484,14 @@ function deleteFile($file) {
 
 
 // Flash message
-function setFlashMessage($key, $message) {
+function setFlashMessage(string $key, string $message) {
     if (!isset($_SESSION)) {
         session_start();
     }
     $_SESSION['flash'][$key] = $message;
 }
 
-function getFlashMessage($key) {
+function getFlashMessage(string $key) {
     if (!isset($_SESSION)) {
         session_start();
     }
@@ -310,11 +514,11 @@ function requireLogin() {
 }
 
 // Require role
-function requireRole($role, $redirectAct = null, $message = 'Ban khong co quyen truy cap chuc nang nay.') {
+function requireRole(string|array $role, ?string $redirectAct = null, string $message = 'Ban khong co quyen truy cap chuc nang nay.') {
     Authorization::requireRole($role, $redirectAct, $message);
 }
 
-function requireAnyRole(array $roles, $redirectAct = null, $message = 'Ban khong co quyen truy cap chuc nang nay.') {
+function requireAnyRole(array $roles, ?string $redirectAct = null, string $message = 'Ban khong co quyen truy cap chuc nang nay.') {
     Authorization::requireRole($roles, $redirectAct, $message);
 }
 
@@ -322,19 +526,19 @@ function currentUserRole() {
     return Authorization::currentRole();
 }
 
-function hasRole($roles) {
+function hasRole(string|array $roles) {
     return Authorization::hasAnyRole($roles);
 }
 
-function getRoleHomeRoute($role = null) {
+function getRoleHomeRoute(?string $role = null) {
     return Authorization::getRoleHomeRoute($role);
 }
 
-function redirectToRoleHome($defaultAct = 'auth/login') {
+function redirectToRoleHome(string $defaultAct = 'auth/login') {
     Authorization::redirectToRoleHome($defaultAct);
 }
 
-function initializeSecureSession($sessionDir = null) {
+function initializeSecureSession(?string $sessionDir = null) {
     SessionSecurity::initialize($sessionDir);
     SessionSecurity::start();
 }
@@ -343,43 +547,43 @@ function enforceSessionSecurity() {
     return SessionSecurity::enforce();
 }
 
-function completeUserLoginSession($userId, $role, $userName, array $extraSessionData = []) {
+function completeUserLoginSession(int $userId, string $role, string $userName, array $extraSessionData = []) {
     SessionSecurity::completeLogin($userId, $role, $userName, $extraSessionData);
 }
 
-function logoutCurrentUser($reason = 'logout') {
+function logoutCurrentUser(string $reason = 'logout') {
     SessionSecurity::logout($reason);
 }
 
-function logSecurityEvent($event, array $context = []) {
+function logSecurityEvent(string $event, array $context = []) {
     SessionSecurity::logSecurityEvent($event, $context);
 }
 
-function recordFailedLoginAttempt($identifier, $reason = 'invalid_credentials') {
+function recordFailedLoginAttempt(string $identifier, string $reason = 'invalid_credentials') {
     SessionSecurity::recordFailedLogin($identifier, $reason);
 }
 
-function validatePasswordPolicy($password) {
+function validatePasswordPolicy(string $password) {
     return PasswordPolicy::validate($password);
 }
 
-function isSecurePasswordHash($storedPassword) {
+function isSecurePasswordHash(string $storedPassword) {
     return PasswordPolicy::isSecureHash($storedPassword);
 }
 
-function requiresPasswordChange($storedHash) {
+function requiresPasswordChange(string $storedHash) {
     return PasswordPolicy::needsForceChange($storedHash);
 }
 
-function generateTemporaryPassword($length = 14) {
+function generateTemporaryPassword(int $length = 14) {
     return PasswordPolicy::generateTemporaryPassword($length);
 }
 
-function createOAuthState($provider) {
+function createOAuthState(string $provider) {
     return SessionSecurity::generateOAuthState($provider);
 }
 
-function verifyOAuthState($provider, $state) {
+function verifyOAuthState(string $provider, string $state) {
     return SessionSecurity::verifyOAuthState($provider, $state);
 }
 
@@ -387,55 +591,55 @@ function getRouteRoleMatrix() {
     return Authorization::getRouteRoleMatrix();
 }
 
-function authorizeRouteAccess($act) {
+function authorizeRouteAccess(string $act) {
     return Authorization::enforceRouteAccess($act);
 }
 
-function sanitizeText($value) {
+function sanitizeText(mixed $value) {
     return RequestValidator::sanitizeText($value);
 }
 
-function requestString($key, $default = '', $method = 'REQUEST') {
+function requestString(string $key, string $default = '', string $method = 'REQUEST') {
     return RequestValidator::getString($key, $default, $method);
 }
 
-function requestInt($key, $default = 0, $method = 'REQUEST') {
+function requestInt(string $key, int $default = 0, string $method = 'REQUEST') {
     $value = filter_var(RequestValidator::getString($key, (string)$default, $method), FILTER_VALIDATE_INT);
     return $value !== false ? (int)$value : (int)$default;
 }
 
-function requestFloat($key, $default = 0.0, $method = 'REQUEST') {
+function requestFloat(string $key, float $default = 0.0, string $method = 'REQUEST') {
     $raw = str_replace(',', '', RequestValidator::getString($key, (string)$default, $method));
     return is_numeric($raw) ? (float)$raw : (float)$default;
 }
 
-function requestRouteAct($default = 'auth/login') {
+function requestRouteAct(string $default = 'auth/login') {
     $act = requestString('act', $default, 'GET');
     return isValidRouteFormat($act) ? $act : $default;
 }
 
-function requestId($key, $default = null, $method = 'REQUEST') {
+function requestId(string $key, mixed $default = null, string $method = 'REQUEST') {
     return RequestValidator::getId($key, $default, $method);
 }
 
-function requestEmail($key, $default = null, $method = 'REQUEST') {
+function requestEmail(string $key, mixed $default = null, string $method = 'REQUEST') {
     return RequestValidator::getEmail($key, $default, $method);
 }
 
-function requestPhone($key, $default = null, $method = 'REQUEST') {
+function requestPhone(string $key, mixed $default = null, string $method = 'REQUEST') {
     return RequestValidator::getPhone($key, $default, $method);
 }
 
-function requestMoney($key, $default = null, $method = 'REQUEST', $min = 0.0, $max = 999999999999.0) {
+function requestMoney(string $key, mixed $default = null, string $method = 'REQUEST', float $min = 0.0, float $max = 999999999999.0) {
     return RequestValidator::getMoney($key, $default, $method, $min, $max);
 }
 
-function validateInputSchema(array $rules, $method = 'POST') {
+function validateInputSchema(array $rules, string $method = 'POST') {
     $source = strtoupper((string)$method) === 'GET' ? $_GET : (strtoupper((string)$method) === 'POST' ? $_POST : $_REQUEST);
     return RequestValidator::validatePayload($source, $rules);
 }
 
-function getRouteInputSchema($act, $method = 'GET') {
+function getRouteInputSchema(string $act, string $method = 'GET') {
     $method = strtoupper((string)$method);
     if ($method !== 'POST') {
         return [];
@@ -537,7 +741,7 @@ function getRouteInputSchema($act, $method = 'GET') {
     return $schemas[$act] ?? [];
 }
 
-function validateRequestByRoute($act, $method = 'GET') {
+function validateRequestByRoute(string $act, string $method = 'GET') {
     $rules = getRouteInputSchema($act, $method);
     if (empty($rules)) {
         return ['ok' => true, 'data' => [], 'errors' => []];
@@ -546,7 +750,7 @@ function validateRequestByRoute($act, $method = 'GET') {
     return validateInputSchema($rules, $method);
 }
 
-function logValidationFailure($context, array $errors, array $meta = []) {
+function logValidationFailure(string $context, array $errors, array $meta = []) {
     $logDir = __DIR__ . '/../storage';
     $logFile = $logDir . '/security.log';
     if (!is_dir($logDir)) {
@@ -571,27 +775,27 @@ function whitelistRequestParams(array $input, array $allowedKeys) {
     return RequestValidator::whitelistParams($input, $allowedKeys);
 }
 
-function isValidRouteFormat($act) {
+function isValidRouteFormat(mixed $act) {
     return RequestValidator::isValidRouteFormat($act);
 }
 
-function validateEmail($email) {
+function validateEmail(mixed $email) {
     return RequestValidator::validateEmail($email);
 }
 
-function validatePhone($phone) {
+function validatePhone(mixed $phone) {
     return RequestValidator::validatePhone($phone);
 }
 
-function validateId($value) {
+function validateId(mixed $value) {
     return RequestValidator::validateId($value);
 }
 
-function validateMoney($value, $min = 0.0, $max = 999999999999.0) {
+function validateMoney(mixed $value, float $min = 0.0, float $max = 999999999999.0) {
     return RequestValidator::validateMoney($value, $min, $max);
 }
 
-function validateDateYmd($value) {
+function validateDateYmd(mixed $value) {
     $value = sanitizeText($value);
     if ($value === '') {
         return null;
@@ -605,7 +809,7 @@ function validateDateYmd($value) {
     return $value;
 }
 
-function csrfToken($scope = 'default') {
+function csrfToken(string $scope = 'default') {
     if (!isset($_SESSION)) {
         session_start();
     }
@@ -622,12 +826,12 @@ function csrfToken($scope = 'default') {
     return (string)$_SESSION[$key];
 }
 
-function csrfField($scope = 'default') {
+function csrfField(string $scope = 'default') {
     $token = htmlspecialchars(csrfToken($scope), ENT_QUOTES, 'UTF-8');
     return '<input type="hidden" name="_csrf_token" value="' . $token . '">';
 }
 
-function verifyCsrfToken($token, $scope = 'default') {
+function verifyCsrfToken(string $token, string $scope = 'default') {
     if (!isset($_SESSION)) {
         session_start();
     }
@@ -652,7 +856,7 @@ function verifyCsrfToken($token, $scope = 'default') {
     return $valid;
 }
 
-function setValidationErrors(array $errors, $message = 'Du lieu khong hop le.') {
+function setValidationErrors(array $errors, string $message = 'Du lieu khong hop le.') {
     if (!isset($_SESSION)) {
         session_start();
     }

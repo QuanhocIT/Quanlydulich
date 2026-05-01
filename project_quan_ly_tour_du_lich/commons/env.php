@@ -147,6 +147,17 @@ define('SMTP_ENCRYPTION', strtolower(trim((string)($_ENV['SMTP_ENCRYPTION'] ?? '
 define('SMTP_AUTH', (($_ENV['SMTP_AUTH'] ?? '1') === '1'));
 define('SMTP_TIMEOUT', (int)($_ENV['SMTP_TIMEOUT'] ?? 20));
 
+// Realtime/WebSocket configuration
+define('REALTIME_WS_ENABLED', (($_ENV['REALTIME_WS_ENABLED'] ?? '0') === '1'));
+define('REALTIME_WS_HOST', trim((string)($_ENV['REALTIME_WS_HOST'] ?? '127.0.0.1')));
+define('REALTIME_WS_PORT', (int)($_ENV['REALTIME_WS_PORT'] ?? 8089));
+define(
+    'REALTIME_WS_PUBLIC_URL',
+    trim((string)($_ENV['REALTIME_WS_PUBLIC_URL'] ?? ('ws://' . REALTIME_WS_HOST . ':' . REALTIME_WS_PORT)))
+);
+define('REALTIME_HMAC_SECRET', trim((string)($_ENV['REALTIME_HMAC_SECRET'] ?? 'change-me-in-production')));
+define('REALTIME_TOKEN_TTL_SECONDS', max(30, (int)($_ENV['REALTIME_TOKEN_TTL_SECONDS'] ?? 120)));
+
 // Hàm tạo kết nối PDO
 function getPDOConnection() {
     static $sharedConn = null;

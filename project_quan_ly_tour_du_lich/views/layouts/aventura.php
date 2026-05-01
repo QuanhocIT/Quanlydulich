@@ -23,6 +23,18 @@ if ($isAdminRole) {
     $bodyClasses[] = 'is-admin';
 }
 
+if (!isset($content)) {
+    $content = '';
+}
+
+$realtimeWsEnabled = realtimeWebSocketEnabled();
+$realtimeWsUrl = '';
+$realtimeWsToken = '';
+if ($realtimeWsEnabled && isset($_SESSION['user_id']) && $currentRole !== null) {
+    $realtimeWsUrl = realtimeWebSocketPublicUrl();
+    $realtimeWsToken = buildRealtimeAuthToken((int)$_SESSION['user_id'], (string)$currentRole, 'notifications');
+}
+
 
 ?>
 <!DOCTYPE html>
@@ -230,15 +242,21 @@ if ($isAdminRole) {
         const reviewNavBadge = document.getElementById('reviewNavBadge');
         const THEME_MODES = ['dark', 'business-dark', 'soft-light'];
         const streamReconnectDelay = 5000;
+        const wsReconnectDelay = 3500;
         const fallbackPollIntervalMs = 5000;
         let notificationEventSource = null;
+        let notificationWebSocket = null;
         let streamReconnectTimer = null;
+        let wsReconnectTimer = null;
         let notificationFallbackTimer = null;
         let previousPaymentCount = Number.parseInt(paymentNavBadge ? paymentNavBadge.textContent : '0', 10) || 0;
         let previousReviewCount = Number.parseInt(reviewNavBadge ? reviewNavBadge.textContent : '0', 10) || 0;
         let previousDashboardCount = Number.parseInt(dashboardNavBadge ? dashboardNavBadge.textContent : '0', 10) || 0;
         let soundNotificationEnabled = soundEnabledOnServer;
         let audioContext = null;
+        const realtimeWsEnabled = <?php echo ($isAdminRole && $realtimeWsEnabled && $realtimeWsUrl !== '' && $realtimeWsToken !== '') ? 'true' : 'false'; ?>;
+        const realtimeWsUrl = <?php echo json_encode($realtimeWsUrl, JSON_UNESCAPED_UNICODE); ?>;
+        const realtimeWsToken = <?php echo json_encode($realtimeWsToken, JSON_UNESCAPED_UNICODE); ?>;
 
         function ensureAudioContext() {
             if (!audioContext) {
@@ -362,6 +380,9 @@ if ($isAdminRole) {
             previousDashboardCount = nextDashboardCount;
             previousPaymentCount = nextPaymentCount;
             previousReviewCount = nextReviewCount;
+
+            // Broadcast to child views listening for real-time updates
+            document.dispatchEvent(new CustomEvent('adminNotification', { detail: data }));
         }
 
         async function fetchNotificationSnapshot() {
@@ -402,6 +423,12 @@ if ($isAdminRole) {
             streamReconnectTimer = null;
         }
 
+        function clearWsReconnectTimer() {
+            if (!wsReconnectTimer) return;
+            clearTimeout(wsReconnectTimer);
+            wsReconnectTimer = null;
+        }
+
         function scheduleStreamReconnect() {
             if (streamReconnectTimer) return;
             setRealtimeConnectionState('reconnecting');
@@ -409,6 +436,64 @@ if ($isAdminRole) {
                 streamReconnectTimer = null;
                 openNotificationStream();
             }, streamReconnectDelay);
+        }
+
+        function scheduleWsReconnect() {
+            if (wsReconnectTimer) return;
+            setRealtimeConnectionState('reconnecting');
+            wsReconnectTimer = setTimeout(function() {
+                wsReconnectTimer = null;
+                openNotificationWebSocket();
+            }, wsReconnectDelay);
+        }
+
+        function openNotificationWebSocket() {
+            if (!isAdminUser || !realtimeWsEnabled || typeof WebSocket === 'undefined') return false;
+
+            clearWsReconnectTimer();
+            setRealtimeConnectionState('connecting');
+
+            if (notificationWebSocket) {
+                try {
+                    notificationWebSocket.close();
+                } catch (error) {
+                    // no-op
+                }
+                notificationWebSocket = null;
+            }
+
+            const joinChar = realtimeWsUrl.indexOf('?') >= 0 ? '&' : '?';
+            const wsUrl = realtimeWsUrl + joinChar + 'token=' + encodeURIComponent(realtimeWsToken);
+            notificationWebSocket = new WebSocket(wsUrl);
+
+            notificationWebSocket.onopen = function() {
+                setRealtimeConnectionState('connected');
+                stopFallbackPolling();
+            };
+
+            notificationWebSocket.onmessage = function(event) {
+                try {
+                    const packet = JSON.parse(event.data || '{}');
+                    if (!packet || packet.type !== 'notification' || !packet.payload) return;
+                    applyNotificationPayload(packet.payload);
+                    setRealtimeConnectionState('connected');
+                } catch (error) {
+                    // Ignore invalid packet payload.
+                }
+            };
+
+            notificationWebSocket.onerror = function() {
+                // onclose handles reconnect and fallback.
+            };
+
+            notificationWebSocket.onclose = function() {
+                notificationWebSocket = null;
+                startFallbackPolling();
+                fetchNotificationSnapshot();
+                scheduleWsReconnect();
+            };
+
+            return true;
         }
 
         function openNotificationStream() {
@@ -677,7 +762,10 @@ if ($isAdminRole) {
                 }, { once: true, passive: true });
             });
             fetchNotificationSnapshot();
-            if (typeof EventSource !== 'undefined') {
+            if (realtimeWsEnabled && typeof WebSocket !== 'undefined') {
+                openNotificationWebSocket();
+                startFallbackPolling();
+            } else if (typeof EventSource !== 'undefined') {
                 openNotificationStream();
                 startFallbackPolling();
             } else {
@@ -685,8 +773,12 @@ if ($isAdminRole) {
                 startFallbackPolling();
             }
             window.addEventListener('beforeunload', function() {
+                clearWsReconnectTimer();
                 clearStreamReconnectTimer();
                 stopFallbackPolling();
+                if (notificationWebSocket) {
+                    notificationWebSocket.close();
+                }
                 if (notificationEventSource) {
                     notificationEventSource.close();
                 }

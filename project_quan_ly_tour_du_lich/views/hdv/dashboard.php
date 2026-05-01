@@ -22,6 +22,12 @@ $notificationTypeLabels = [
     'CanhBao' => ['label' => 'Cảnh báo', 'class' => 'danger', 'icon' => 'shield-exclamation'],
     'ThongBao' => ['label' => 'Thông báo', 'class' => 'neutral', 'icon' => 'megaphone'],
 ];
+
+$hdvRealtimeWsEnabled = realtimeWebSocketEnabled() && isLoggedIn() && hasRole('HDV');
+$hdvRealtimeWsUrl = $hdvRealtimeWsEnabled ? realtimeWebSocketPublicUrl() : '';
+$hdvRealtimeWsToken = $hdvRealtimeWsEnabled
+    ? buildRealtimeAuthToken((int)($_SESSION['user_id'] ?? 0), 'HDV', 'notifications')
+    : '';
 ?>
 
 <div class="page-header">
@@ -34,9 +40,12 @@ $notificationTypeLabels = [
             <div class="d-flex flex-wrap gap-2">
                 <a href="index.php?act=hdv/notifications" class="btn btn-light position-relative">
                     <i class="bi bi-bell"></i> Thông báo
-                    <?php if (!empty($notifications_count)): ?>
-                        <span class="notification-badge"><?php echo (int)$notifications_count; ?></span>
-                    <?php endif; ?>
+                    <span
+                        id="hdvNotificationBadge"
+                        class="notification-badge"
+                        data-initial="<?php echo (int)($notifications_count ?? 0); ?>"
+                        <?php if (empty($notifications_count)): ?>style="display:none"<?php endif; ?>
+                    ><?php echo (int)($notifications_count ?? 0); ?></span>
                 </a>
                 <a href="index.php?act=hdv/profile" class="btn btn-light"><i class="bi bi-person-circle"></i> Hồ sơ</a>
                 <a href="index.php?act=auth/logout" class="btn btn-outline-light"><i class="bi bi-box-arrow-right"></i> Đăng xuất</a>
@@ -195,5 +204,164 @@ $notificationTypeLabels = [
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var badge = document.getElementById('hdvNotificationBadge');
+    var pollingTimerId = null;
+    var wsReconnectTimerId = null;
+    var webSocketClient = null;
+    var visiblePollingMs = 5000;
+    var hiddenPollingMs = 20000;
+    var wsReconnectMs = 3500;
+    var realtimeWsEnabled = <?php echo ($hdvRealtimeWsEnabled && $hdvRealtimeWsUrl !== '' && $hdvRealtimeWsToken !== '') ? 'true' : 'false'; ?>;
+    var realtimeWsUrl = <?php echo json_encode($hdvRealtimeWsUrl, JSON_UNESCAPED_UNICODE); ?>;
+    var realtimeWsToken = <?php echo json_encode($hdvRealtimeWsToken, JSON_UNESCAPED_UNICODE); ?>;
+
+    function renderBadge(count) {
+        if (!badge) return;
+        var safeCount = Math.max(0, Number(count || 0));
+        badge.textContent = String(safeCount);
+        if (safeCount > 0) {
+            badge.style.display = 'inline-flex';
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+
+    async function fetchUnreadCount() {
+        try {
+            var response = await fetch('index.php?act=hdv/notificationCounts&_ts=' + Date.now(), {
+                method: 'GET',
+                credentials: 'same-origin',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            if (!response.ok) return;
+
+            var data = await response.json();
+            if (!data || data.success !== true) return;
+            renderBadge(data.unread || 0);
+        } catch (error) {
+            // Bỏ qua lỗi mạng tạm thời.
+        }
+    }
+
+    function startPolling() {
+        if (pollingTimerId) {
+            window.clearInterval(pollingTimerId);
+        }
+
+        var intervalMs = document.hidden ? hiddenPollingMs : visiblePollingMs;
+        pollingTimerId = window.setInterval(fetchUnreadCount, intervalMs);
+    }
+
+    function stopPolling() {
+        if (pollingTimerId) {
+            window.clearInterval(pollingTimerId);
+            pollingTimerId = null;
+        }
+    }
+
+    function clearWsReconnect() {
+        if (wsReconnectTimerId) {
+            window.clearTimeout(wsReconnectTimerId);
+            wsReconnectTimerId = null;
+        }
+    }
+
+    function scheduleWsReconnect() {
+        if (wsReconnectTimerId || document.hidden) {
+            return;
+        }
+
+        wsReconnectTimerId = window.setTimeout(function () {
+            wsReconnectTimerId = null;
+            openWebSocket();
+        }, wsReconnectMs);
+    }
+
+    function stopWebSocket() {
+        clearWsReconnect();
+        if (webSocketClient) {
+            webSocketClient.close();
+            webSocketClient = null;
+        }
+    }
+
+    function openWebSocket() {
+        if (!realtimeWsEnabled || typeof WebSocket === 'undefined') {
+            return false;
+        }
+
+        clearWsReconnect();
+        stopWebSocket();
+
+        var joinChar = realtimeWsUrl.indexOf('?') >= 0 ? '&' : '?';
+        var wsUrl = realtimeWsUrl + joinChar + 'token=' + encodeURIComponent(realtimeWsToken);
+        webSocketClient = new WebSocket(wsUrl);
+
+        webSocketClient.onopen = function () {
+            stopPolling();
+        };
+
+        webSocketClient.onmessage = function (event) {
+            try {
+                var packet = JSON.parse(event.data || '{}');
+                if (!packet || packet.type !== 'notification' || !packet.payload || packet.payload.success !== true) {
+                    return;
+                }
+
+                renderBadge(packet.payload.unread || 0);
+            } catch (error) {
+                // Bỏ qua payload không hợp lệ.
+            }
+        };
+
+        webSocketClient.onerror = function () {
+            // onclose xử lý fallback.
+        };
+
+        webSocketClient.onclose = function () {
+            webSocketClient = null;
+            startPolling();
+            scheduleWsReconnect();
+        };
+
+        return true;
+    }
+
+    function runRealtimeByVisibility() {
+        stopPolling();
+        stopWebSocket();
+
+        if (document.hidden) {
+            startPolling();
+            return;
+        }
+
+        if (realtimeWsEnabled && typeof WebSocket !== 'undefined') {
+            openWebSocket();
+            startPolling();
+        } else {
+            startPolling();
+        }
+    }
+
+    renderBadge(Number(badge ? badge.getAttribute('data-initial') : 0));
+    fetchUnreadCount();
+    runRealtimeByVisibility();
+
+    document.addEventListener('visibilitychange', function () {
+        runRealtimeByVisibility();
+        if (!document.hidden) {
+            fetchUnreadCount();
+        }
+    });
+
+    window.addEventListener('beforeunload', function () {
+        stopWebSocket();
+        stopPolling();
+    });
+});
+</script>
 </body>
 </html>

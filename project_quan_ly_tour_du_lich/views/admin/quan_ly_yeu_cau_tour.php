@@ -1,4 +1,5 @@
 <?php
+/** @var array $yeuCauList */
 $pageTitle = 'Quản lý Yêu cầu Tour';
 $currentPage = 'yeuCauTour';
 $metaRefreshSeconds = 20;
@@ -956,6 +957,13 @@ ob_start();
         window.addEventListener('focus', function () {
             refreshYeuCauSnapshot();
             restartSnapshotTimer();
+        });
+
+        // When Admin WS fires, immediately refresh without waiting for polling interval
+        document.addEventListener('adminNotification', function(e) {
+            var payload = e && e.detail;
+            if (!payload || payload.success !== true) return;
+            refreshYeuCauSnapshot();
         });
 
         refreshYeuCauSnapshot();

@@ -1393,13 +1393,13 @@ $actionCards = [
                 <div class="hero-kpi-grid">
                     <div class="hero-kpi-card gold">
                         <div class="hero-kpi-icon gold"><i class="bi bi-graph-up-arrow"></i></div>
-                        <span class="hero-kpi-value"><?php echo number_format($totalRevenue / 1000000, 0, ',', '.'); ?>M</span>
+                        <span class="hero-kpi-value" id="kpiTotalRevenue"><?php echo number_format($totalRevenue / 1000000, 0, ',', '.'); ?>M</span>
                         <span class="hero-kpi-label">Doanh thu lũy kế 12 tháng (triệu)</span>
                     </div>
                     <div class="hero-kpi-card teal">
                         <div class="hero-kpi-icon teal"><i class="bi bi-journal-check"></i></div>
-                        <span class="hero-kpi-value"><?php echo number_format($totalBookings, 0, ',', '.'); ?></span>
-                        <span class="hero-kpi-label"><?php echo $pendingBookings; ?> booking cần ưu tiên xử lý</span>
+                        <span class="hero-kpi-value" id="kpiTotalBookings"><?php echo number_format($totalBookings, 0, ',', '.'); ?></span>
+                        <span class="hero-kpi-label"><span id="kpiPendingBookings"><?php echo $pendingBookings; ?></span> booking cần ưu tiên xử lý</span>
                     </div>
                     <div class="hero-kpi-card red">
                         <div class="hero-kpi-icon red"><i class="bi bi-exclamation-triangle"></i></div>
@@ -1846,6 +1846,47 @@ $actionCards = [
         });
     }
         }
+</script>
+<script>
+(function() {
+    // Listen for AdminWS notifications broadcast by aventura.php layout
+    // When new payments/bookings arrive, fetch updated KPI snapshot
+    var kpiRefreshTimer = null;
+    function scheduleKpiRefresh() {
+        if (kpiRefreshTimer) return;
+        kpiRefreshTimer = window.setTimeout(function() {
+            kpiRefreshTimer = null;
+            fetch('index.php?act=admin/dashboardKpiSnapshot&_ts=' + Date.now(), {
+                method: 'GET',
+                credentials: 'same-origin',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            }).then(function(r) {
+                return r.ok ? r.json() : null;
+            }).then(function(data) {
+                if (!data || data.success !== true) return;
+                var elRevenue = document.getElementById('kpiTotalRevenue');
+                var elBookings = document.getElementById('kpiTotalBookings');
+                var elPending = document.getElementById('kpiPendingBookings');
+                if (elRevenue && data.total_revenue != null) {
+                    var rev = Math.round(Number(data.total_revenue) / 1000000);
+                    elRevenue.textContent = rev.toLocaleString('vi-VN') + 'M';
+                }
+                if (elBookings && data.total_bookings != null) {
+                    elBookings.textContent = Number(data.total_bookings).toLocaleString('vi-VN');
+                }
+                if (elPending && data.pending_bookings != null) {
+                    elPending.textContent = String(data.pending_bookings);
+                }
+            }).catch(function() {});
+        }, 800);
+    }
+
+    document.addEventListener('adminNotification', function(e) {
+        var payload = e && e.detail;
+        if (!payload || payload.success !== true) return;
+        scheduleKpiRefresh();
+    });
+})();
 </script>
 
 <?php

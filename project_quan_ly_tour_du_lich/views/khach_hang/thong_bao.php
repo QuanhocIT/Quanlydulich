@@ -33,6 +33,18 @@
     </style>
 </head>
 <body>
+    <?php
+    $thongBaoChuaDoc = (int)($thongBaoChuaDoc ?? 0);
+    if (!isset($thongBaoList) || !is_array($thongBaoList)) {
+        $thongBaoList = [];
+    }
+
+    $khRealtimeWsEnabled = realtimeWebSocketEnabled() && isLoggedIn() && hasRole('KhachHang');
+    $khRealtimeWsUrl = $khRealtimeWsEnabled ? realtimeWebSocketPublicUrl() : '';
+    $khRealtimeWsToken = $khRealtimeWsEnabled
+        ? buildRealtimeAuthToken((int)($_SESSION['user_id'] ?? 0), 'KhachHang', 'notifications')
+        : '';
+    ?>
     <div class="container py-5">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2><i class="bi bi-bell me-2"></i>Thông báo</h2>
@@ -105,9 +117,15 @@
         var notificationList = document.getElementById('notificationList');
         var notificationEmptyState = document.getElementById('notificationEmptyState');
         var notificationEventSource = null;
+        var notificationWebSocket = null;
         var pollingTimerId = null;
         var visiblePollingMs = 5000;
         var hiddenPollingMs = 20000;
+        var wsReconnectTimerId = null;
+        var wsReconnectMs = 3500;
+        var realtimeWsEnabled = <?php echo ($khRealtimeWsEnabled && $khRealtimeWsUrl !== '' && $khRealtimeWsToken !== '') ? 'true' : 'false'; ?>;
+        var realtimeWsUrl = <?php echo json_encode($khRealtimeWsUrl, JSON_UNESCAPED_UNICODE); ?>;
+        var realtimeWsToken = <?php echo json_encode($khRealtimeWsToken, JSON_UNESCAPED_UNICODE); ?>;
 
         function escapeHtml(value) {
             return String(value || '').replace(/[&<>'"]/g, function (char) {
@@ -211,10 +229,83 @@
             };
         }
 
+        function clearWsReconnectTimer() {
+            if (wsReconnectTimerId) {
+                window.clearTimeout(wsReconnectTimerId);
+                wsReconnectTimerId = null;
+            }
+        }
+
+        function scheduleWsReconnect() {
+            if (wsReconnectTimerId || document.hidden) {
+                return;
+            }
+
+            wsReconnectTimerId = window.setTimeout(function () {
+                wsReconnectTimerId = null;
+                openNotificationWebSocket();
+            }, wsReconnectMs);
+        }
+
+        function openNotificationWebSocket() {
+            if (!realtimeWsEnabled || typeof WebSocket === 'undefined') {
+                return false;
+            }
+
+            clearWsReconnectTimer();
+
+            if (notificationWebSocket) {
+                notificationWebSocket.close();
+                notificationWebSocket = null;
+            }
+
+            var joinChar = realtimeWsUrl.indexOf('?') >= 0 ? '&' : '?';
+            var wsUrl = realtimeWsUrl + joinChar + 'token=' + encodeURIComponent(realtimeWsToken);
+            notificationWebSocket = new WebSocket(wsUrl);
+
+            notificationWebSocket.onopen = function () {
+                stopNotificationPolling();
+            };
+
+            notificationWebSocket.onmessage = function (event) {
+                try {
+                    var packet = JSON.parse(event.data || '{}');
+                    if (!packet || packet.type !== 'notification' || !packet.payload || packet.payload.success !== true) {
+                        return;
+                    }
+
+                    setUnreadCount(packet.payload.unread || 0);
+                    renderNotificationList(packet.payload.items || []);
+                } catch (error) {
+                    // Bỏ qua payload không hợp lệ.
+                }
+            };
+
+            notificationWebSocket.onerror = function () {
+                // onclose xử lý fallback.
+            };
+
+            notificationWebSocket.onclose = function () {
+                notificationWebSocket = null;
+                startNotificationPolling();
+                scheduleWsReconnect();
+            };
+
+            return true;
+        }
+
         function stopNotificationStream() {
             if (notificationEventSource) {
                 notificationEventSource.close();
                 notificationEventSource = null;
+            }
+        }
+
+        function stopNotificationWebSocket() {
+            clearWsReconnectTimer();
+            if (notificationWebSocket) {
+                notificationWebSocket.close();
+                notificationWebSocket = null;
             }
         }
 
@@ -236,14 +327,19 @@
         function runRealtimeByVisibility() {
             stopNotificationPolling();
             stopNotificationStream();
+            stopNotificationWebSocket();
 
             if (document.hidden) {
                 startNotificationPolling();
                 return;
             }
 
-            if (typeof EventSource !== 'undefined') {
+            if (realtimeWsEnabled && typeof WebSocket !== 'undefined') {
+                openNotificationWebSocket();
+                startNotificationPolling();
+            } else if (typeof EventSource !== 'undefined') {
                 openNotificationStream();
+                startNotificationPolling();
             } else {
                 startNotificationPolling();
             };
@@ -293,6 +389,7 @@
             }
         });
         window.addEventListener('beforeunload', function () {
+            stopNotificationWebSocket();
             stopNotificationStream();
             stopNotificationPolling();
         });

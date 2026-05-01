@@ -1,4 +1,9 @@
 <?php
+/** @var array $lichKhoiHanh */
+/** @var array $nhanSuList */
+/** @var array $bookingList */
+/** @var array $nhatKyTourList */
+/** @var array $nhaCungCapList */
 $pageTitle = 'Chi tiết Lịch Khởi Hành';
 $currentPage = 'lich_khoi_hanh';
 ob_start();
@@ -509,7 +514,7 @@ $catalogServicesMap = $catalogServicesMap ?? [];
                         <div class="info-row">
                             <div class="info-label"><i class="bi bi-file-text"></i> Số booking</div>
                             <div class="info-value">
-                                <span class="stats-badge bg-info text-white">
+                                <span class="stats-badge bg-info text-white" id="cdlkSoBooking">
                                     <?php echo $lichKhoiHanh['so_booking'] ?? 0; ?>
                                 </span>
                             </div>
@@ -517,7 +522,7 @@ $catalogServicesMap = $catalogServicesMap ?? [];
                         <div class="info-row">
                             <div class="info-label"><i class="bi bi-person-check"></i> Tổng người đã đặt</div>
                             <div class="info-value">
-                                <span class="stats-badge bg-success text-white">
+                                <span class="stats-badge bg-success text-white" id="cdlkTongNguoi">
                                     <?php echo $lichKhoiHanh['tong_nguoi_dat'] ?? 0; ?>
                                 </span>
                             </div>
@@ -1981,6 +1986,41 @@ $catalogServicesMap = $catalogServicesMap ?? [];
         </div>
         <?php endforeach; ?>
     <?php endif; ?>
+<script>
+(function() {
+    var lichKhoiHanhId = <?php echo (int)($lichKhoiHanh['id'] ?? 0); ?>;
+    var refreshTimer = null;
+
+    function refreshStats() {
+        if (!lichKhoiHanhId) return;
+        fetch('index.php?act=admin/lichKhoiHanhStats&id=' + lichKhoiHanhId + '&_ts=' + Date.now(), {
+            method: 'GET',
+            credentials: 'same-origin',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        }).then(function(r) {
+            return r.ok ? r.json() : null;
+        }).then(function(data) {
+            if (!data || data.success !== true) return;
+            var elBooking = document.getElementById('cdlkSoBooking');
+            var elNguoi = document.getElementById('cdlkTongNguoi');
+            if (elBooking && data.so_booking != null) elBooking.textContent = String(data.so_booking);
+            if (elNguoi && data.tong_nguoi_dat != null) elNguoi.textContent = String(data.tong_nguoi_dat);
+        }).catch(function() {});
+    }
+
+    document.addEventListener('adminNotification', function(e) {
+        var payload = e && e.detail;
+        if (!payload || payload.success !== true) return;
+        if (Number(payload.payments || 0) > 0 || Number(payload.requests || 0) > 0) {
+            if (refreshTimer) return;
+            refreshTimer = window.setTimeout(function() {
+                refreshTimer = null;
+                refreshStats();
+            }, 1000);
+        }
+    });
+})();
+</script>
 <?php
 $content = ob_get_clean();
 require __DIR__ . '/../layouts/aventura.php';

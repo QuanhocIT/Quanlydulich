@@ -408,5 +408,58 @@
             });
         }
     </script>
+<?php if (function_exists('realtimeWebSocketEnabled') && realtimeWebSocketEnabled() && !empty($_SESSION['user_id'])): ?>
+<?php
+$_wsToken = buildRealtimeAuthToken((int)$_SESSION['user_id'], 'NhaCungCap');
+$_wsUrl   = realtimeWebSocketPublicUrl() . '?token=' . rawurlencode($_wsToken);
+?>
+<script>
+(function() {
+    var wsUrl = <?php echo json_encode($_wsUrl, JSON_UNESCAPED_UNICODE); ?>;
+    var prevPending = <?php echo (int)$pendingCount; ?>;
+    var ws = null;
+    var reconnectTimer = null;
+
+    function showSupplierToast(msg) {
+        var t = document.getElementById('supplierWsToast');
+        if (!t) {
+            t = document.createElement('div');
+            t.id = 'supplierWsToast';
+            t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#1e293b;border:1px solid #fbbf24;color:#fbbf24;padding:12px 20px;border-radius:8px;z-index:9999;cursor:pointer;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,.4)';
+            t.onclick = function() { window.location.reload(); };
+            document.body.appendChild(t);
+        }
+        t.textContent = msg + ' — Nhấn để tải lại';
+        t.style.display = 'block';
+        window.setTimeout(function() { t.style.display = 'none'; }, 8000);
+    }
+
+    function connect() {
+        if (ws) return;
+        ws = new WebSocket(wsUrl);
+        ws.onmessage = function(e) {
+            try {
+                var packet = JSON.parse(e.data);
+                if (packet.type !== 'notification' || !packet.payload || packet.payload.success !== true) return;
+                var pending = Number(packet.payload.pending || 0);
+                var statEl = document.querySelector('.supplier-stat-value');
+                if (statEl) statEl.textContent = String(pending);
+                if (pending > prevPending) {
+                    showSupplierToast('Có ' + (pending - prevPending) + ' dịch vụ mới cần xác nhận');
+                }
+                prevPending = pending;
+            } catch (err) {}
+        };
+        ws.onclose = function() {
+            ws = null;
+            reconnectTimer = window.setTimeout(connect, 5000);
+        };
+        ws.onerror = function() { ws.close(); };
+    }
+
+    connect();
+})();
+</script>
+<?php endif; ?>
 </body>
 </html>

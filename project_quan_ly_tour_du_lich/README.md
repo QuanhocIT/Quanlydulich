@@ -115,6 +115,67 @@ powershell -ExecutionPolicy Bypass -File scripts/remove_admin_automation_tasks.p
 - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`: cấu hình SMTP.
 - `SMTP_ENCRYPTION=tls` và `SMTP_AUTH=1`: cấu hình phổ biến cho hầu hết nhà cung cấp SMTP.
 - Hệ thống ưu tiên gửi qua SMTP bằng PHPMailer. Nếu chưa cấu hình SMTP, helper sẽ rơi về `mail()` gốc của PHP.
+5. Cấu hình realtime WebSocket (Admin/HDV/KhachHang):
+- `REALTIME_WS_ENABLED=1`: bật WebSocket transport.
+- `REALTIME_WS_HOST=127.0.0.1`: host websocket server bind.
+- `REALTIME_WS_PORT=8089`: cổng websocket server.
+- `REALTIME_WS_PUBLIC_URL=ws://127.0.0.1:8089`: URL client browser dùng để kết nối.
+- `REALTIME_HMAC_SECRET=<secret-dai-kho-doan>`: secret ký token realtime.
+- `REALTIME_TOKEN_TTL_SECONDS=120`: TTL token kết nối websocket.
+
+## Realtime WebSocket
+
+He thong da ho tro 3 muc realtime theo role:
+
+1. Admin:
+- Badge dashboard/payment/review realtime.
+- Uu tien WebSocket, fallback sang SSE/polling neu can.
+
+2. HDV:
+- Badge thong bao tren dashboard realtime.
+- Uu tien WebSocket, fallback polling.
+
+3. KhachHang:
+- Trang `khachHang/thongBao` nhan danh sach + unread realtime.
+- Uu tien WebSocket, fallback SSE/polling.
+
+Lenh chay websocket server:
+
+```bash
+php scripts/websocket_server.php
+```
+
+Task Scheduler (Windows) cho WebSocket server:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/setup_websocket_task.ps1
+```
+
+Neu muon them trigger `ONSTART` (can chay PowerShell bang quyen Admin):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/setup_websocket_task.ps1 -UseOnStartup
+```
+
+Neu bi chan quyen tao Scheduled Task (Access is denied), script se tu dong fallback sang Startup folder cua user hien tai.
+
+Go task scheduler WebSocket:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/remove_websocket_task.ps1
+```
+
+Chay tay task ngay lap tuc (tu shell):
+
+```powershell
+schtasks /Run /TN "Aventura_WebSocket_Server"
+```
+
+Goi y production:
+
+- Chay websocket server bang process manager (Supervisor/PM2 service wrapper/Task Scheduler).
+- Dung `wss://` khi deploy public HTTPS (qua reverse proxy Nginx/Apache).
+- Dat `REALTIME_HMAC_SECRET` khac nhau giua moi truong local/staging/prod.
 
 ## Tối ưu hiệu năng khi dữ liệu lớn
 

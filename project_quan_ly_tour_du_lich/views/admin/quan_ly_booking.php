@@ -931,7 +931,7 @@ $huy = count(array_filter($bookingsPage, fn($b) => $b['trang_thai'] === 'Huy'));
         </div>
         <div class="stat-card border-warning">
             <div class="stat-icon bg-warning">⏳</div>
-            <div class="stat-value" style="color: #ffc107;"><?php echo $choXacNhan; ?></div>
+            <div class="stat-value" id="bkStatChoXacNhan" style="color: #ffc107;"><?php echo $choXacNhan; ?></div>
             <div class="stat-label">Chờ xác nhận trên trang hiện tại</div>
         </div>
         <div class="stat-card border-info">
@@ -1155,6 +1155,37 @@ $huy = count(array_filter($bookingsPage, fn($b) => $b['trang_thai'] === 'Huy'));
         </div>
     <?php endif; ?>
 </div>
+<script>
+(function() {
+    var prevPaymentCount = null;
+    document.addEventListener('adminNotification', function(e) {
+        var payload = e && e.detail;
+        if (!payload || payload.success !== true) return;
+        var payments = Number(payload.payments || 0);
+        if (prevPaymentCount !== null && payments > prevPaymentCount) {
+            var el = document.getElementById('bkStatChoXacNhan');
+            if (el) {
+                var cur = parseInt(el.textContent, 10) || 0;
+                el.textContent = String(cur + (payments - prevPaymentCount));
+                el.style.animation = 'none';
+                el.offsetHeight; // reflow
+                el.style.animation = '';
+            }
+            var existing = document.getElementById('bkNewBookingToast');
+            if (!existing) {
+                existing = document.createElement('div');
+                existing.id = 'bkNewBookingToast';
+                existing.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#1e293b;border:1px solid #ffc107;color:#ffc107;padding:12px 20px;border-radius:8px;z-index:9999;cursor:pointer;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,.4)';
+                existing.innerHTML = '⚠️ Có booking mới &mdash; <u>Tải lại</u>';
+                existing.onclick = function() { window.location.reload(); };
+                document.body.appendChild(existing);
+                window.setTimeout(function() { if (existing.parentNode) existing.parentNode.removeChild(existing); }, 8000);
+            }
+        }
+        prevPaymentCount = payments;
+    });
+})();
+</script>
 
 <?php
 $content = ob_get_clean();

@@ -1,4 +1,7 @@
-﻿<!DOCTYPE html>
+﻿<?php
+/** @var array $danhGiaTot */
+?>
+<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
@@ -2872,5 +2875,52 @@ function showTab(tab) {
         });
     });
     </script>
+<?php if (function_exists('realtimeWebSocketEnabled') && realtimeWebSocketEnabled() && !empty($_SESSION['user_id'])): ?>
+<?php
+$_khWsToken = buildRealtimeAuthToken((int)$_SESSION['user_id'], 'KhachHang');
+$_khWsUrl   = realtimeWebSocketPublicUrl() . '?token=' . rawurlencode($_khWsToken);
+?>
+<script>
+(function() {
+    var wsUrl = <?php echo json_encode($_khWsUrl, JSON_UNESCAPED_UNICODE); ?>;
+    var ws = null;
+    var wsActive = false;
+    var reconnectTimer = null;
+
+    function connect() {
+        if (ws) return;
+        ws = new WebSocket(wsUrl);
+        ws.onopen = function() {
+            wsActive = true;
+            // When WS is active, slow down polling to reduce server load
+            if (typeof customerNotificationTimerId !== 'undefined' && customerNotificationTimerId) {
+                window.clearInterval(customerNotificationTimerId);
+            }
+        };
+        ws.onmessage = function(e) {
+            try {
+                var packet = JSON.parse(e.data);
+                if (packet.type !== 'notification' || !packet.payload || packet.payload.success !== true) return;
+                if (typeof renderCustomerNotificationBadge === 'function') {
+                    renderCustomerNotificationBadge(Number(packet.payload.unread || 0));
+                }
+            } catch (err) {}
+        };
+        ws.onclose = function() {
+            ws = null;
+            wsActive = false;
+            // Restore polling when WS disconnects
+            if (typeof restartCustomerNotificationTimer === 'function') {
+                restartCustomerNotificationTimer();
+            }
+            reconnectTimer = window.setTimeout(connect, 5000);
+        };
+        ws.onerror = function() { ws.close(); };
+    }
+
+    connect();
+})();
+</script>
+<?php endif; ?>
 </body>
 </html>

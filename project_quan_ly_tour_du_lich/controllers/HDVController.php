@@ -12,18 +12,39 @@ require_once 'models/CheckinKhach.php';
 require_once 'models/YeuCauDacBiet.php';
 
 class HDVController {
-    private $nhanSuModel;
-    private $hdvMgmtModel;
-    private $lichKhoiHanhModel;
-    private $phanBoNhanSuModel;
-    private $tourModel;
-    private $bookingModel;
-    private $nhatKyTourModel;
-    private $khachHangModel;
-    private $yeuCauDacBietModel;
-    private $checkinKhachModel;
+    private NhanSu $nhanSuModel;
+    private HDVManagement $hdvMgmtModel;
+    private LichKhoiHanh $lichKhoiHanhModel;
+    private PhanBoNhanSu $phanBoNhanSuModel;
+    private Tour $tourModel;
+    private Booking $bookingModel;
+    private NhatKyTour $nhatKyTourModel;
+    private KhachHang $khachHangModel;
+    private YeuCauDacBiet $yeuCauDacBietModel;
+    private CheckinKhach $checkinKhachModel;
 
-    private function requirePostCsrf($redirectAct = 'hdv/dashboard') {
+    private function getHdvUnreadNotificationCount(int $nhanSuId) {
+        $sql = "SELECT COUNT(*) as count FROM thong_bao_hdv WHERE nhan_su_id = ? AND da_xem = 0";
+        $stmt = $this->nhanSuModel->conn->prepare($sql);
+        $stmt->execute([(int)$nhanSuId]);
+        $count = (int)($stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0);
+        return max(0, $count);
+    }
+
+    private function resolveCurrentHdvId() {
+        $userId = (int)($_SESSION['user_id'] ?? 0);
+        if ($userId <= 0) {
+            return 0;
+        }
+
+        $sql = "SELECT nhan_su_id FROM nhan_su WHERE nguoi_dung_id = ? AND vai_tro = 'HDV' LIMIT 1";
+        $stmt = $this->nhanSuModel->conn->prepare($sql);
+        $stmt->execute([$userId]);
+
+        return (int)$stmt->fetchColumn();
+    }
+
+    private function requirePostCsrf(string $redirectAct = 'hdv/dashboard') {
         $scopedToken = $_POST['_csrf_token'] ?? '';
         $globalToken = $_POST['_csrf_global'] ?? '';
 
@@ -546,12 +567,31 @@ $stats = $this->yeuCauDacBietModel->getSummaryStatsForHDV($nhanSuId, $filters);
         $recent_notifications = $this->hdvMgmtModel->getThongBao($nhanSuId, 5);
         
         // Đếm thông báo chưa đọc
-        $sql = "SELECT COUNT(*) as count FROM thong_bao_hdv WHERE nhan_su_id = ? AND da_xem = 0";
-        $stmt = $this->nhanSuModel->conn->prepare($sql);
-        $stmt->execute([$nhanSuId]);
-        $notifications_count = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
+        $notifications_count = $this->getHdvUnreadNotificationCount($nhanSuId);
         
         require 'views/hdv/dashboard.php';
+    }
+
+    public function notificationCounts() {
+        header('Content-Type: application/json; charset=utf-8');
+
+        try {
+            $nhanSuId = $this->resolveCurrentHdvId();
+            if ($nhanSuId <= 0) {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'unread' => 0], JSON_UNESCAPED_UNICODE);
+                exit();
+            }
+
+            echo json_encode([
+                'success' => true,
+                'unread' => $this->getHdvUnreadNotificationCount($nhanSuId),
+            ], JSON_UNESCAPED_UNICODE);
+            exit();
+        } catch (Throwable $e) {
+            echo json_encode(['success' => false, 'unread' => 0], JSON_UNESCAPED_UNICODE);
+            exit();
+        }
     }
     
     /**
@@ -2387,7 +2427,7 @@ $stats = $this->yeuCauDacBietModel->getSummaryStatsForHDV($nhanSuId, $filters);
         return $nhanSu;
     }
 
-    private function getLichKhoiHanhByHDV($nhanSuId) {
+    private function getLichKhoiHanhByHDV(int $nhanSuId) {
         $sql = "SELECT lk.*, t.ten_tour, t.loai_tour, t.gia_co_ban
                 FROM lich_khoi_hanh lk
                 LEFT JOIN tour t ON lk.tour_id = t.tour_id
@@ -2398,7 +2438,7 @@ $stats = $this->yeuCauDacBietModel->getSummaryStatsForHDV($nhanSuId, $filters);
         return $stmt->fetchAll();
     }
 
-    private function handleNhatKyPost($nhanSuId, $allowedTourIds) {
+    private function handleNhatKyPost(int $nhanSuId, array $allowedTourIds) {
         $tourId = isset($_POST['tour_id']) ? (int)$_POST['tour_id'] : 0;
         if ($tourId <= 0 || (!empty($allowedTourIds) && !in_array($tourId, $allowedTourIds, true))) {
             $_SESSION['error'] = 'Tour không hợp lệ hoặc bạn không được phân công.';
@@ -2442,7 +2482,7 @@ $stats = $this->yeuCauDacBietModel->getSummaryStatsForHDV($nhanSuId, $filters);
         exit();
     }
 
-    private function buildNhatKyContent($input) {
+    private function buildNhatKyContent(array $input) {
         $sections = [
             'Tiêu đề' => $input['tieu_de'] ?? '',
             'Hoạt động nổi bật' => $input['hoat_dong'] ?? '',
@@ -2464,7 +2504,7 @@ $stats = $this->yeuCauDacBietModel->getSummaryStatsForHDV($nhanSuId, $filters);
         return implode("\n", $lines);
     }
 
-    private function parseNhatKyContent($text) {
+    private function parseNhatKyContent(string $text) {
         $result = [
             'tieu_de' => '',
             'hoat_dong' => '',

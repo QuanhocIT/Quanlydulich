@@ -89,5 +89,49 @@
     </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<?php if (function_exists('realtimeWebSocketEnabled') && realtimeWebSocketEnabled() && !empty($_SESSION['user_id'])): ?>
+<?php
+$_lstWsToken = buildRealtimeAuthToken((int)$_SESSION['user_id'], 'KhachHang');
+$_lstWsUrl   = realtimeWebSocketPublicUrl() . '?token=' . rawurlencode($_lstWsToken);
+?>
+<script>
+(function() {
+    var wsUrl = <?php echo json_encode($_lstWsUrl, JSON_UNESCAPED_UNICODE); ?>;
+    var ws = null;
+    var reconnectTimer = null;
+    var toastEl = null;
+
+    function showToast() {
+        if (toastEl) return;
+        toastEl = document.createElement('div');
+        toastEl.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#1e293b;border:1px solid #38bdf8;color:#38bdf8;padding:12px 20px;border-radius:8px;z-index:9999;cursor:pointer;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,.4)';
+        toastEl.innerHTML = '🔔 Có cập nhật thanh toán mới &mdash; <u>Tải lại trang</u>';
+        toastEl.onclick = function() { window.location.reload(); };
+        document.body.appendChild(toastEl);
+    }
+
+    function connect() {
+        if (ws) return;
+        ws = new WebSocket(wsUrl);
+        ws.onmessage = function(e) {
+            try {
+                var packet = JSON.parse(e.data);
+                if (packet.type !== 'notification' || !packet.payload || packet.payload.success !== true) return;
+                if (Number(packet.payload.unread || 0) > 0) {
+                    showToast();
+                }
+            } catch (err) {}
+        };
+        ws.onclose = function() {
+            ws = null;
+            reconnectTimer = window.setTimeout(connect, 5000);
+        };
+        ws.onerror = function() { ws.close(); };
+    }
+
+    connect();
+})();
+</script>
+<?php endif; ?>
 </body>
 </html>
