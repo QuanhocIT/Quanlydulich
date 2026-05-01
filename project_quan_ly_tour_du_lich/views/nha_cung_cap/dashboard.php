@@ -440,6 +440,10 @@ $_wsUrl   = realtimeWebSocketPublicUrl() . '?token=' . rawurlencode($_wsToken);
         ws.onmessage = function(e) {
             try {
                 var packet = JSON.parse(e.data);
+                if (packet.type === 'ping') {
+                    ws.send(JSON.stringify({ type: 'pong', payload: { ts: packet.payload && packet.payload.ts } }));
+                    return;
+                }
                 if (packet.type !== 'notification' || !packet.payload || packet.payload.success !== true) return;
                 var pending = Number(packet.payload.pending || 0);
                 var statEl = document.querySelector('.supplier-stat-value');

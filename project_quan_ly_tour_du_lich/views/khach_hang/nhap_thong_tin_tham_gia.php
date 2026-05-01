@@ -1,3 +1,11 @@
+<?php
+/** @var int    $bookingId */
+/** @var array  $booking */
+/** @var int    $requiredCount */
+/** @var array  $draft */
+/** @var array  $existingRows */
+/** @var array  $participantErrors */
+?>
 <!DOCTYPE html>
 <html lang="vi">
 <head>

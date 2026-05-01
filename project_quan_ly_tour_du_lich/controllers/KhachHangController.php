@@ -181,7 +181,29 @@ class KhachHangController {
             exit();
         }
     }
-    
+
+    // AJAX: Đánh dấu tất cả thông báo đã đọc
+    public function markAllNotificationsRead() {
+        header('Content-Type: application/json; charset=utf-8');
+
+        $userId = (int)($_SESSION['user_id'] ?? 0);
+        if ($userId <= 0) {
+            http_response_code(401);
+            echo json_encode(['success' => false], JSON_UNESCAPED_UNICODE);
+            exit();
+        }
+
+        try {
+            require_once 'models/ThongBao.php';
+            $thongBaoModel = new ThongBao();
+            $thongBaoModel->markAllReadByUser($userId);
+            echo json_encode(['success' => true], JSON_UNESCAPED_UNICODE);
+        } catch (Throwable $e) {
+            echo json_encode(['success' => false], JSON_UNESCAPED_UNICODE);
+        }
+        exit();
+    }
+
     // Dashboard khách hàng
     public function dashboard() {
         require_once 'models/Booking.php';
@@ -2156,7 +2178,7 @@ class KhachHangController {
         return $last ?: null;
     }
 
-    private function buildDepartureCountdownInfo($ngayKhoiHanh): array {
+    private function buildDepartureCountdownInfo(string $ngayKhoiHanh): array {
         $dateYmd = trim((string)$ngayKhoiHanh);
         if ($dateYmd === '') {
             return [

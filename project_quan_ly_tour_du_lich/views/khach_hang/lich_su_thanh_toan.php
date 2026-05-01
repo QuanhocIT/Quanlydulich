@@ -104,9 +104,32 @@ $_lstWsUrl   = realtimeWebSocketPublicUrl() . '?token=' . rawurlencode($_lstWsTo
     function showToast() {
         if (toastEl) return;
         toastEl = document.createElement('div');
-        toastEl.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#1e293b;border:1px solid #38bdf8;color:#38bdf8;padding:12px 20px;border-radius:8px;z-index:9999;cursor:pointer;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,.4)';
-        toastEl.innerHTML = '🔔 Có cập nhật thanh toán mới &mdash; <u>Tải lại trang</u>';
-        toastEl.onclick = function() { window.location.reload(); };
+        toastEl.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#1e293b;border:1px solid #38bdf8;color:#38bdf8;padding:12px 20px;border-radius:8px;z-index:9999;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,.4);display:flex;gap:12px;align-items:center';
+
+        var msgSpan = document.createElement('span');
+        msgSpan.textContent = '🔔 Có thông báo mới';
+        toastEl.appendChild(msgSpan);
+
+        var reloadBtn = document.createElement('button');
+        reloadBtn.textContent = 'Tải lại';
+        reloadBtn.style.cssText = 'background:#38bdf8;color:#000;border:none;padding:4px 10px;border-radius:4px;cursor:pointer;font-size:13px;font-weight:600';
+        reloadBtn.onclick = function() { window.location.reload(); };
+        toastEl.appendChild(reloadBtn);
+
+        var markBtn = document.createElement('button');
+        markBtn.textContent = 'Đã đọc';
+        markBtn.style.cssText = 'background:transparent;color:#94a3b8;border:1px solid #94a3b8;padding:4px 10px;border-radius:4px;cursor:pointer;font-size:13px';
+        markBtn.onclick = function() {
+            fetch('index.php?act=khachHang/markAllNotificationsRead', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            }).catch(function() {});
+            if (toastEl && toastEl.parentNode) { toastEl.parentNode.removeChild(toastEl); }
+            toastEl = null;
+        };
+        toastEl.appendChild(markBtn);
+
         document.body.appendChild(toastEl);
     }
 
@@ -116,6 +139,10 @@ $_lstWsUrl   = realtimeWebSocketPublicUrl() . '?token=' . rawurlencode($_lstWsTo
         ws.onmessage = function(e) {
             try {
                 var packet = JSON.parse(e.data);
+                if (packet.type === 'ping') {
+                    ws.send(JSON.stringify({ type: 'pong', payload: { ts: packet.payload && packet.payload.ts } }));
+                    return;
+                }
                 if (packet.type !== 'notification' || !packet.payload || packet.payload.success !== true) return;
                 if (Number(packet.payload.unread || 0) > 0) {
                     showToast();

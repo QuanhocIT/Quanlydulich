@@ -72,7 +72,7 @@ $topTours = $tours ?? [];
 usort($topTours, static function ($left, $right) {
     return (float)($right['loi_nhuan'] ?? 0) <=> (float)($left['loi_nhuan'] ?? 0);
 });
-$topTours = array_slice($topTours, 0, 5);
+$topTours = array_slice($topTours, 0, 6);
 
 $recentEvents = $automationSnapshot['recentEvents'] ?? [];
 $recentEventCount = count($recentEvents);
@@ -911,13 +911,35 @@ $actionCards = [
     }
 
     .tour-card-grid {
-        display: grid;
-        grid-template-columns: repeat(5, minmax(0, 1fr));
+        display: flex;
+        flex-wrap: nowrap;
         gap: 18px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        padding-bottom: 8px;
+        scroll-snap-type: x proximity;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .tour-card-grid::-webkit-scrollbar {
+        height: 10px;
+    }
+
+    .tour-card-grid::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.06);
+        border-radius: 999px;
+    }
+
+    .tour-card-grid::-webkit-scrollbar-thumb {
+        background: rgba(212, 175, 55, 0.38);
+        border-radius: 999px;
     }
 
     .tour-card {
         overflow: hidden;
+        flex: 0 0 270px;
+        width: 270px;
+        scroll-snap-align: start;
     }
 
     .tour-card-cover {
@@ -952,6 +974,12 @@ $actionCards = [
         background:
             radial-gradient(circle at top left, rgba(255,255,255,0.18), transparent 28%),
             linear-gradient(135deg, #38bdf8, #14b8a6);
+    }
+
+    .tour-card:nth-child(6) .tour-card-cover {
+        background:
+            radial-gradient(circle at top left, rgba(255,255,255,0.18), transparent 28%),
+            linear-gradient(135deg, #f97316, #eab308);
     }
 
     .tour-card-cover i {
@@ -1042,7 +1070,6 @@ $actionCards = [
 
     @media (max-width: 1320px) {
         .metrics-grid,
-        .tour-card-grid,
         .action-grid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
         }
@@ -1135,6 +1162,91 @@ $actionCards = [
             grid-template-columns: 1fr;
         }
 
+        .metrics-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .tour-card-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+            overflow: visible;
+            padding-bottom: 0;
+        }
+
+        .tour-card {
+            flex: initial;
+            width: auto;
+        }
+
+        .metric-card {
+            padding: 16px;
+            min-height: 168px;
+        }
+
+        .metric-head {
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+
+        .metric-label {
+            font-size: 0.82rem;
+            margin-bottom: 4px;
+        }
+
+        .metric-value {
+            font-size: 1.55rem;
+            line-height: 1.05;
+        }
+
+        .metric-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 14px;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+
+        .metric-meta {
+            font-size: 0.8rem;
+            line-height: 1.45;
+        }
+
+        .tour-card-cover {
+            padding: 12px;
+        }
+
+        .tour-card-cover i {
+            font-size: 1.55rem;
+        }
+
+        .tour-card-body {
+            padding: 12px 12px 14px;
+        }
+
+        .tour-card-title {
+            font-size: 0.88rem;
+            line-height: 1.28;
+            margin-bottom: 6px;
+        }
+
+        .tour-card-meta {
+            font-size: 0.76rem;
+            line-height: 1.45;
+            min-height: 34px;
+            margin-bottom: 10px;
+        }
+
+        .tour-card-profit {
+            font-size: 0.76rem;
+            gap: 8px;
+        }
+
+        .tour-profit-value {
+            font-size: 0.82rem;
+        }
+
         .mini-grid {
             gap: 14px;
         }
@@ -1162,6 +1274,38 @@ $actionCards = [
         .activity-table td {
             padding: 8px 0;
             border: 0;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .metrics-grid {
+            gap: 10px;
+        }
+
+        .tour-card-grid {
+            gap: 10px;
+        }
+
+        .metric-card {
+            padding: 14px;
+            min-height: 154px;
+        }
+
+        .metric-value {
+            font-size: 1.38rem;
+        }
+
+        .metric-meta {
+            font-size: 0.76rem;
+        }
+
+        .tour-card-title {
+            font-size: 0.82rem;
+        }
+
+        .tour-card-meta,
+        .tour-card-profit {
+            font-size: 0.72rem;
         }
     }
 </style>

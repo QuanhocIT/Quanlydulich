@@ -2,7 +2,7 @@
 // Model cho ThongBao - Quản lý thông báo hệ thống
 class ThongBao 
 {
-    public $conn;
+    public PDO $conn;
 
     /**
      * Điều kiện SQL nhận diện khiếu nại chuyển khoản sai/thiếu nội dung.
@@ -24,7 +24,7 @@ class ThongBao
     /**
      * Tạo thông báo mới
      */
-    public function insert($data) {
+    public function insert(array $data) {
         $sql = "INSERT INTO thong_bao (
                     tieu_de, noi_dung, loai_thong_bao, muc_do_uu_tien,
                     nguoi_gui_id, nguoi_nhan_id, vai_tro_nhan,
@@ -54,7 +54,7 @@ class ThongBao
     /**
      * Cập nhật thông báo
      */
-    public function update($id, $data) {
+    public function update(int $id, array $data) {
         $sql = "UPDATE thong_bao SET 
                 tieu_de = ?, noi_dung = ?, loai_thong_bao = ?, muc_do_uu_tien = ?,
                 nguoi_nhan_id = ?, vai_tro_nhan = ?, trang_thai = ?,
@@ -79,7 +79,7 @@ class ThongBao
     /**
      * Lấy thông báo theo ID
      */
-    public function findById($id) {
+    public function findById(int $id) {
         $sql = "SELECT tb.*, 
                 nd_gui.ho_ten as nguoi_gui_ten,
                 nd_nhan.ho_ten as nguoi_nhan_ten
@@ -95,7 +95,7 @@ class ThongBao
     /**
      * Lấy tất cả thông báo
      */
-    public function getAll($limit = 100) {
+    public function getAll(int $limit = 100) {
         $sql = "SELECT tb.*, 
                 nd_gui.ho_ten as nguoi_gui_ten
                 FROM thong_bao tb
@@ -110,7 +110,7 @@ class ThongBao
     /**
      * Lấy thông báo theo loại
      */
-    public function getByLoai($loaiThongBao) {
+    public function getByLoai(string $loaiThongBao) {
         $sql = "SELECT tb.*, 
                 nd_gui.ho_ten as nguoi_gui_ten
                 FROM thong_bao tb
@@ -125,7 +125,7 @@ class ThongBao
     /**
      * Lấy thông báo theo vai trò nhận
      */
-    public function getByVaiTro($vaiTro, $limit = 50) {
+    public function getByVaiTro(string $vaiTro, int $limit = 50) {
         $sql = "SELECT tb.*, 
                 nd_gui.ho_ten as nguoi_gui_ten
                 FROM thong_bao tb
@@ -141,7 +141,7 @@ class ThongBao
     /**
      * Lấy thông báo của người dùng cụ thể
      */
-    public function getByNguoiDung($nguoiDungId, $limit = 50) {
+    public function getByNguoiDung(int $nguoiDungId, int $limit = 50) {
         $sql = "SELECT tb.*, 
                 nd_gui.ho_ten as nguoi_gui_ten,
                 tbd.da_doc, tbd.thoi_gian_doc
@@ -163,7 +163,7 @@ class ThongBao
     /**
      * Đếm thông báo chưa đọc của người dùng
      */
-    public function countChuaDoc($nguoiDungId) {
+    public function countChuaDoc(int $nguoiDungId) {
         $sql = "SELECT COUNT(*) as total
                 FROM thong_bao tb
                                 LEFT JOIN nguoi_dung nd_gui ON tb.nguoi_gui_id = nd_gui.id
@@ -183,7 +183,7 @@ class ThongBao
     /**
      * Đánh dấu đã đọc
      */
-    public function danhDauDaDoc($thongBaoId, $nguoiDungId) {
+    public function danhDauDaDoc(int $thongBaoId, int $nguoiDungId) {
         $sql = "INSERT INTO thong_bao_doc (thong_bao_id, nguoi_dung_id, da_doc, thoi_gian_doc)
                 VALUES (?, ?, 1, NOW())
                 ON DUPLICATE KEY UPDATE da_doc = 1, thoi_gian_doc = NOW()";
@@ -192,9 +192,42 @@ class ThongBao
     }
 
     /**
+     * Đánh dấu tất cả thông báo của người dùng là đã đọc
+     */
+    public function markAllReadByUser(int $nguoiDungId) {
+        $nguoiDungId = (int)$nguoiDungId;
+        // Lấy tất cả thông báo KhachHang chưa đọc của user
+        $ids = $this->conn->prepare(
+            "SELECT tb.id FROM thong_bao tb
+             LEFT JOIN thong_bao_doc tbd ON tb.id = tbd.thong_bao_id AND tbd.nguoi_dung_id = ?
+             WHERE tb.nguoi_nhan_id = ?
+               AND tb.vai_tro_nhan = 'KhachHang'
+               AND tb.trang_thai = 'DaGui'
+               AND (tbd.da_doc IS NULL OR tbd.da_doc = 0)"
+        );
+        $ids->execute([$nguoiDungId, $nguoiDungId]);
+        $rows = $ids->fetchAll(PDO::FETCH_COLUMN);
+        if (empty($rows)) {
+            return true;
+        }
+        $placeholders = implode(',', array_fill(0, count($rows), '(?, ?, 1, NOW())'));
+        $params = [];
+        foreach ($rows as $tbId) {
+            $params[] = (int)$tbId;
+            $params[] = $nguoiDungId;
+        }
+        $stmt = $this->conn->prepare(
+            "INSERT INTO thong_bao_doc (thong_bao_id, nguoi_dung_id, da_doc, thoi_gian_doc)
+             VALUES $placeholders
+             ON DUPLICATE KEY UPDATE da_doc = 1, thoi_gian_doc = NOW()"
+        );
+        return $stmt->execute($params);
+    }
+
+    /**
      * Cập nhật trạng thái thông báo
      */
-    public function updateTrangThai($id, $trangThai) {
+    public function updateTrangThai(int $id, string $trangThai) {
         $sql = "UPDATE thong_bao SET trang_thai = ?";
         
         if ($trangThai === 'DaGui') {
@@ -210,7 +243,7 @@ class ThongBao
     /**
      * Xóa thông báo
      */
-    public function delete($id) {
+    public function delete(int $id) {
         $sql = "DELETE FROM thong_bao WHERE id = ?";
         $stmt = $this->conn->prepare($sql);
         return $stmt->execute([(int)$id]);
@@ -219,7 +252,7 @@ class ThongBao
     /**
      * Gửi thông báo đến nhiều người theo vai trò
      */
-    public function guiTheoVaiTro($data) {
+    public function guiTheoVaiTro(array $data) {
         // Tạo thông báo
         $thongBaoId = $this->insert($data);
         
@@ -254,7 +287,7 @@ class ThongBao
     /**
      * Lấy tất cả thông báo của khách hàng
      */
-    public function getAllByKhachHang($nguoiDungId) {
+    public function getAllByKhachHang(int $nguoiDungId) {
         $sql = "SELECT tb.*, 
                 nd_gui.ho_ten as nguoi_gui_ten
                 FROM thong_bao tb
@@ -269,7 +302,7 @@ class ThongBao
     /**
      * Lấy yêu cầu tour từ khách hàng (cho Admin)
      */
-    public function getYeuCauTour($filters = []) {
+    public function getYeuCauTour(array $filters = []) {
         $sql = "SELECT tb.*, 
                 nd_gui.ho_ten as nguoi_gui_ten,
                 nd_gui.email as nguoi_gui_email,
@@ -369,7 +402,7 @@ class ThongBao
     /**
      * Lấy danh sách khiếu nại thanh toán từ khách hàng (cho Admin)
      */
-    public function getPaymentComplaints($filters = []) {
+    public function getPaymentComplaints(array $filters = []) {
         $sql = "SELECT tb.*, 
                 nd_gui.ho_ten as nguoi_gui_ten,
                 nd_gui.email as nguoi_gui_email,
@@ -425,7 +458,7 @@ class ThongBao
     /**
      * Cập nhật trạng thái yêu cầu tour và gửi phản hồi
      */
-    public function updatePhanHoi($yeuCauId, $phanHoi, $adminId, $trangThaiMoi = null) {
+    public function updatePhanHoi(int $yeuCauId, string $phanHoi, int $adminId, ?string $trangThaiMoi = null) {
         // Lấy thông tin yêu cầu gốc
         $yeuCau = $this->findById($yeuCauId);
         if (!$yeuCau) {

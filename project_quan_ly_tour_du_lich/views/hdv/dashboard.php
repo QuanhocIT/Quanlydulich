@@ -306,7 +306,12 @@ document.addEventListener('DOMContentLoaded', function () {
         webSocketClient.onmessage = function (event) {
             try {
                 var packet = JSON.parse(event.data || '{}');
-                if (!packet || packet.type !== 'notification' || !packet.payload || packet.payload.success !== true) {
+                if (!packet) return;
+                if (packet.type === 'ping') {
+                    webSocketClient.send(JSON.stringify({ type: 'pong', payload: { ts: packet.payload && packet.payload.ts } }));
+                    return;
+                }
+                if (packet.type !== 'notification' || !packet.payload || packet.payload.success !== true) {
                     return;
                 }
 

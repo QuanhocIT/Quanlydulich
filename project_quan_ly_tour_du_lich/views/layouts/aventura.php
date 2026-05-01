@@ -165,6 +165,7 @@ if ($realtimeWsEnabled && isset($_SESSION['user_id']) && $currentRole !== null) 
 
             <div class="copyright">© <?php echo date('Y'); ?> Aventura. All Rights Reserved</div>
         </aside>
+        <button type="button" class="mobile-sidebar-backdrop" id="mobileSidebarBackdrop" aria-label="Đóng menu điều hướng"></button>
 
         <div class="main-content">
             <!-- Header -->
@@ -235,6 +236,7 @@ if ($realtimeWsEnabled && isset($_SESSION['user_id']) && $currentRole !== null) 
         const sidebar = document.getElementById('sidebar');
         const sidebarToggle = document.getElementById('sidebarToggle');
         const sidebarTheme = document.getElementById('sidebarTheme');
+        const mobileSidebarBackdrop = document.getElementById('mobileSidebarBackdrop');
         const realtimeStatus = document.getElementById('realtimeStatus');
         const realtimeStatusText = document.getElementById('realtimeStatusText');
         const dashboardNavBadge = document.getElementById('dashboardNavBadge');
@@ -474,7 +476,12 @@ if ($realtimeWsEnabled && isset($_SESSION['user_id']) && $currentRole !== null) 
             notificationWebSocket.onmessage = function(event) {
                 try {
                     const packet = JSON.parse(event.data || '{}');
-                    if (!packet || packet.type !== 'notification' || !packet.payload) return;
+                    if (!packet) return;
+                    if (packet.type === 'ping') {
+                        notificationWebSocket.send(JSON.stringify({ type: 'pong', payload: { ts: packet.payload && packet.payload.ts } }));
+                        return;
+                    }
+                    if (packet.type !== 'notification' || !packet.payload) return;
                     applyNotificationPayload(packet.payload);
                     setRealtimeConnectionState('connected');
                 } catch (error) {
@@ -548,12 +555,12 @@ if ($realtimeWsEnabled && isset($_SESSION['user_id']) && $currentRole !== null) 
             if (!sidebar || !sidebarToggle) return;
             const icon = sidebarToggle.querySelector('i');
             if (!icon) return;
+            const isMobile = window.innerWidth <= 768;
+            icon.className = 'bi';
             if (sidebar.classList.contains('collapsed')) {
-                icon.classList.remove('bi-chevron-left');
-                icon.classList.add('bi-chevron-right');
+                icon.classList.add(isMobile ? 'bi-list' : 'bi-chevron-right');
             } else {
-                icon.classList.remove('bi-chevron-right');
-                icon.classList.add('bi-chevron-left');
+                icon.classList.add(isMobile ? 'bi-x-lg' : 'bi-chevron-left');
             }
         }
 
@@ -600,6 +607,21 @@ if ($realtimeWsEnabled && isset($_SESSION['user_id']) && $currentRole !== null) 
             if (document.body.classList.contains('theme-light')) return 'soft-light';
             if (document.body.classList.contains('theme-business-dark')) return 'business-dark';
             return 'dark';
+        }
+
+        function syncMobileUtilityTitles() {
+            [sidebarToggle, sidebarTheme].forEach(function(button) {
+                if (!button) return;
+                if (!button.dataset.desktopTitle && button.getAttribute('title')) {
+                    button.dataset.desktopTitle = button.getAttribute('title');
+                }
+
+                if (window.innerWidth <= 768) {
+                    button.removeAttribute('title');
+                } else if (button.dataset.desktopTitle) {
+                    button.setAttribute('title', button.dataset.desktopTitle);
+                }
+            });
         }
 
         function initAdminMotion() {
@@ -697,7 +719,7 @@ if ($realtimeWsEnabled && isset($_SESSION['user_id']) && $currentRole !== null) 
         if (sidebar) {
             const shouldStartCollapsed = forceSidebarHiddenOnLoad
                 ? true
-                : localStorage.getItem(STORAGE_KEYS.sidebarCollapsed) === '1';
+                : (window.innerWidth <= 768 ? true : localStorage.getItem(STORAGE_KEYS.sidebarCollapsed) === '1');
 
             sidebar.classList.toggle('collapsed', shouldStartCollapsed);
             localStorage.setItem(STORAGE_KEYS.sidebarCollapsed, shouldStartCollapsed ? '1' : '0');
@@ -710,6 +732,7 @@ if ($realtimeWsEnabled && isset($_SESSION['user_id']) && $currentRole !== null) 
         localStorage.setItem(STORAGE_KEYS.themeMode, appliedTheme);
         applySidebarState();
         setThemeIcon(appliedTheme);
+        syncMobileUtilityTitles();
         initAdminMotion();
 
         // Nav parent-child: cho phép mở nhiều menu con cùng lúc
@@ -741,6 +764,15 @@ if ($realtimeWsEnabled && isset($_SESSION['user_id']) && $currentRole !== null) 
             });
         }
 
+        if (mobileSidebarBackdrop && sidebar) {
+            mobileSidebarBackdrop.addEventListener('click', function() {
+                if (window.innerWidth > 768) return;
+                sidebar.classList.add('collapsed');
+                applySidebarState();
+                localStorage.setItem(STORAGE_KEYS.sidebarCollapsed, '1');
+            });
+        }
+
         // Dark/Light mode toggle
         if (sidebarTheme) {
             sidebarTheme.addEventListener('click', function() {
@@ -749,8 +781,12 @@ if ($realtimeWsEnabled && isset($_SESSION['user_id']) && $currentRole !== null) 
                 const nextMode = applyThemeMode(THEME_MODES[nextIndex]);
                 setThemeIcon(nextMode);
                 localStorage.setItem(STORAGE_KEYS.themeMode, nextMode);
+                syncMobileUtilityTitles();
             });
         }
+
+        window.addEventListener('resize', syncMobileUtilityTitles, { passive: true });
+        window.addEventListener('resize', setSidebarIcon, { passive: true });
 
         if (isAdminUser) {
             ['pointerdown', 'keydown'].forEach(function(eventName) {
@@ -793,4 +829,3 @@ if ($realtimeWsEnabled && isset($_SESSION['user_id']) && $currentRole !== null) 
     <?php endif; ?>
 </body>
 </html>
-

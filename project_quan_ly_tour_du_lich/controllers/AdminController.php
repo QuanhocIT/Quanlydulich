@@ -39,7 +39,7 @@ class AdminController {
         ];
     }
 
-    private function requirePostCsrf($redirectAct = 'admin/dashboard') {
+    private function requirePostCsrf(string $redirectAct = 'admin/dashboard') {
         $scopedToken = $_POST['_csrf_token'] ?? '';
         $globalToken = $_POST['_csrf_global'] ?? '';
 
@@ -54,12 +54,12 @@ class AdminController {
         }
     }
 
-    private function optionalPostString($key) {
+    private function optionalPostString(string $key) {
         $value = requestString($key, '', 'POST');
         return $value === '' ? null : $value;
     }
 
-    private function optionalPostEmail($key) {
+    private function optionalPostEmail(string $key) {
         if (!isset($_POST[$key])) {
             return null;
         }
@@ -72,7 +72,7 @@ class AdminController {
         return validateEmail($rawValue);
     }
 
-    private function optionalPostPhone($key) {
+    private function optionalPostPhone(string $key) {
         if (!isset($_POST[$key])) {
             return null;
         }
@@ -85,7 +85,7 @@ class AdminController {
         return validatePhone($rawValue);
     }
 
-    private function optionalPostDate($key) {
+    private function optionalPostDate(string $key) {
         if (!isset($_POST[$key])) {
             return null;
         }
@@ -98,11 +98,11 @@ class AdminController {
         return validateDateYmd($rawValue);
     }
 
-    private function optionalPostId($key) {
+    private function optionalPostId(string $key) {
         return validateId($_POST[$key] ?? null);
     }
 
-    private function tinhLuong($loaiLuong, $soTienCoDinh, $phanTramHoaHong, $doanhThu) {
+    private function tinhLuong(string $loaiLuong, float $soTienCoDinh, float $phanTramHoaHong, float $doanhThu) {
         $loaiLuong = in_array($loaiLuong, ['CoDinh', 'PhanTram', 'KetHop'], true) ? $loaiLuong : 'CoDinh';
         $soTienCoDinh = max(0, (float)$soTienCoDinh);
         $phanTramHoaHong = max(0, min(100, (float)$phanTramHoaHong));
@@ -3019,21 +3019,21 @@ class AdminController {
         exit;
     }
     
-    private function initAdminNotificationState($conn = null) {
+    private function initAdminNotificationState(?PDO $conn = null) {
         $userId = (int)($_SESSION['user_id'] ?? 0);
         $state = getAdminNotificationState($userId, $conn);
         $_SESSION['admin_notifications'] = $state;
         return $state;
     }
 
-    private function persistAdminNotificationState(array $updates, $conn = null) {
+    private function persistAdminNotificationState(array $updates, ?PDO $conn = null) {
         $userId = (int)($_SESSION['user_id'] ?? 0);
         $state = saveAdminNotificationState($userId, $updates, $conn);
         $_SESSION['admin_notifications'] = $state;
         return $state;
     }
 
-    private function markAdminPaymentNotificationsSeen($conn = null) {
+    private function markAdminPaymentNotificationsSeen(?PDO $conn = null) {
         $pdo = $conn instanceof PDO ? $conn : connectDB();
         $maxPaymentId = (int)$pdo->query("SELECT COALESCE(MAX(payment_id), 0) FROM payments")->fetchColumn();
         return $this->persistAdminNotificationState([
@@ -3041,7 +3041,7 @@ class AdminController {
         ], $pdo);
     }
 
-    private function markAdminReviewNotificationsSeen($conn = null) {
+    private function markAdminReviewNotificationsSeen(?PDO $conn = null) {
         $pdo = $conn instanceof PDO ? $conn : connectDB();
         $maxReviewId = (int)$pdo->query("SELECT COALESCE(MAX(danh_gia_id), 0) FROM danh_gia")->fetchColumn();
         return $this->persistAdminNotificationState([
@@ -3049,7 +3049,7 @@ class AdminController {
         ], $pdo);
     }
 
-    private function markAdminDashboardNotificationsSeen($conn = null) {
+    private function markAdminDashboardNotificationsSeen(?PDO $conn = null) {
         $pdo = $conn instanceof PDO ? $conn : connectDB();
         $baseline = getAdminNotificationBaseline($pdo);
         return $this->persistAdminNotificationState([
@@ -3058,7 +3058,7 @@ class AdminController {
         ], $pdo);
     }
 
-    private function getAdminNotificationPayload($conn) {
+    private function getAdminNotificationPayload(PDO $conn) {
         require_once 'models/ThongBao.php';
         $state = $this->initAdminNotificationState($conn);
 
@@ -3596,6 +3596,75 @@ class AdminController {
             header('Location: index.php?act=admin/chiTietYeuCauTour&id=' . $yeuCauId);
             exit;
         }
+    }
+
+    // AJAX: KPI snapshot cho admin/dashboard realtime refresh
+    public function dashboardKpiSnapshot() {
+        requireRole('Admin');
+        header('Content-Type: application/json; charset=utf-8');
+
+        try {
+            $result = cacheRemember('admin_dashboard_kpi_snapshot', 30, function () {
+                $conn = connectDB();
+
+                $totalRevenue = (float)$conn
+                    ->query("SELECT COALESCE(SUM(so_tien), 0) FROM giao_dich_tai_chinh WHERE loai = 'Thu' AND ngay_giao_dich >= DATE_SUB(NOW(), INTERVAL 12 MONTH)")
+                    ->fetchColumn();
+
+                $totalBookings = (int)$conn
+                    ->query("SELECT COUNT(*) FROM booking WHERE trang_thai NOT IN ('Huy')")
+                    ->fetchColumn();
+
+                $pendingBookings = (int)$conn
+                    ->query("SELECT COUNT(*) FROM booking WHERE trang_thai = 'ChoXacNhan'")
+                    ->fetchColumn();
+
+                return [
+                    'success' => true,
+                    'total_revenue' => $totalRevenue,
+                    'total_bookings' => $totalBookings,
+                    'pending_bookings' => $pendingBookings,
+                ];
+            });
+
+            echo json_encode($result, JSON_UNESCAPED_UNICODE);
+        } catch (Throwable $e) {
+            echo json_encode(['success' => false], JSON_UNESCAPED_UNICODE);
+        }
+        exit;
+    }
+
+    // AJAX: Booking/seat stats cho chi_tiet_lich_khoi_hanh realtime refresh
+    public function lichKhoiHanhStats() {
+        requireRole('Admin');
+        header('Content-Type: application/json; charset=utf-8');
+
+        $id = (int)($_GET['id'] ?? 0);
+        if ($id <= 0) {
+            echo json_encode(['success' => false], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        try {
+            $conn = connectDB();
+
+            $stmt = $conn->prepare(
+                "SELECT
+                    (SELECT COUNT(*) FROM booking WHERE lich_khoi_hanh_id = ? AND trang_thai NOT IN ('Huy')) AS so_booking,
+                    (SELECT COALESCE(SUM(so_nguoi), 0) FROM booking WHERE lich_khoi_hanh_id = ? AND trang_thai NOT IN ('Huy')) AS tong_nguoi_dat"
+            );
+            $stmt->execute([$id, $id]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            echo json_encode([
+                'success' => true,
+                'so_booking' => (int)($row['so_booking'] ?? 0),
+                'tong_nguoi_dat' => (int)($row['tong_nguoi_dat'] ?? 0),
+            ], JSON_UNESCAPED_UNICODE);
+        } catch (Throwable $e) {
+            echo json_encode(['success' => false], JSON_UNESCAPED_UNICODE);
+        }
+        exit;
     }
 }
 

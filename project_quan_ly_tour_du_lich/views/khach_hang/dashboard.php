@@ -237,6 +237,39 @@
     </div>
 </div>
 
+<div class="container d-md-none">
+    <div class="mobile-home-shortcuts" aria-label="Lối tắt nhanh">
+        <a href="index.php?act=khachHang/danhSachTour" class="mobile-shortcut-card">
+            <span class="mobile-shortcut-icon"><i class="bi bi-stars"></i></span>
+            <span>
+                <strong>Xem tour</strong>
+                <small>Danh sách tour nổi bật</small>
+            </span>
+        </a>
+        <a href="#reviews" class="mobile-shortcut-card">
+            <span class="mobile-shortcut-icon"><i class="bi bi-chat-quote"></i></span>
+            <span>
+                <strong>Đánh giá</strong>
+                <small>Ý kiến từ khách hàng</small>
+            </span>
+        </a>
+        <a href="#places" class="mobile-shortcut-card">
+            <span class="mobile-shortcut-icon"><i class="bi bi-geo-alt"></i></span>
+            <span>
+                <strong>Địa danh</strong>
+                <small>Gợi ý điểm đến nhanh</small>
+            </span>
+        </a>
+        <a href="#support" class="mobile-shortcut-card">
+            <span class="mobile-shortcut-icon"><i class="bi bi-headset"></i></span>
+            <span>
+                <strong>Hỗ trợ</strong>
+                <small>Liên hệ ngay khi cần</small>
+            </span>
+        </a>
+    </div>
+</div>
+
 <!-- CURRENCY CONVERTER + TABS -->
 <style>
 /* CARD */
@@ -629,6 +662,7 @@ function showTab(tab) {
                     </div>
                 </div>
 
+                <div class="mobile-inline-hint mobile-exp-hint d-md-none"><i class="bi bi-arrow-left-right"></i> Vuốt ngang để xem nhanh các gợi ý</div>
                 <div class="exp-grid mt-4">
                     <!-- Card 1: lớn bên trái -->
                     <a href="index.php?act=khachHang/danhSachTour" class="exp-card exp-card--large">
@@ -807,6 +841,7 @@ function showTab(tab) {
                         </a>
                     </div>
 
+                    <div class="mobile-inline-hint d-md-none"><i class="bi bi-arrow-left-right"></i> Vuốt để xem thêm điểm đến</div>
                     <div class="dest-scroll-track">
                         <?php
                         $destinations = [
@@ -1001,6 +1036,7 @@ function showTab(tab) {
         };
         ?>
         <?php if (!empty($tourTrongNuoc)): ?>
+        <div class="mobile-inline-hint d-md-none"><i class="bi bi-arrow-left-right"></i> Vuốt để duyệt tour trong nước</div>
         <div class="d-flex flex-row flex-nowrap overflow-x-auto overflow-y-hidden pb-2 luxury-scroll">
             <?php foreach ($tourTrongNuoc as $tour): ?>
             <?php $renderHomeTourCard($tour, 'https://images.unsplash.com/photo-1465156799763-2c087c332922?auto=format&fit=crop&w=900&q=80', 'Trong nước'); continue; ?>
@@ -1039,6 +1075,7 @@ function showTab(tab) {
             <a class="home-section-link" href="index.php?act=khachHang/danhSachTour&loai_tour=QuocTe">Xem tất cả <i class="bi bi-arrow-right ms-1"></i></a>
         </div>
         <?php if (!empty($tourQuocTe)): ?>
+        <div class="mobile-inline-hint d-md-none"><i class="bi bi-arrow-left-right"></i> Vuốt để duyệt tour quốc tế</div>
         <div class="d-flex flex-row flex-nowrap overflow-x-auto overflow-y-hidden pb-2 luxury-scroll">
             <?php foreach ($tourQuocTe as $tour): ?>
             <?php $renderHomeTourCard($tour, 'https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=900&q=80', 'Quốc tế'); continue; ?>
@@ -1183,7 +1220,8 @@ function showTab(tab) {
                     <p class="text-muted mb-0" style="font-size:.95rem;">Chia sẻ chân thực từ những hành khách đã đồng hành cùng chúng tôi</p>
                 </div>
             </div>
-            <div class="row g-4 mt-1">
+            <div class="mobile-inline-hint d-md-none"><i class="bi bi-arrow-left-right"></i> Vuốt để xem thêm đánh giá</div>
+            <div class="row g-4 mt-1 reviews-mobile-track">
                 <?php foreach ($danhGiaTot as $dg): ?>
                 <?php
                     $diem = (int)($dg['diem'] ?? 0);
@@ -1192,7 +1230,7 @@ function showTab(tab) {
                     $noi  = htmlspecialchars($dg['noi_dung'] ?? '');
                     $loai = htmlspecialchars($dg['tieu_chi'] ?? $dg['loai_danh_gia'] ?? '');
                 ?>
-                <div class="col-md-4">
+                <div class="col-md-4 rv-mobile-item">
                     <div class="rv-card">
                         <div class="rv-quote">&ldquo;</div>
                         <p class="rv-text"><?php echo $noi; ?></p>
@@ -1244,6 +1282,59 @@ function showTab(tab) {
         .rv-avatar { border-radius: 999px; object-fit: cover; outline: 2px solid rgba(214,178,109,.4); outline-offset: 2px; }
         .rv-name { font-weight: 800; font-size: .92rem; color: #0f172a; }
         .rv-tag { font-size: .75rem; font-weight: 700; color: #d6b26d; text-transform: uppercase; letter-spacing: .07em; margin-top: 2px; }
+        @media (max-width: 767.98px) {
+            .reviews-mobile-track {
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                overflow-y: hidden;
+                scroll-snap-type: x proximity;
+                -webkit-overflow-scrolling: touch;
+                padding-bottom: 6px;
+                margin-right: -12px;
+            }
+            .reviews-mobile-track::-webkit-scrollbar { display: none; }
+            .rv-mobile-item {
+                flex: 0 0 84%;
+                max-width: 84%;
+                scroll-snap-align: start;
+            }
+            .rv-card {
+                border-radius: 20px;
+                padding: 20px 18px 18px;
+                min-height: 100%;
+            }
+            .rv-quote {
+                font-size: 3.4rem;
+                margin-bottom: 4px;
+            }
+            .rv-text {
+                font-size: .9rem;
+                line-height: 1.6;
+                margin-bottom: 12px;
+            }
+            .rv-stars {
+                margin-bottom: 14px;
+            }
+            .rv-footer {
+                gap: 10px;
+                padding-top: 14px;
+            }
+            .rv-avatar {
+                width: 40px;
+                height: 40px;
+            }
+            .rv-name { font-size: .88rem; }
+            .rv-tag {
+                font-size: .7rem;
+                letter-spacing: .05em;
+            }
+        }
+        @media (max-width: 420px) {
+            .rv-mobile-item {
+                flex-basis: 88%;
+                max-width: 88%;
+            }
+        }
         </style>
     </div>
 
@@ -1256,6 +1347,7 @@ function showTab(tab) {
             </div>
             <a class="home-section-link" href="index.php?act=khachHang/danhSachTour">Khám phá tour <i class="bi bi-arrow-right ms-1"></i></a>
         </div>
+        <div class="mobile-inline-hint mobile-places-hint d-md-none"><i class="bi bi-arrow-left-right"></i> Vuốt để khám phá địa danh nổi bật</div>
         <div class="featured-places-grid">
             <?php if (!empty($danhSachDiaDanh)): ?>
                 <?php foreach ($danhSachDiaDanh as $index => $diaDanh): ?>
@@ -1399,6 +1491,79 @@ function showTab(tab) {
         .featured-place-name { font-size: 1.1rem; }
         .featured-place-sub { font-size: .76rem; }
         .featured-place-card { min-height: 120px; }
+    }
+    @media (max-width: 767.98px) {
+        .home-section-head {
+            align-items: flex-start;
+            gap: 10px;
+        }
+        .home-section-copy {
+            max-width: 34ch;
+        }
+        .home-section-link {
+            padding: 9px 16px;
+            font-size: .82rem;
+        }
+        .featured-places-grid {
+            display: flex;
+            gap: 14px;
+            overflow-x: auto;
+            overflow-y: hidden;
+            scroll-snap-type: x proximity;
+            -webkit-overflow-scrolling: touch;
+            margin-bottom: 18px;
+            padding-bottom: 6px;
+        }
+        .featured-places-grid::-webkit-scrollbar { display: none; }
+        .featured-place-card,
+        .featured-place-card:nth-child(1),
+        .featured-place-card:nth-child(2),
+        .featured-place-card:nth-child(3),
+        .featured-place-card:nth-child(4),
+        .featured-place-card:nth-child(5),
+        .featured-place-card:nth-child(6) {
+            flex: 0 0 84%;
+            min-height: 240px;
+            grid-row: auto;
+            grid-column: auto;
+            scroll-snap-align: start;
+            border-radius: 22px;
+        }
+        .featured-place-card img,
+        .featured-place-card:nth-child(1) img,
+        .featured-place-card:nth-child(6) img {
+            min-height: 240px;
+        }
+        .featured-place-overlay {
+            padding: 16px;
+        }
+        .featured-place-badge {
+            left: 14px;
+            top: 14px;
+            padding: 6px 11px;
+            font-size: .68rem;
+        }
+        .featured-place-name {
+            font-size: 1.25rem;
+        }
+        .featured-place-sub {
+            font-size: .78rem;
+        }
+    }
+    @media (max-width: 420px) {
+        .featured-place-card,
+        .featured-place-card:nth-child(1),
+        .featured-place-card:nth-child(2),
+        .featured-place-card:nth-child(3),
+        .featured-place-card:nth-child(4),
+        .featured-place-card:nth-child(5),
+        .featured-place-card:nth-child(6) {
+            flex-basis: 88%;
+            min-height: 220px;
+        }
+        .featured-place-card img {
+            min-height: 220px;
+        }
     }
     </style>
 
@@ -2339,6 +2504,10 @@ function showTab(tab) {
             font-weight: 900;
             padding: 0 14px;
         }
+        body.luxury .mobile-home-shortcuts,
+        body.luxury .mobile-inline-hint{
+            display:none;
+        }
 
         @media (max-width: 992px){
             /* Keep sections in normal flow on tablet/mobile to avoid overlap. */
@@ -2348,6 +2517,385 @@ function showTab(tab) {
             body.luxury .booking-box{ transform: none; max-width: 520px; margin: 0 auto; }
             body.luxury .luxury-float{ margin-top: 20px !important; }
             body.luxury .featured-place-name{ font-size:1.1rem; }
+        }
+        @media (max-width: 767.98px){
+            body.luxury .container{
+                padding-left:18px;
+                padding-right:18px;
+            }
+            body.luxury .luxury-content > .container.mt-5{
+                margin-top:32px !important;
+            }
+            body.luxury .mobile-home-shortcuts{
+                display:grid;
+                grid-template-columns:repeat(2, minmax(0, 1fr));
+                gap:12px;
+                margin-top:16px;
+                margin-bottom:6px;
+            }
+            body.luxury .mobile-shortcut-card{
+                display:flex;
+                align-items:flex-start;
+                gap:12px;
+                padding:14px 13px;
+                border-radius:20px;
+                text-decoration:none;
+                color:#132033;
+                background:linear-gradient(180deg, rgba(255,255,255,.96), rgba(248,244,236,.96));
+                border:1px solid rgba(214,178,109,.18);
+                box-shadow:0 14px 32px rgba(2,6,23,.08);
+            }
+            body.luxury .mobile-shortcut-card strong{
+                display:block;
+                font-size:.9rem;
+                font-weight:900;
+                line-height:1.2;
+                margin-bottom:3px;
+            }
+            body.luxury .mobile-shortcut-card small{
+                display:block;
+                color:#66758d;
+                font-size:.74rem;
+                line-height:1.45;
+            }
+            body.luxury .mobile-shortcut-icon{
+                width:40px;
+                height:40px;
+                flex:0 0 40px;
+                border-radius:14px;
+                display:flex;
+                align-items:center;
+                justify-content:center;
+                color:#9a6e1c;
+                background:rgba(214,178,109,.14);
+                border:1px solid rgba(214,178,109,.22);
+                box-shadow:inset 0 1px 0 rgba(255,255,255,.65);
+            }
+            body.luxury .mobile-inline-hint{
+                display:flex;
+                align-items:center;
+                gap:8px;
+                margin:4px 0 12px;
+                color:#7a8498;
+                font-size:.76rem;
+                font-weight:800;
+                letter-spacing:.03em;
+                text-transform:uppercase;
+            }
+            body.luxury .mobile-inline-hint i{
+                color:#b58839;
+            }
+            body.luxury .luxury-nav{
+                padding-top:.8rem !important;
+                padding-bottom:.8rem !important;
+            }
+            body.luxury .navbar-brand{
+                font-size:1.35rem !important;
+            }
+            body.luxury .navbar-toggler{
+                padding:.45rem .7rem;
+                border-radius:16px;
+                background:rgba(255,255,255,.08);
+            }
+            body.luxury .luxury-nav .navbar-collapse{
+                margin-top:12px;
+                padding:14px;
+                border-radius:24px;
+                background:rgba(11,18,32,.92);
+                border:1px solid rgba(214,178,109,.18);
+                box-shadow:0 20px 44px rgba(2,6,23,.24);
+            }
+            body.luxury .luxury-nav .navbar-nav{
+                align-items:stretch !important;
+                gap:8px !important;
+            }
+            body.luxury .luxury-nav .nav-link{
+                justify-content:flex-start;
+                width:100%;
+                min-height:46px;
+                padding:12px 14px !important;
+                border-radius:16px;
+            }
+            body.luxury .luxury-nav .nav-icon-link{
+                min-height:46px;
+                justify-content:center;
+            }
+            body.luxury .luxury-cta{
+                justify-content:center;
+            }
+            body.luxury .hero-hotel{
+                border-radius:0 0 28px 28px;
+            }
+            body.luxury .home-section-head{
+                align-items:flex-start;
+                gap:10px;
+            }
+            body.luxury .hero-content{
+                min-height:calc(100svh - 24px);
+                padding-top:94px;
+                padding-bottom:26px;
+                align-items:flex-end;
+            }
+            body.luxury .hero-main-copy{
+                margin-bottom:16px;
+            }
+            body.luxury .hero-hotel h5{
+                font-size:.74rem;
+                letter-spacing:.16em;
+                margin-bottom:10px;
+            }
+            body.luxury .hero-hotel h1{
+                font-size:clamp(2rem, 8vw, 2.7rem);
+                line-height:1.06;
+                margin-bottom:10px;
+            }
+            body.luxury .hero-main-copy p{
+                font-size:.95rem !important;
+                line-height:1.65 !important;
+                margin-top:0 !important;
+            }
+            body.luxury .feature{
+                min-height:52px;
+                padding:10px 12px;
+                border-radius:14px;
+                font-size:.84rem;
+                display:flex;
+                align-items:center;
+            }
+            body.luxury .booking-box{
+                border-radius:24px;
+                padding:18px 16px;
+                box-shadow:0 20px 42px rgba(0,0,0,.34);
+            }
+            body.luxury .booking-box h4{
+                font-size:1.12rem;
+            }
+            body.luxury .booking-box p.small{
+                font-size:.82rem;
+                line-height:1.55;
+            }
+            body.luxury .booking-box .form-label{
+                font-size:.8rem;
+                margin-bottom:6px;
+            }
+            body.luxury .booking-box .form-control,
+            body.luxury .booking-box .form-select{
+                min-height:48px;
+                padding:11px 14px;
+                border-radius:15px;
+                font-size:.92rem;
+            }
+            body.luxury .booking-box textarea.form-control{
+                min-height:88px;
+            }
+            body.luxury .booking-box .btn{
+                min-height:48px;
+                border-radius:15px;
+                font-size:.92rem;
+            }
+            body.luxury .enhanced-card{
+                border-radius:24px !important;
+            }
+            body.luxury #tools .card{
+                padding:18px 14px !important;
+            }
+            body.luxury .home-section-copy{
+                max-width:34ch;
+            }
+            body.luxury .home-section-link{
+                padding:9px 16px;
+                font-size:.82rem;
+            }
+            body.luxury #experiences,
+            body.luxury .dest-section,
+            body.luxury #tours,
+            body.luxury #reviews,
+            body.luxury #places,
+            body.luxury #support{
+                scroll-margin-top:92px;
+            }
+            body.luxury h2.fw-bold{
+                font-size:clamp(1.75rem, 7vw, 2.25rem);
+                line-height:1.08;
+            }
+            body.luxury .exp-grid{
+                display:grid;
+                grid-template-columns:minmax(0, 1.2fr) minmax(0, .8fr);
+                grid-template-rows:150px 150px;
+                gap:10px;
+            }
+            body.luxury .exp-card,
+            body.luxury .exp-card--large,
+            body.luxury .exp-card--small{
+                min-height:0;
+                border-radius:20px;
+            }
+            body.luxury .exp-card--large{
+                grid-row:1 / 3;
+            }
+            body.luxury .exp-card-overlay,
+            body.luxury .exp-card--small .exp-card-overlay{
+                padding:14px;
+            }
+            body.luxury .exp-title,
+            body.luxury .exp-card--small .exp-title{
+                font-size:1.02rem;
+                line-height:1.1;
+            }
+            body.luxury .exp-desc,
+            body.luxury .exp-card--small .exp-desc{
+                display:block;
+                font-size:.72rem;
+                line-height:1.4;
+                margin-bottom:8px;
+            }
+            body.luxury .exp-tag{
+                font-size:.58rem;
+                letter-spacing:.1em;
+                margin-bottom:4px;
+            }
+            body.luxury .exp-badge{
+                top:12px;
+                left:12px;
+                font-size:.6rem;
+                padding:4px 9px;
+            }
+            body.luxury .exp-cta{
+                padding:6px 12px;
+                font-size:.72rem;
+            }
+            body.luxury .mobile-exp-hint{
+                display:none;
+            }
+            body.luxury .dest-see-all-btn{
+                padding:8px 16px;
+                font-size:.82rem;
+            }
+            body.luxury .dest-scroll-track{
+                gap:14px;
+                padding-bottom:8px;
+            }
+            body.luxury .dest-card{
+                flex:0 0 70vw;
+                border-radius:18px;
+            }
+            body.luxury .dest-card-img{
+                height:190px;
+            }
+            body.luxury .dest-card-body{
+                padding:12px 14px;
+            }
+            body.luxury .reviews-mobile-track{
+                flex-wrap:nowrap;
+                overflow-x:auto;
+                overflow-y:hidden;
+                scroll-snap-type:x proximity;
+                -webkit-overflow-scrolling:touch;
+                padding-bottom:6px;
+                margin-right:-12px;
+            }
+            body.luxury .reviews-mobile-track::-webkit-scrollbar{
+                display:none;
+            }
+            body.luxury .rv-mobile-item{
+                flex:0 0 84%;
+                max-width:84%;
+                scroll-snap-align:start;
+            }
+            body.luxury .rv-card{
+                border-radius:20px;
+                padding:20px 18px 18px;
+            }
+            body.luxury .rv-quote{
+                font-size:3.4rem;
+                margin-bottom:4px;
+            }
+            body.luxury .rv-text{
+                font-size:.9rem;
+                line-height:1.6;
+                margin-bottom:12px;
+            }
+            body.luxury .rv-stars{
+                margin-bottom:14px;
+            }
+            body.luxury .rv-footer{
+                gap:10px;
+                padding-top:14px;
+            }
+            body.luxury .featured-places-grid{
+                display:grid;
+                grid-template-columns:repeat(2, minmax(0, 1fr));
+                gap:12px;
+                margin-bottom:18px;
+                padding-bottom:0;
+            }
+            body.luxury .featured-place-card,
+            body.luxury .featured-place-card:nth-child(1),
+            body.luxury .featured-place-card:nth-child(2),
+            body.luxury .featured-place-card:nth-child(3),
+            body.luxury .featured-place-card:nth-child(4),
+            body.luxury .featured-place-card:nth-child(5),
+            body.luxury .featured-place-card:nth-child(6){
+                min-height:180px;
+                grid-row:auto;
+                grid-column:auto;
+                border-radius:18px;
+            }
+            body.luxury .featured-place-card img{
+                min-height:180px;
+            }
+            body.luxury .featured-place-card .featured-place-overlay{
+                padding:12px;
+            }
+            body.luxury .featured-place-badge{
+                left:12px;
+                top:12px;
+                padding:5px 9px;
+                font-size:.6rem;
+            }
+            body.luxury .featured-place-name{
+                font-size:.98rem;
+                line-height:1.18;
+            }
+            body.luxury .featured-place-sub{
+                font-size:.7rem;
+                line-height:1.35;
+            }
+            body.luxury .mobile-places-hint{
+                display:none;
+            }
+            body.luxury .benefit-bar{
+                grid-template-columns:1fr;
+                gap:12px;
+                margin-top:28px !important;
+                margin-bottom:28px !important;
+            }
+            body.luxury .benefit-item{
+                min-height:0;
+                padding:16px 15px;
+                border-radius:18px;
+            }
+            body.luxury .benefit-icon{
+                width:46px;
+                height:46px;
+                border-radius:14px;
+            }
+            body.luxury footer.footer{
+                margin-top:42px;
+                padding:36px 0 26px;
+            }
+            body.luxury footer.footer .container{
+                padding-left:20px;
+                padding-right:20px;
+            }
+            body.luxury footer.footer h6{
+                margin-bottom:10px !important;
+            }
+            body.luxury .chatbot-panel{
+                width:min(100vw - 20px, 380px);
+                max-height:min(72vh, 560px);
+                border-radius:24px;
+            }
         }
         @media (max-width: 576px){
             body.luxury .hero-content{ padding-top: 88px; padding-bottom: 18px; }
@@ -2383,11 +2931,66 @@ function showTab(tab) {
                 max-width:86vw;
                 width:86vw;
             }
+            body.luxury .exp-grid{
+                grid-template-columns:minmax(0, 1.1fr) minmax(0, .9fr);
+                grid-template-rows:136px 136px;
+                gap:8px;
+            }
+            body.luxury .exp-card,
+            body.luxury .exp-card--large,
+            body.luxury .exp-card--small{
+                border-radius:18px;
+            }
+            body.luxury .mobile-home-shortcuts{
+                gap:10px;
+            }
+            body.luxury .mobile-shortcut-card{
+                padding:13px 12px;
+                border-radius:18px;
+            }
+            body.luxury .mobile-shortcut-icon{
+                width:36px;
+                height:36px;
+                flex-basis:36px;
+                border-radius:12px;
+            }
+            body.luxury .dest-card{
+                flex-basis:78vw;
+            }
+            body.luxury .dest-card-img{
+                height:178px;
+            }
+            body.luxury .rv-mobile-item{
+                flex-basis:88%;
+                max-width:88%;
+            }
+            body.luxury .featured-place-card,
+            body.luxury .featured-place-card:nth-child(1),
+            body.luxury .featured-place-card:nth-child(2),
+            body.luxury .featured-place-card:nth-child(3),
+            body.luxury .featured-place-card:nth-child(4),
+            body.luxury .featured-place-card:nth-child(5),
+            body.luxury .featured-place-card:nth-child(6){
+                min-height:165px;
+            }
+            body.luxury .featured-place-card img{
+                min-height:165px;
+            }
             body.luxury .home-tour-media{
                 height:220px;
             }
             body.luxury .home-tour-body{
                 padding:20px;
+            }
+            body.luxury .home-tour-body h3{
+                font-size:1rem;
+            }
+            body.luxury .home-tour-desc{
+                font-size:.84rem;
+                min-height:0;
+            }
+            body.luxury .home-tour-meta div{
+                font-size:.8rem;
             }
             body.luxury .home-tour-footer{
                 align-items:flex-start;
@@ -2402,6 +3005,14 @@ function showTab(tab) {
             body.luxury .customer-chatbot {
                 right: 14px;
                 bottom: 14px;
+            }
+            body.luxury .chatbot-toggle{
+                width:76px;
+                height:76px;
+            }
+            body.luxury .chatbot-panel{
+                right:-2px;
+                width:min(100vw - 16px, 360px);
             }
         }
 
@@ -2451,7 +3062,7 @@ function showTab(tab) {
             <i class="bi bi-chat-dots-fill"></i>
         </button>
     </div>
-    
+
     <footer class="footer" id="support">
         <div class="container">
             <div class="row gy-4 text-start">
@@ -2504,6 +3115,18 @@ function showTab(tab) {
             };
             onScroll();
             window.addEventListener('scroll', onScroll, { passive: true });
+        }
+
+        var navbarCollapseEl = document.getElementById('navbarNav');
+        if (navbarCollapseEl && window.bootstrap) {
+            var collapseInstance = bootstrap.Collapse.getOrCreateInstance(navbarCollapseEl, { toggle: false });
+            Array.prototype.slice.call(navbarCollapseEl.querySelectorAll('a[href]')).forEach(function (link) {
+                link.addEventListener('click', function () {
+                    if (window.innerWidth < 992 && navbarCollapseEl.classList.contains('show')) {
+                        collapseInstance.hide();
+                    }
+                });
+            });
         }
 
         // Auto-hide flash messages after 3 seconds.
@@ -2900,6 +3523,10 @@ $_khWsUrl   = realtimeWebSocketPublicUrl() . '?token=' . rawurlencode($_khWsToke
         ws.onmessage = function(e) {
             try {
                 var packet = JSON.parse(e.data);
+                if (packet.type === 'ping') {
+                    ws.send(JSON.stringify({ type: 'pong', payload: { ts: packet.payload && packet.payload.ts } }));
+                    return;
+                }
                 if (packet.type !== 'notification' || !packet.payload || packet.payload.success !== true) return;
                 if (typeof renderCustomerNotificationBadge === 'function') {
                     renderCustomerNotificationBadge(Number(packet.payload.unread || 0));
