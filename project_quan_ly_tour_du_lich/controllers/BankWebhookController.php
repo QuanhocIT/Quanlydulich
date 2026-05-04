@@ -196,6 +196,8 @@ class BankWebhookController {
 
             self::createPaymentLog($conn, (int)$payment['payment_id'], 'WEBHOOK_CONFIRM', 'Auto confirmed by bank webhook. amount=' . $amount . ($gatewayRef !== '' ? '; ref=' . $gatewayRef : ''));
 
+            self::assertSeatAvailable($conn, $bookingId);
+
             $stmtBooking = $conn->prepare('UPDATE booking SET trang_thai = ? WHERE booking_id = ? AND trang_thai NOT IN (\'DaCoc\', \'HoanTat\')');
             $stmtBooking->execute(['DaCoc', $bookingId]);
 
@@ -518,6 +520,8 @@ class BankWebhookController {
 
                 self::createPaymentLog($conn, (int)$payment['payment_id'], 'WEBHOOK_CONFIRM', 'Auto confirmed from queued unmatched webhook. amount=' . $amount . (!empty($row['gateway_ref']) ? '; ref=' . (string)$row['gateway_ref'] : ''));
 
+                self::assertSeatAvailable($conn, $bookingId);
+
                 $stmtBooking = $conn->prepare('UPDATE booking SET trang_thai = ? WHERE booking_id = ? AND trang_thai NOT IN (\'DaCoc\', \'HoanTat\')');
                 $stmtBooking->execute(['DaCoc', $bookingId]);
                 PaymentFinanceService::updateBookingPaymentStatusIfExists($conn, $bookingId, 'DaThanhToan');
@@ -548,6 +552,61 @@ class BankWebhookController {
         }
 
         return ['confirmed' => false, 'reason' => 'no_queued_match_for_booking'];
+    }
+
+    /**
+     * Kiểm tra số chỗ còn lại trước khi xác nhận booking.
+     * Chạy bên trong transaction (sau khi booking row đã bị lock bởi FOR UPDATE).
+     * Lock thêm lich_khoi_hanh row để chặn oversell đồng thời.
+     *
+     * @throws RuntimeException nếu số chỗ không đủ
+     */
+    private static function assertSeatAvailable($conn, int $bookingId): void {
+        // Lấy thông tin booking (row đã bị lock FOR UPDATE bởi lockBookingRow).
+        $stmtBk = $conn->prepare('SELECT tour_id, ngay_khoi_hanh, so_nguoi FROM booking WHERE booking_id = ?');
+        $stmtBk->execute([$bookingId]);
+        $bk = $stmtBk->fetch(PDO::FETCH_ASSOC);
+        if (!$bk) {
+            return; // booking không tồn tại — sẽ bị bắt bởi UPDATE phía dưới
+        }
+
+        $tourId = (int)$bk['tour_id'];
+        $ngayKhoiHanh = (string)$bk['ngay_khoi_hanh'];
+        $soNguoi = (int)$bk['so_nguoi'];
+
+        // Lock lich_khoi_hanh để ngăn 2 webhook chạy song song cùng xác nhận.
+        $stmtLkh = $conn->prepare(
+            'SELECT id, so_cho FROM lich_khoi_hanh'
+            . ' WHERE tour_id = ? AND DATE(ngay_khoi_hanh) = DATE(?)'
+            . ' ORDER BY id DESC LIMIT 1 FOR UPDATE'
+        );
+        $stmtLkh->execute([$tourId, $ngayKhoiHanh]);
+        $lkh = $stmtLkh->fetch(PDO::FETCH_ASSOC);
+
+        if (!$lkh || (int)$lkh['so_cho'] <= 0) {
+            return; // so_cho chưa được cấu hình — bỏ qua kiểm tra
+        }
+
+        $soChoToiDa = (int)$lkh['so_cho'];
+
+        // Đếm số ghế đã xác nhận (DaCoc/HoanTat) của lịch này, trừ booking hiện tại.
+        $stmtCount = $conn->prepare(
+            "SELECT COALESCE(SUM(so_nguoi), 0) AS da_dat FROM booking"
+            . " WHERE tour_id = ? AND DATE(ngay_khoi_hanh) = DATE(?)"
+            . " AND trang_thai IN ('DaCoc', 'HoanTat')"
+            . " AND booking_id != ?"
+        );
+        $stmtCount->execute([$tourId, $ngayKhoiHanh, $bookingId]);
+        $daDat = (int)$stmtCount->fetchColumn();
+
+        if ($daDat + $soNguoi > $soChoToiDa) {
+            throw new RuntimeException(
+                sprintf(
+                    'Oversell prevented: booking_id=%d, lich_khoi_hanh_id=%d, so_cho=%d, da_dat=%d, yeu_cau=%d',
+                    $bookingId, (int)$lkh['id'], $soChoToiDa, $daDat, $soNguoi
+                )
+            );
+        }
     }
 
     private static function ensureUnmatchedWebhookTable($conn) {
