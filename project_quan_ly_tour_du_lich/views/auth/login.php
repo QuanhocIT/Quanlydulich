@@ -418,8 +418,18 @@
             </div>
             
             <div class="register-link">
+                <a href="index.php?act=auth/forgotPassword" style="opacity:0.75;font-size:0.9rem;">
+                    <i class="bi bi-key"></i> Quên mật khẩu?
+                </a>
+            </div>
+            <div class="register-link" style="margin-top:0.5rem;">
                 <a href="index.php?act=auth/register">
                     <i class="bi bi-person-plus"></i> Chưa có tài khoản? Đăng ký ngay
+                </a>
+            </div>
+            <div class="register-link" style="margin-top:0.5rem;opacity:0.7;font-size:0.85rem;">
+                <a href="index.php?act=auth/resendVerification">
+                    <i class="bi bi-envelope-arrow-up"></i> Gửi lại email xác nhận
                 </a>
             </div>
             <div class="text-center mt-3">

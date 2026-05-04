@@ -55,61 +55,151 @@ function cacheFilePath(string $key) {
     return cacheBaseDir() . '/' . sha1($normalizedKey) . '.json';
 }
 
-function cacheRemember(string $key, int $ttlSeconds, callable $resolver, bool $forceRefresh = false) {
-    $ttlSeconds = max(1, (int)$ttlSeconds);
-    $cachePath = cacheFilePath($key);
+// ── Redis connection (singleton, returns null nếu Redis không khả dụng) ──────
+function getRedisConnection(): ?Redis {
+    static $redis = false; // false = chưa thử; null = không khả dụng
 
+    if ($redis !== false) {
+        return $redis;
+    }
+
+    $host = defined('REDIS_HOST') ? (string)REDIS_HOST : '';
+    if ($host === '' || !extension_loaded('redis')) {
+        $redis = null;
+        return null;
+    }
+
+    try {
+        $r = new Redis();
+        $connected = $r->connect(
+            $host,
+            defined('REDIS_PORT') ? (int)REDIS_PORT : 6379,
+            2.0  // timeout 2s
+        );
+        if (!$connected) {
+            $redis = null;
+            return null;
+        }
+
+        $pass = defined('REDIS_PASS') ? (string)REDIS_PASS : '';
+        if ($pass !== '') {
+            $r->auth($pass);
+        }
+
+        $db = defined('REDIS_DB') ? (int)REDIS_DB : 0;
+        if ($db !== 0) {
+            $r->select($db);
+        }
+
+        $prefix = defined('REDIS_PREFIX') ? (string)REDIS_PREFIX : 'qdl:';
+        $r->setOption(Redis::OPT_PREFIX, $prefix);
+        $redis = $r;
+    } catch (Throwable $e) {
+        $redis = null;
+    }
+
+    return $redis;
+}
+
+function cacheRemember(string $key, int $ttlSeconds, callable $resolver, bool $forceRefresh = false): mixed {
+    $ttlSeconds = max(1, $ttlSeconds);
+
+    // ── Redis path ────────────────────────────────────────────────────────
+    $redis = getRedisConnection();
+    if ($redis !== null) {
+        $rKey = 'cache:' . sha1($key);
+        if (!$forceRefresh) {
+            try {
+                $raw = $redis->get($rKey);
+                if ($raw !== false) {
+                    $payload = json_decode($raw, true);
+                    if (is_array($payload) && array_key_exists('value', $payload)) {
+                        return $payload['value'];
+                    }
+                }
+            } catch (Throwable $e) { /* fall through to resolver */ }
+        }
+
+        $value = $resolver();
+        try {
+            $redis->setEx($rKey, $ttlSeconds, json_encode(['key' => $key, 'value' => $value], JSON_UNESCAPED_UNICODE));
+        } catch (Throwable $e) { /* ignore write errors */ }
+        return $value;
+    }
+
+    // ── File-based fallback ───────────────────────────────────────────────
+    $cachePath = cacheFilePath($key);
     if (!$forceRefresh && is_file($cachePath)) {
-        $raw = @file_get_contents($cachePath);
+        $raw     = @file_get_contents($cachePath);
         $payload = $raw ? json_decode($raw, true) : null;
-        $expiresAt = (int)($payload['expires_at'] ?? 0);
-        if ($expiresAt > time() && array_key_exists('value', (array)$payload)) {
+        if ((int)($payload['expires_at'] ?? 0) > time() && array_key_exists('value', (array)$payload)) {
             return $payload['value'];
         }
     }
 
     $value = $resolver();
     @file_put_contents($cachePath, json_encode([
-        'key' => (string)$key,
+        'key'        => $key,
         'expires_at' => time() + $ttlSeconds,
-        'value' => $value,
+        'value'      => $value,
     ], JSON_UNESCAPED_UNICODE));
-
     return $value;
 }
 
-function cacheForget(string $key) {
+function cacheForget(string $key): void {
+    $redis = getRedisConnection();
+    if ($redis !== null) {
+        try { $redis->del('cache:' . sha1($key)); } catch (Throwable $e) {}
+        return;
+    }
+
     $cachePath = cacheFilePath($key);
     if (is_file($cachePath)) {
         @unlink($cachePath);
     }
 }
 
-function cacheForgetByPrefix(string $prefix) {
-    $prefix = trim((string)$prefix);
+function cacheForgetByPrefix(string $prefix): void {
+    $prefix = trim($prefix);
     if ($prefix === '') {
         return;
     }
 
-    $baseDir = cacheBaseDir();
-    $files = glob($baseDir . '/*.json');
-    if (!is_array($files)) {
+    $redis = getRedisConnection();
+    if ($redis !== null) {
+        // Scan + delete matching keys (SCAN is non-blocking unlike KEYS)
+        try {
+            $cursor = null;
+            $fullPrefix = (defined('REDIS_PREFIX') ? (string)REDIS_PREFIX : 'qdl:') . 'cache:';
+            do {
+                $keys = $redis->scan($cursor, $fullPrefix . '*', 200);
+                if (!is_array($keys)) break;
+                foreach ($keys as $rKey) {
+                    $raw     = $redis->get(substr($rKey, strlen($fullPrefix) - strlen('cache:')));
+                    if ($raw === false) continue;
+                    $payload = json_decode($raw, true);
+                    $cacheKey = (string)($payload['key'] ?? '');
+                    if (strpos($cacheKey, $prefix) === 0) {
+                        $redis->del($rKey);
+                    }
+                }
+            } while ($cursor !== 0 && $cursor !== null);
+        } catch (Throwable $e) {}
         return;
     }
 
-    foreach ($files as $file) {
-        if (!is_file($file)) {
-            continue;
-        }
-
-        $raw = @file_get_contents($file);
-        $payload = $raw ? json_decode($raw, true) : null;
+    // File fallback
+    $baseDir = cacheBaseDir();
+    foreach (glob($baseDir . '/*.json') ?: [] as $file) {
+        $raw      = @file_get_contents($file);
+        $payload  = $raw ? json_decode($raw, true) : null;
         $cacheKey = (string)($payload['key'] ?? '');
         if (strpos($cacheKey, $prefix) === 0) {
             @unlink($file);
         }
     }
 }
+
 
 function ensureAdminNotificationStateTable(?PDO $conn = null) {
     static $initialized = false;
@@ -447,22 +537,37 @@ function uploadFile(array $file, string $folderSave) {
     if (!isset($file['tmp_name']) || !is_uploaded_file($file['tmp_name'])) {
         return null;
     }
-    
-    $file_upload = $file;
-    $fileExtension = pathinfo($file_upload['name'], PATHINFO_EXTENSION);
-    $fileName = rand(10000, 99999) . '_' . time() . '.' . $fileExtension;
-    $pathStorage = $folderSave . $fileName;
 
-    $tmp_file = $file_upload['tmp_name'];
-    $pathSave = PATH_ROOT . $pathStorage; // Đường dẫn tuyệt đối của file
+    // Validate MIME type against actual file content (not the extension)
+    $allowedMime = [
+        'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+        'application/pdf',
+    ];
+    $finfo = new finfo(FILEINFO_MIME_TYPE);
+    $detectedMime = $finfo->file($file['tmp_name']);
+    if (!in_array($detectedMime, $allowedMime, true)) {
+        return null;
+    }
 
-    // Tạo thư mục nếu chưa tồn tại
+    // Map MIME to a safe extension (ignore user-supplied extension entirely)
+    $mimeToExt = [
+        'image/jpeg' => 'jpg',
+        'image/png'  => 'png',
+        'image/gif'  => 'gif',
+        'image/webp' => 'webp',
+        'application/pdf' => 'pdf',
+    ];
+    $safeExt  = $mimeToExt[$detectedMime];
+    $fileName = bin2hex(random_bytes(12)) . '_' . time() . '.' . $safeExt;
+    $pathStorage = rtrim($folderSave, '/') . '/' . $fileName;
+
+    $pathSave = PATH_ROOT . $pathStorage;
     $dir = dirname($pathSave);
     if (!is_dir($dir)) {
         mkdir($dir, 0755, true);
     }
 
-    if (move_uploaded_file($tmp_file, $pathSave)) {
+    if (move_uploaded_file($file['tmp_name'], $pathSave)) {
         return $pathStorage;
     }
     return null;

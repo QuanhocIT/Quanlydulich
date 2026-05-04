@@ -108,6 +108,13 @@ define('PATH_ROOT', __DIR__ . '/../');
 define('PATH_UPLOADS', PATH_ROOT . 'uploads/');
 define('PATH_VIEWS', PATH_ROOT . 'views/');
 
+// Redis cache (tùy chọn — nếu không cấu hình thì dùng file cache mặc định)
+define('REDIS_HOST',   $_ENV['REDIS_HOST']   ?? '');          // Để trống = dùng file cache
+define('REDIS_PORT',   (int)($_ENV['REDIS_PORT']   ?? 6379));
+define('REDIS_PASS',   $_ENV['REDIS_PASS']   ?? '');
+define('REDIS_DB',     (int)($_ENV['REDIS_DB']     ?? 0));
+define('REDIS_PREFIX', $_ENV['REDIS_PREFIX'] ?? 'qdl:');      // Prefix để tránh collision
+
 // Google OAuth
 // Lưu ý: Nếu dùng file .env thì nên thêm vào .env, nếu không thì thêm ở đây
 define('GOOGLE_CLIENT_ID', $_ENV['GOOGLE_CLIENT_ID'] ?? '');

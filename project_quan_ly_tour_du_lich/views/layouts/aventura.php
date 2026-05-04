@@ -141,6 +141,9 @@ if ($realtimeWsEnabled && isset($_SESSION['user_id']) && $currentRole !== null) 
                         <li><a href="index.php?act=khachHang/yeuCauTour" class="<?php echo (isset($currentPage) && $currentPage === 'yeuCauTour') ? 'active' : ''; ?>">Yêu cầu tour</a></li>
                     <?php endif; ?>
                     
+                    <?php if ($isAdminRole): ?>
+                        <li><a href="index.php?act=auth/setup2fa" class="<?php echo (isset($currentPage) && $currentPage === 'settings') ? 'active' : ''; ?>"><i class="bi bi-shield-lock me-1"></i>Bảo mật 2FA</a></li>
+                    <?php endif; ?>
                     <li><a href="index.php?act=auth/logout">Đăng xuất</a></li>
                 <?php else: ?>
                     <li><a href="index.php?act=tour/index">Trang chủ</a></li>

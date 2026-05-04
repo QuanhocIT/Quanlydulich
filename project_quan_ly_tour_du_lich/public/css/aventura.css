@@ -1271,17 +1271,28 @@ body.role-admin .aventura-badge.badge-warning {
   body.mobile-sidebar-open .sidebar .nav .nav-text,
   body.mobile-sidebar-open .sidebar .expand-icon,
   body.mobile-sidebar-open .sidebar .nav-badge,
-  body.mobile-sidebar-open .sidebar .nav-child-menu,
   body.mobile-sidebar-open .sidebar #realtimeStatus,
   .sidebar:not(.collapsed) .nav-group-label,
   .sidebar:not(.collapsed) .nav,
   .sidebar:not(.collapsed) .nav .nav-text,
   .sidebar:not(.collapsed) .expand-icon,
   .sidebar:not(.collapsed) .nav-badge,
-  .sidebar:not(.collapsed) .nav-child-menu {
+  .sidebar:not(.collapsed) .nav-child-menu:not([hidden]) {
     display: block !important;
     opacity: 1 !important;
     visibility: visible !important;
+  }
+
+  /* Submenu chỉ hiện khi không có attribute hidden — JS toggle dùng hidden */
+  body.mobile-sidebar-open .sidebar .nav-child-menu:not([hidden]) {
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+
+  /* Submenu đang ẩn (có hidden) — đảm bảo CSS không override */
+  body.mobile-sidebar-open .sidebar .nav-child-menu[hidden] {
+    display: none !important;
   }
 
   body.mobile-sidebar-open .sidebar .nav a,
@@ -1324,9 +1335,15 @@ body.role-admin .aventura-badge.badge-warning {
   .sidebar:not(.collapsed) .nav .nav-text,
   .sidebar:not(.collapsed) .expand-icon,
   .sidebar:not(.collapsed) .nav-badge,
-  .sidebar:not(.collapsed) .nav-child-menu {
+  .sidebar:not(.collapsed) .nav-child-menu:not([hidden]) {
     opacity: 1 !important;
     visibility: visible !important;
+  }
+
+  .sidebar:not(.collapsed) .nav-child-menu[hidden] {
+    display: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
   }
 
   .sidebar.collapsed {

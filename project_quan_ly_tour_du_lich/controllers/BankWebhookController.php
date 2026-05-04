@@ -5,7 +5,7 @@ require_once __DIR__ . '/../models/PaymentIdempotency.php';
 require_once __DIR__ . '/../services/PaymentFinanceService.php';
 
 class BankWebhookController {
-    public static function receive($conn) {
+    public static function receive(PDO $conn): void {
         self::ensureUnmatchedWebhookTable($conn);
         PaymentIdempotency::ensureTable($conn);
 
@@ -235,11 +235,11 @@ class BankWebhookController {
         }
     }
 
-    private static function completeWebhookIdempotency($conn, $rawKey, $responseCode, $message) {
+    private static function completeWebhookIdempotency(PDO $conn, string $rawKey, int $responseCode, string $message): void {
         PaymentIdempotency::markCompleted($conn, 'bank_webhook_receive', (string)$rawKey, (int)$responseCode, (string)$message);
     }
 
-    private static function lockBookingRow($conn, $bookingId) {
+    private static function lockBookingRow(PDO $conn, int $bookingId): void {
         $stmt = $conn->prepare('SELECT booking_id FROM booking WHERE booking_id = ? FOR UPDATE');
         $stmt->execute([(int)$bookingId]);
     }
@@ -401,7 +401,7 @@ class BankWebhookController {
         return '';
     }
 
-    private static function extractBookingCandidatesFromDescription($description) {
+    private static function extractBookingCandidatesFromDescription(string $description): array {
         $text = strtoupper((string)$description);
         if ($text === '') {
             return [];
@@ -430,13 +430,13 @@ class BankWebhookController {
         return $candidates;
     }
 
-    private static function findLatestPendingPaymentByBooking($conn, $bookingId) {
+    private static function findLatestPendingPaymentByBooking(PDO $conn, int $bookingId): array|null {
         $stmt = $conn->prepare('SELECT p.payment_id, p.amount, p.booking_id, b.tour_id, b.khach_hang_id FROM payments p INNER JOIN booking b ON b.booking_id = p.booking_id WHERE p.booking_id = ? AND p.status IN (?, ?) ORDER BY p.payment_id DESC LIMIT 1');
         $stmt->execute([(int)$bookingId, Payment::STATUS_DANG_XU_LY, Payment::STATUS_TAO_MOI]);
         return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
     }
 
-    public static function tryConsumeQueuedWebhookForBooking($conn, $bookingId) {
+    public static function tryConsumeQueuedWebhookForBooking(PDO $conn, int $bookingId): array {
         self::ensureUnmatchedWebhookTable($conn);
 
         $bookingId = (int)$bookingId;
@@ -563,7 +563,7 @@ class BankWebhookController {
      *
      * @throws RuntimeException nếu số chỗ không đủ
      */
-    private static function assertSeatAvailable($conn, int $bookingId): void {
+    private static function assertSeatAvailable(PDO $conn, int $bookingId): void {
         // Lấy thông tin booking (row đã bị lock FOR UPDATE bởi lockBookingRow).
         $stmtBk = $conn->prepare('SELECT tour_id, ngay_khoi_hanh, so_nguoi FROM booking WHERE booking_id = ?');
         $stmtBk->execute([$bookingId]);
@@ -611,7 +611,7 @@ class BankWebhookController {
         }
     }
 
-    private static function ensureUnmatchedWebhookTable($conn) {
+    private static function ensureUnmatchedWebhookTable(PDO $conn): void {
         try {
             $conn->query('SELECT queue_id, provider, amount, processed FROM bank_webhook_unmatched LIMIT 1');
         } catch (Throwable $e) {
@@ -621,7 +621,7 @@ class BankWebhookController {
         }
     }
 
-    private static function queueUnmatchedWebhook($conn, array $data) {
+    private static function queueUnmatchedWebhook(PDO $conn, array $data): bool {
         try {
             $stmt = $conn->prepare('INSERT INTO bank_webhook_unmatched (provider, gateway_ref, amount, description, booking_candidates, payload_json, received_at, processed) VALUES (?, ?, ?, ?, ?, ?, ?, 0)');
             $stmt->execute([
@@ -639,7 +639,7 @@ class BankWebhookController {
         }
     }
 
-    private static function markQueuedWebhookProcessed($conn, $queueId, $note) {
+    private static function markQueuedWebhookProcessed(PDO $conn, int $queueId, string $note): void {
         $queueId = (int)$queueId;
         if ($queueId <= 0) {
             return;
@@ -648,7 +648,7 @@ class BankWebhookController {
         $stmt->execute([date('Y-m-d H:i:s'), substr((string)$note, 0, 255), $queueId]);
     }
 
-    private static function createPaymentLog($conn, $paymentId, $action, $note) {
+    private static function createPaymentLog(PDO $conn, int $paymentId, string $action, string $note): void {
         if ($paymentId <= 0) {
             return;
         }
@@ -656,7 +656,7 @@ class BankWebhookController {
         $stmt->execute([(int)$paymentId, (string)$action, date('Y-m-d H:i:s'), (string)$note]);
     }
 
-    private static function dig(array $arr, $path) {
+    private static function dig(array $arr, string $path): mixed {
         $parts = explode('.', $path);
         $cur = $arr;
         foreach ($parts as $p) {
@@ -668,7 +668,7 @@ class BankWebhookController {
         return $cur;
     }
 
-    private static function logRaw($stage, $extra = '') {
+    private static function logRaw(string $stage, string $extra = ''): void {
         $logFile = __DIR__ . '/../storage/bank_webhook_raw.log';
         @file_put_contents($logFile,
             date('c') . ' [' . $stage . '] ' . $extra . PHP_EOL,
@@ -676,7 +676,7 @@ class BankWebhookController {
         );
     }
 
-    private static function recordUnmatchedEvent($reason, $description = '') {
+    private static function recordUnmatchedEvent(string $reason, string $description = ''): void {
         $now = time();
         $windowSeconds = 600;
         $threshold = 5;
@@ -731,7 +731,7 @@ class BankWebhookController {
         @file_put_contents($cacheFile, json_encode($state, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
     }
 
-    private static function jsonResponse($statusCode, array $payload) {
+    private static function jsonResponse(int $statusCode, array $payload): void {
         http_response_code((int)$statusCode);
         header('Content-Type: application/json; charset=utf-8');
         echo json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);

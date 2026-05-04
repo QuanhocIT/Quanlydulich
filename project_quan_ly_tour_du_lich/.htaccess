@@ -1,0 +1,18 @@
+Options -Indexes
+
+# ── Force HTTPS (skip on localhost / 127.0.0.1) ────────────────────────────
+RewriteEngine On
+RewriteCond %{HTTPS} off
+RewriteCond %{HTTP_HOST} !^localhost [NC]
+RewriteCond %{HTTP_HOST} !^127\.0\.0\.1 [NC]
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# ── Block direct access to sensitive file types ─────────────────────────────
+<FilesMatch "\.(env|log|json|sql|md|sh|bak|ini|gitignore|gitkeep|lock|pem|key|crt)$">
+    Require all denied
+</FilesMatch>
+
+# ── Block access to hidden dot-files ────────────────────────────────────────
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>

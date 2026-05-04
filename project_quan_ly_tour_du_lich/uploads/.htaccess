@@ -1,0 +1,5 @@
+# Uploads: cho phép tải ảnh/PDF nhưng KHÔNG cho chạy PHP
+<FilesMatch "\.php$">
+    Require all denied
+</FilesMatch>
+Options -Indexes

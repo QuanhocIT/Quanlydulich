@@ -20,7 +20,7 @@ class Authorization {
         return $role !== '' ? $role : null;
     }
 
-    public static function hasAnyRole($roles) {
+    public static function hasAnyRole(array|string $roles): bool {
         $role = self::currentRole();
         if ($role === null) {
             return false;
@@ -37,7 +37,7 @@ class Authorization {
         }
     }
 
-    public static function requireRole($roles, $redirectAct = null, $message = 'Ban khong co quyen truy cap chuc nang nay.') {
+    public static function requireRole(array|string $roles, ?string $redirectAct = null, string $message = 'Ban khong co quyen truy cap chuc nang nay.'): void {
         $allowedRoles = is_array($roles) ? array_values($roles) : [$roles];
 
         if (in_array(self::AUTHENTICATED, $allowedRoles, true)) {
@@ -84,7 +84,11 @@ class Authorization {
             'public_routes' => [
                 'auth/login',
                 'auth/register',
+                'auth/verify2fa',
                 'auth/verifyEmail',
+                'auth/resendVerification',
+                'auth/forgotPassword',
+                'auth/resetPassword',
                 'auth/logout',
                 'tour/index',
                 'tour/show',
@@ -95,6 +99,7 @@ class Authorization {
             'route_overrides' => [
                 'auth/profile' => [self::AUTHENTICATED],
                 'auth/forcePasswordChange' => [self::AUTHENTICATED],
+                'auth/setup2fa' => ['Admin'],
                 'booking/index' => ['Admin', 'KhachHang'],
                 'booking/create' => ['KhachHang'],
                 'booking/show' => [self::AUTHENTICATED],
@@ -127,7 +132,7 @@ class Authorization {
         ];
     }
 
-    public static function resolveAllowedRolesForRoute($act) {
+    public static function resolveAllowedRolesForRoute(string $act): array|null {
         $matrix = self::getRouteRoleMatrix();
 
         if (in_array($act, $matrix['public_routes'], true)) {
@@ -142,7 +147,7 @@ class Authorization {
         return $matrix['module_defaults'][$module] ?? null;
     }
 
-    public static function enforceRouteAccess($act) {
+    public static function enforceRouteAccess(string $act): bool {
         $allowedRoles = self::resolveAllowedRolesForRoute($act);
         if ($allowedRoles === null || $allowedRoles === []) {
             return true;

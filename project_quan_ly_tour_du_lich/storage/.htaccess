@@ -1,0 +1,2 @@
+# Chặn truy cập trực tiếp vào toàn bộ thư mục storage
+Require all denied

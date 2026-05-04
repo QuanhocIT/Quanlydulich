@@ -49,6 +49,29 @@ if (APP_ENV === 'production') {
     error_reporting(E_ALL);
 }
 
+// ── Security headers (sent before any output) ──────────────────────────────
+if (!headers_sent()) {
+    header('X-Content-Type-Options: nosniff');
+    header('X-Frame-Options: SAMEORIGIN');
+    header('Referrer-Policy: strict-origin-when-cross-origin');
+    header('Permissions-Policy: geolocation=(), camera=(), microphone=()');
+    header(
+        "Content-Security-Policy: "
+        . "default-src 'self'; "
+        . "script-src 'self' 'unsafe-inline' cdn.jsdelivr.net cdnjs.cloudflare.com code.jquery.com; "
+        . "style-src 'self' 'unsafe-inline' cdn.jsdelivr.net cdnjs.cloudflare.com fonts.googleapis.com; "
+        . "font-src 'self' cdn.jsdelivr.net cdnjs.cloudflare.com fonts.gstatic.com data:; "
+        . "img-src 'self' data: blob: https:; "
+        . "connect-src 'self' ws: wss:; "
+        . "frame-ancestors 'self'; "
+        . "object-src 'none'; "
+        . "base-uri 'self';"
+    );
+    if (APP_ENV === 'production') {
+        header('Strict-Transport-Security: max-age=63072000; includeSubDomains; preload');
+    }
+}
+
 // Route
 $conn = getPDOConnection();
 
@@ -110,7 +133,7 @@ $_GET = whitelistRequestParams($_GET, [
     'diem_max',
     'return_act',
     'return_tour_id',
-    'webhook_secret'
+    'token'
 ]);
 
 $allowedControllers = [
@@ -132,7 +155,7 @@ if (!isValidRouteFormat($act)) {
 }
 
 $sessionState = enforceSessionSecurity();
-if (!empty($sessionState['invalidated']) && !in_array($act, ['auth/login', 'auth/register', 'auth/verifyEmail'], true)) {
+if (!empty($sessionState['invalidated']) && !in_array($act, ['auth/login', 'auth/register', 'auth/verify2fa', 'auth/verifyEmail', 'auth/resendVerification', 'auth/forgotPassword', 'auth/resetPassword'], true)) {
     header('Location: index.php?act=auth/login');
     exit();
 }
@@ -233,7 +256,12 @@ match ($act) {
     // Auth
     'auth/login' => (new AuthController())->login(),
     'auth/register' => (new AuthController())->register(),
+    'auth/verify2fa' => (new AuthController())->verify2fa(),
+    'auth/setup2fa' => (new AuthController())->setup2fa(),
     'auth/verifyEmail' => (new AuthController())->verifyEmail(),
+    'auth/resendVerification' => (new AuthController())->resendVerification(),
+    'auth/forgotPassword' => (new AuthController())->forgotPassword(),
+    'auth/resetPassword' => (new AuthController())->resetPassword(),
     'auth/logout' => (new AuthController())->logout(),
     'auth/forcePasswordChange' => (new AuthController())->forcePasswordChange(),
 

@@ -1,11 +1,12 @@
 <?php
 require_once __DIR__ . '/../commons/function.php';
+require_once __DIR__ . '/../commons/Totp.php';
 require_once 'models/NguoiDung.php';
 require_once 'models/KhachHang.php';
 
 class AuthController {
-    private $model;
-    private $khachHangModel;
+    private NguoiDung $model;
+    private KhachHang $khachHangModel;
     
     public function __construct() {
         $this->model = new NguoiDung();
@@ -98,6 +99,19 @@ class AuthController {
 
                     if (requiresPasswordChange($stored)) {
                         $sessionData['force_password_change'] = 1;
+                    }
+
+                    // ── Admin 2FA gate ────────────────────────────────────
+                    if ($user['vai_tro'] === 'Admin' && !empty($user['two_factor_enabled'])) {
+                        $_SESSION['2fa_pending'] = [
+                            'user_id'      => (int)$user['id'],
+                            'vai_tro'      => (string)$user['vai_tro'],
+                            'ho_ten'       => (string)$user['ho_ten'],
+                            'session_data' => $sessionData,
+                            'expires_at'   => time() + 300, // 5 phút
+                        ];
+                        header('Location: index.php?act=auth/verify2fa');
+                        exit();
                     }
 
                     completeUserLoginSession($user['id'], $user['vai_tro'], $user['ho_ten'], $sessionData);
@@ -222,13 +236,14 @@ class AuthController {
                 $this->khachHangModel->insert(['nguoi_dung_id' => $userId]);
 
                 // --- Email verification ---
-                // Generate a cryptographically secure one-time token and store it.
-                $verifyToken = bin2hex(random_bytes(32));
+                $verifyToken  = bin2hex(random_bytes(32));
+                $expiresAt    = date('Y-m-d H:i:s', time() + 86400); // 24h
                 $conn = connectDB();
-                $stmt = $conn->prepare("UPDATE nguoi_dung SET email_verification_token = ? WHERE id = ?");
-                $stmt->execute([$verifyToken, $userId]);
+                $stmt = $conn->prepare(
+                    "UPDATE nguoi_dung SET email_verification_token = ?, email_token_expires_at = ? WHERE id = ?"
+                );
+                $stmt->execute([$verifyToken, $expiresAt, $userId]);
 
-                // Send verification email (non-blocking: failure just skips sending)
                 require_once __DIR__ . '/../commons/mail.php';
                 $verifyUrl = rtrim((string)BASE_URL, '/') . '/index.php?act=auth/verifyEmail&token=' . urlencode($verifyToken);
                 $htmlBody = '<p>Xin chào <strong>' . htmlspecialchars($hoTen, ENT_QUOTES, 'UTF-8') . '</strong>,</p>'
@@ -264,7 +279,7 @@ class AuthController {
 
         $conn = connectDB();
         $stmt = $conn->prepare(
-            "SELECT id, ho_ten, email, vai_tro
+            "SELECT id, ho_ten, email, vai_tro, email_token_expires_at
                FROM nguoi_dung
               WHERE email_verification_token = ?
                 AND email_verified_at IS NULL
@@ -275,6 +290,14 @@ class AuthController {
 
         if (!$user) {
             $error = 'Liên kết xác nhận không hợp lệ hoặc đã được sử dụng.';
+            require 'views/auth/login.php';
+            return;
+        }
+
+        // Check 24h TTL (null = legacy token before V014, treat as valid)
+        $expiresAt = $user['email_token_expires_at'] ?? null;
+        if ($expiresAt !== null && strtotime($expiresAt) < time()) {
+            $error = 'Liên kết xác nhận đã hết hạn. <a href="index.php?act=auth/resendVerification" style="color:inherit;text-decoration:underline;">Gửi lại email xác nhận</a>.';
             require 'views/auth/login.php';
             return;
         }
@@ -374,5 +397,325 @@ class AuthController {
         requireLogin();
         $user = $this->model->findById($_SESSION['user_id']);
         require 'views/auth/profile.php';
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // 2FA – Xác minh mã trong luồng đăng nhập
+    // ──────────────────────────────────────────────────────────────────────
+    public function verify2fa(): void {
+        $pending = $_SESSION['2fa_pending'] ?? null;
+        if (!$pending || time() > (int)($pending['expires_at'] ?? 0)) {
+            unset($_SESSION['2fa_pending']);
+            header('Location: index.php?act=auth/login');
+            exit();
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            require 'views/auth/2fa_verify.php';
+            return;
+        }
+
+        enforceRateLimit('2fa_verify:' . ($_SERVER['REMOTE_ADDR'] ?? ''), 5, 300);
+
+        if (!verifyCsrfToken($_POST['_csrf_token'] ?? '', 'auth_2fa_verify')) {
+            $error = 'Phiên làm việc không hợp lệ. Vui lòng thử lại.';
+            require 'views/auth/2fa_verify.php';
+            return;
+        }
+
+        $code = preg_replace('/\s+/', '', (string)($_POST['totp_code'] ?? ''));
+        $conn = connectDB();
+        $stmt = $conn->prepare(
+            "SELECT two_factor_secret FROM nguoi_dung
+              WHERE id = ? AND two_factor_enabled = 1 LIMIT 1"
+        );
+        $stmt->execute([(int)$pending['user_id']]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$row || !Totp::verify((string)$row['two_factor_secret'], $code)) {
+            logSecurityEvent('2fa_fail', ['user_id' => (int)$pending['user_id']]);
+            $error = 'Mã xác thực không đúng. Vui lòng thử lại.';
+            require 'views/auth/2fa_verify.php';
+            return;
+        }
+
+        unset($_SESSION['2fa_pending']);
+        completeUserLoginSession(
+            (int)$pending['user_id'],
+            (string)$pending['vai_tro'],
+            (string)$pending['ho_ten'],
+            (array)($pending['session_data'] ?? [])
+        );
+        logSecurityEvent('2fa_success', ['user_id' => (int)$pending['user_id']]);
+
+        if (!empty($_SESSION['force_password_change'])) {
+            header('Location: index.php?act=auth/forcePasswordChange');
+            exit();
+        }
+        $_SESSION['admin_sidebar_start_hidden_once'] = 1;
+        header('Location: index.php?act=admin/dashboard');
+        exit();
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // 2FA – Cài đặt / bật / tắt 2FA (chỉ Admin đã đăng nhập)
+    // ──────────────────────────────────────────────────────────────────────
+    public function setup2fa(): void {
+        requireLogin();
+        if (currentUserRole() !== 'Admin') {
+            header('Location: index.php?act=tour/index');
+            exit();
+        }
+
+        $userId = (int)$_SESSION['user_id'];
+        $conn   = connectDB();
+
+        $stmt = $conn->prepare(
+            "SELECT ho_ten, email, two_factor_enabled, two_factor_secret
+               FROM nguoi_dung WHERE id = ? LIMIT 1"
+        );
+        $stmt->execute([$userId]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            // GET: nếu chưa có secret thì tạo tạm (chưa lưu, chỉ show QR)
+            if (empty($user['two_factor_secret'])) {
+                $pendingSecret = Totp::generateSecret();
+                $_SESSION['2fa_setup_pending_secret'] = $pendingSecret;
+            } else {
+                $pendingSecret = null;
+            }
+            require 'views/auth/2fa_setup.php';
+            return;
+        }
+
+        if (!verifyCsrfToken($_POST['_csrf_token'] ?? '', 'auth_2fa_setup')) {
+            $error = 'Phiên không hợp lệ. Vui lòng thử lại.';
+            require 'views/auth/2fa_setup.php';
+            return;
+        }
+
+        $action = (string)($_POST['action'] ?? '');
+
+        if ($action === 'enable') {
+            $secret = (string)($_SESSION['2fa_setup_pending_secret'] ?? '');
+            $code   = preg_replace('/\s+/', '', (string)($_POST['totp_code'] ?? ''));
+
+            if ($secret === '' || !Totp::verify($secret, $code)) {
+                $pendingSecret = $secret ?: Totp::generateSecret();
+                $_SESSION['2fa_setup_pending_secret'] = $pendingSecret;
+                $error = 'Mã xác thực không đúng. Hãy quét lại QR và nhập mã mới.';
+                require 'views/auth/2fa_setup.php';
+                return;
+            }
+
+            $conn->prepare(
+                "UPDATE nguoi_dung SET two_factor_secret = ?, two_factor_enabled = 1 WHERE id = ?"
+            )->execute([$secret, $userId]);
+            unset($_SESSION['2fa_setup_pending_secret']);
+            logSecurityEvent('2fa_enabled', ['user_id' => $userId]);
+
+            // Reload user
+            $stmt->execute([$userId]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+            $pendingSecret = null;
+            $info = '2FA đã được bật thành công! Tài khoản Admin của bạn hiện yêu cầu mã xác thực mỗi lần đăng nhập.';
+            require 'views/auth/2fa_setup.php';
+            return;
+        }
+
+        if ($action === 'disable') {
+            $password = (string)($_POST['password'] ?? '');
+            $stmt2 = $conn->prepare("SELECT mat_khau FROM nguoi_dung WHERE id = ? LIMIT 1");
+            $stmt2->execute([$userId]);
+            $row2 = $stmt2->fetch(PDO::FETCH_ASSOC);
+
+            if (!$row2 || !password_verify($password, (string)$row2['mat_khau'])) {
+                $pendingSecret = null;
+                $error = 'Mật khẩu không đúng. Vui lòng nhập lại để xác nhận tắt 2FA.';
+                require 'views/auth/2fa_setup.php';
+                return;
+            }
+
+            $conn->prepare(
+                "UPDATE nguoi_dung SET two_factor_secret = NULL, two_factor_enabled = 0 WHERE id = ?"
+            )->execute([$userId]);
+            logSecurityEvent('2fa_disabled', ['user_id' => $userId]);
+
+            $stmt->execute([$userId]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+            $pendingSecret = null;
+            $info = '2FA đã được tắt.';
+            require 'views/auth/2fa_setup.php';
+            return;
+        }
+
+        header('Location: index.php?act=auth/setup2fa');
+        exit();
+    }
+
+
+    // ──────────────────────────────────────────────────────────────────────
+    public function resendVerification() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            require 'views/auth/resend_verification.php';
+            return;
+        }
+
+        enforceRateLimit('resend_verify:' . ($_SERVER['REMOTE_ADDR'] ?? ''), 3, 3600);
+
+        if (!verifyCsrfToken($_POST['_csrf_token'] ?? '', 'auth_resend_verify')) {
+            $error = 'Phiên làm việc không hợp lệ. Vui lòng thử lại.';
+            require 'views/auth/resend_verification.php';
+            return;
+        }
+
+        $email = trim((string)($_POST['email'] ?? ''));
+        // Always show success to prevent email enumeration
+        $info = 'Nếu email này tồn tại và chưa được xác nhận, chúng tôi đã gửi lại liên kết xác nhận.';
+
+        $user = $this->model->findByEmail($email);
+        if ($user && $user['email_verified_at'] === null) {
+            $verifyToken = bin2hex(random_bytes(32));
+            $expiresAt   = date('Y-m-d H:i:s', time() + 86400);
+            $conn = connectDB();
+            $conn->prepare(
+                "UPDATE nguoi_dung SET email_verification_token = ?, email_token_expires_at = ? WHERE id = ?"
+            )->execute([$verifyToken, $expiresAt, $user['id']]);
+
+            require_once __DIR__ . '/../commons/mail.php';
+            $verifyUrl = rtrim((string)BASE_URL, '/') . '/index.php?act=auth/verifyEmail&token=' . urlencode($verifyToken);
+            $htmlBody = '<p>Xin chào <strong>' . htmlspecialchars((string)$user['ho_ten'], ENT_QUOTES, 'UTF-8') . '</strong>,</p>'
+                . '<p>Nhấn vào liên kết bên dưới để xác nhận địa chỉ email:</p>'
+                . '<p><a href="' . htmlspecialchars($verifyUrl, ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($verifyUrl, ENT_QUOTES, 'UTF-8') . '</a></p>'
+                . '<p>Liên kết có hiệu lực trong <strong>24 giờ</strong>.</p>';
+            sendHtmlEmail($email, 'Xác nhận email - Quản lý Tour Du lịch', $htmlBody);
+        }
+
+        require 'views/auth/resend_verification.php';
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // Quên mật khẩu — bước 1: nhập email
+    // ──────────────────────────────────────────────────────────────────────
+    public function forgotPassword() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            require 'views/auth/forgot_password.php';
+            return;
+        }
+
+        enforceRateLimit('forgot_pw:' . ($_SERVER['REMOTE_ADDR'] ?? ''), 5, 3600);
+
+        if (!verifyCsrfToken($_POST['_csrf_token'] ?? '', 'auth_forgot_password')) {
+            $error = 'Phiên làm việc không hợp lệ. Vui lòng thử lại.';
+            require 'views/auth/forgot_password.php';
+            return;
+        }
+
+        $email = trim((string)($_POST['email'] ?? ''));
+        // Always show success to prevent email enumeration
+        $info = 'Nếu email này tồn tại trong hệ thống, chúng tôi đã gửi hướng dẫn đặt lại mật khẩu.';
+
+        $user = $this->model->findByEmail($email);
+        if ($user && ($user['trang_thai'] ?? '') !== 'BiKhoa') {
+            $resetToken  = bin2hex(random_bytes(32));
+            $expiresAt   = date('Y-m-d H:i:s', time() + 3600); // 1h
+            $conn = connectDB();
+            $conn->prepare(
+                "UPDATE nguoi_dung SET password_reset_token = ?, password_reset_expires_at = ? WHERE id = ?"
+            )->execute([$resetToken, $expiresAt, $user['id']]);
+
+            require_once __DIR__ . '/../commons/mail.php';
+            $resetUrl = rtrim((string)BASE_URL, '/') . '/index.php?act=auth/resetPassword&token=' . urlencode($resetToken);
+            $htmlBody = '<p>Xin chào <strong>' . htmlspecialchars((string)$user['ho_ten'], ENT_QUOTES, 'UTF-8') . '</strong>,</p>'
+                . '<p>Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn. Nhấn vào liên kết bên dưới:</p>'
+                . '<p><a href="' . htmlspecialchars($resetUrl, ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($resetUrl, ENT_QUOTES, 'UTF-8') . '</a></p>'
+                . '<p>Liên kết có hiệu lực trong <strong>1 giờ</strong>. Nếu bạn không yêu cầu, hãy bỏ qua email này.</p>';
+            sendHtmlEmail($email, 'Đặt lại mật khẩu - Quản lý Tour Du lịch', $htmlBody);
+        }
+
+        require 'views/auth/forgot_password.php';
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // Đặt lại mật khẩu — bước 2: nhập mật khẩu mới
+    // ──────────────────────────────────────────────────────────────────────
+    public function resetPassword() {
+        $token = trim((string)($_GET['token'] ?? ''));
+        if ($token === '' || strlen($token) > 64) {
+            $error = 'Liên kết đặt lại mật khẩu không hợp lệ.';
+            require 'views/auth/forgot_password.php';
+            return;
+        }
+
+        $conn = connectDB();
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            // Validate token before showing the form
+            $stmt = $conn->prepare(
+                "SELECT id FROM nguoi_dung
+                  WHERE password_reset_token = ?
+                    AND password_reset_expires_at > NOW()
+                 LIMIT 1"
+            );
+            $stmt->execute([$token]);
+            if (!$stmt->fetch()) {
+                $error = 'Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn.';
+                require 'views/auth/forgot_password.php';
+                return;
+            }
+            require 'views/auth/reset_password.php';
+            return;
+        }
+
+        enforceRateLimit('reset_pw:' . ($_SERVER['REMOTE_ADDR'] ?? ''), 5, 900);
+
+        if (!verifyCsrfToken($_POST['_csrf_token'] ?? '', 'auth_reset_password')) {
+            $error = 'Phiên làm việc không hợp lệ. Vui lòng thử lại.';
+            require 'views/auth/reset_password.php';
+            return;
+        }
+
+        $stmt = $conn->prepare(
+            "SELECT id, ho_ten FROM nguoi_dung
+              WHERE password_reset_token = ?
+                AND password_reset_expires_at > NOW()
+             LIMIT 1"
+        );
+        $stmt->execute([$token]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$user) {
+            $error = 'Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn.';
+            require 'views/auth/forgot_password.php';
+            return;
+        }
+
+        $newPassword     = (string)($_POST['new_password'] ?? '');
+        $confirmPassword = (string)($_POST['confirm_password'] ?? '');
+
+        if ($newPassword !== $confirmPassword) {
+            $error = 'Mật khẩu xác nhận không khớp.';
+            require 'views/auth/reset_password.php';
+            return;
+        }
+
+        $policy = validatePasswordPolicy($newPassword);
+        if (!$policy['ok']) {
+            $error = 'Mật khẩu phải có ít nhất 8 ký tự gồm chữ hoa, chữ thường, số và ký tự đặc biệt.';
+            require 'views/auth/reset_password.php';
+            return;
+        }
+
+        $conn->prepare(
+            "UPDATE nguoi_dung
+                SET mat_khau = ?, password_reset_token = NULL, password_reset_expires_at = NULL
+              WHERE id = ?"
+        )->execute([password_hash($newPassword, PASSWORD_DEFAULT), (int)$user['id']]);
+
+        logSecurityEvent('password_reset_completed', ['user_id' => (int)$user['id']]);
+        $_SESSION['success'] = 'Mật khẩu đã được đặt lại thành công. Vui lòng đăng nhập.';
+        header('Location: index.php?act=auth/login');
+        exit();
     }
 }
