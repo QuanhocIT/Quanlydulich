@@ -297,26 +297,14 @@ class KhachHangController {
         }, $allTours);
         $thumbnailMap = $tourModel->getThumbnailMapByTourIds($tourIds);
         $ratingMap = $danhGiaModel->getTourRatingMapByTourIds($tourIds);
+        // Batch-load lịch khởi hành tiếp theo cho tất cả tour — tránh N+1 query.
+        $nextScheduleMap = $tourModel->getNextScheduleMapByTourIds($tourIds);
         foreach ($allTours as &$tour) {
             $tourId = (int)($tour['tour_id'] ?? 0);
             $tour['hinh_anh'] = $thumbnailMap[$tourId] ?? null;
             $tour['rating'] = $ratingMap[$tourId] ?? ['diem_tb' => 0, 'so_danh_gia' => 0];
 
-            $lichKhoiHanhList = $tourId > 0 ? $tourModel->getLichKhoiHanhByTourId($tourId) : [];
-            $nextSchedule = null;
-            foreach ($lichKhoiHanhList as $lichKhoiHanh) {
-                if (empty($lichKhoiHanh['ngay_khoi_hanh'])) {
-                    continue;
-                }
-                if (strtotime((string)$lichKhoiHanh['ngay_khoi_hanh']) >= strtotime(date('Y-m-d'))) {
-                    $nextSchedule = $lichKhoiHanh;
-                    break;
-                }
-            }
-            if ($nextSchedule === null && !empty($lichKhoiHanhList)) {
-                $nextSchedule = $lichKhoiHanhList[0];
-            }
-
+            $nextSchedule = $nextScheduleMap[$tourId] ?? null;
             $tour['ngay_khoi_hanh_gan_nhat'] = $nextSchedule['ngay_khoi_hanh'] ?? null;
             $tour['diem_tap_trung'] = $nextSchedule['diem_tap_trung'] ?? '';
             $tour['so_cho'] = $nextSchedule['so_cho'] ?? null;

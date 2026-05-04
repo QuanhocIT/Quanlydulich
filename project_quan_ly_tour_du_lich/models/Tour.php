@@ -419,6 +419,57 @@ class Tour
         return $result;
     }
 
+    // Lấy lịch khởi hành tiếp theo (gần nhất >= hôm nay) cho nhiều tour cùng lúc — tránh N+1.
+    // Trả về map [tour_id => ['ngay_khoi_hanh'=>..., 'ngay_ket_thuc'=>..., 'diem_tap_trung'=>..., 'so_cho'=>...]]
+    public function getNextScheduleMapByTourIds(array $tourIds): array {
+        $normalizedIds = [];
+        foreach ($tourIds as $id) {
+            $id = (int)$id;
+            if ($id > 0) {
+                $normalizedIds[$id] = $id;
+            }
+        }
+        if (empty($normalizedIds)) {
+            return [];
+        }
+
+        $idList = array_values($normalizedIds);
+        $placeholders = implode(',', array_fill(0, count($idList), '?'));
+        $today = date('Y-m-d');
+
+        // Ưu tiên lịch >= hôm nay (gần nhất). Dùng MIN(id) làm tie-breaker để lấy
+        // đúng 1 hàng duy nhất mỗi tour mà không cần window function (MySQL 5.7+).
+        $sql = "SELECT lk.tour_id,
+                       lk.ngay_khoi_hanh,
+                       lk.ngay_ket_thuc,
+                       lk.diem_tap_trung,
+                       lk.so_cho
+                FROM lich_khoi_hanh lk
+                INNER JOIN (
+                    SELECT tour_id, MIN(id) AS first_id
+                    FROM lich_khoi_hanh
+                    WHERE tour_id IN ($placeholders)
+                      AND ngay_khoi_hanh >= ?
+                    GROUP BY tour_id
+                ) nxt ON nxt.tour_id = lk.tour_id AND nxt.first_id = lk.id
+                ORDER BY lk.ngay_khoi_hanh ASC";
+
+        $params = array_merge($idList, [$today]);
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute($params);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $result = [];
+        foreach ($rows as $row) {
+            $tid = (int)($row['tour_id'] ?? 0);
+            if ($tid > 0) {
+                $result[$tid] = $row;
+            }
+        }
+
+        return $result;
+    }
+
     // Đếm tour theo bộ lọc (dùng cho phân trang)
     public function countFiltered(array $conditions, string $search) {
         $where = ['1=1'];
