@@ -524,7 +524,7 @@ ob_start(); ?>
             }
 
             .hero h1 { margin-top: 28px; }
-            .stats-grid { grid-template-columns: 1fr; }
+            .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
             .booking-card { grid-template-columns: 1fr; }
             .booking-thumb { height: 220px; }
             .booking-meta { grid-template-columns: 1fr; }
@@ -627,15 +627,8 @@ include __DIR__ . '/_layout/header.php'; ?>
                                 $favTourId = (int)($favTour['tour_id'] ?? 0);
                                 $favTourImage = $resolveImage($favTour['hinh_anh'] ?? '');
                                 $favTourName = (string)($favTour['ten_tour'] ?? ('Tour #' . $favTourId));
-                                $favTourLoai = (string)($favTour['loai_tour'] ?? '');
-                                $favTourType = ($favTourLoai === 'QuocTe') ? 'Quốc tế' : (($favTourLoai === 'TheoYeuCau') ? 'Theo yêu cầu' : 'Trong nước');
+                                $favTourType = (($favTour['loai_tour'] ?? '') === 'QuocTe') ? 'Quốc tế' : 'Trong nước';
                                 $favTourGia = (float)($favTour['gia_co_ban'] ?? 0);
-                                $favTourMoTa = trim((string)($favTour['mo_ta'] ?? ''));
-                                $favTourMoTaShort = mb_strlen($favTourMoTa) > 100 ? mb_substr($favTourMoTa, 0, 100) . '…' : $favTourMoTa;
-                                $favNgayKH = !empty($favTour['ngay_khoi_hanh_gan_nhat']) ? date('d/m/Y', strtotime($favTour['ngay_khoi_hanh_gan_nhat'])) : null;
-                                $favDiemTapTrung = trim((string)($favTour['diem_tap_trung'] ?? ''));
-                                $favSoCho = isset($favTour['so_cho']) && $favTour['so_cho'] !== null ? (int)$favTour['so_cho'] : null;
-                                $favNgayYeuThich = !empty($favTour['created_at']) ? date('d/m/Y', strtotime($favTour['created_at'])) : null;
                             ?>
                             <article class="booking-card">
                                 <img class="booking-thumb" src="<?php echo htmlspecialchars($favTourImage); ?>" alt="<?php echo htmlspecialchars($favTourName); ?>" loading="lazy">
@@ -644,25 +637,11 @@ include __DIR__ . '/_layout/header.php'; ?>
                                         <h3 class="booking-title"><?php echo htmlspecialchars($favTourName); ?></h3>
                                         <span class="status-badge" style="background:#f3ead8;color:#7c6030;"><?php echo htmlspecialchars($favTourType); ?></span>
                                     </div>
-                                    <?php if ($favTourMoTaShort !== ''): ?>
-                                    <p style="font-size:.85rem;color:var(--muted);margin:0 0 8px;line-height:1.45;"><?php echo htmlspecialchars($favTourMoTaShort); ?></p>
-                                    <?php endif; ?>
                                     <div class="booking-meta">
                                         <?php if ($favTourGia > 0): ?>
                                         <div class="meta-item"><i class="bi bi-cash-coin"></i><span>Giá từ: <b><?php echo number_format($favTourGia); ?>đ</b></span></div>
                                         <?php endif; ?>
-                                        <?php if ($favNgayKH): ?>
-                                        <div class="meta-item"><i class="bi bi-calendar-event"></i><span>Khởi hành gần nhất: <b><?php echo $favNgayKH; ?></b></span></div>
-                                        <?php endif; ?>
-                                        <?php if ($favDiemTapTrung !== ''): ?>
-                                        <div class="meta-item"><i class="bi bi-geo-alt"></i><span>Điểm tập trung: <b><?php echo htmlspecialchars($favDiemTapTrung); ?></b></span></div>
-                                        <?php endif; ?>
-                                        <?php if ($favSoCho !== null): ?>
-                                        <div class="meta-item"><i class="bi bi-person-check"></i><span>Số chỗ: <b><?php echo $favSoCho; ?></b></span></div>
-                                        <?php endif; ?>
-                                        <?php if ($favNgayYeuThich): ?>
-                                        <div class="meta-item"><i class="bi bi-heart"></i><span>Đã thêm: <b><?php echo $favNgayYeuThich; ?></b></span></div>
-                                        <?php endif; ?>
+                                        <div class="meta-item"><i class="bi bi-tag"></i><span>Loại tour: <b><?php echo htmlspecialchars($favTourType); ?></b></span></div>
                                     </div>
                                     <div class="booking-actions">
                                         <a class="action-primary" href="index.php?act=khachHang/chiTietTour&id=<?php echo $favTourId; ?>">
@@ -765,40 +744,4 @@ include __DIR__ . '/_layout/header.php'; ?>
         </section>
     </main>
 
-<?php
-$csrfTokenVal = htmlspecialchars(csrfToken('global_form'), ENT_QUOTES, 'UTF-8');
-$extraJs = '(function () {
-    var csrfToken = ' . json_encode(csrfToken('global_form'), JSON_UNESCAPED_UNICODE) . ';
-
-    window.handleTourFav = async function (btn, tourId) {
-        if (!tourId || btn.disabled) return;
-        btn.disabled = true;
-        try {
-            var body = new URLSearchParams();
-            body.set(\'_csrf_global\', csrfToken);
-            body.set(\'tour_id\', String(tourId));
-            var res = await fetch(\'index.php?act=khachHang/toggleYeuThich\', {
-                method: \'POST\',
-                credentials: \'same-origin\',
-                headers: {
-                    \'Content-Type\': \'application/x-www-form-urlencoded; charset=UTF-8\',
-                    \'X-Requested-With\': \'XMLHttpRequest\'
-                },
-                body: body.toString()
-            });
-            var data = await res.json();
-            if (data && data.success && !data.is_favorite) {
-                var card = btn.closest(\'article.booking-card\');
-                if (card) {
-                    card.style.transition = \'opacity .3s\';
-                    card.style.opacity = \'0\';
-                    setTimeout(function () { card.remove(); }, 310);
-                }
-            }
-        } catch (e) { /* ignore */ } finally {
-            btn.disabled = false;
-        }
-    };
-})();';
-?>
 <?php include __DIR__ . '/_layout/footer.php'; ?>

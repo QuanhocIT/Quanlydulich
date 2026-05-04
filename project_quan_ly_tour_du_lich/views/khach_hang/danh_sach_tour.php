@@ -482,9 +482,33 @@ ob_start(); ?>
             .nav-actions { justify-content: flex-start; }
             .hero { border-radius: 20px; padding: 26px 18px 64px; }
             .search-panel { margin-top: -40px; }
-            .filter-grid,
-            .quick-stats,
-            .tour-grid { grid-template-columns: 1fr; }
+            .filter-grid { grid-template-columns: 1fr; }
+            .quick-stats {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 8px;
+                overflow: hidden;
+            }
+            .stat-card {
+                padding: 10px;
+                border-radius: 14px;
+            }
+            .stat-card strong { font-size: 1.1rem; }
+            .stat-card span {
+                font-size: 11px;
+                line-height: 1.3;
+            }
+            .tour-grid {
+                grid-auto-columns: minmax(270px, 1fr);
+                grid-auto-flow: column;
+                grid-template-columns: none;
+                overflow-x: auto;
+                overflow-y: hidden;
+                scroll-snap-type: x mandatory;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
+            }
+            .tour-grid::-webkit-scrollbar { display: none; }
+            .tour-card { scroll-snap-align: start; }
             .section-head { align-items: flex-start; flex-direction: column; }
             .price-row { align-items: flex-start; flex-direction: column; }
             .tour-actions { width: 100%; }

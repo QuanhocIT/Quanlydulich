@@ -26,6 +26,34 @@ ob_start(); ?>
     padding-bottom: 1rem;
     margin-bottom: 2rem;
 }
+
+@media (max-width: 768px) {
+    .payment-history-wrap {
+        max-height: 320px;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .payment-history-wrap thead th {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        background: var(--bs-table-bg, #f8f9fa);
+    }
+
+    .invoice-list-wrap {
+        max-height: 400px;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .invoice-list-wrap thead th {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        background: #f8f9fa;
+    }
+}
 <?php $extraCss = ob_get_clean(); include __DIR__ . '/_layout/header.php'; ?>
 
     <div class="container py-4 py-lg-5">
@@ -144,7 +172,7 @@ ob_start(); ?>
 
                 <?php if (!empty($giaoDichList)): ?>
                     <h5 class="mb-3">Lịch sử thanh toán</h5>
-                    <div class="table-responsive mb-4">
+                    <div class="table-responsive mb-4 payment-history-wrap">
                         <table class="table table-sm">
                             <thead class="table-light">
                                 <tr>
@@ -212,10 +240,10 @@ ob_start(); ?>
         <?php elseif (isset($bookings) && !empty($bookings)): ?>
             <div class="card">
                 <div class="card-header">
-                    <h5 class="mb-0">Chọn hóa đơn để xem</h5>
+                    <h5 class="mb-0">Danh sách hóa đơn</h5>
                 </div>
                 <div class="card-body">
-                    <div class="table-responsive">
+                    <div class="table-responsive invoice-list-wrap">
                         <table class="table table-hover">
                             <thead>
                                 <tr>
