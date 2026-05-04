@@ -1004,7 +1004,6 @@ class KhachHangController {
             exit();
         }
 
-        $thongBaoModel = new ThongBao();
         $startedAt = time();
         $lastHash = '';
 
@@ -1018,8 +1017,15 @@ class KhachHangController {
             }
 
             try {
+                // Tạo model (và lấy kết nối DB) mỗi chu kỳ, giải phóng ngay
+                // sau khi query xong — tránh giữ MySQL connection suốt sleep().
+                $thongBaoModel = new ThongBao();
                 $items = $thongBaoModel->getByNguoiDung($userId, 50);
                 $unread = (int)$thongBaoModel->countChuaDoc($userId);
+                // Giải phóng conn ngay, trước khi sleep.
+                $thongBaoModel = null;
+                releasePDOConnection();
+
                 $payload = [
                     'success' => true,
                     'unread' => $unread,
@@ -1044,6 +1050,8 @@ class KhachHangController {
                     echo ": ping\n\n";
                 }
             } catch (Throwable $e) {
+                $thongBaoModel = null;
+                releasePDOConnection();
                 echo "event: notification\n";
                 echo 'data: ' . json_encode(['success' => false, 'unread' => 0, 'items' => []], JSON_UNESCAPED_UNICODE) . "\n\n";
             }

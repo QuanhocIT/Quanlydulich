@@ -3195,7 +3195,6 @@ class AdminController {
         session_write_close();
 
         try {
-            $conn = connectDB();
             $startedAt = time();
             $lastPayloadHash = '';
             $lastMetaHash = '';
@@ -3217,6 +3216,10 @@ class AdminController {
                     break;
                 }
 
+                // Lấy kết nối ở đầu mỗi chu kỳ, giải phóng trước sleep()
+                // để không giữ MySQL connection trong khoảng thời gian idle.
+                $conn = connectDB();
+
                 $metaStmt = $conn->query("SELECT
                     (SELECT COALESCE(MAX(payment_id), 0) FROM payments) AS payment_max,
                     (SELECT COALESCE(MAX(danh_gia_id), 0) FROM danh_gia) AS review_max,
@@ -3236,6 +3239,10 @@ class AdminController {
                     $cachedPayload = $this->getAdminNotificationPayload($conn);
                     $lastMetaHash = $metaHash;
                 }
+
+                // Giải phóng kết nối trước khi sleep để không chiếm MySQL connection.
+                $conn = null;
+                releasePDOConnection();
 
                 $payloadHash = md5(json_encode($cachedPayload, JSON_UNESCAPED_UNICODE));
                 if ($payloadHash !== $lastPayloadHash) {

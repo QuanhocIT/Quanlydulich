@@ -158,9 +158,15 @@ define(
 define('REALTIME_HMAC_SECRET', trim((string)($_ENV['REALTIME_HMAC_SECRET'] ?? 'change-me-in-production')));
 define('REALTIME_TOKEN_TTL_SECONDS', max(30, (int)($_ENV['REALTIME_TOKEN_TTL_SECONDS'] ?? 120)));
 
-// Hàm tạo kết nối PDO
-function getPDOConnection() {
+// Hàm tạo kết nối PDO.
+// Truyền $reset = true để giải phóng kết nối hiện tại (dùng trong SSE/long-poll trước sleep).
+function getPDOConnection(bool $reset = false) {
     static $sharedConn = null;
+
+    if ($reset) {
+        $sharedConn = null;
+        return null;
+    }
 
     if ($sharedConn instanceof PDO) {
         return $sharedConn;
@@ -207,5 +213,12 @@ function getPDOConnection() {
         }
         exit(1);
     }
+}
+
+// Giải phóng kết nối PDO đang giữ trong singleton — không để MySQL connection
+// chiếm chỗ vô ích trong khoảng thời gian sleep() của SSE/long-poll loop.
+// Sau khi gọi hàm này, lần gọi connectDB() tiếp theo sẽ tạo kết nối mới.
+function releasePDOConnection(): void {
+    getPDOConnection(true);
 }
 
