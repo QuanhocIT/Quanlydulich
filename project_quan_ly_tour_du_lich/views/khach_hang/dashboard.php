@@ -1,5 +1,6 @@
 ﻿<?php
 /** @var array $danhGiaTot */
+$favoriteTourIds = isset($favoriteTourIds) && is_array($favoriteTourIds) ? $favoriteTourIds : [];
 ?>
 <!DOCTYPE html>
 <html lang="vi">
@@ -828,6 +829,34 @@ function showTab(tab) {
                     .exp-card--small .exp-desc { display: block; }
                 }
                 </style>
+        <style>
+        .home-tour-favorite {
+            align-items: center;
+            background: rgba(255,255,255,.92);
+            border: 1px solid rgba(15,23,42,.14);
+            border-radius: 999px;
+            color: #1f2937;
+            display: inline-flex;
+            font-size: 14px;
+            height: 38px;
+            justify-content: center;
+            position: absolute;
+            right: 14px;
+            top: 14px;
+            width: 38px;
+            z-index: 3;
+            transition: all .18s ease;
+        }
+        .home-tour-favorite:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 20px rgba(2,6,23,.22);
+        }
+        .home-tour-favorite.is-active {
+            background: #ffe3ea;
+            border-color: #ef476f;
+            color: #d62839;
+        }
+        </style>
             </div>
                 <!-- Section: Bạn muốn đi đâu chơi? -->
                 <div class="mt-5 dest-section">
@@ -987,7 +1016,7 @@ function showTab(tab) {
             <a class="home-section-link" href="index.php?act=khachHang/danhSachTour&loai_tour=TrongNuoc">Xem tất cả <i class="bi bi-arrow-right ms-1"></i></a>
         </div>
         <?php
-        $renderHomeTourCard = static function ($tour, $fallbackImage, $typeLabel) {
+        $renderHomeTourCard = static function ($tour, $fallbackImage, $typeLabel) use ($favoriteTourIds) {
             $tourId = (int)($tour['tour_id'] ?? $tour['id'] ?? 0);
             $image = trim((string)($tour['hinh_anh'] ?? ''));
             if ($image === '') {
@@ -1005,11 +1034,21 @@ function showTab(tab) {
             $ratingText = $ratingCount > 0
                 ? number_format((float)($rating['diem_tb'] ?? 0), 1) . '/5 (' . $ratingCount . ' đánh giá)'
                 : 'Chưa có đánh giá';
+            $isFavorite = !empty($favoriteTourIds[$tourId]);
             ?>
             <article class="home-tour-card">
                 <div class="home-tour-media">
                     <img src="<?php echo htmlspecialchars($image); ?>" alt="<?php echo htmlspecialchars($name); ?>" loading="lazy">
                     <span class="home-tour-badge"><?php echo htmlspecialchars($typeLabel); ?></span>
+                    <button
+                        type="button"
+                        class="home-tour-favorite js-favorite-toggle<?php echo $isFavorite ? ' is-active' : ''; ?>"
+                        data-tour-id="<?php echo $tourId; ?>"
+                        aria-label="Yêu thích tour"
+                        title="Thêm vào tour yêu thích"
+                    >
+                        <i class="bi <?php echo $isFavorite ? 'bi-heart-fill' : 'bi-heart'; ?>"></i>
+                    </button>
                 </div>
                 <div class="home-tour-body">
                     <h3><?php echo htmlspecialchars($name); ?></h3>
@@ -3177,6 +3216,54 @@ function showTab(tab) {
                 return target ? { link: link, target: target } : null;
             })
             .filter(Boolean);
+
+        var favoriteToken = <?php echo json_encode(csrfToken('global_form'), JSON_UNESCAPED_UNICODE); ?>;
+        var favoriteButtons = document.querySelectorAll('.js-favorite-toggle');
+        var updateFavoriteButton = function (button, isFavorite) {
+            var icon = button.querySelector('i');
+            button.classList.toggle('is-active', !!isFavorite);
+            if (icon) {
+                icon.className = 'bi ' + (isFavorite ? 'bi-heart-fill' : 'bi-heart');
+            }
+        };
+
+        favoriteButtons.forEach(function (button) {
+            button.addEventListener('click', async function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+
+                var tourId = Number(button.getAttribute('data-tour-id') || 0);
+                if (!Number.isFinite(tourId) || tourId <= 0 || button.disabled) return;
+
+                button.disabled = true;
+                try {
+                    var body = new URLSearchParams();
+                    body.set('_csrf_global', favoriteToken);
+                    body.set('tour_id', String(tourId));
+
+                    var response = await fetch('index.php?act=khachHang/toggleYeuThich', {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: body.toString()
+                    });
+
+                    var data = await response.json();
+                    if (!response.ok || !data || data.success !== true) {
+                        throw new Error('Toggle favorite failed');
+                    }
+
+                    updateFavoriteButton(button, !!data.is_favorite);
+                } catch (error) {
+                    // Bo qua loi mang tam thoi.
+                } finally {
+                    button.disabled = false;
+                }
+            });
+        });
 
         if (sections.length) {
             var setActiveSectionLink = function (activeLink) {

@@ -2,6 +2,7 @@
 $bookings = isset($bookings) && is_array($bookings) ? $bookings : [];
 $participantsByBooking = isset($participantsByBooking) && is_array($participantsByBooking) ? $participantsByBooking : [];
 $upcomingReminders = isset($upcomingReminders) && is_array($upcomingReminders) ? $upcomingReminders : [];
+$tourYeuThichList = isset($tourYeuThichList) && is_array($tourYeuThichList) ? $tourYeuThichList : [];
 
 $statusLabels = [
     'ChoXacNhan' => 'Chờ xác nhận',
@@ -50,18 +51,15 @@ foreach ($bookings as $booking) {
     }
 }
 ?>
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Theo dõi tour đã đặt</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800;900&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
-    <style>
+<?php
+$pageTitle  = 'Theo dõi tour đã đặt';
+$activePage = 'yeuCauTour';
+$pageHero   = [
+    'icon'     => 'bi-suitcase2',
+    'title'    => 'Theo dõi tour đã đặt',
+    'subtitle' => 'Quản lý booking, thông tin người tham gia, hóa đơn và nhắc nhở khởi hành trong một màn hình rõ ràng hơn.',
+];
+ob_start(); ?>
         :root {
             --ink: #0f172a;
             --muted: #64748b;
@@ -270,7 +268,16 @@ foreach ($bookings as $booking) {
         .booking-list {
             display: grid;
             gap: 16px;
+            max-height: calc(3 * 200px + 2 * 16px); /* ~3 cards visible */
+            overflow-y: auto;
+            padding-right: 6px;
+            scroll-behavior: smooth;
         }
+
+        .booking-list::-webkit-scrollbar { width: 6px; }
+        .booking-list::-webkit-scrollbar-track { background: transparent; }
+        .booking-list::-webkit-scrollbar-thumb { background: rgba(0,0,0,.15); border-radius: 3px; }
+        .booking-list::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,.28); }
 
         .booking-card {
             display: grid;
@@ -403,6 +410,36 @@ foreach ($bookings as $booking) {
             margin: 0 0 8px;
             font-size: .98rem;
             line-height: 1.45;
+
+        .favorite-tour-item {
+            align-items: center;
+            display: grid;
+            gap: 10px;
+            grid-template-columns: 76px minmax(0, 1fr);
+        }
+
+        .favorite-tour-thumb {
+            width: 76px;
+            height: 58px;
+            object-fit: cover;
+            border-radius: 10px;
+            border: 1px solid rgba(15,23,42,.12);
+            background: #e5ebf4;
+        }
+
+        .favorite-tour-title {
+            margin: 0;
+            font-size: .96rem;
+            line-height: 1.35;
+            font-weight: 800;
+        }
+
+        .favorite-tour-meta {
+            margin: 2px 0 0;
+            color: var(--muted);
+            font-size: .82rem;
+            font-weight: 700;
+        }
             font-weight: 900;
         }
 
@@ -493,40 +530,9 @@ foreach ($bookings as $booking) {
             .booking-meta { grid-template-columns: 1fr; }
             .panel { padding: 18px; }
         }
-    </style>
-</head>
-<body class="trk">
+<?php $extraCss = ob_get_clean();
+include __DIR__ . '/_layout/header.php'; ?>
     <main class="page-shell">
-        <header class="topbar">
-            <a class="brand" href="index.php?act=khachHang/dashboard">
-                <span class="brand-mark"><i class="bi bi-compass"></i></span>
-                <span>DuLichPro</span>
-            </a>
-            <nav class="nav-actions" aria-label="Điều hướng khách hàng">
-                <a class="nav-pill" href="index.php?act=khachHang/dashboard"><i class="bi bi-house"></i> Trang chủ</a>
-                <a class="nav-pill" href="index.php?act=khachHang/danhSachTour"><i class="bi bi-stars"></i> Tour nổi bật</a>
-                <a class="nav-pill is-active" href="index.php?act=khachHang/yeuCauTour"><i class="bi bi-suitcase2"></i> Tour đã đặt</a>
-                <a class="nav-pill" href="index.php?act=khachHang/capNhatThongTin"><i class="bi bi-person-gear"></i> Hồ sơ</a>
-                <a class="nav-pill" href="index.php?act=khachHang/hoaDon"><i class="bi bi-receipt"></i> Hóa đơn</a>
-            </nav>
-        </header>
-
-        <section class="hero">
-            <h1>Theo dõi tour đã đặt</h1>
-            <p>Quản lý booking, thông tin người tham gia, hóa đơn và nhắc nhở khởi hành trong một màn hình rõ ràng hơn.</p>
-        </section>
-
-        <?php if (isset($_SESSION['success'])): ?>
-            <div class="alert alert-success mt-3 mb-0">
-                <?php echo htmlspecialchars($_SESSION['success']); unset($_SESSION['success']); ?>
-            </div>
-        <?php endif; ?>
-
-        <?php if (isset($_SESSION['error'])): ?>
-            <div class="alert alert-danger mt-3 mb-0">
-                <?php echo htmlspecialchars($_SESSION['error']); unset($_SESSION['error']); ?>
-            </div>
-        <?php endif; ?>
 
         <section class="stats-grid" aria-label="Tổng quan booking">
             <div class="stat-card">
@@ -548,6 +554,7 @@ foreach ($bookings as $booking) {
         </section>
 
         <section class="content-grid">
+            <div class="main-col">
             <div class="panel">
                 <div class="panel-head">
                     <h2 class="panel-title"><i class="bi bi-suitcase2"></i> Tour đã đặt</h2>
@@ -608,6 +615,77 @@ foreach ($bookings as $booking) {
                     </div>
                 <?php endif; ?>
             </div>
+
+            <div class="panel" style="margin-top:22px;">
+                <div class="panel-head">
+                    <h2 class="panel-title"><i class="bi bi-heart-fill" style="color:#d6b26d;"></i> Tour yêu thích</h2>
+                </div>
+                <?php if (!empty($tourYeuThichList)): ?>
+                    <div class="booking-list">
+                        <?php foreach ($tourYeuThichList as $favTour): ?>
+                            <?php
+                                $favTourId = (int)($favTour['tour_id'] ?? 0);
+                                $favTourImage = $resolveImage($favTour['hinh_anh'] ?? '');
+                                $favTourName = (string)($favTour['ten_tour'] ?? ('Tour #' . $favTourId));
+                                $favTourLoai = (string)($favTour['loai_tour'] ?? '');
+                                $favTourType = ($favTourLoai === 'QuocTe') ? 'Quốc tế' : (($favTourLoai === 'TheoYeuCau') ? 'Theo yêu cầu' : 'Trong nước');
+                                $favTourGia = (float)($favTour['gia_co_ban'] ?? 0);
+                                $favTourMoTa = trim((string)($favTour['mo_ta'] ?? ''));
+                                $favTourMoTaShort = mb_strlen($favTourMoTa) > 100 ? mb_substr($favTourMoTa, 0, 100) . '…' : $favTourMoTa;
+                                $favNgayKH = !empty($favTour['ngay_khoi_hanh_gan_nhat']) ? date('d/m/Y', strtotime($favTour['ngay_khoi_hanh_gan_nhat'])) : null;
+                                $favDiemTapTrung = trim((string)($favTour['diem_tap_trung'] ?? ''));
+                                $favSoCho = isset($favTour['so_cho']) && $favTour['so_cho'] !== null ? (int)$favTour['so_cho'] : null;
+                                $favNgayYeuThich = !empty($favTour['created_at']) ? date('d/m/Y', strtotime($favTour['created_at'])) : null;
+                            ?>
+                            <article class="booking-card">
+                                <img class="booking-thumb" src="<?php echo htmlspecialchars($favTourImage); ?>" alt="<?php echo htmlspecialchars($favTourName); ?>" loading="lazy">
+                                <div class="booking-body">
+                                    <div class="booking-title-row">
+                                        <h3 class="booking-title"><?php echo htmlspecialchars($favTourName); ?></h3>
+                                        <span class="status-badge" style="background:#f3ead8;color:#7c6030;"><?php echo htmlspecialchars($favTourType); ?></span>
+                                    </div>
+                                    <?php if ($favTourMoTaShort !== ''): ?>
+                                    <p style="font-size:.85rem;color:var(--muted);margin:0 0 8px;line-height:1.45;"><?php echo htmlspecialchars($favTourMoTaShort); ?></p>
+                                    <?php endif; ?>
+                                    <div class="booking-meta">
+                                        <?php if ($favTourGia > 0): ?>
+                                        <div class="meta-item"><i class="bi bi-cash-coin"></i><span>Giá từ: <b><?php echo number_format($favTourGia); ?>đ</b></span></div>
+                                        <?php endif; ?>
+                                        <?php if ($favNgayKH): ?>
+                                        <div class="meta-item"><i class="bi bi-calendar-event"></i><span>Khởi hành gần nhất: <b><?php echo $favNgayKH; ?></b></span></div>
+                                        <?php endif; ?>
+                                        <?php if ($favDiemTapTrung !== ''): ?>
+                                        <div class="meta-item"><i class="bi bi-geo-alt"></i><span>Điểm tập trung: <b><?php echo htmlspecialchars($favDiemTapTrung); ?></b></span></div>
+                                        <?php endif; ?>
+                                        <?php if ($favSoCho !== null): ?>
+                                        <div class="meta-item"><i class="bi bi-person-check"></i><span>Số chỗ: <b><?php echo $favSoCho; ?></b></span></div>
+                                        <?php endif; ?>
+                                        <?php if ($favNgayYeuThich): ?>
+                                        <div class="meta-item"><i class="bi bi-heart"></i><span>Đã thêm: <b><?php echo $favNgayYeuThich; ?></b></span></div>
+                                        <?php endif; ?>
+                                    </div>
+                                    <div class="booking-actions">
+                                        <a class="action-primary" href="index.php?act=khachHang/chiTietTour&id=<?php echo $favTourId; ?>">
+                                            <i class="bi bi-info-circle"></i> Xem chi tiết
+                                        </a>
+                                        <a class="action-soft" href="index.php?act=khachHang/datTour&tour_id=<?php echo $favTourId; ?>">
+                                            <i class="bi bi-calendar-plus"></i> Đặt ngay
+                                        </a>
+                                        <button class="action-soft tour-fav-btn" data-tour-id="<?php echo $favTourId; ?>" data-faved="1" onclick="handleTourFav(this, <?php echo $favTourId; ?>)" style="border:none;cursor:pointer;">
+                                            <i class="bi bi-heart-fill" style="color:#d6b26d;"></i> Bỏ yêu thích
+                                        </button>
+                                    </div>
+                                </div>
+                            </article>
+                        <?php endforeach; ?>
+                    </div>
+                <?php else: ?>
+                    <div class="empty-state">
+                        <i class="bi bi-heart"></i> Chưa có tour yêu thích. Hãy bấm biểu tượng tim ở ảnh tour để thêm nhanh.
+                    </div>
+                <?php endif; ?>
+            </div>
+            </div><!-- /.main-col -->
 
             <aside>
                 <section class="panel">
@@ -687,6 +765,40 @@ foreach ($bookings as $booking) {
         </section>
     </main>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+<?php
+$csrfTokenVal = htmlspecialchars(csrfToken('global_form'), ENT_QUOTES, 'UTF-8');
+$extraJs = '(function () {
+    var csrfToken = ' . json_encode(csrfToken('global_form'), JSON_UNESCAPED_UNICODE) . ';
+
+    window.handleTourFav = async function (btn, tourId) {
+        if (!tourId || btn.disabled) return;
+        btn.disabled = true;
+        try {
+            var body = new URLSearchParams();
+            body.set(\'_csrf_global\', csrfToken);
+            body.set(\'tour_id\', String(tourId));
+            var res = await fetch(\'index.php?act=khachHang/toggleYeuThich\', {
+                method: \'POST\',
+                credentials: \'same-origin\',
+                headers: {
+                    \'Content-Type\': \'application/x-www-form-urlencoded; charset=UTF-8\',
+                    \'X-Requested-With\': \'XMLHttpRequest\'
+                },
+                body: body.toString()
+            });
+            var data = await res.json();
+            if (data && data.success && !data.is_favorite) {
+                var card = btn.closest(\'article.booking-card\');
+                if (card) {
+                    card.style.transition = \'opacity .3s\';
+                    card.style.opacity = \'0\';
+                    setTimeout(function () { card.remove(); }, 310);
+                }
+            }
+        } catch (e) { /* ignore */ } finally {
+            btn.disabled = false;
+        }
+    };
+})();';
+?>
+<?php include __DIR__ . '/_layout/footer.php'; ?>

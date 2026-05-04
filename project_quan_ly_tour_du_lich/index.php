@@ -442,6 +442,7 @@ match ($act) {
     'khachHang/guiYeuCauHoTro' => (new KhachHangController())->guiYeuCauHoTro(),
     'khachHang/guiYeuCauTour' => (new KhachHangController())->guiYeuCauTour(),
     'khachHang/yeuCauTour' => (new KhachHangController())->guiYeuCauTour(),
+    'khachHang/toggleYeuThich' => (new KhachHangController())->toggleYeuThich(),
     'khachHang/notificationCounts' => (new KhachHangController())->notificationCounts(),
     'khachHang/markAllNotificationsRead' => (new KhachHangController())->markAllNotificationsRead(),
     'khachHang/notificationFeed' => (new KhachHangController())->notificationFeed(),

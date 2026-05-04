@@ -3,7 +3,7 @@
 require_once __DIR__ . '/../services/PaymentFinanceService.php';
 
 class PaymentGatewayController {
-    private static function debugRedirect($stage, array $payload = []) {
+    private static function debugRedirect(string $stage, array $payload = []): void {
         $logFile = __DIR__ . '/../storage/payment_redirect_debug.log';
         $payload['stage'] = $stage;
         $payload['ts'] = date('c');
@@ -13,7 +13,7 @@ class PaymentGatewayController {
     /**
      * Truy vấn trạng thái giao dịch VNPay để cập nhật payment bị kẹt ở DangXuLy.
      */
-    public static function queryVnpayStatus($conn, $id) {
+    public static function queryVnpayStatus(PDO $conn, mixed $id): void {
         require_once __DIR__ . '/../models/Payment.php';
         require_once __DIR__ . '/../models/PaymentLog.php';
         self::ensurePaymentTables($conn);
@@ -194,7 +194,7 @@ class PaymentGatewayController {
      * VNPay gọi URL này trực tiếp sau khi giao dịch hoàn tất, không phụ thuộc trình duyệt.
      * Phải trả về JSON; không được redirect hay echo HTML.
      */
-    public static function vnpayIpn($conn) {
+    public static function vnpayIpn(PDO $conn): void {
         require_once __DIR__ . '/../models/Payment.php';
         require_once __DIR__ . '/../models/PaymentIdempotency.php';
         require_once __DIR__ . '/../models/PaymentLog.php';
@@ -370,12 +370,12 @@ class PaymentGatewayController {
     }
 
     // Hiển thị trang chọn phương thức thanh toán (admin)
-    public static function pay($conn, $booking_id) {
+    public static function pay(PDO $conn, mixed $booking_id): void {
         $booking_id = (int)$booking_id;
         include __DIR__ . '/../views/admin/payments/pay.php';
     }
 
-    public static function redirect($conn, $booking_id, $method) {
+    public static function redirect(PDO $conn, mixed $booking_id, mixed $method): void {
         require_once __DIR__ . '/../models/Payment.php';
         self::ensurePaymentTables($conn);
 
@@ -426,21 +426,62 @@ class PaymentGatewayController {
             exit;
         }
 
-        $paymentId = self::findReusableInFlightPaymentId($conn, $bookingId, $dbMethod);
-        if ($paymentId > 0) {
-            self::createPaymentLog($conn, $paymentId, 'REUSE_INFLIGHT', 'Tai su dung payment dang xu ly do request gui lai');
-        } else {
-            $paymentId = self::createPayment($conn, [
-                'booking_id' => $bookingId,
-                'amount' => $amount,
-                'payment_method' => $dbMethod,
-                'status' => Payment::STATUS_TAO_MOI,
-                'note' => 'Khoi tao thanh toan online | gateway=' . $method
-            ]);
-        }
+        // --- ATOMIC: tao/tai su dung payment + chuyen trang thai + ghi TXN_REF ---
+        $paymentId = 0;
+        $txnRef = '';
+        try {
+            $conn->beginTransaction();
+            self::lockBookingRow($conn, $bookingId);
 
-        if (!$paymentId) {
-            $_SESSION['error'] = 'Không thể khởi tạo giao dịch thanh toán.';
+            $paymentId = self::findReusableInFlightPaymentId($conn, $bookingId, $dbMethod);
+            if ($paymentId > 0) {
+                self::createPaymentLog($conn, $paymentId, 'REUSE_INFLIGHT', 'Tai su dung payment dang xu ly do request gui lai');
+            } else {
+                $paymentId = self::createPayment($conn, [
+                    'booking_id' => $bookingId,
+                    'amount' => $amount,
+                    'payment_method' => $dbMethod,
+                    'status' => Payment::STATUS_TAO_MOI,
+                    'note' => 'Khoi tao thanh toan online | gateway=' . $method
+                ]);
+            }
+
+            if (!$paymentId) {
+                throw new RuntimeException('Khong the khoi tao giao dich thanh toan.');
+            }
+
+            if ((int)self::countPaymentLogs($conn, $paymentId, 'CREATE') === 0) {
+                self::createPaymentLog($conn, $paymentId, 'CREATE', 'Khoi tao giao dich online');
+
+                $toProcessing = Payment::transitionStatus($conn, $paymentId, Payment::STATUS_DANG_XU_LY, 'redirect_gateway_start', [
+                    'gateway_method' => $method,
+                    'payment_mode' => PAYMENT_MODE,
+                ]);
+                if (!$toProcessing['ok']) {
+                    throw new RuntimeException('Khong the chuyen trang thai thanh toan sang DangXuLy: ' . ($toProcessing['message'] ?? ''));
+                }
+            } else {
+                $currentStatus = self::getPaymentStatus($conn, $paymentId);
+                if ($currentStatus === Payment::STATUS_TAO_MOI) {
+                    $toProcessing = Payment::transitionStatus($conn, $paymentId, Payment::STATUS_DANG_XU_LY, 'redirect_gateway_retry_activate', [
+                        'gateway_method' => $method,
+                        'payment_mode' => PAYMENT_MODE,
+                    ]);
+                    if (!$toProcessing['ok']) {
+                        throw new RuntimeException('Khong the chuyen trang thai thanh toan sang DangXuLy: ' . ($toProcessing['message'] ?? ''));
+                    }
+                }
+            }
+
+            $txnRef = self::buildTxnRef($bookingId, $paymentId);
+            self::updatePaymentNote($conn, $paymentId, 'TXN_REF=' . $txnRef);
+
+            $conn->commit();
+        } catch (Throwable $e) {
+            if ($conn->inTransaction()) {
+                $conn->rollBack();
+            }
+            $_SESSION['error'] = $e->getMessage();
             $redirectUrl = 'index.php?act=' . $returnAct . '&booking_id=' . $bookingId;
             if ($returnTourId > 0) {
                 $redirectUrl .= '&id=' . $returnTourId;
@@ -448,36 +489,7 @@ class PaymentGatewayController {
             header('Location: ' . $redirectUrl);
             exit;
         }
-
-        if ((int)self::countPaymentLogs($conn, $paymentId, 'CREATE') === 0) {
-            self::createPaymentLog($conn, $paymentId, 'CREATE', 'Khoi tao giao dich online');
-
-            $toProcessing = Payment::transitionStatus($conn, $paymentId, Payment::STATUS_DANG_XU_LY, 'redirect_gateway_start', [
-                'gateway_method' => $method,
-                'payment_mode' => PAYMENT_MODE,
-            ]);
-            if (!$toProcessing['ok']) {
-                $_SESSION['error'] = 'Khong the chuyen trang thai thanh toan sang DangXuLy.';
-                header('Location: index.php?act=' . $returnAct . '&booking_id=' . $bookingId);
-                exit;
-            }
-        } else {
-            $currentStatus = self::getPaymentStatus($conn, $paymentId);
-            if ($currentStatus === Payment::STATUS_TAO_MOI) {
-                $toProcessing = Payment::transitionStatus($conn, $paymentId, Payment::STATUS_DANG_XU_LY, 'redirect_gateway_retry_activate', [
-                    'gateway_method' => $method,
-                    'payment_mode' => PAYMENT_MODE,
-                ]);
-                if (!$toProcessing['ok']) {
-                    $_SESSION['error'] = 'Khong the chuyen trang thai thanh toan sang DangXuLy.';
-                    header('Location: index.php?act=' . $returnAct . '&booking_id=' . $bookingId);
-                    exit;
-                }
-            }
-        }
-
-        $txnRef = self::buildTxnRef($bookingId, $paymentId);
-        self::updatePaymentNote($conn, $paymentId, 'TXN_REF=' . $txnRef);
+        // --- /ATOMIC ---
 
         if (PAYMENT_MODE === 'vnpay') {
             if (!self::isVnpayConfigured()) {
@@ -541,7 +553,7 @@ class PaymentGatewayController {
         exit;
     }
 
-    public static function callback($conn, $booking_id, $method, $status) {
+    public static function callback(PDO $conn, mixed $booking_id, mixed $method, mixed $status): void {
         require_once __DIR__ . '/../models/Payment.php';
         require_once __DIR__ . '/../models/PaymentIdempotency.php';
         self::ensurePaymentTables($conn);
@@ -691,14 +703,14 @@ class PaymentGatewayController {
         exit;
     }
 
-    private static function normalizeMethod($method) {
+    private static function normalizeMethod(mixed $method): string {
         $method = trim((string)$method);
         $allowed = ['VNPay', 'Momo', 'Paypal'];
         return in_array($method, $allowed, true) ? $method : 'VNPay';
     }
 
     // Map method gateway về enum DB cũ khi cần tương thích.
-    private static function mapGatewayToLegacyDbMethod($gatewayMethod) {
+    private static function mapGatewayToLegacyDbMethod(string $gatewayMethod): string {
         $map = [
             'VNPay' => 'ChuyenKhoan',
             'Momo' => 'ViDienTu',
@@ -707,7 +719,7 @@ class PaymentGatewayController {
         return $map[$gatewayMethod] ?? 'ChuyenKhoan';
     }
 
-    private static function resolveDbPaymentMethod($conn, $gatewayMethod) {
+    private static function resolveDbPaymentMethod(PDO $conn, mixed $gatewayMethod): string {
         $gatewayMethod = self::normalizeMethod($gatewayMethod);
         $enumValues = self::getPaymentMethodEnumValues($conn);
 
@@ -727,7 +739,7 @@ class PaymentGatewayController {
         return $legacy;
     }
 
-    private static function getPaymentMethodEnumValues($conn) {
+    private static function getPaymentMethodEnumValues(PDO $conn): array {
         $stmt = $conn->query("SHOW COLUMNS FROM payments LIKE 'payment_method'");
         $row = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : null;
         if (!$row || empty($row['Type'])) {
@@ -750,13 +762,13 @@ class PaymentGatewayController {
         return $values;
     }
 
-    private static function findBooking($conn, $bookingId) {
+    private static function findBooking(PDO $conn, int $bookingId): array|false {
         $stmt = $conn->prepare('SELECT b.booking_id, b.tour_id, b.khach_hang_id, b.tong_tien, b.trang_thai, t.ten_tour, nd.email, nd.ho_ten FROM booking b LEFT JOIN tour t ON b.tour_id = t.tour_id LEFT JOIN khach_hang kh ON b.khach_hang_id = kh.khach_hang_id LEFT JOIN nguoi_dung nd ON kh.nguoi_dung_id = nd.id WHERE b.booking_id = ? LIMIT 1');
         $stmt->execute([$bookingId]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    private static function ensurePaymentTables($conn) {
+    private static function ensurePaymentTables(PDO $conn): void {
         try {
             $conn->query('SELECT payment_id, booking_id, amount, payment_method, status FROM payments LIMIT 1');
             $conn->query('SELECT log_id, payment_id, action FROM payment_logs LIMIT 1');
@@ -772,12 +784,12 @@ class PaymentGatewayController {
         PaymentIdempotency::ensureTable($conn);
     }
 
-    private static function lockBookingRow($conn, $bookingId) {
+    private static function lockBookingRow(PDO $conn, int $bookingId): void {
         $stmt = $conn->prepare('SELECT booking_id FROM booking WHERE booking_id = ? FOR UPDATE');
         $stmt->execute([(int)$bookingId]);
     }
 
-    private static function createPayment($conn, $data) {
+    private static function createPayment(PDO $conn, array $data): int {
         $stmt = $conn->prepare('INSERT INTO payments (booking_id, amount, payment_method, payment_date, status, note) VALUES (?, ?, ?, ?, ?, ?)');
         $ok = $stmt->execute([
             (int)$data['booking_id'],
@@ -793,7 +805,7 @@ class PaymentGatewayController {
         return (int)$conn->lastInsertId();
     }
 
-    private static function createPaymentLog($conn, $paymentId, $action, $note) {
+    private static function createPaymentLog(PDO $conn, int $paymentId, string $action, string $note): void {
         if ($paymentId <= 0) {
             return;
         }
@@ -801,12 +813,12 @@ class PaymentGatewayController {
         $stmt->execute([(int)$paymentId, (string)$action, date('Y-m-d H:i:s'), (string)$note]);
     }
 
-    private static function updatePaymentNote($conn, $paymentId, $note) {
+    private static function updatePaymentNote(PDO $conn, int $paymentId, string $note): void {
         $stmt = $conn->prepare('UPDATE payments SET note = ? WHERE payment_id = ?');
         $stmt->execute([(string)$note, (int)$paymentId]);
     }
 
-    private static function updatePaymentStatus($conn, $paymentId, $status, $note, $gatewayRef) {
+    private static function updatePaymentStatus(PDO $conn, int $paymentId, string $status, string $note, string $gatewayRef): void {
         require_once __DIR__ . '/../models/Payment.php';
         $fullNote = $note;
         if ($gatewayRef !== '') {
@@ -824,38 +836,38 @@ class PaymentGatewayController {
         }
     }
 
-    private static function findLatestPendingPaymentId($conn, $bookingId, $method) {
+    private static function findLatestPendingPaymentId(PDO $conn, int $bookingId, string $method): int {
         $stmt = $conn->prepare('SELECT payment_id FROM payments WHERE booking_id = ? AND payment_method = ? ORDER BY payment_id DESC LIMIT 1');
         $stmt->execute([(int)$bookingId, (string)$method]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         return (int)($row['payment_id'] ?? 0);
     }
 
-    private static function findReusableInFlightPaymentId($conn, $bookingId, $method) {
+    private static function findReusableInFlightPaymentId(PDO $conn, int $bookingId, string $method): int {
         $stmt = $conn->prepare('SELECT payment_id FROM payments WHERE booking_id = ? AND payment_method = ? AND status IN (?, ?) ORDER BY payment_id DESC LIMIT 1');
         $stmt->execute([(int)$bookingId, (string)$method, Payment::STATUS_TAO_MOI, Payment::STATUS_DANG_XU_LY]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         return (int)($row['payment_id'] ?? 0);
     }
 
-    private static function countPaymentLogs($conn, $paymentId, $action) {
+    private static function countPaymentLogs(PDO $conn, int $paymentId, string $action): int {
         $stmt = $conn->prepare('SELECT COUNT(*) AS c FROM payment_logs WHERE payment_id = ? AND action = ?');
         $stmt->execute([(int)$paymentId, (string)$action]);
         return (int)$stmt->fetchColumn();
     }
 
-    private static function getPaymentStatus($conn, $paymentId) {
+    private static function getPaymentStatus(PDO $conn, int $paymentId): string {
         $stmt = $conn->prepare('SELECT status FROM payments WHERE payment_id = ? LIMIT 1');
         $stmt->execute([(int)$paymentId]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         return (string)($row['status'] ?? '');
     }
 
-    private static function buildTxnRef($bookingId, $paymentId) {
+    private static function buildTxnRef(int $bookingId, int $paymentId): string {
         return 'BK' . (int)$bookingId . 'P' . (int)$paymentId . 'T' . time();
     }
 
-    private static function parseTxnRef($txnRef) {
+    private static function parseTxnRef(string $txnRef): array {
         $result = ['booking_id' => 0, 'payment_id' => 0];
         if (preg_match('/BK(\d+)P(\d+)T\d+/', (string)$txnRef, $m)) {
             $result['booking_id'] = (int)$m[1];
@@ -868,7 +880,7 @@ class PaymentGatewayController {
         return VNPAY_TMN_CODE !== '' && VNPAY_HASH_SECRET !== '';
     }
 
-    private static function buildVnpayUrl($bookingId, $amount, $txnRef, $method, $returnAct, $returnTourId = 0) {
+    private static function buildVnpayUrl(int $bookingId, float $amount, string $txnRef, string $method, string $returnAct, int $returnTourId = 0): string {
         $vnpData = [
             'vnp_Version' => '2.1.0',
             'vnp_Command' => 'pay',
@@ -896,7 +908,7 @@ class PaymentGatewayController {
         return VNPAY_URL . '?' . $hashData . '&vnp_SecureHash=' . $secureHash;
     }
 
-    private static function verifyVnpaySignature($params) {
+    private static function verifyVnpaySignature(array $params): bool {
         if (!self::isVnpayConfigured()) {
             return false;
         }
@@ -924,7 +936,7 @@ class PaymentGatewayController {
         return hash_equals($secureHash, (string)$vnpSecureHash);
     }
 
-    private static function sendPaymentSuccessEmail($booking, $paymentId, $gatewayRef) {
+    private static function sendPaymentSuccessEmail(array $booking, int $paymentId, string $gatewayRef): void {
         if (empty($booking['email'])) {
             return;
         }
@@ -944,7 +956,7 @@ class PaymentGatewayController {
         }
     }
 
-    private static function buildReturnUrl($returnAct, $returnTourId, $bookingId) {
+    private static function buildReturnUrl(string $returnAct, int $returnTourId, int $bookingId): string {
         $url = VNPAY_RETURN_URL . '&booking_id=' . (int)$bookingId . '&method=VNPay&return_act=' . urlencode($returnAct);
         if ($returnTourId > 0) {
             $url .= '&return_tour_id=' . (int)$returnTourId;

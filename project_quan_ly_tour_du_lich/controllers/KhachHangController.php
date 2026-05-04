@@ -80,19 +80,35 @@ class KhachHangController {
         require_once 'models/Booking.php';
         require_once 'models/CheckinKhach.php';
         require_once 'models/Tour.php';
+        require_once 'models/TourYeuThich.php';
 
         $khachHangModel = new KhachHang();
         $bookingModel = new Booking();
         $checkinModel = new CheckinKhach();
         $tourModel = new Tour();
+        $tourYeuThichModel = new TourYeuThich();
 
         $khachHang = $khachHangModel->findByUserId($_SESSION['user_id']);
         $bookings = [];
         $participantsByBooking = [];
         $upcomingReminders = [];
+        $favoriteTourIds = [];
+        $tourYeuThichList = [];
 
         if ($khachHang && !empty($khachHang['khach_hang_id'])) {
+            $khachHangId = (int)$khachHang['khach_hang_id'];
             $bookings = $bookingModel->getByKhachHangId((int)$khachHang['khach_hang_id']);
+            $favoriteTourIds = $tourYeuThichModel->getFavoriteTourIdsByKhachHangId($khachHangId);
+            $tourYeuThichList = $tourYeuThichModel->getFavoriteToursByKhachHangId($khachHangId, 24);
+
+            if (!empty($tourYeuThichList)) {
+                $favoriteTourImageMap = $tourModel->getThumbnailMapByTourIds(array_column($tourYeuThichList, 'tour_id'));
+                foreach ($tourYeuThichList as &$favoriteTour) {
+                    $tourId = (int)($favoriteTour['tour_id'] ?? 0);
+                    $favoriteTour['hinh_anh'] = $favoriteTourImageMap[$tourId] ?? null;
+                }
+                unset($favoriteTour);
+            }
 
             $tourIds = [];
             $bookingIds = [];
@@ -211,12 +227,14 @@ class KhachHangController {
         require_once 'models/ThongBao.php';
         require_once 'models/Tour.php';
         require_once 'models/DanhGia.php';
+        require_once 'models/TourYeuThich.php';
 
         $bookingModel = new Booking();
         $khachHangModel = new KhachHang();
         $thongBaoModel = new ThongBao();
         $tourModel = new Tour();
         $danhGiaModel = new DanhGia();
+        $tourYeuThichModel = new TourYeuThich();
 
         // Lấy thông tin khách hàng
         $khachHang = $khachHangModel->findByUserId($_SESSION['user_id']);
@@ -225,6 +243,8 @@ class KhachHangController {
             header('Location: index.php?act=auth/profile');
             exit();
         }
+
+        $favoriteTourIds = $tourYeuThichModel->getFavoriteTourIdsByKhachHangId((int)$khachHang['khach_hang_id']);
 
         // Lấy booking của khách hàng
         $bookings = $bookingModel->getByKhachHangId($khachHang['khach_hang_id']);
@@ -328,9 +348,20 @@ class KhachHangController {
     public function danhSachTour() {
         require_once 'models/Tour.php';
         require_once 'models/DanhGia.php';
+        require_once 'models/KhachHang.php';
+        require_once 'models/TourYeuThich.php';
 
         $tourModel = new Tour();
         $danhGiaModel = new DanhGia();
+        $khachHangModel = new KhachHang();
+        $tourYeuThichModel = new TourYeuThich();
+        $favoriteTourIds = [];
+
+        $khachHang = $khachHangModel->findByUserId((int)($_SESSION['user_id'] ?? 0));
+        if (!empty($khachHang['khach_hang_id'])) {
+            $favoriteTourIds = $tourYeuThichModel->getFavoriteTourIdsByKhachHangId((int)$khachHang['khach_hang_id']);
+        }
+
         $search = trim((string)($_GET['q'] ?? ''));
         $loaiTour = trim((string)($_GET['loai_tour'] ?? ''));
         $priceRange = trim((string)($_GET['price_range'] ?? ''));
@@ -406,6 +437,69 @@ class KhachHangController {
         ];
 
         require 'views/khach_hang/danh_sach_tour.php';
+    }
+
+    public function toggleYeuThich() {
+        header('Content-Type: application/json; charset=utf-8');
+
+        if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['success' => false, 'message' => 'Phuong thuc khong hop le.'], JSON_UNESCAPED_UNICODE);
+            exit();
+        }
+
+        $csrfGlobalToken = $_POST['_csrf_global'] ?? '';
+        if (!verifyCsrfToken((string)$csrfGlobalToken, 'global_form')) {
+            http_response_code(419);
+            echo json_encode(['success' => false, 'message' => 'Yeu cau khong hop le (CSRF).'], JSON_UNESCAPED_UNICODE);
+            exit();
+        }
+
+        $tourId = (int)($_POST['tour_id'] ?? 0);
+        if ($tourId <= 0) {
+            http_response_code(422);
+            echo json_encode(['success' => false, 'message' => 'Thiếu mã tour.'], JSON_UNESCAPED_UNICODE);
+            exit();
+        }
+
+        try {
+            require_once 'models/KhachHang.php';
+            require_once 'models/Tour.php';
+            require_once 'models/TourYeuThich.php';
+
+            $khachHangModel = new KhachHang();
+            $tourModel = new Tour();
+            $tourYeuThichModel = new TourYeuThich();
+
+            $khachHang = $khachHangModel->findByUserId((int)($_SESSION['user_id'] ?? 0));
+            if (empty($khachHang['khach_hang_id'])) {
+                http_response_code(404);
+                echo json_encode(['success' => false, 'message' => 'Khong tim thay khach hang.'], JSON_UNESCAPED_UNICODE);
+                exit();
+            }
+
+            $tour = $tourModel->findById($tourId);
+            if (empty($tour)) {
+                http_response_code(404);
+                echo json_encode(['success' => false, 'message' => 'Tour khong ton tai.'], JSON_UNESCAPED_UNICODE);
+                exit();
+            }
+
+            $isFavorite = $tourYeuThichModel->toggleByKhachHangId((int)$khachHang['khach_hang_id'], $tourId);
+            echo json_encode([
+                'success' => true,
+                'is_favorite' => $isFavorite,
+                'message' => $isFavorite ? 'Da them vao tour yeu thich.' : 'Da bo khoi tour yeu thich.',
+            ], JSON_UNESCAPED_UNICODE);
+            exit();
+        } catch (Throwable $e) {
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Khong the cap nhat tour yeu thich luc nay.',
+            ], JSON_UNESCAPED_UNICODE);
+            exit();
+        }
     }
     
     public function chiTietTour() {
@@ -1275,13 +1369,20 @@ class KhachHangController {
             }
 
             try {
+                $conn = $bookingModel->conn;
+                $paymentId = 0;
+
+                $conn->beginTransaction();
+
                 $pendingBooking = $this->findReusablePendingBooking(
-                    $bookingModel->conn,
+                    $conn,
                     (int)$tourId,
-                    (int)$khachHang['khach_hang_id']
+                    (int)$khachHang['khach_hang_id'],
+                    true
                 );
 
                 if (!empty($pendingBooking) && strtoupper((string)($pendingBooking['payment_status'] ?? '')) === 'DANGXULY') {
+                    $conn->rollBack();
                     $_SESSION['error'] = 'Ban da co giao dich dang xu ly. Vui long hoan tat giao dich hien tai truoc khi tao giao dich moi.';
                     header('Location: index.php?act=khachHang/thanhToanTour&id=' . (int)$tourId . '&booking_id=' . (int)($pendingBooking['booking_id'] ?? 0));
                     exit();
@@ -1291,7 +1392,7 @@ class KhachHangController {
                 $bookingId = (int)($pendingBooking['booking_id'] ?? 0);
 
                 if ($bookingId > 0) {
-                    $stmtUpdateDraft = $bookingModel->conn->prepare(
+                    $stmtUpdateDraft = $conn->prepare(
                         'UPDATE booking
                          SET ngay_dat = ?, ngay_khoi_hanh = NULL, ngay_ket_thuc = NULL,
                              so_nguoi = ?, tong_tien = ?, trang_thai = ?, ghi_chu = ?
@@ -1321,25 +1422,30 @@ class KhachHangController {
 
                     $bookingId = (int)$bookingModel->insert($bookingData);
                     if ($bookingId <= 0) {
-                        throw new Exception('Không thể khởi tạo booking tạm. Vui lòng thử lại sau.');
+                        throw new Exception('Khong the khoi tao booking tam. Vui long thu lai sau.');
                     }
                 }
 
-                if (dbColumnExists('booking', 'trang_thai_thanh_toan', $bookingModel->conn)) {
-                    $stmtPaymentStatus = $bookingModel->conn->prepare('UPDATE booking SET trang_thai_thanh_toan = ? WHERE booking_id = ?');
+                if (dbColumnExists('booking', 'trang_thai_thanh_toan', $conn)) {
+                    $stmtPaymentStatus = $conn->prepare('UPDATE booking SET trang_thai_thanh_toan = ? WHERE booking_id = ?');
                     $stmtPaymentStatus->execute(['ChuaThanhToan', $bookingId]);
                 }
 
-                // Chuyển sang cổng thanh toán online và quay lại chính trang này để khách copy nội dung chuyển khoản chính xác.
+                // Booking + payment pending phai duoc ghi atomically de tranh trang thai dang do.
                 if (PAYMENT_MODE === 'manual_qr') {
-                    $paymentId = $this->createPendingManualQrPayment($bookingModel->conn, (int)$bookingId, (float)$tongTien, (string)$paymentMethod);
+                    $paymentId = $this->createPendingManualQrPayment($conn, (int)$bookingId, (float)$tongTien, (string)$paymentMethod);
                     if ($paymentId <= 0) {
-                        throw new Exception('KhÃ´ng thá»ƒ khá»Ÿi táº¡o giao dá»‹ch thanh toÃ¡n. Vui lÃ²ng thá»­ láº¡i sau.');
+                        throw new Exception('Khong the khoi tao giao dich thanh toan. Vui long thu lai sau.');
                     }
+                }
 
-                    $consumeResult = BankWebhookController::tryConsumeQueuedWebhookForBooking($bookingModel->conn, (int)$bookingId);
+                $conn->commit();
+
+                // Chuyen sang cong thanh toan online va quay lai chinh trang nay de khach copy noi dung chuyen khoan chinh xac.
+                if (PAYMENT_MODE === 'manual_qr') {
+                    $consumeResult = BankWebhookController::tryConsumeQueuedWebhookForBooking($conn, (int)$bookingId);
                     if (!empty($consumeResult['confirmed'])) {
-                        $this->createCustomerPaymentLog($bookingModel->conn, $paymentId, 'AUTO_RETRY_MATCH', 'Tu dong doi soat thanh cong tu webhook queue (queue_id=' . (int)($consumeResult['queue_id'] ?? 0) . ')');
+                        $this->createCustomerPaymentLog($conn, $paymentId, 'AUTO_RETRY_MATCH', 'Tu dong doi soat thanh cong tu webhook queue (queue_id=' . (int)($consumeResult['queue_id'] ?? 0) . ')');
                         $_SESSION['success'] = 'Da ghi nhan va doi soat thanh toan tu dong. Hoa don da duoc cap nhat thanh cong.';
                     } else {
                         $_SESSION['success'] = 'Da ghi nhan yeu cau thanh toan. Vui long quet QR va chuyen khoan dung noi dung hien thi.';
@@ -1351,7 +1457,10 @@ class KhachHangController {
 
                 header('Location: index.php?act=payment/redirect&booking_id=' . $bookingId . '&method=' . urlencode($paymentMethod) . '&return_act=' . urlencode('khachHang/thanhToanTour') . '&return_tour_id=' . (int)$tourId);
                 exit();
-            } catch (Exception $e) {
+            } catch (Throwable $e) {
+                if ($bookingModel->conn->inTransaction()) {
+                    $bookingModel->conn->rollBack();
+                }
                 $_SESSION['error'] = $e->getMessage();
                 header('Location: index.php?act=khachHang/thanhToanTour&id=' . $tourId);
                 exit();
@@ -1737,7 +1846,7 @@ class KhachHangController {
         }
     }
 
-    private function findReusablePendingBooking(PDO $conn, int $tourId, int $khachHangId): ?array {
+    private function findReusablePendingBooking(PDO $conn, int $tourId, int $khachHangId, bool $forUpdate = false): ?array {
         if ($tourId <= 0 || $khachHangId <= 0) {
             return null;
         }
@@ -1758,6 +1867,9 @@ class KhachHangController {
                       AND b.ghi_chu LIKE '[PENDING_PAYMENT]%'
                     ORDER BY b.booking_id DESC
                     LIMIT 1";
+            if ($forUpdate) {
+                $sql .= ' FOR UPDATE';
+            }
 
             $stmt = $conn->prepare($sql);
             $stmt->execute([$tourId, $khachHangId]);
@@ -2178,7 +2290,7 @@ class KhachHangController {
         return $last ?: null;
     }
 
-    private function buildDepartureCountdownInfo(string $ngayKhoiHanh): array {
+    private function buildDepartureCountdownInfo(?string $ngayKhoiHanh): array {
         $dateYmd = trim((string)$ngayKhoiHanh);
         if ($dateYmd === '') {
             return [

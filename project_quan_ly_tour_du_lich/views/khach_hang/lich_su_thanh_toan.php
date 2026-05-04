@@ -1,12 +1,12 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lich su thanh toan</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <style>
+<?php
+$pageTitle  = 'Lịch sử thanh toán';
+$activePage = 'hoaDon';
+$pageHero   = [
+    'icon'     => 'bi-clock-history',
+    'title'    => 'Lịch sử thanh toán',
+    'subtitle' => 'Xem lại toàn bộ giao dịch thanh toán online của bạn.',
+];
+ob_start(); ?>
         body { background: #f5f7fa; }
         .panel { background:#fff; border-radius:16px; box-shadow:0 8px 28px rgba(2,6,23,.08); border:1px solid #eef2f7; }
         .method-badge { font-size: .85rem; }
@@ -14,9 +14,8 @@
         .status-fail { color: #dc3545; font-weight:700; }
         .status-pending { color: #fd7e14; font-weight:700; }
         .log-item { font-size:.9rem; color:#64748b; }
-    </style>
-</head>
-<body>
+<?php $extraCss = ob_get_clean();
+include __DIR__ . '/_layout/header.php'; ?>
 <div class="container py-4 py-lg-5">
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
         <h2 class="mb-0"><i class="bi bi-clock-history me-2"></i>Lich su thanh toan online</h2>
@@ -88,7 +87,6 @@
         <?php endif; ?>
     </div>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <?php if (function_exists('realtimeWebSocketEnabled') && realtimeWebSocketEnabled() && !empty($_SESSION['user_id'])): ?>
 <?php
 $_lstWsToken = buildRealtimeAuthToken((int)$_SESSION['user_id'], 'KhachHang');
@@ -160,5 +158,4 @@ $_lstWsUrl   = realtimeWebSocketPublicUrl() . '?token=' . rawurlencode($_lstWsTo
 })();
 </script>
 <?php endif; ?>
-</body>
-</html>
+<?php include __DIR__ . '/_layout/footer.php'; ?>

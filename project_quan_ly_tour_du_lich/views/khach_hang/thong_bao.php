@@ -1,12 +1,13 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Thông báo - Khách hàng</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <style>
+<?php
+$pageTitle  = 'Thông báo của bạn';
+$activePage = 'thongBao';
+$pageHero   = [
+    'eyebrow'  => 'TRUNG TÂM THÔNG BÁO',
+    'icon'     => 'bi-bell',
+    'title'    => 'Thông báo của bạn',
+    'subtitle' => 'Cập nhật mọi tin tức, đặt tour và ưu đãi từ DuLichPro.',
+];
+ob_start(); ?>
         body {
             background: #f5f7fa;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -30,21 +31,16 @@
             background: #f8f9fa;
             border-left-color: #6c757d;
         }
-    </style>
-</head>
-<body>
-    <?php
-    $thongBaoChuaDoc = (int)($thongBaoChuaDoc ?? 0);
-    if (!isset($thongBaoList) || !is_array($thongBaoList)) {
-        $thongBaoList = [];
-    }
-
-    $khRealtimeWsEnabled = realtimeWebSocketEnabled() && isLoggedIn() && hasRole('KhachHang');
-    $khRealtimeWsUrl = $khRealtimeWsEnabled ? realtimeWebSocketPublicUrl() : '';
-    $khRealtimeWsToken = $khRealtimeWsEnabled
-        ? buildRealtimeAuthToken((int)($_SESSION['user_id'] ?? 0), 'KhachHang', 'notifications')
-        : '';
-    ?>
+<?php $extraCss = ob_get_clean();
+$thongBaoChuaDoc = (int)($thongBaoChuaDoc ?? 0);
+if (!isset($thongBaoList) || !is_array($thongBaoList)) { $thongBaoList = []; }
+$khRealtimeWsEnabled = realtimeWebSocketEnabled() && isLoggedIn() && hasRole('KhachHang');
+$khRealtimeWsUrl   = $khRealtimeWsEnabled ? realtimeWebSocketPublicUrl() : '';
+$khRealtimeWsToken = $khRealtimeWsEnabled
+    ? buildRealtimeAuthToken((int)($_SESSION['user_id'] ?? 0), 'KhachHang', 'notifications')
+    : '';
+$unreadCount = $thongBaoChuaDoc;
+include __DIR__ . '/_layout/header.php'; ?>
     <div class="container py-5">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2><i class="bi bi-bell me-2"></i>Thông báo</h2>
@@ -110,7 +106,6 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
     document.addEventListener('DOMContentLoaded', function () {
         var notificationUnreadCount = document.getElementById('notificationUnreadCount');
@@ -395,7 +390,6 @@
         });
     });
     </script>
-</body>
-</html>
+<?php include __DIR__ . '/_layout/footer.php'; ?>
 
 

@@ -1,4 +1,8 @@
 <?php
+/** @var array $tour */
+$tour             = $tour ?? [];
+$danhGiaTourAvg   = $danhGiaTourAvg ?? 0.0;
+$danhGiaTourCount = $danhGiaTourCount ?? 0;
 $anhDaiDien = $tour['hinh_anh'] ?? '';
 if (empty($anhDaiDien) && !empty($hinhAnhList) && !empty($hinhAnhList[0]['url_anh'])) {
     $anhDaiDien = $hinhAnhList[0]['url_anh'];
@@ -123,6 +127,26 @@ $danhGiaCountHero = isset($danhGiaTourCount) ? (int)$danhGiaTourCount : 0;
 if ($danhGiaCountHero <= 0 && !empty($danhGiaTourList) && is_array($danhGiaTourList)) {
     $danhGiaCountHero = count($danhGiaTourList);
 }
+$hdvHienThi = !empty($hdvInfo) && is_array($hdvInfo) ? $hdvInfo : (!empty($tour['hdv_info']) && is_array($tour['hdv_info']) ? $tour['hdv_info'] : null);
+$nhatKyHienThi = !empty($nhatKyList) && is_array($nhatKyList) ? $nhatKyList : (!empty($tour['nhat_ky']) && is_array($tour['nhat_ky']) ? $tour['nhat_ky'] : []);
+$yeuCauHienThi = !empty($yeuCauList) && is_array($yeuCauList) ? $yeuCauList : (!empty($tour['yeu_cau_dac_biet']) && is_array($tour['yeu_cau_dac_biet']) ? $tour['yeu_cau_dac_biet'] : []);
+$giaTourHienThi = (float)($tour['gia_tour'] ?? $tour['gia_co_ban'] ?? 0);
+$trangThaiCho = 'Con nhieu cho';
+$trangThaiChoClass = 'seat-good';
+if ($seatPercentRemain !== null) {
+    if ($seatPercentRemain <= 20) {
+        $trangThaiCho = 'Sap het cho';
+        $trangThaiChoClass = 'seat-low';
+    } elseif ($seatPercentRemain <= 45) {
+        $trangThaiCho = 'Dat nhanh';
+        $trangThaiChoClass = 'seat-mid';
+    }
+}
+$camKetList = [
+    ['icon' => 'bi bi-shield-check', 'title' => 'Thong tin ro rang', 'desc' => 'Lich khoi hanh, gia va so cho duoc hien thi minh bach.'],
+    ['icon' => 'bi bi-headset', 'title' => 'Ho tro nhanh', 'desc' => 'Co the dat nhanh hoac chuyen sang trang thanh toan ngay.'],
+    ['icon' => 'bi bi-map', 'title' => 'Lich trinh cu the', 'desc' => 'Noi dung tour va cac moc hanh trinh duoc trinh bay tach bach.'],
+];
 ?>
 <!DOCTYPE html>
 <html lang="vi">
@@ -524,6 +548,74 @@ if ($danhGiaCountHero <= 0 && !empty($danhGiaTourList) && is_array($danhGiaTourL
             margin-top:14px;
             max-width:760px;
         }
+        .tourlux-overview-grid{
+            display:grid;
+            grid-template-columns:repeat(4, minmax(0, 1fr));
+            gap:14px;
+            margin-bottom:20px;
+        }
+        .tourlux-overview-card{
+            position:relative;
+            overflow:hidden;
+            border-radius:22px;
+            padding:18px;
+            min-height:142px;
+            background:
+                radial-gradient(220px 120px at 100% 0%, rgba(214,178,109,.18), transparent 60%),
+                linear-gradient(180deg, rgba(255,255,255,.94), rgba(255,255,255,.82));
+            border:1px solid rgba(255,255,255,.7);
+            box-shadow:0 18px 54px rgba(2,6,23,.10);
+        }
+        .tourlux-overview-card i{
+            font-size:1.15rem;
+            color:var(--lx-gold2);
+        }
+        .tourlux-overview-label{
+            font-size:.8rem;
+            text-transform:uppercase;
+            letter-spacing:.08em;
+            font-weight:800;
+            color:#64748b;
+            margin-top:12px;
+        }
+        .tourlux-overview-value{
+            font-size:1.15rem;
+            font-weight:900;
+            color:#0f172a;
+            margin-top:6px;
+            line-height:1.25;
+        }
+        .tourlux-overview-note{
+            color:#64748b;
+            font-size:.92rem;
+            margin-top:6px;
+        }
+        .seat-pill{
+            display:inline-flex;
+            align-items:center;
+            gap:.4rem;
+            border-radius:999px;
+            padding:.4rem .8rem;
+            font-size:.78rem;
+            font-weight:800;
+            margin-top:10px;
+            border:1px solid transparent;
+        }
+        .seat-pill.seat-good{
+            color:#166534;
+            background:rgba(34,197,94,.10);
+            border-color:rgba(34,197,94,.18);
+        }
+        .seat-pill.seat-mid{
+            color:#9a6700;
+            background:rgba(245,158,11,.12);
+            border-color:rgba(245,158,11,.22);
+        }
+        .seat-pill.seat-low{
+            color:#b42318;
+            background:rgba(239,68,68,.10);
+            border-color:rgba(239,68,68,.18);
+        }
         .tourlux-stat{
             border:1px solid rgba(255,255,255,.18);
             background:rgba(255,255,255,.08);
@@ -588,6 +680,122 @@ if ($danhGiaCountHero <= 0 && !empty($danhGiaTourList) && is_array($danhGiaTourL
             color:#475569;
             line-height:1.55;
             font-size:.95rem;
+        }
+        .feature-grid{
+            display:grid;
+            grid-template-columns:repeat(3, minmax(0, 1fr));
+            gap:14px;
+        }
+        .feature-card{
+            border-radius:18px;
+            border:1px solid rgba(15,23,42,.10);
+            background:linear-gradient(180deg, rgba(255,255,255,.90), rgba(255,255,255,.78));
+            padding:16px;
+            box-shadow:0 14px 36px rgba(2,6,23,.08);
+        }
+        .feature-card i{
+            font-size:1.1rem;
+            color:var(--lx-gold2);
+        }
+        .feature-title{
+            font-weight:900;
+            color:#13213a;
+            margin:10px 0 6px 0;
+        }
+        .feature-copy{
+            color:#64748b;
+            line-height:1.55;
+            font-size:.94rem;
+            margin:0;
+        }
+        .schedule-card-list{
+            display:grid;
+            gap:12px;
+        }
+        .schedule-card{
+            border-radius:18px;
+            border:1px solid rgba(15,23,42,.10);
+            background:rgba(255,255,255,.88);
+            padding:16px;
+            box-shadow:0 12px 30px rgba(2,6,23,.06);
+        }
+        .schedule-card-top{
+            display:flex;
+            align-items:flex-start;
+            justify-content:space-between;
+            gap:12px;
+            margin-bottom:10px;
+        }
+        .schedule-date{
+            font-weight:900;
+            color:#13213a;
+            font-size:1.02rem;
+        }
+        .schedule-range{
+            color:#64748b;
+            font-size:.92rem;
+            margin-top:2px;
+        }
+        .status-badge{
+            display:inline-flex;
+            align-items:center;
+            justify-content:center;
+            border-radius:999px;
+            padding:.42rem .8rem;
+            font-size:.78rem;
+            font-weight:800;
+            white-space:nowrap;
+        }
+        .status-badge.status-open{
+            background:rgba(34,197,94,.12);
+            color:#166534;
+        }
+        .status-badge.status-closed{
+            background:rgba(148,163,184,.18);
+            color:#334155;
+        }
+        .status-badge.status-busy{
+            background:rgba(245,158,11,.16);
+            color:#9a6700;
+        }
+        .schedule-meta{
+            display:grid;
+            grid-template-columns:repeat(2, minmax(0, 1fr));
+            gap:10px;
+        }
+        .schedule-meta-item{
+            border-radius:14px;
+            background:rgba(15,23,42,.04);
+            padding:10px 12px;
+        }
+        .schedule-meta-item span{
+            display:block;
+            color:#64748b;
+            font-size:.8rem;
+            font-weight:700;
+            margin-bottom:4px;
+        }
+        .schedule-meta-item strong{
+            color:#0f172a;
+            font-size:.94rem;
+        }
+        .list-clean{
+            list-style:none;
+            padding:0;
+            margin:0;
+            display:grid;
+            gap:10px;
+        }
+        .list-clean li{
+            border-radius:16px;
+            border:1px solid rgba(15,23,42,.08);
+            background:rgba(255,255,255,.78);
+            padding:12px 14px;
+            color:#334155;
+            line-height:1.55;
+        }
+        .list-clean li strong{
+            color:#0f172a;
         }
         @media (max-width: 576px){
             .tour-info-row{ grid-template-columns: 120px 1fr; }
@@ -814,10 +1022,21 @@ if ($danhGiaCountHero <= 0 && !empty($danhGiaTourList) && is_array($danhGiaTourL
         }
 
         @media (max-width: 991.98px){
+            .tourlux-overview-grid,
+            .feature-grid{
+                grid-template-columns:1fr 1fr;
+            }
             .tourlux-stats{ grid-template-columns:1fr; max-width:none; }
             #dat-tour{ margin-top: 2px; }
             .tourlux-sticky{ position:static !important; top:auto !important; }
             .tour-action-stack .btn{ min-height:50px; font-size:.98rem; }
+        }
+        @media (max-width: 767.98px){
+            .tourlux-overview-grid,
+            .feature-grid,
+            .schedule-meta{
+                grid-template-columns:1fr;
+            }
         }
     </style>
 </head>
@@ -923,6 +1142,35 @@ if ($danhGiaCountHero <= 0 && !empty($danhGiaTourList) && is_array($danhGiaTourL
             </div>
         <?php endif; ?>
 
+        <section class="tourlux-overview-grid js-reveal">
+            <article class="tourlux-overview-card">
+                <i class="bi bi-calendar2-week"></i>
+                <div class="tourlux-overview-label">Khoi hanh gan nhat</div>
+                <div class="tourlux-overview-value"><?php echo htmlspecialchars($ngayKhoiHanhHienThi !== '' ? $ngayKhoiHanhHienThi : 'Dang cap nhat'); ?></div>
+                <div class="tourlux-overview-note"><?php echo htmlspecialchars($khoiHanhHienThi); ?></div>
+            </article>
+            <article class="tourlux-overview-card">
+                <i class="bi bi-hourglass-split"></i>
+                <div class="tourlux-overview-label">Thoi luong</div>
+                <div class="tourlux-overview-value"><?php echo htmlspecialchars($thoiGianHienThi); ?></div>
+                <div class="tourlux-overview-note">Phu hop cho ke hoach di chuyen linh hoat.</div>
+            </article>
+            <article class="tourlux-overview-card">
+                <i class="bi bi-people-fill"></i>
+                <div class="tourlux-overview-label">Tinh trang cho</div>
+                <div class="tourlux-overview-value"><?php echo htmlspecialchars((string)$soChoHienThi); ?></div>
+                <div class="seat-pill <?php echo htmlspecialchars($trangThaiChoClass); ?>">
+                    <i class="bi bi-lightning-charge-fill"></i> <?php echo htmlspecialchars($trangThaiCho); ?>
+                </div>
+            </article>
+            <article class="tourlux-overview-card">
+                <i class="bi bi-cash-coin"></i>
+                <div class="tourlux-overview-label">Gia hien tai</div>
+                <div class="tourlux-overview-value"><?php echo number_format($giaTourHienThi); ?>d</div>
+                <div class="tourlux-overview-note">Gia tinh tren moi khach cho lich khoi hanh hien tai.</div>
+            </article>
+        </section>
+
         <div class="row g-4">
             <div class="col-lg-8">
                 <div class="panel mb-4 js-reveal">
@@ -948,10 +1196,25 @@ if ($danhGiaCountHero <= 0 && !empty($danhGiaTourList) && is_array($danhGiaTourL
                             </div>
                         <?php endif; ?>
                     </div>
-                </div>
+	                </div>
 
-                <div class="panel mb-4 js-reveal">
-                    <div class="panel-body">
+	                <div class="panel mb-4 js-reveal">
+	                    <div class="panel-body">
+	                        <h3 class="panel-title"><i class="bi bi-gem"></i> Diem nhan hanh trinh</h3>
+	                        <div class="feature-grid mt-3">
+	                            <?php foreach ($camKetList as $camKet): ?>
+	                                <article class="feature-card">
+	                                    <i class="<?php echo htmlspecialchars($camKet['icon']); ?>"></i>
+	                                    <div class="feature-title"><?php echo htmlspecialchars($camKet['title']); ?></div>
+	                                    <p class="feature-copy"><?php echo htmlspecialchars($camKet['desc']); ?></p>
+	                                </article>
+	                            <?php endforeach; ?>
+	                        </div>
+	                    </div>
+	                </div>
+
+	                <div class="panel mb-4 js-reveal">
+	                    <div class="panel-body">
                         <h3 class="panel-title"><i class="bi bi-info-circle"></i> Mô tả tour</h3>
                         <div class="mt-3 tour-copy">
                             <?php echo nl2br(htmlspecialchars($tour['mo_ta'] ?? 'Chưa có mô tả.')); ?>
@@ -964,7 +1227,41 @@ if ($danhGiaCountHero <= 0 && !empty($danhGiaTourList) && is_array($danhGiaTourL
                         <h3 class="panel-title"><i class="bi bi-calendar-event"></i> Thông tin khởi hành</h3>
                         <div class="mt-3">
                             <?php if (!empty($lichKhoiHanhList)): ?>
-                                <table class="table table-bordered table-sm mb-0 data-grid-table">
+                                <div class="schedule-card-list mb-3">
+                                    <?php foreach ($lichKhoiHanhList as $lk): ?>
+                                        <?php
+                                            $statusRaw = trim((string)($lk['trang_thai'] ?? 'Dang mo'));
+                                            $statusClass = 'status-open';
+                                            if (stripos($statusRaw, 'dong') !== false || stripos($statusRaw, 'huy') !== false) {
+                                                $statusClass = 'status-closed';
+                                            } elseif ((int)($lk['so_cho_con_lai'] ?? 999) <= 5) {
+                                                $statusClass = 'status-busy';
+                                            }
+                                        ?>
+                                        <article class="schedule-card">
+                                            <div class="schedule-card-top">
+                                                <div>
+                                                    <div class="schedule-date"><?php echo date('d/m/Y', strtotime($lk['ngay_khoi_hanh'])); ?></div>
+                                                    <div class="schedule-range">Den <?php echo date('d/m/Y', strtotime($lk['ngay_ket_thuc'])); ?></div>
+                                                </div>
+                                                <span class="status-badge <?php echo htmlspecialchars($statusClass); ?>">
+                                                    <?php echo htmlspecialchars($statusRaw); ?>
+                                                </span>
+                                            </div>
+                                            <div class="schedule-meta">
+                                                <div class="schedule-meta-item">
+                                                    <span>Diem tap trung</span>
+                                                    <strong><?php echo htmlspecialchars($lk['diem_tap_trung'] ?? 'Dang cap nhat'); ?></strong>
+                                                </div>
+                                                <div class="schedule-meta-item">
+                                                    <span>So cho con lai</span>
+                                                    <strong><?php echo htmlspecialchars(isset($lk['so_cho_con_lai']) ? ((string)$lk['so_cho_con_lai'] . '/' . (string)($lk['so_cho_toi_da'] ?? $lk['so_cho'] ?? '')) : 'Dang cap nhat'); ?></strong>
+                                                </div>
+                                            </div>
+                                        </article>
+                                    <?php endforeach; ?>
+                                </div>
+                                <table class="table table-bordered table-sm mb-0 data-grid-table d-none">
                                     <thead>
                                         <tr>
                                             <th>Ngày khởi hành</th>
@@ -995,19 +1292,19 @@ if ($danhGiaCountHero <= 0 && !empty($danhGiaTourList) && is_array($danhGiaTourL
                     <div class="panel-body">
                         <h3 class="panel-title"><i class="bi bi-person-badge-fill"></i> Hướng dẫn viên</h3>
                         <div class="mt-3">
-                            <?php if (!empty($tour['hdv_info'])): ?>
+                            <?php if (!empty($hdvHienThi)): ?>
                                 <div class="d-flex flex-wrap align-items-center gap-2 text-muted-2">
                                     <span class="chip" style="border-color: rgba(15,23,42,.12); background: rgba(255,255,255,.6); color: var(--lx-ink);">
                                         <i class="bi bi-person-circle"></i>
-                                        <b><?php echo htmlspecialchars($tour['hdv_info']['ho_ten'] ?? ''); ?></b>
+                                        <b><?php echo htmlspecialchars($hdvHienThi['ho_ten'] ?? ''); ?></b>
                                     </span>
                                     <span class="chip" style="border-color: rgba(15,23,42,.12); background: rgba(255,255,255,.6); color: var(--lx-ink);">
                                         <i class="bi bi-envelope-at"></i>
-                                        <?php echo htmlspecialchars($tour['hdv_info']['email'] ?? ''); ?>
+                                        <?php echo htmlspecialchars($hdvHienThi['email'] ?? ''); ?>
                                     </span>
                                     <span class="chip" style="border-color: rgba(15,23,42,.12); background: rgba(255,255,255,.6); color: var(--lx-ink);">
                                         <i class="bi bi-telephone"></i>
-                                        <?php echo htmlspecialchars($tour['hdv_info']['so_dien_thoai'] ?? ''); ?>
+                                        <?php echo htmlspecialchars($hdvHienThi['so_dien_thoai'] ?? ''); ?>
                                     </span>
                                 </div>
                             <?php else: ?>
@@ -1040,25 +1337,25 @@ if ($danhGiaCountHero <= 0 && !empty($danhGiaTourList) && is_array($danhGiaTourL
                     </div>
                 </div>
 
-                <?php if (!empty($tour['nhat_ky'])): ?>
+                <?php if (!empty($nhatKyHienThi)): ?>
                     <div class="panel mb-4 js-reveal">
                         <div class="panel-body">
                             <h3 class="panel-title"><i class="bi bi-journal-text"></i> Nhật ký tour</h3>
-                            <ul class="mt-3 mb-0 text-muted-2">
-                                <?php foreach ($tour['nhat_ky'] as $nk): ?>
-                                    <li><?php echo htmlspecialchars($nk['noi_dung']); ?> (<?php echo date('d/m/Y', strtotime($nk['ngay_ghi'])); ?>)</li>
+                            <ul class="list-clean mt-3">
+                                <?php foreach ($nhatKyHienThi as $nk): ?>
+                                    <li><strong><?php echo !empty($nk['ngay_ghi']) ? date('d/m/Y', strtotime($nk['ngay_ghi'])) : 'Nhat ky'; ?></strong><br><?php echo htmlspecialchars($nk['noi_dung'] ?? 'Dang cap nhat.'); ?></li>
                                 <?php endforeach; ?>
                             </ul>
                         </div>
                     </div>
                 <?php endif; ?>
 
-                <?php if (!empty($tour['yeu_cau_dac_biet'])): ?>
+                <?php if (!empty($yeuCauHienThi)): ?>
                     <div class="panel mb-4 js-reveal">
                         <div class="panel-body">
                             <h3 class="panel-title"><i class="bi bi-star-fill"></i> Yêu cầu đặc biệt</h3>
-                            <ul class="mt-3 mb-0 text-muted-2">
-                                <?php foreach ($tour['yeu_cau_dac_biet'] as $yc): ?>
+                            <ul class="list-clean mt-3">
+                                <?php foreach ($yeuCauHienThi as $yc): ?>
                                     <li><?php echo htmlspecialchars($yc['mo_ta']); ?> (Mức độ: <?php echo htmlspecialchars($yc['muc_do_uu_tien']); ?>)</li>
                                 <?php endforeach; ?>
                             </ul>
@@ -1118,7 +1415,7 @@ if ($danhGiaCountHero <= 0 && !empty($danhGiaTourList) && is_array($danhGiaTourL
                             <?php endif; ?>
 
                             <div class="promo mb-3">
-                                <i class="bi bi-gift"></i>
+                                <i class="bi bi-shield-check"></i>
                                 <div class="text-muted-2">
                                     Đặt ngay để nhận ưu đãi giờ chót, tiết kiệm thêm <b>1,000K</b>.
                                 </div>
@@ -1150,8 +1447,8 @@ if ($danhGiaCountHero <= 0 && !empty($danhGiaTourList) && is_array($danhGiaTourL
                     <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
                         <h3 class="panel-title"><i class="bi bi-chat-quote"></i> Phản hồi khách hàng</h3>
                         <div class="rating-badge">
-                            <span><?php echo number_format((float)$danhGiaTourAvg, 1); ?>/5</span>
-                            <span class="text-muted-2" style="font-weight:800;">(<?php echo (int)$danhGiaTourCount; ?> đánh giá)</span>
+                            <span><?php echo number_format((float)($danhGiaTourAvg ?? 0), 1); ?>/5</span>
+                            <span class="text-muted-2" style="font-weight:800;">(<?php echo (int)($danhGiaTourCount ?? 0); ?> đánh giá)</span>
                         </div>
                     </div>
 

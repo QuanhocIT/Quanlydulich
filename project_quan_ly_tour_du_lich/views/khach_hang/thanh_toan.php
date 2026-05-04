@@ -1,44 +1,38 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Thanh toán online - Khách hàng</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <style>
-        body {
-            background: #f5f7fa;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        }
-        .payment-card {
-            background: white;
-            border-radius: 1rem;
-            padding: 2rem;
-            box-shadow: 0 0.25rem 0.5rem rgba(0,0,0,0.1);
-        }
-        .payment-summary {
-            background: #f8f9fa;
-            border-radius: 0.5rem;
-            padding: 1.5rem;
-        }
-    </style>
-</head>
-<body>
-    <div class="container py-5">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2><i class="bi bi-credit-card me-2"></i>Thanh toán online</h2>
-            <a href="index.php?act=khachHang/hoaDon&booking_id=<?php echo $booking['booking_id']; ?>" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left me-2"></i>Quay lại
-            </a>
-        </div>
+<?php
+/** @var array $booking */
+$booking = $booking ?? [];
+$paymentMethod = $paymentMethod ?? 'VNPay';
 
-        <?php if (isset($_SESSION['error'])): ?>
-            <div class="alert alert-danger alert-dismissible fade show">
-                <?php echo htmlspecialchars($_SESSION['error']); unset($_SESSION['error']); ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        <?php endif; ?>
+$pageTitle = 'Thanh toán online';
+$activePage = 'hoaDon';
+$pageHero = [
+    'icon'     => 'bi-credit-card-2-front',
+    'title'    => 'Thanh toán online',
+    'subtitle' => 'Hoàn tất thanh toán booking của bạn qua cổng thanh toán an toàn.',
+    'actions'  => [
+        [
+            'label' => 'Quay lại hóa đơn',
+            'href'  => 'index.php?act=khachHang/hoaDon' . (!empty($booking['booking_id']) ? '&booking_id=' . (int)$booking['booking_id'] : ''),
+            'icon'  => 'bi-arrow-left',
+            'ghost' => true,
+        ],
+    ],
+];
+ob_start(); ?>
+.payment-card {
+    background: #fff;
+    border-radius: 1rem;
+    padding: 2rem;
+    box-shadow: 0 2px 12px rgba(0,0,0,.07);
+}
+.payment-summary {
+    background: #f8f9fa;
+    border-radius: .75rem;
+    padding: 1.5rem;
+}
+<?php $extraCss = ob_get_clean(); include __DIR__ . '/_layout/header.php'; ?>
+
+    <div class="container py-4 py-lg-5">
 
         <?php if (isset($booking) && $booking): ?>
             <div class="row">
@@ -131,8 +125,6 @@
         <?php endif; ?>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+<?php include __DIR__ . '/_layout/footer.php'; ?>
 
 

@@ -1,6 +1,7 @@
 <?php
 $tours = isset($tours) && is_array($tours) ? $tours : [];
 $filters = isset($filters) && is_array($filters) ? $filters : [];
+$favoriteTourIds = isset($favoriteTourIds) && is_array($favoriteTourIds) ? $favoriteTourIds : [];
 $fallbackImages = [
     'https://images.unsplash.com/photo-1528127269322-539801943592?auto=format&fit=crop&w=1200&q=80',
     'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80',
@@ -23,18 +24,16 @@ $getImage = static function ($tour, $index) use ($fallbackImages) {
     return rtrim(BASE_URL, '/') . '/' . ltrim($image, '/');
 };
 ?>
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Khám phá tour - Khách hàng</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
-    <style>
+<?php
+$pageTitle  = 'Khám phá tour du lịch';
+$activePage = 'tour';
+$pageHero   = [
+    'eyebrow'  => 'KHÁM PHÁ HÀNH TRÌNH MỚI',
+    'icon'     => 'bi-stars',
+    'title'    => 'Chọn tour nhanh hơn, tự tin đặt hơn.',
+    'subtitle' => 'Lọc theo nhu cầu, xem thông tin cốt lõi ngay trên card và chuyển sang chi tiết hoặc thanh toán chỉ trong một lần bấm.',
+];
+ob_start(); ?>
         :root {
             --ink: #0f172a;
             --muted: #64748b;
@@ -317,6 +316,32 @@ $getImage = static function ($tour, $index) use ($fallbackImages) {
             position: absolute;
             top: 16px;
         }
+        .fav-heart {
+            align-items: center;
+            background: rgba(255,255,255,.9);
+            border: 1px solid rgba(15,23,42,.12);
+            border-radius: 999px;
+            color: #1f2937;
+            display: inline-flex;
+            font-size: 14px;
+            height: 38px;
+            justify-content: center;
+            position: absolute;
+            right: 14px;
+            top: 14px;
+            width: 38px;
+            z-index: 2;
+            transition: all .18s ease;
+        }
+        .fav-heart:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 20px rgba(2,6,23,.18);
+        }
+        .fav-heart.is-active {
+            background: #ffe3ea;
+            border-color: #ef476f;
+            color: #d62839;
+        }
         .tour-body {
             display: flex;
             flex: 1;
@@ -466,32 +491,10 @@ $getImage = static function ($tour, $index) use ($fallbackImages) {
             .tour-actions a { flex: 1; }
             .mobile-cta { display: flex; }
         }
-    </style>
-</head>
-<body>
-    <main class="tour-shell">
+<?php $extraCss = ob_get_clean();
+include __DIR__ . '/_layout/header.php'; ?>
+    <div class="tour-shell">
         <div class="layout-shell">
-            <header class="topbar">
-                <a class="brand" href="index.php?act=khachHang/dashboard">
-                    <span class="brand-mark"><i class="bi bi-compass"></i></span>
-                    <span>DuLichPro</span>
-                </a>
-                <nav class="nav-actions" aria-label="Điều hướng khách hàng">
-                    <a class="nav-pill" href="index.php?act=khachHang/dashboard"><i class="bi bi-house"></i> Trang chủ</a>
-                    <a class="nav-pill is-active" href="index.php?act=khachHang/danhSachTour"><i class="bi bi-stars"></i> Tour nổi bật</a>
-                    <a class="nav-pill" href="index.php?act=khachHang/yeuCauTour"><i class="bi bi-suitcase2"></i> Tour đã đặt</a>
-                    <a class="nav-pill" href="index.php?act=khachHang/capNhatThongTin"><i class="bi bi-person-gear"></i> Hồ sơ</a>
-                    <a class="nav-pill" href="index.php?act=khachHang/hoaDon"><i class="bi bi-receipt"></i> Hóa đơn</a>
-                </nav>
-            </header>
-
-            <section class="hero js-reveal">
-                <div class="hero-content">
-                    <div class="eyebrow">Khám phá hành trình mới</div>
-                    <h1>Chọn tour nhanh hơn, tự tin đặt hơn.</h1>
-                    <p>Lọc theo nhu cầu, xem thông tin cốt lõi ngay trên card và chuyển sang chi tiết hoặc thanh toán chỉ trong một lần bấm.</p>
-                </div>
-            </section>
 
             <form class="search-panel js-reveal" method="GET" action="index.php">
                 <input type="hidden" name="act" value="khachHang/danhSachTour">
@@ -579,6 +582,15 @@ $getImage = static function ($tour, $index) use ($fallbackImages) {
                                 <div class="tour-media">
                                     <img src="<?php echo htmlspecialchars($getImage($tour, $index)); ?>" alt="<?php echo htmlspecialchars((string)($tour['ten_tour'] ?? 'Tour')); ?>" loading="lazy">
                                     <span class="type-badge"><?php echo htmlspecialchars($typeLabel); ?></span>
+                                    <button
+                                        type="button"
+                                        class="fav-heart js-favorite-toggle<?php echo !empty($favoriteTourIds[$tourId]) ? ' is-active' : ''; ?>"
+                                        data-tour-id="<?php echo $tourId; ?>"
+                                        aria-label="Yêu thích tour"
+                                        title="Thêm vào tour yêu thích"
+                                    >
+                                        <i class="bi <?php echo !empty($favoriteTourIds[$tourId]) ? 'bi-heart-fill' : 'bi-heart'; ?>"></i>
+                                    </button>
                                 </div>
                                 <div class="tour-body">
                                     <h3 class="tour-title"><?php echo htmlspecialchars((string)($tour['ten_tour'] ?? 'Tour đang cập nhật')); ?></h3>
@@ -625,7 +637,7 @@ $getImage = static function ($tour, $index) use ($fallbackImages) {
                 <?php endif; ?>
             </section>
         </div>
-    </main>
+    </div>
 
     <div class="mobile-cta">
         <a class="btn-soft flex-fill" href="index.php?act=khachHang/dashboard"><i class="bi bi-house"></i> Trang chủ</a>
@@ -654,6 +666,57 @@ $getImage = static function ($tour, $index) use ($fallbackImages) {
 
             revealEls.forEach(function (el) { observer.observe(el); });
         })();
+
+        (function () {
+            var token = <?php echo json_encode(csrfToken('global_form'), JSON_UNESCAPED_UNICODE); ?>;
+            var buttons = document.querySelectorAll('.js-favorite-toggle');
+            if (!buttons.length) return;
+
+            var updateButton = function (button, isFavorite) {
+                var icon = button.querySelector('i');
+                button.classList.toggle('is-active', !!isFavorite);
+                if (icon) {
+                    icon.className = 'bi ' + (isFavorite ? 'bi-heart-fill' : 'bi-heart');
+                }
+            };
+
+            buttons.forEach(function (button) {
+                button.addEventListener('click', async function (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+
+                    var tourId = Number(button.getAttribute('data-tour-id') || 0);
+                    if (!Number.isFinite(tourId) || tourId <= 0 || button.disabled) return;
+
+                    button.disabled = true;
+                    try {
+                        var body = new URLSearchParams();
+                        body.set('_csrf_global', token);
+                        body.set('tour_id', String(tourId));
+
+                        var response = await fetch('index.php?act=khachHang/toggleYeuThich', {
+                            method: 'POST',
+                            credentials: 'same-origin',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                                'X-Requested-With': 'XMLHttpRequest'
+                            },
+                            body: body.toString()
+                        });
+
+                        var data = await response.json();
+                        if (!response.ok || !data || data.success !== true) {
+                            throw new Error('Toggle favorite failed');
+                        }
+
+                        updateButton(button, !!data.is_favorite);
+                    } catch (error) {
+                        // Bo qua thong bao loi de khong chan trai nghiem xem tour.
+                    } finally {
+                        button.disabled = false;
+                    }
+                });
+            });
+        })();
     </script>
-</body>
-</html>
+<?php include __DIR__ . '/_layout/footer.php'; ?>

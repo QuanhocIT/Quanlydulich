@@ -1,15 +1,12 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cập nhật thông tin - Khách hàng</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
-    <style>
+<?php
+$pageTitle  = 'Cập nhật thông tin cá nhân';
+$activePage = 'profile';
+$pageHero   = [
+    'icon'     => 'bi-person-gear',
+    'title'    => 'Cập nhật thông tin cá nhân',
+    'subtitle' => 'Quản lý hồ sơ để nhận đề xuất tour chính xác hơn và đồng bộ trải nghiệm đặt dịch vụ trong một màn hình thống nhất.',
+];
+ob_start(); ?>
         :root {
             --pf-ink: #0f1c33;
             --pf-muted: #5c6b84;
@@ -461,9 +458,8 @@
                 transition: none !important;
             }
         }
-    </style>
-</head>
-<body>
+<?php $extraCss = ob_get_clean();
+include __DIR__ . '/_layout/header.php'; ?>
     <?php
     $tenHienThi = trim((string)($nguoiDung['ho_ten'] ?? 'Khách hàng'));
     $kyTuDaiDien = 'U';
@@ -476,40 +472,7 @@
     }
     ?>
 
-    <div class="profile-wrap">
-        <div class="topbar">
-            <a class="topbar-title" href="index.php?act=khachHang/dashboard"><i class="bi bi-star-fill"></i> DuLichPro</a>
-            <nav class="nav-actions" aria-label="Điều hướng khách hàng">
-                <a class="nav-pill" href="index.php?act=khachHang/dashboard"><i class="bi bi-house"></i> Trang chủ</a>
-                <a class="nav-pill" href="index.php?act=khachHang/danhSachTour"><i class="bi bi-stars"></i> Tour nổi bật</a>
-                <a class="nav-pill" href="index.php?act=khachHang/yeuCauTour"><i class="bi bi-suitcase2"></i> Tour đã đặt</a>
-                <a class="nav-pill is-active" href="index.php?act=khachHang/capNhatThongTin"><i class="bi bi-person-gear"></i> Hồ sơ</a>
-                <a class="nav-pill" href="index.php?act=khachHang/hoaDon"><i class="bi bi-receipt"></i> Hóa đơn</a>
-            </nav>
-        </div>
-
-        <section class="hero">
-            <div class="hero-content">
-                <h1 class="hero-title"><i class="bi bi-person-gear"></i> Cập nhật thông tin cá nhân</h1>
-                <p class="hero-subtitle">Quản lý hồ sơ để nhận đề xuất tour chính xác hơn và đồng bộ trải nghiệm đặt dịch vụ trong một màn hình thống nhất.</p>
-            </div>
-        </section>
-
-        <div id="profileUpdateFeedback">
-        <?php if (isset($_SESSION['success'])): ?>
-            <div class="alert alert-success alert-dismissible fade show status-alert">
-                <?php echo htmlspecialchars($_SESSION['success']); unset($_SESSION['success']); ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        <?php endif; ?>
-
-        <?php if (isset($_SESSION['error'])): ?>
-            <div class="alert alert-danger alert-dismissible fade show status-alert">
-                <?php echo htmlspecialchars($_SESSION['error']); unset($_SESSION['error']); ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        <?php endif; ?>
-        </div>
+    <div id="profileUpdateFeedback"></div>
 
         <div class="row layout-grid">
             <div class="col-lg-4">
@@ -593,9 +556,7 @@
                 </div>
             </div>
         </div>
-    </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
     document.addEventListener('DOMContentLoaded', function () {
         var profileUpdateForm = document.getElementById('profileUpdateForm');
@@ -654,7 +615,6 @@
         });
     });
     </script>
-</body>
-</html>
+<?php include __DIR__ . '/_layout/footer.php'; ?>
 
 
