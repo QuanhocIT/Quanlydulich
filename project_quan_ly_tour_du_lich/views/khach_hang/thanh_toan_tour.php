@@ -321,6 +321,11 @@
     $activePaymentStatus = strtoupper(trim((string)($activePayment['status'] ?? '')));
     $activeBookingStatus = strtoupper(trim((string)($activeBooking['trang_thai'] ?? '')));
 
+    $activeTransferNote = '';
+    if (!empty($activePayment['transfer_note'])) {
+        $activeTransferNote = trim((string)$activePayment['transfer_note']);
+    }
+
     $hasActivePending = !empty($activeBooking) && !empty($activePayment) && ($activePaymentStatus === 'DANGXULY');
     $hasPaymentSuccess = !empty($activeBooking) && (
         $activePaymentStatus === 'THANHCONG'
@@ -393,7 +398,7 @@
                         <div class="mt-2 p-2 rounded" style="background:#fff;border:1px dashed #f0ad4e;">
                             <div class="small fw-semibold mb-1">Noi dung chuyen khoan chinh xac:</div>
                             <div class="d-flex align-items-center flex-wrap gap-2">
-                                <span id="activeTransferNote" class="px-2 py-1 rounded" style="background:#fff;border:1px solid #e6e6e6;font-family:monospace;"><?php echo htmlspecialchars($activeTransferNote); ?></span>
+                                <span id="activeTransferNote" class="px-2 py-1 rounded" style="background:#fff;border:1px solid #e6e6e6;font-family:monospace;"><?php echo htmlspecialchars($activeTransferNote ?? ''); ?></span>
                                 <button type="button" class="btn btn-sm btn-outline-primary" onclick="copyActiveTransferNote()">
                                     <i class="bi bi-clipboard me-1"></i>Sao chep
                                 </button>
@@ -560,7 +565,7 @@
                                     <?php if (QR_PAYMENT_BANK_NAME !== ''): ?>
                                         <div class="small text-muted mt-1">Ngan hang: <?php echo htmlspecialchars(QR_PAYMENT_BANK_NAME); ?></div>
                                     <?php endif; ?>
-                                    <div class="small text-muted mt-1">Noi dung chuyen khoan: <?php echo htmlspecialchars($activeTransferNote ?: QR_PAYMENT_TRANSFER_NOTE_HINT); ?></div>
+                                    <div class="small text-muted mt-1">Noi dung chuyen khoan: <?php echo htmlspecialchars(($activeTransferNote ?? '') ?: QR_PAYMENT_TRANSFER_NOTE_HINT); ?></div>
                                 </div>
                             <?php else: ?>
                                 <h5><i class="bi bi-image text-primary"></i> Anh tour & lich trinh</h5>

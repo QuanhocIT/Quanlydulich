@@ -1003,6 +1003,11 @@ class KhachHangController {
         require_once 'models/ThongBao.php';
 
         $userId = (int)($_SESSION['user_id'] ?? 0);
+
+        // Giải phóng session file lock ngay sau khi đọc xong session data.
+        // Nếu không, vòng lặp SSE kéo dài 5 phút sẽ giữ lock và chặn mọi
+        // request khác của cùng user (tab, AJAX) phải chờ toàn bộ thời gian đó.
+        session_write_close();
         if ($userId <= 0) {
             echo "event: close\n";
             echo "data: {}\n\n";

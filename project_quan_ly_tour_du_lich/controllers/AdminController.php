@@ -3189,6 +3189,11 @@ class AdminController {
 
         $this->initAdminNotificationState();
 
+        // Giải phóng session file lock ngay sau khi đọc xong session data.
+        // Nếu không, vòng lặp SSE kéo dài 5 phút sẽ giữ lock và chặn mọi
+        // request khác của cùng user (tab, AJAX) phải chờ toàn bộ thời gian đó.
+        session_write_close();
+
         try {
             $conn = connectDB();
             $startedAt = time();
