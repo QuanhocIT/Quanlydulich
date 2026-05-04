@@ -187,7 +187,25 @@ function getPDOConnection() {
         $sharedConn->exec("SET time_zone = '+07:00'");
         return $sharedConn;
     } catch (PDOException $e) {
-        die("Kết nối thất bại: " . $e->getMessage());
+        // Ghi log lỗi thật (có hostname/port/dbname) vào server log, KHÔNG để lộ ra client.
+        error_log('[DB] Kết nối thất bại: ' . $e->getMessage());
+        http_response_code(503);
+        // Nếu client mong JSON (AJAX/SSE) thì trả JSON thay vì HTML.
+        $acceptHeader = $_SERVER['HTTP_ACCEPT'] ?? '';
+        if (strpos($acceptHeader, 'application/json') !== false
+            || strpos($acceptHeader, 'text/event-stream') !== false
+        ) {
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode(['success' => false, 'message' => 'Dịch vụ tạm thời không khả dụng. Vui lòng thử lại sau.']);
+        } else {
+            header('Content-Type: text/html; charset=utf-8');
+            echo '<!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><title>Lỗi hệ thống</title></head>'
+               . '<body style="font-family:sans-serif;text-align:center;padding:60px;">'
+               . '<h2>Hệ thống tạm thời gián đoạn</h2>'
+               . '<p>Vui lòng thử lại sau ít phút. Nếu lỗi tiếp diễn, hãy liên hệ quản trị viên.</p>'
+               . '</body></html>';
+        }
+        exit(1);
     }
 }
 
