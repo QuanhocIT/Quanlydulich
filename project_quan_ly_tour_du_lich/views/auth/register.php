@@ -376,6 +376,13 @@
                 <p>Tạo tài khoản để khám phá du lịch Việt Nam</p>
             </div>
             
+            <?php if (!empty($info)): ?>
+                <div class="alert" style="background:rgba(25,135,84,0.15);border-color:#198754;color:#0f5132;">
+                    <i class="bi bi-envelope-check"></i>
+                    <?php echo $info; // Already HTML-escaped at controller level ?>
+                </div>
+            <?php endif; ?>
+
             <?php if (!empty($error)): ?>
                 <div class="alert">
                     <i class="bi bi-exclamation-triangle"></i>

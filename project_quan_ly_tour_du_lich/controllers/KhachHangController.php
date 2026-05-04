@@ -643,8 +643,19 @@ class KhachHangController {
             exit();
         }
 
+        // Rate-limit review submissions per user+IP (10 per hour)
+        enforceRateLimit('review:' . ((string)($_SESSION['user_id'] ?? 'anon')) . ':' . ($_SERVER['REMOTE_ADDR'] ?? ''), 10, 3600);
+
         $loaiDanhGia = trim((string)($_POST['loai_danh_gia'] ?? ''));
         $tourId = !empty($_POST['tour_id']) ? (int)$_POST['tour_id'] : 0;
+
+        // Validate rating score server-side (must be integer 1–5)
+        $diem = (int)($_POST['diem'] ?? 0);
+        if ($diem < 1 || $diem > 5) {
+            $_SESSION['error'] = 'Điểm đánh giá không hợp lệ. Vui lòng chọn từ 1 đến 5 sao.';
+            header('Location: ' . $redirectUrl);
+            exit();
+        }
 
         if ($loaiDanhGia === 'Tour') {
             if ($tourId <= 0) {
@@ -678,7 +689,7 @@ class KhachHangController {
             'loai_danh_gia' => $loaiDanhGia,
             'tieu_chi' => $_POST['tieu_chi'] ?? null,
             'loai_dich_vu' => $_POST['loai_dich_vu'] ?? null,
-            'diem' => (int)$_POST['diem'],
+            'diem' => $diem,
             'noi_dung' => $_POST['noi_dung']
         ];
         

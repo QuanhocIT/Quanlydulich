@@ -14,6 +14,7 @@ class AuthController {
     
     public function login() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            enforceRateLimit('login:' . ($_SERVER['REMOTE_ADDR'] ?? ''), 5, 300);
             if (!verifyCsrfToken($_POST['_csrf_token'] ?? '', 'auth_login')) {
                 setValidationErrors(['_csrf_token' => 'invalid'], 'Phien lam viec khong hop le. Vui long thu lai.');
                 $error = "Phiên làm việc không hợp lệ. Vui lòng thử lại.";
@@ -70,6 +71,22 @@ class AuthController {
                 }
 
                 if ($authenticated) {
+                    // Block login for new accounts whose email hasn't been verified yet.
+                    // Accounts created before email verification was introduced
+                    // (email_verification_token IS NULL) are treated as grandfathered.
+                    $pendingVerification = isset($user['email_verified_at'])
+                        && $user['email_verified_at'] === null
+                        && isset($user['email_verification_token'])
+                        && $user['email_verification_token'] !== null;
+
+                    if ($pendingVerification) {
+                        $error = 'Tài khoản chưa được xác nhận email. Vui lòng kiểm tra hộp thư <strong>'
+                            . htmlspecialchars((string)$user['email'], ENT_QUOTES, 'UTF-8')
+                            . '</strong> và nhấn vào liên kết xác nhận.';
+                        require 'views/auth/login.php';
+                        return;
+                    }
+
                     $sessionData = [];
 
                     if ($user['vai_tro'] === 'KhachHang') {
@@ -124,6 +141,7 @@ class AuthController {
     
     public function register() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            enforceRateLimit('register:' . ($_SERVER['REMOTE_ADDR'] ?? ''), 3, 600);
             if (!verifyCsrfToken($_POST['_csrf_token'] ?? '', 'auth_register')) {
                 setValidationErrors(['_csrf_token' => 'invalid'], 'Phien lam viec khong hop le. Vui long thu lai.');
                 $error = "Phiên làm việc không hợp lệ. Vui lòng thử lại.";
@@ -201,14 +219,27 @@ class AuthController {
             $userId = $this->model->insert($data);
 
             if ($userId) {
-                $khachHangId = $this->khachHangModel->insert([
-                    'nguoi_dung_id' => $userId
-                ]);
-                completeUserLoginSession($userId, 'KhachHang', $hoTen, [
-                    'khach_hang_id' => $khachHangId,
-                ]);
-                header('Location: index.php?act=tour/index');
-                exit();
+                $this->khachHangModel->insert(['nguoi_dung_id' => $userId]);
+
+                // --- Email verification ---
+                // Generate a cryptographically secure one-time token and store it.
+                $verifyToken = bin2hex(random_bytes(32));
+                $conn = connectDB();
+                $stmt = $conn->prepare("UPDATE nguoi_dung SET email_verification_token = ? WHERE id = ?");
+                $stmt->execute([$verifyToken, $userId]);
+
+                // Send verification email (non-blocking: failure just skips sending)
+                require_once __DIR__ . '/../commons/mail.php';
+                $verifyUrl = rtrim((string)BASE_URL, '/') . '/index.php?act=auth/verifyEmail&token=' . urlencode($verifyToken);
+                $htmlBody = '<p>Xin chào <strong>' . htmlspecialchars($hoTen, ENT_QUOTES, 'UTF-8') . '</strong>,</p>'
+                    . '<p>Cảm ơn bạn đã đăng ký tài khoản. Vui lòng nhấn vào liên kết bên dưới để xác nhận địa chỉ email:</p>'
+                    . '<p><a href="' . htmlspecialchars($verifyUrl, ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($verifyUrl, ENT_QUOTES, 'UTF-8') . '</a></p>'
+                    . '<p>Liên kết có hiệu lực trong <strong>24 giờ</strong>. Nếu bạn không thực hiện đăng ký này, hãy bỏ qua email.</p>';
+                sendHtmlEmail($email, 'Xác nhận email - Quản lý Tour Du lịch', $htmlBody);
+
+                $info = 'Đăng ký thành công! Vui lòng kiểm tra hộp thư <strong>' . htmlspecialchars($email, ENT_QUOTES, 'UTF-8') . '</strong> để xác nhận địa chỉ email trước khi đăng nhập.';
+                require 'views/auth/register.php';
+                return;
             } else {
                 $error = "Đăng ký thất bại. Vui lòng thử lại sau.";
                 require 'views/auth/register.php';
@@ -218,7 +249,58 @@ class AuthController {
             require 'views/auth/register.php';
         }
     }
-    
+
+    /**
+     * Verify a user's email address via the one-time token sent during registration.
+     * On success, marks the account as verified and logs the user in.
+     */
+    public function verifyEmail() {
+        $token = trim((string)($_GET['token'] ?? ''));
+        if ($token === '' || strlen($token) > 64) {
+            $error = 'Liên kết xác nhận không hợp lệ.';
+            require 'views/auth/login.php';
+            return;
+        }
+
+        $conn = connectDB();
+        $stmt = $conn->prepare(
+            "SELECT id, ho_ten, email, vai_tro
+               FROM nguoi_dung
+              WHERE email_verification_token = ?
+                AND email_verified_at IS NULL
+             LIMIT 1"
+        );
+        $stmt->execute([$token]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$user) {
+            $error = 'Liên kết xác nhận không hợp lệ hoặc đã được sử dụng.';
+            require 'views/auth/login.php';
+            return;
+        }
+
+        // Mark verified and clear token (one-time use)
+        $upd = $conn->prepare(
+            "UPDATE nguoi_dung SET email_verified_at = NOW(), email_verification_token = NULL WHERE id = ?"
+        );
+        $upd->execute([(int)$user['id']]);
+        logSecurityEvent('email_verified', ['user_id' => (int)$user['id']]);
+
+        // Auto-login after verification
+        $khachHangId = null;
+        if ($user['vai_tro'] === 'KhachHang') {
+            require_once 'models/KhachHang.php';
+            $kh     = new KhachHang();
+            $khInfo = $kh->findByUserId((int)$user['id']);
+            $khachHangId = $khInfo['khach_hang_id'] ?? null;
+        }
+        completeUserLoginSession((int)$user['id'], (string)$user['vai_tro'], (string)$user['ho_ten'], [
+            'khach_hang_id' => $khachHangId,
+        ]);
+        $_SESSION['success'] = 'Email đã được xác nhận thành công! Chào mừng bạn đến với hệ thống.';
+        redirectToRoleHome('tour/index');
+    }
+
     public function logout() {
         logoutCurrentUser('logout');
         header('Location: index.php?act=auth/login');

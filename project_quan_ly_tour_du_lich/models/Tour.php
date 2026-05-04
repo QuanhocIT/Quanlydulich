@@ -2,7 +2,7 @@
 // Model cho Tour - tương tác với cơ sở dữ liệu
 class Tour 
 {
-    public $conn;
+    public PDO $conn;
 
     private function clearTourReadCache() {
         cacheForgetByPrefix('tour_options_');
@@ -107,7 +107,7 @@ class Tour
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function getRelatedToursByType($loaiTour, $excludeTourId, $limit = 6) {
+    public function getRelatedToursByType(string $loaiTour, int $excludeTourId, int $limit = 6) {
         $sql = "SELECT tour_id, ten_tour, loai_tour, mo_ta, gia_co_ban, trang_thai
                 FROM tour
                 WHERE loai_tour = ?
@@ -147,7 +147,7 @@ class Tour
     }
 
     // Lấy tour theo ID
-    public function findById($id) {
+    public function findById(int $id) {
         $sql = "SELECT * FROM tour WHERE tour_id = ?";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([$id]);
@@ -174,7 +174,7 @@ class Tour
     }
 
     // Thêm tour mới
-    public function insert($data) {
+    public function insert(array $data) {
         $sql = "INSERT INTO tour (ten_tour, loai_tour, mo_ta, gia_co_ban, chinh_sach, id_nha_cung_cap, tao_boi, trang_thai) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         $stmt = $this->conn->prepare($sql);
@@ -197,7 +197,7 @@ class Tour
     }
 
     // Cập nhật tour
-    public function update($id, $data) {
+    public function update(int $id, array $data) {
         $sql = "UPDATE tour SET ten_tour = ?, loai_tour = ?, mo_ta = ?, gia_co_ban = ?, chinh_sach = ?, 
                 id_nha_cung_cap = ?, trang_thai = ? WHERE tour_id = ?";
         $stmt = $this->conn->prepare($sql);
@@ -219,7 +219,7 @@ class Tour
         return $result;
     }
 
-    public function updateQrCodePath($tourId, $path) {
+    public function updateQrCodePath(int $tourId, string $path) {
         $sql = "UPDATE tour SET qr_code_path = ? WHERE tour_id = ?";
         $stmt = $this->conn->prepare($sql);
         $result = $stmt->execute([$path, (int)$tourId]);
@@ -230,7 +230,7 @@ class Tour
     }
 
     // Xóa tour
-    public function delete($id) {
+    public function delete(int $id) {
         // Xóa tất cả các bản ghi liên quan trước khi xóa tour
         // Thứ tự xóa: từ bảng con đến bảng cha để tránh vi phạm foreign key constraint
         
@@ -271,7 +271,7 @@ class Tour
     }
 
     // Lấy danh sách lịch trình theo tour_id
-    public function getLichTrinhByTourId($tourId) {
+    public function getLichTrinhByTourId(int $tourId) {
         $sql = "SELECT ngay_thu, dia_diem, hoat_dong 
                 FROM lich_trinh_tour 
                 WHERE tour_id = ? 
@@ -282,7 +282,7 @@ class Tour
     }
 
     // Lấy danh sách lịch khởi hành theo tour_id
-    public function getLichKhoiHanhByTourId($tourId) {
+    public function getLichKhoiHanhByTourId(int $tourId) {
         $sql = "SELECT ngay_khoi_hanh, ngay_ket_thuc, diem_tap_trung, so_cho, trang_thai 
                 FROM lich_khoi_hanh 
                 WHERE tour_id = ? 
@@ -293,7 +293,7 @@ class Tour
     }
 
     // Lấy thông tin hướng dẫn viên từ lịch khởi hành theo tour_id
-    public function getHDVByTourId($tourId) {
+    public function getHDVByTourId(int $tourId) {
         $sql = "SELECT 
                     lk.id as lich_khoi_hanh_id,
                     lk.ngay_khoi_hanh,
@@ -322,7 +322,7 @@ class Tour
     }
 
     // Lấy danh sách tour mà HDV hiện tại được phân công theo user_id.
-    public function getToursByHDV($nguoiDungId) {
+    public function getToursByHDV(int $nguoiDungId) {
         $nguoiDungId = (int)$nguoiDungId;
         if ($nguoiDungId <= 0) {
             return [];
@@ -366,7 +366,7 @@ class Tour
     
 
     // Lấy danh sách hình ảnh theo tour_id
-    public function getHinhAnhByTourId($tourId) {
+    public function getHinhAnhByTourId(int $tourId) {
         $sql = "SELECT url_anh, mo_ta 
                 FROM hinh_anh_tour 
                 WHERE tour_id = ? 
@@ -517,7 +517,7 @@ class Tour
     }
 
     // Lấy danh sách yêu cầu đặc biệt theo tour_id
-    public function getYeuCauDacBietByTourId($tourId) {
+    public function getYeuCauDacBietByTourId(int $tourId) {
         $sql = "SELECT yc.*, b.khach_hang_id 
                 FROM yeu_cau_dac_biet yc
                 INNER JOIN booking b ON yc.booking_id = b.booking_id
@@ -531,7 +531,7 @@ class Tour
     // Lấy nhật ký tour theo tour_id
     
 
-public function getNhatKyTourByTourId($tourId) {
+public function getNhatKyTourByTourId(int $tourId) {
     $sql = "SELECT 
                 nkt.id,
                 nkt.tour_id,
@@ -558,7 +558,7 @@ public function getNhatKyTourByTourId($tourId) {
 }
 
     // Thêm lịch trình tour
-    public function insertLichTrinh($tourId, $lichTrinh) {
+    public function insertLichTrinh(int $tourId, array $lichTrinh) {
         $sql = "INSERT INTO lich_trinh_tour (tour_id, ngay_thu, dia_diem, hoat_dong) VALUES (?, ?, ?, ?)";
         $stmt = $this->conn->prepare($sql);
         return $stmt->execute([
@@ -570,7 +570,7 @@ public function getNhatKyTourByTourId($tourId) {
     }
 
     // Thêm nhiều lịch trình cùng lúc
-    public function insertMultipleLichTrinh($tourId, $lichTrinhList) {
+    public function insertMultipleLichTrinh(int $tourId, array $lichTrinhList) {
         // Xóa lịch trình cũ trước
         $this->deleteLichTrinhByTourId($tourId);
         
@@ -590,14 +590,14 @@ public function getNhatKyTourByTourId($tourId) {
     }
 
     // Xóa lịch trình tour theo tour_id
-    public function deleteLichTrinhByTourId($tourId) {
+    public function deleteLichTrinhByTourId(int $tourId) {
         $sql = "DELETE FROM lich_trinh_tour WHERE tour_id = ?";
         $stmt = $this->conn->prepare($sql);
         return $stmt->execute([(int)$tourId]);
     }
 
     // Thêm lịch khởi hành
-    public function insertLichKhoiHanh($tourId, $lichKhoiHanh) {
+    public function insertLichKhoiHanh(int $tourId, array $lichKhoiHanh) {
         $sql = "INSERT INTO lich_khoi_hanh (tour_id, ngay_khoi_hanh, ngay_ket_thuc, diem_tap_trung, hdv_id, trang_thai) VALUES (?, ?, ?, ?, ?, ?)";
         $stmt = $this->conn->prepare($sql);
         return $stmt->execute([
@@ -611,14 +611,14 @@ public function getNhatKyTourByTourId($tourId) {
     }
 
     // Xóa lịch khởi hành theo tour_id
-    public function deleteLichKhoiHanhByTourId($tourId) {
+    public function deleteLichKhoiHanhByTourId(int $tourId) {
         $sql = "DELETE FROM lich_khoi_hanh WHERE tour_id = ?";
         $stmt = $this->conn->prepare($sql);
         return $stmt->execute([(int)$tourId]);
     }
 
     // Thêm hình ảnh tour
-    public function insertHinhAnh($tourId, $hinhAnh) {
+    public function insertHinhAnh(int $tourId, array $hinhAnh) {
         $sql = "INSERT INTO hinh_anh_tour (tour_id, url_anh, mo_ta) VALUES (?, ?, ?)";
         $stmt = $this->conn->prepare($sql);
         return $stmt->execute([
@@ -629,35 +629,35 @@ public function getNhatKyTourByTourId($tourId) {
     }
 
     // Xóa hình ảnh tour theo tour_id
-    public function deleteHinhAnhByTourId($tourId) {
+    public function deleteHinhAnhByTourId(int $tourId) {
         $sql = "DELETE FROM hinh_anh_tour WHERE tour_id = ?";
         $stmt = $this->conn->prepare($sql);
         return $stmt->execute([(int)$tourId]);
     }
 
     // Xóa nhật ký tour theo tour_id
-    public function deleteNhatKyByTourId($tourId) {
+    public function deleteNhatKyByTourId(int $tourId) {
         $sql = "DELETE FROM nhat_ky_tour WHERE tour_id = ?";
         $stmt = $this->conn->prepare($sql);
         return $stmt->execute([(int)$tourId]);
     }
 
     // Xóa phản hồi đánh giá theo tour_id
-    public function deletePhanHoiDanhGiaByTourId($tourId) {
+    public function deletePhanHoiDanhGiaByTourId(int $tourId) {
         $sql = "DELETE FROM phan_hoi_danh_gia WHERE tour_id = ?";
         $stmt = $this->conn->prepare($sql);
         return $stmt->execute([(int)$tourId]);
     }
 
     // Xóa giao dịch tài chính theo tour_id
-    public function deleteGiaoDichTaiChinhByTourId($tourId) {
+    public function deleteGiaoDichTaiChinhByTourId(int $tourId) {
         $sql = "DELETE FROM giao_dich_tai_chinh WHERE tour_id = ?";
         $stmt = $this->conn->prepare($sql);
         return $stmt->execute([(int)$tourId]);
     }
 
     // Xóa yêu cầu đặc biệt theo tour_id
-    public function deleteYeuCauDacBietByTourId($tourId) {
+    public function deleteYeuCauDacBietByTourId(int $tourId) {
         $sql = "DELETE yc FROM yeu_cau_dac_biet yc
                 INNER JOIN booking b ON yc.booking_id = b.booking_id
                 WHERE b.tour_id = ?";
@@ -666,7 +666,7 @@ public function getNhatKyTourByTourId($tourId) {
     }
 
     // Thêm yêu cầu đặc biệt
-    public function insertYeuCauDacBiet($bookingId, $noiDung, $loaiYeuCau = 'khac', $mucDoUuTien = 'trung_binh') {
+    public function insertYeuCauDacBiet(int $bookingId, string $noiDung, string $loaiYeuCau = 'khac', string $mucDoUuTien = 'trung_binh') {
         $sql = "INSERT INTO yeu_cau_dac_biet (booking_id, loai_yeu_cau, tieu_de, mo_ta, muc_do_uu_tien) VALUES (?, ?, ?, ?, ?)";
         $stmt = $this->conn->prepare($sql);
         return $stmt->execute([
@@ -679,7 +679,7 @@ public function getNhatKyTourByTourId($tourId) {
     }
 
     // Xóa booking theo tour_id
-    public function deleteBookingByTourId($tourId) {
+    public function deleteBookingByTourId(int $tourId) {
         $sql = "DELETE FROM booking WHERE tour_id = ?";
         $stmt = $this->conn->prepare($sql);
         return $stmt->execute([(int)$tourId]);

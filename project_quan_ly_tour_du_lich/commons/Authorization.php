@@ -84,6 +84,7 @@ class Authorization {
             'public_routes' => [
                 'auth/login',
                 'auth/register',
+                'auth/verifyEmail',
                 'auth/logout',
                 'tour/index',
                 'tour/show',

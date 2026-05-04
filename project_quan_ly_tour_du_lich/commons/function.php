@@ -887,3 +887,60 @@ function getValidationErrors() {
     return $payload;
 }
 
+/**
+ * Enforce a sliding-window rate limit keyed by an arbitrary string (e.g. "login:{ip}").
+ * Persists state as a small JSON file under storage/cache/rate_limit/.
+ * Terminates the current request with HTTP 429 if the limit is exceeded.
+ *
+ * @param string $key         Unique key (e.g. "login:127.0.0.1")
+ * @param int    $maxAttempts Maximum number of attempts allowed within the window
+ * @param int    $windowSeconds   Time window in seconds
+ * @param int    $httpCode    HTTP status code to send when rate-limited (default 429)
+ */
+function enforceRateLimit(string $key, int $maxAttempts, int $windowSeconds, int $httpCode = 429): void {
+    $cacheDir = __DIR__ . '/../storage/cache/rate_limit';
+    if (!is_dir($cacheDir)) {
+        @mkdir($cacheDir, 0777, true);
+    }
+
+    $file = $cacheDir . '/' . sha1($key) . '.json';
+    $now  = time();
+
+    $state = ['hits' => []];
+    if (is_file($file)) {
+        $raw     = @file_get_contents($file);
+        $decoded = $raw !== false ? json_decode((string)$raw, true) : null;
+        if (is_array($decoded)) {
+            $state = $decoded;
+        }
+    }
+
+    // Drop hits outside the sliding window
+    $hits = is_array($state['hits'] ?? null) ? $state['hits'] : [];
+    $hits = array_values(array_filter($hits, fn($t) => is_int($t) && $t > ($now - $windowSeconds)));
+    $hits[] = $now;
+
+    @file_put_contents($file, json_encode(['hits' => $hits]), LOCK_EX);
+
+    if (count($hits) > $maxAttempts) {
+        logSecurityEvent('rate_limit_exceeded', [
+            'key'   => $key,
+            'count' => count($hits),
+            'ip'    => $_SERVER['REMOTE_ADDR'] ?? '',
+        ]);
+        http_response_code($httpCode);
+        $isJson = strpos((string)($_SERVER['HTTP_ACCEPT'] ?? ''), 'application/json') !== false
+               || strtolower((string)($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '')) === 'xmlhttprequest';
+        if ($isJson) {
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode(['ok' => false, 'message' => 'Quá nhiều yêu cầu. Vui lòng thử lại sau vài phút.'], JSON_UNESCAPED_UNICODE);
+        } else {
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                $_SESSION['error'] = 'Quá nhiều yêu cầu. Vui lòng thử lại sau vài phút.';
+            }
+            $back = filter_var($_SERVER['HTTP_REFERER'] ?? '', FILTER_VALIDATE_URL) ? $_SERVER['HTTP_REFERER'] : 'index.php?act=auth/login';
+            header('Location: ' . $back);
+        }
+        exit();
+    }
+}

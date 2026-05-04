@@ -32,9 +32,11 @@ class BankWebhookController {
         }
 
         if (!self::isWebhookAuthorized()) {
+            // Log only whether credentials were provided — never log the actual secret value
             self::logRaw('AUTH_FAIL',
-                'auth=' . substr($authHeader, 0, 60) .
-                ' apikey=' . substr($apikeyHeader, 0, 60)
+                'auth_provided=' . ($authHeader !== '' ? 'yes' : 'no') .
+                ' apikey_provided=' . ($apikeyHeader !== '' ? 'yes' : 'no') .
+                ' ip=' . ($_SERVER['REMOTE_ADDR'] ?? 'unknown')
             );
             self::jsonResponse(401, ['ok' => false, 'message' => 'Unauthorized webhook']);
             return;

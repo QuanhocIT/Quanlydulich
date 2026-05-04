@@ -132,7 +132,7 @@ if (!isValidRouteFormat($act)) {
 }
 
 $sessionState = enforceSessionSecurity();
-if (!empty($sessionState['invalidated']) && !in_array($act, ['auth/login', 'auth/register'], true)) {
+if (!empty($sessionState['invalidated']) && !in_array($act, ['auth/login', 'auth/register', 'auth/verifyEmail'], true)) {
     header('Location: index.php?act=auth/login');
     exit();
 }
@@ -233,6 +233,7 @@ match ($act) {
     // Auth
     'auth/login' => (new AuthController())->login(),
     'auth/register' => (new AuthController())->register(),
+    'auth/verifyEmail' => (new AuthController())->verifyEmail(),
     'auth/logout' => (new AuthController())->logout(),
     'auth/forcePasswordChange' => (new AuthController())->forcePasswordChange(),
 
