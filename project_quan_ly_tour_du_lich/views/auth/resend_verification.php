@@ -46,9 +46,21 @@
         .btn-submit:hover { background:rgba(255,255,255,0.35); transform:translateY(-2px); }
         .alert-box { padding:.85rem 1rem; border-radius:10px; margin-bottom:1.25rem; font-size:.9rem; }
         .alert-ok { background:rgba(25,135,84,0.25); border:1px solid rgba(40,167,69,0.5); color:#fff; }
+        .alert-info { background:rgba(13,110,253,0.25); border:1px solid rgba(13,110,253,0.5); color:#fff; }
         .back-link { text-align:center; margin-top:1.25rem; }
         .back-link a { color:rgba(255,255,255,0.8); text-decoration:none; font-size:.9rem; }
         .back-link a:hover { color:#fff; }
+        .alert-err { background:rgba(220,53,69,0.25); border:1px solid rgba(220,53,69,0.5); color:#fff; }
+        .alert-warn { background:rgba(255,193,7,0.2); border:1px solid rgba(255,193,7,0.5); color:#fff; }
+        .countdown-bar { height:4px; background:rgba(255,255,255,0.15); border-radius:2px; margin-top:1rem; overflow:hidden; }
+        .countdown-bar-fill { height:100%; background:rgba(40,167,69,0.7); border-radius:2px; transition:width 1s linear; }
+        .countdown-text { text-align:center; font-size:.82rem; opacity:.75; margin-top:.4rem; }
+        .input-icon-wrap { position:relative; }
+        .input-icon-wrap .bi { position:absolute; left:.9rem; top:50%; transform:translateY(-50%); color:rgba(255,255,255,0.6); pointer-events:none; }
+        .input-icon-wrap .form-control { padding-left:2.4rem; }
+        .btn-submit:disabled { opacity:.6; cursor:not-allowed; transform:none; }
+        .spinner { display:inline-block; width:1em; height:1em; border:2px solid currentColor; border-right-color:transparent; border-radius:50%; animation:spin .6s linear infinite; vertical-align:-.15em; }
+        @keyframes spin { to { transform:rotate(360deg); } }
     </style>
 </head>
 <body>
@@ -60,22 +72,45 @@
             <p>Nhập email đã đăng ký để nhận lại liên kết</p>
         </div>
 
-        <?php if (!empty($info)): ?>
-            <div class="alert-box alert-ok">
-                <i class="bi bi-check-circle me-1"></i><?php echo htmlspecialchars($info); ?>
+        <div class="alert-box alert-info">
+            <i class="bi bi-info-circle me-1"></i><strong>Ghi chú:</strong> Do chức năng này cần cấu hình với bên thứ 3 mất phí nên tạm thời bị Dev vô hiệu.
+        </div>
+
+        <?php if (!empty($error)): ?>
+            <div class="alert-box alert-err">
+                <i class="bi bi-exclamation-triangle me-1"></i><?php echo htmlspecialchars((string)$error); ?>
             </div>
         <?php endif; ?>
 
-        <?php if (empty($info)): ?>
-        <form method="POST" action="index.php?act=auth/resendVerification">
+        <?php if (!empty($alreadyVerified)): ?>
+            <div class="alert-box alert-warn">
+                <i class="bi bi-info-circle me-1"></i>
+                Email này đã được xác nhận trước đó. Bạn có thể <a href="index.php?act=auth/login" style="color:#fff;font-weight:600;">đăng nhập ngay</a>.
+            </div>
+        <?php elseif (!empty($info)): ?>
+            <div class="alert-box alert-ok" id="successBox">
+                <i class="bi bi-check-circle me-1"></i><?php echo htmlspecialchars((string)$info); ?>
+            </div>
+            <div class="countdown-bar"><div class="countdown-bar-fill" id="cntBar" style="width:100%"></div></div>
+            <p class="countdown-text" id="cntText">Chuyển đến trang đăng nhập sau <strong id="cntNum">8</strong> giây...</p>
+        <?php endif; ?>
+
+        <?php if (empty($info) && empty($alreadyVerified)): ?>
+        <form method="POST" action="index.php?act=auth/resendVerification" id="resendForm" novalidate>
             <?php echo csrfField('auth_resend_verify'); ?>
             <div class="form-group">
-                <label><i class="bi bi-envelope"></i> Địa chỉ Email</label>
-                <input type="email" name="email" class="form-control"
-                       placeholder="Nhập email đã đăng ký" required>
+                <label for="emailInput"><i class="bi bi-envelope"></i> Địa chỉ Email</label>
+                <div class="input-icon-wrap">
+                    <i class="bi bi-envelope"></i>
+                    <input type="email" name="email" id="emailInput" class="form-control"
+                           placeholder="Nhập email đã đăng ký" autocomplete="email"
+                           value="<?php echo htmlspecialchars((string)($_POST['email'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
+                           required>
+                </div>
             </div>
-            <button type="submit" class="btn-submit">
-                <i class="bi bi-send"></i> Gửi lại email xác nhận
+            <button type="submit" class="btn-submit" id="submitBtn">
+                <i class="bi bi-send" id="sendIcon"></i>
+                <span id="btnLabel"> Gửi lại email xác nhận</span>
             </button>
         </form>
         <?php endif; ?>
@@ -85,6 +120,45 @@
         </div>
     </div>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+(function(){
+    // Auto-redirect countdown after success
+    const cntNum  = document.getElementById('cntNum');
+    const cntBar  = document.getElementById('cntBar');
+    const cntText = document.getElementById('cntText');
+    if (cntNum) {
+        let secs = 8;
+        const tick = setInterval(function() {
+            secs--;
+            cntNum.textContent = secs;
+            cntBar.style.width = (secs / 8 * 100) + '%';
+            if (secs <= 0) {
+                clearInterval(tick);
+                window.location.href = 'index.php?act=auth/login';
+            }
+        }, 1000);
+    }
+
+    // Loading state on submit
+    const form      = document.getElementById('resendForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const sendIcon  = document.getElementById('sendIcon');
+    const btnLabel  = document.getElementById('btnLabel');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const emailVal = document.getElementById('emailInput').value.trim();
+            // Basic email pattern check
+            if (!emailVal || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal)) {
+                e.preventDefault();
+                document.getElementById('emailInput').style.borderColor = 'rgba(220,53,69,0.8)';
+                return;
+            }
+            submitBtn.disabled = true;
+            sendIcon.outerHTML = '<span class="spinner"></span>';
+            btnLabel.textContent = ' Đang gửi...';
+        });
+    }
+})();
+</script>
 </body>
 </html>

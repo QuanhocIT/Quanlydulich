@@ -54,6 +54,7 @@
         }
         .alert-err { background:rgba(220,53,69,0.25); border:1px solid rgba(220,53,69,0.5); color:#fff; }
         .alert-ok  { background:rgba(25,135,84,0.25); border:1px solid rgba(40,167,69,0.5); color:#fff; }
+        .alert-info { background:rgba(13,110,253,0.25); border:1px solid rgba(13,110,253,0.5); color:#fff; }
         .back-link { text-align:center; margin-top:1.25rem; }
         .back-link a { color:rgba(255,255,255,0.8); text-decoration:none; font-size:.9rem; }
         .back-link a:hover { color:#fff; }
@@ -66,6 +67,10 @@
             <div class="logo-circle"><i class="bi bi-key"></i></div>
             <h2>Quên mật khẩu</h2>
             <p>Nhập email để nhận liên kết đặt lại mật khẩu</p>
+        </div>
+
+        <div class="alert-box alert-info">
+            <i class="bi bi-info-circle me-1"></i><strong>Ghi chú:</strong> Do chức năng này cần cấu hình với bên thứ 3 mất phí nên tạm thời bị Dev vô hiệu.
         </div>
 
         <?php if (!empty($info)): ?>

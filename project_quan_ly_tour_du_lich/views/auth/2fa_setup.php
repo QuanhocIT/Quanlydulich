@@ -1,4 +1,8 @@
 <?php
+/** @var array $user */
+/** @var string|null $pendingSecret */
+$pendingSecret = $pendingSecret ?? null;
+
 $pageTitle   = 'Cài đặt 2FA';
 $currentPage = 'settings';
 

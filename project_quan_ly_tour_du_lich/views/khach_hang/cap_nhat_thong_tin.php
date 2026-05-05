@@ -497,6 +497,7 @@ include __DIR__ . '/_layout/header.php'; ?>
                     <div class="section-subtitle">Cập nhật chính xác thông tin cá nhân để đặt tour nhanh và thuận tiện hơn.</div>
 
                     <form method="POST" action="index.php?act=khachHang/capNhatThongTin" id="profileUpdateForm">
+                        <input type="hidden" name="_csrf_global" value="<?php echo htmlspecialchars(csrfToken('global_form'), ENT_QUOTES, 'UTF-8'); ?>">
                         <div class="form-shell">
                             <div class="form-block-title"><i class="bi bi-person-vcard"></i> Thông tin liên hệ</div>
                             <div class="row">

@@ -209,6 +209,11 @@ if ($method === 'POST') {
         // These actions already perform scoped CSRF verification in their controllers.
         'auth/login',
         'auth/register',
+        'auth/forgotPassword',
+        'auth/resetPassword',
+        'auth/resendVerification',
+        'auth/verify2fa',
+        'auth/setup2fa',
         'booking/create',
         'booking/update',
         'booking/delete',

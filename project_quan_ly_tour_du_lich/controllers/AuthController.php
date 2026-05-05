@@ -571,11 +571,20 @@ class AuthController {
         }
 
         $email = trim((string)($_POST['email'] ?? ''));
-        // Always show success to prevent email enumeration
-        $info = 'Nếu email này tồn tại và chưa được xác nhận, chúng tôi đã gửi lại liên kết xác nhận.';
 
         $user = $this->model->findByEmail($email);
-        if ($user && $user['email_verified_at'] === null) {
+
+        // Email đã xác nhận rồi — thông báo riêng, không lộ thông tin kẻ tấn công
+        if ($user && $user['email_verified_at'] !== null) {
+            $alreadyVerified = true;
+            require 'views/auth/resend_verification.php';
+            return;
+        }
+
+        // Always show success to prevent email enumeration
+        $info = 'Nếu email này tồn tại và chưa được xác nhận, chúng tôi đã gửi lại liên kết xác nhận. Vui lòng kiểm tra hộp thư (kể cả Spam).';
+
+        if ($user) {
             $verifyToken = bin2hex(random_bytes(32));
             $expiresAt   = date('Y-m-d H:i:s', time() + 86400);
             $conn = connectDB();
@@ -584,12 +593,48 @@ class AuthController {
             )->execute([$verifyToken, $expiresAt, $user['id']]);
 
             require_once __DIR__ . '/../commons/mail.php';
-            $verifyUrl = rtrim((string)BASE_URL, '/') . '/index.php?act=auth/verifyEmail&token=' . urlencode($verifyToken);
-            $htmlBody = '<p>Xin chào <strong>' . htmlspecialchars((string)$user['ho_ten'], ENT_QUOTES, 'UTF-8') . '</strong>,</p>'
-                . '<p>Nhấn vào liên kết bên dưới để xác nhận địa chỉ email:</p>'
-                . '<p><a href="' . htmlspecialchars($verifyUrl, ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($verifyUrl, ENT_QUOTES, 'UTF-8') . '</a></p>'
-                . '<p>Liên kết có hiệu lực trong <strong>24 giờ</strong>.</p>';
+            $verifyUrl  = rtrim((string)BASE_URL, '/') . '/index.php?act=auth/verifyEmail&token=' . urlencode($verifyToken);
+            $safeName   = htmlspecialchars((string)$user['ho_ten'], ENT_QUOTES, 'UTF-8');
+            $safeUrl    = htmlspecialchars($verifyUrl, ENT_QUOTES, 'UTF-8');
+            $safeEmail  = htmlspecialchars($email, ENT_QUOTES, 'UTF-8');
+            $htmlBody   = '<!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8">'
+                . '<meta name="viewport" content="width=device-width,initial-scale=1">'
+                . '<style>'
+                . 'body{margin:0;padding:0;background:#f4f7fb;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;}'
+                . '.wrap{max-width:560px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08);}'
+                . '.header{background:linear-gradient(135deg,#1a6b3a,#2d8a50);padding:36px 40px 28px;text-align:center;color:#fff;}'
+                . '.header h1{margin:0;font-size:1.6rem;font-weight:700;}'
+                . '.header p{margin:8px 0 0;opacity:.85;font-size:.95rem;}'
+                . '.icon-circle{width:64px;height:64px;background:rgba(255,255,255,.2);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:2rem;}'
+                . '.body{padding:36px 40px;}'
+                . '.body p{color:#444;line-height:1.7;margin:0 0 1rem;}'
+                . '.btn{display:block;width:fit-content;margin:28px auto;padding:14px 36px;background:linear-gradient(135deg,#1a6b3a,#2d8a50);color:#fff!important;text-decoration:none;border-radius:10px;font-weight:700;font-size:1rem;letter-spacing:.3px;}'
+                . '.note{background:#f8f9fa;border-left:4px solid #2d8a50;padding:12px 16px;border-radius:0 8px 8px 0;font-size:.85rem;color:#666;margin-top:1.5rem;}'
+                . '.url-text{word-break:break-all;color:#1a6b3a;font-size:.8rem;}'
+                . '.footer{background:#f8f9fa;padding:20px 40px;text-align:center;font-size:.8rem;color:#999;border-top:1px solid #eee;}'
+                . '</style></head><body>'
+                . '<div class="wrap">'
+                . '<div class="header">'
+                . '<div class="icon-circle">&#9993;</div>'
+                . '<h1>Xác nhận địa chỉ Email</h1>'
+                . '<p>Quản lý Tour Du lịch</p>'
+                . '</div>'
+                . '<div class="body">'
+                . '<p>Xin chào <strong>' . $safeName . '</strong>,</p>'
+                . '<p>Bạn vừa yêu cầu gửi lại liên kết xác nhận email cho tài khoản <strong>' . $safeEmail . '</strong>.</p>'
+                . '<p>Nhấn vào nút bên dưới để kích hoạt tài khoản:</p>'
+                . '<a href="' . $safeUrl . '" class="btn">&#10003; Xác nhận Email ngay</a>'
+                . '<div class="note">'
+                . '<strong>Lưu ý:</strong> Liên kết có hiệu lực trong <strong>24 giờ</strong>. '
+                . 'Nếu nút không hoạt động, sao chép URL sau vào trình duyệt:<br>'
+                . '<span class="url-text">' . $safeUrl . '</span>'
+                . '</div>'
+                . '</div>'
+                . '<div class="footer">Email này được gửi tự động. Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua.</div>'
+                . '</div>'
+                . '</body></html>';
             sendHtmlEmail($email, 'Xác nhận email - Quản lý Tour Du lịch', $htmlBody);
+            logSecurityEvent('resend_verification', ['email' => $email]);
         }
 
         require 'views/auth/resend_verification.php';

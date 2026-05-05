@@ -4,5 +4,8 @@
         "google/apiclient": "^2.19",
         "phpmailer/phpmailer": "^7.0",
         "cboden/ratchet": "0.4.4"
+    },
+    "require-dev": {
+        "jetbrains/phpstorm-stubs": "^2026.1"
     }
 }
