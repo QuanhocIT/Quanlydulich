@@ -734,7 +734,7 @@ ob_start();
     </div>
 </div>
 
-<script>
+<script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
 (function () {
     function initTourRequestRealtime() {
         var statTongYeuCau = document.getElementById('statTongYeuCau');

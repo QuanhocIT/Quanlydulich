@@ -653,7 +653,7 @@ ob_start();
         <?php endif; ?>
 </div>
 
-<script>
+<script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
     // Print functionality preserved
 </script>
 <?php

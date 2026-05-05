@@ -4,6 +4,24 @@ require_once __DIR__ . '/commons/SessionSecurity.php';
 SessionSecurity::initialize(__DIR__ . '/storage/sessions');
 SessionSecurity::start();
 
+// ── Force HTTPS in production ──────────────────────────────────────────────
+// Must run before any output or session-dependent logic.
+if (!defined('APP_ENV')) {
+    // APP_ENV not yet loaded — load env first to check
+    require_once __DIR__ . '/commons/env.php';
+}
+if (defined('APP_ENV') && APP_ENV === 'production') {
+    $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        || (int)($_SERVER['SERVER_PORT'] ?? 0) === 443
+        || strtolower((string)($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https';
+    if (!$isHttps) {
+        $safeHost = preg_replace('/[^a-zA-Z0-9._\-]/', '', (string)($_SERVER['HTTP_HOST'] ?? ''));
+        $safeUri  = $_SERVER['REQUEST_URI'] ?? '/';
+        header('Location: https://' . $safeHost . $safeUri, true, 301);
+        exit();
+    }
+}
+
 // Require toàn bộ các file khai báo môi trường, thực thi,...(không require view)
 
 // Require file Common
@@ -49,6 +67,10 @@ if (APP_ENV === 'production') {
     error_reporting(E_ALL);
 }
 
+// ── CSP nonce (generated once per request) ───────────────────────────────
+$cspNonce = base64_encode(random_bytes(16));
+define('CSP_NONCE', $cspNonce);
+
 // ── Security headers (sent before any output) ──────────────────────────────
 if (!headers_sent()) {
     header('X-Content-Type-Options: nosniff');
@@ -58,7 +80,7 @@ if (!headers_sent()) {
     header(
         "Content-Security-Policy: "
         . "default-src 'self'; "
-        . "script-src 'self' 'unsafe-inline' cdn.jsdelivr.net cdnjs.cloudflare.com code.jquery.com; "
+        . "script-src 'self' 'nonce-{$cspNonce}' cdn.jsdelivr.net cdnjs.cloudflare.com code.jquery.com; "
         . "style-src 'self' 'unsafe-inline' cdn.jsdelivr.net cdnjs.cloudflare.com fonts.googleapis.com; "
         . "font-src 'self' cdn.jsdelivr.net cdnjs.cloudflare.com fonts.gstatic.com data:; "
         . "img-src 'self' data: blob: https:; "

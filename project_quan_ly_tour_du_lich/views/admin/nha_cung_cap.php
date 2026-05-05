@@ -1237,7 +1237,7 @@ $statusMap = [
     <?php endforeach; ?>
 <?php endif; ?>
 
-<script>
+<script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
     // Auto-fill form from user select
     (function() {
         const selectEl = document.getElementById('supplierUserSelect');

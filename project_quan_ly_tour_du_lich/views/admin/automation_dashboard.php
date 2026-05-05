@@ -891,7 +891,7 @@ if (!empty($latestRun)) {
     </section>
 </div>
 
-<script>
+<script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
 (function () {
     'use strict';
 

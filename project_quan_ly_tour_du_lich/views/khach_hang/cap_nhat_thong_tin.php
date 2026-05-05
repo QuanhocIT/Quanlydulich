@@ -558,7 +558,7 @@ include __DIR__ . '/_layout/header.php'; ?>
             </div>
         </div>
 
-    <script>
+    <script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
     document.addEventListener('DOMContentLoaded', function () {
         var profileUpdateForm = document.getElementById('profileUpdateForm');
         var profileUpdateSubmitBtn = document.getElementById('profileUpdateSubmitBtn');

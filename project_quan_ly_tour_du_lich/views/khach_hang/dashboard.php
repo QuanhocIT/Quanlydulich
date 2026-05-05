@@ -600,7 +600,7 @@ $favoriteTourIds = isset($favoriteTourIds) && is_array($favoriteTourIds) ? $favo
     </div>
 </div>
 
-<script>
+<script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
 /* TỈ GIÁ NGOẠI TỆ */
 const rates = {
     USD: { VND: 24500, EUR: 0.91, JPY: 161.5, KRW: 1300 },
@@ -3135,7 +3135,7 @@ function showTab(tab) {
         </div>
     </footer>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
+    <script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
     document.addEventListener('DOMContentLoaded', function() {
         var myCarousel = document.querySelector('#bannerCarousel');
         if (myCarousel) {
@@ -3590,7 +3590,7 @@ function showTab(tab) {
 $_khWsToken = buildRealtimeAuthToken((int)$_SESSION['user_id'], 'KhachHang');
 $_khWsUrl   = realtimeWebSocketPublicUrl() . '?token=' . rawurlencode($_khWsToken);
 ?>
-<script>
+<script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
 (function() {
     var wsUrl = <?php echo json_encode($_khWsUrl, JSON_UNESCAPED_UNICODE); ?>;
     var ws = null;

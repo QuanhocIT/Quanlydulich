@@ -670,7 +670,7 @@ ob_start();
     </div>
 </div>
 
-<script>
+<script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
     // Tab switching
     document.querySelectorAll('.nav-tab').forEach(tab => {
         tab.addEventListener('click', function(e) {

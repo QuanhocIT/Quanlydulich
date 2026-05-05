@@ -1155,7 +1155,7 @@ $huy = count(array_filter($bookingsPage, fn($b) => $b['trang_thai'] === 'Huy'));
         </div>
     <?php endif; ?>
 </div>
-<script>
+<script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
 (function() {
     var prevPaymentCount = null;
     document.addEventListener('adminNotification', function(e) {

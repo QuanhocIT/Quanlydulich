@@ -668,7 +668,7 @@ include __DIR__ . '/_layout/header.php'; ?>
         <a class="btn-main flex-fill" href="#q"><i class="bi bi-search"></i> Tìm tour</a>
     </div>
 
-    <script>
+    <script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
         (function () {
             var revealEls = document.querySelectorAll('.js-reveal');
             if (!revealEls.length) return;

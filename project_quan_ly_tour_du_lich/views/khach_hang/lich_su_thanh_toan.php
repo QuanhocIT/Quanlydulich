@@ -92,7 +92,7 @@ include __DIR__ . '/_layout/header.php'; ?>
 $_lstWsToken = buildRealtimeAuthToken((int)$_SESSION['user_id'], 'KhachHang');
 $_lstWsUrl   = realtimeWebSocketPublicUrl() . '?token=' . rawurlencode($_lstWsToken);
 ?>
-<script>
+<script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
 (function() {
     var wsUrl = <?php echo json_encode($_lstWsUrl, JSON_UNESCAPED_UNICODE); ?>;
     var ws = null;

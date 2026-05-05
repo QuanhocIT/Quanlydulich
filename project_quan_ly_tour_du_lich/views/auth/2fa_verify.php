@@ -89,7 +89,7 @@
     </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-<script>
+<script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
 // Auto-submit khi nhập đủ 6 chữ số
 document.querySelector('.code-input').addEventListener('input', function() {
     if (this.value.replace(/\D/g,'').length === 6) {

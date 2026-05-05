@@ -521,7 +521,7 @@ $totalRequests = (int)(($stats['khan_cap'] ?? 0) + ($stats['cao'] ?? 0) + ($stat
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
+    <script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
         // Custom modal handling for Aventura theme
         const modalElement = document.getElementById('updateModal');
         if (modalElement) {

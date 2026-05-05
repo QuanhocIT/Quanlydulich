@@ -299,7 +299,7 @@ ob_start();
     </form>
 </div>
 
-<script>
+<script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
     // Tự động tính tổng
     const chiPhiInputs = document.querySelectorAll('.chi-phi');
     const tongDuToanEl = document.getElementById('tongDuToan');

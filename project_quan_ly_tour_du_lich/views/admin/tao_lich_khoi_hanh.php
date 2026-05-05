@@ -458,7 +458,7 @@ ob_start();
     </div>
 </div>
 
-<script>
+<script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
         // Auto-fill end date based on tour duration (optional enhancement)
         document.querySelector('select[name="tour_id"]').addEventListener('change', function() {
             // Could fetch tour duration and auto-calculate end date

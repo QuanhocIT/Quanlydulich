@@ -417,7 +417,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
+    <script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
         function editRequest(data) {
             document.getElementById('yeu_cau_id').value = data.id;
             document.getElementById('booking_id').value = data.booking_id;

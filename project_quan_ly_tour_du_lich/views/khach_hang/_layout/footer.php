@@ -62,7 +62,7 @@ $extraJs = $extraJs ?? '';
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
 <!-- Notification badge live updater (works on all pages) -->
-<script>
+<script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
 (function () {
     var badge = document.getElementById('kh-notif-badge');
     if (!badge) return;
@@ -92,7 +92,7 @@ $extraJs = $extraJs ?? '';
 </script>
 
 <?php if ($extraJs): ?>
-<script>
+<script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
 <?php echo $extraJs; ?>
 </script>
 <?php endif; ?>

@@ -1130,7 +1130,7 @@ ob_start();
     </div>
 </div>
 
-<script>
+<script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
     // Customer type selection
     document.querySelectorAll('input[name="loai_khach"]').forEach(radio => {
         radio.addEventListener('change', function() {

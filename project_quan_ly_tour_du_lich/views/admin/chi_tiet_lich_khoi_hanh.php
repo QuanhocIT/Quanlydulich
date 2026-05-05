@@ -1641,7 +1641,7 @@ $catalogServicesMap = $catalogServicesMap ?? [];
     </div>
 </div>
 
-    <script>
+    <script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
     // Tab switching function
     function switchTab(tabName) {
         // Hide all tab panes
@@ -1986,7 +1986,7 @@ $catalogServicesMap = $catalogServicesMap ?? [];
         </div>
         <?php endforeach; ?>
     <?php endif; ?>
-<script>
+<script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
 (function() {
     var lichKhoiHanhId = <?php echo (int)($lichKhoiHanh['id'] ?? 0); ?>;
     var refreshTimer = null;

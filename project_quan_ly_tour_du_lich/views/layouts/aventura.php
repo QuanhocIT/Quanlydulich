@@ -211,7 +211,7 @@ if ($realtimeWsEnabled && isset($_SESSION['user_id']) && $currentRole !== null) 
         </div>
     </div>
 
-    <script>
+    <script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
     document.addEventListener('DOMContentLoaded', function() {
         const csrfMeta = document.querySelector('meta[name="csrf-global-token"]');
         const csrfGlobalToken = csrfMeta ? csrfMeta.getAttribute('content') : '';

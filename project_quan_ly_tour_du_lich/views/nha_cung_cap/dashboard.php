@@ -303,7 +303,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
+    <script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
         Chart.defaults.color = '#776759';
         Chart.defaults.borderColor = 'rgba(118, 96, 72, 0.12)';
         Chart.defaults.font.family = 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
@@ -413,7 +413,7 @@
 $_wsToken = buildRealtimeAuthToken((int)$_SESSION['user_id'], 'NhaCungCap');
 $_wsUrl   = realtimeWebSocketPublicUrl() . '?token=' . rawurlencode($_wsToken);
 ?>
-<script>
+<script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
 (function() {
     var wsUrl = <?php echo json_encode($_wsUrl, JSON_UNESCAPED_UNICODE); ?>;
     var prevPending = <?php echo (int)$pendingCount; ?>;

@@ -1701,7 +1701,7 @@ $actionCards = [
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
-<script>
+<script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
     const revenueLabels = <?php echo json_encode(array_keys($doanhThuTheoThang ?? []), JSON_UNESCAPED_UNICODE); ?>;
     const revenueValues = <?php echo json_encode(array_map('floatval', array_values($doanhThuTheoThang ?? [])), JSON_UNESCAPED_UNICODE); ?>;
     const bookingStatusLabels = <?php echo json_encode(array_keys($bookingStatusStats ?? []), JSON_UNESCAPED_UNICODE); ?>;
@@ -1991,7 +1991,7 @@ $actionCards = [
     }
         }
 </script>
-<script>
+<script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
 (function() {
     // Listen for AdminWS notifications broadcast by aventura.php layout
     // When new payments/bookings arrive, fetch updated KPI snapshot

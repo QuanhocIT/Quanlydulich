@@ -130,7 +130,10 @@ class BookingController {
                         $this->tuDongPhanBoNhanSu($lichKhoiHanh['id'], $ngayKhoiHanh, $ngayKetThuc);
                     }
                 }
-                
+
+                // ── Gửi email xác nhận đặt tour ───────────────────────────
+                $this->sendBookingConfirmationEmail($bookingId, $data, $tour);
+
                 header("Location: index.php?act=booking/show&id=$bookingId");
                 exit();
             } else {
@@ -1101,6 +1104,27 @@ class BookingController {
                 }
 
                 $_SESSION['success'] = "Đặt tour thành công! Mã booking: #{$bookingId}";
+
+                // ── Gửi email xác nhận cho khách (nếu có email) ────────────
+                if (!empty($email) && $tour) {
+                    $adminBookingData = [
+                        'ngay_khoi_hanh' => $ngayKhoiHanh,
+                        'ngay_ket_thuc'  => $ngayKetThucForm,
+                        'so_nguoi_lon'   => $soNguoi,
+                        'so_tre_em'      => 0,
+                        'tong_tien'      => $tongTien,
+                        'tien_coc'       => $tongTien * 0.3,
+                        'trang_thai'     => 'ChoXacNhan',
+                    ];
+                    $this->sendBookingConfirmationEmailDirect(
+                        $email,
+                        $hoTen,
+                        $bookingId,
+                        $adminBookingData,
+                        $tour
+                    );
+                }
+
                 header("Location: index.php?act=booking/datTourChoKhach&success=1&booking_id={$bookingId}");
                 exit();
             } catch (Exception $e) {
@@ -1487,6 +1511,273 @@ class BookingController {
             // Log error nếu cần
             error_log("Lỗi tự động phân bổ nhân sự: " . $e->getMessage());
             return false;
+        }
+    }
+
+    /**
+     * Gửi email xác nhận đặt tour cho khách hàng.
+     *
+     * @param int   $bookingId  ID booking vừa tạo
+     * @param array $data       Mảng dữ liệu booking đã insert
+     * @param array $tour       Mảng thông tin tour
+     */
+    private function sendBookingConfirmationEmail($bookingId, array $data, array $tour) {
+        try {
+            // Lấy thông tin người dùng (email)
+            $userId = $_SESSION['user_id'] ?? null;
+            if (!$userId) return;
+
+            $nguoiDung = $this->nguoiDungModel->findById($userId);
+            if (!$nguoiDung || empty($nguoiDung['email'])) return;
+
+            $toEmail = $nguoiDung['email'];
+            $hoTen   = htmlspecialchars($nguoiDung['ho_ten'] ?? $nguoiDung['ten_dang_nhap'] ?? 'Quý khách', ENT_QUOTES, 'UTF-8');
+
+            // Dữ liệu booking
+            $tourName      = htmlspecialchars($tour['ten_tour'] ?? 'N/A', ENT_QUOTES, 'UTF-8');
+            $diaDiem       = htmlspecialchars($tour['dia_diem'] ?? '', ENT_QUOTES, 'UTF-8');
+            $ngayKhoiHanh  = isset($data['ngay_khoi_hanh'])  ? date('d/m/Y', strtotime($data['ngay_khoi_hanh']))  : 'N/A';
+            $ngayKetThuc   = isset($data['ngay_ket_thuc'])   ? date('d/m/Y', strtotime($data['ngay_ket_thuc']))   : 'N/A';
+            $soNguoiLon    = (int)($data['so_nguoi_lon']   ?? 0);
+            $soTreEm       = (int)($data['so_tre_em']      ?? 0);
+            $tongTien      = isset($data['tong_tien'])  ? number_format((float)$data['tong_tien'],  0, ',', '.') . ' đ' : 'N/A';
+            $tienCoc       = isset($data['tien_coc'])   ? number_format((float)$data['tien_coc'],   0, ',', '.') . ' đ' : 'N/A';
+            $trangThai     = htmlspecialchars($data['trang_thai'] ?? 'ChoDuyet', ENT_QUOTES, 'UTF-8');
+
+            $baseUrl = defined('BASE_URL') ? rtrim(BASE_URL, '/') : '';
+            $bookingLink = $baseUrl . '/index.php?act=booking/show&id=' . $bookingId;
+
+            // ── HTML email ─────────────────────────────────────────────────
+            $html = <<<HTML
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Xác nhận đặt tour</title>
+</head>
+<body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:30px 0;">
+  <tr><td align="center">
+    <table width="620" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.12);">
+      <!-- Header -->
+      <tr>
+        <td style="background:linear-gradient(135deg,#1a73e8,#0d47a1);padding:36px 40px;text-align:center;">
+          <h1 style="color:#fff;margin:0;font-size:26px;letter-spacing:1px;">AVENTURA</h1>
+          <p style="color:#c8dcff;margin:6px 0 0;font-size:14px;">Hệ thống Quản lý Tour Du lịch</p>
+        </td>
+      </tr>
+      <!-- Body -->
+      <tr>
+        <td style="padding:36px 40px;">
+          <p style="font-size:16px;color:#333;margin:0 0 8px;">Xin chào <strong>{$hoTen}</strong>,</p>
+          <p style="color:#555;margin:0 0 24px;line-height:1.6;">
+            Cảm ơn bạn đã đặt tour tại <strong>AVENTURA</strong>! Dưới đây là thông tin chi tiết booking của bạn.
+          </p>
+
+          <!-- Tour info box -->
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f7ff;border-left:4px solid #1a73e8;border-radius:4px;margin-bottom:24px;">
+            <tr><td style="padding:20px 24px;">
+              <h2 style="color:#1a73e8;margin:0 0 16px;font-size:18px;">{$tourName}</h2>
+              <table width="100%" cellpadding="6" cellspacing="0" style="font-size:14px;color:#444;">
+                <tr>
+                  <td width="45%" style="font-weight:bold;">📍 Điểm đến:</td>
+                  <td>{$diaDiem}</td>
+                </tr>
+                <tr>
+                  <td style="font-weight:bold;">📅 Ngày khởi hành:</td>
+                  <td>{$ngayKhoiHanh}</td>
+                </tr>
+                <tr>
+                  <td style="font-weight:bold;">🏁 Ngày kết thúc:</td>
+                  <td>{$ngayKetThuc}</td>
+                </tr>
+                <tr>
+                  <td style="font-weight:bold;">👥 Số người lớn:</td>
+                  <td>{$soNguoiLon} người</td>
+                </tr>
+                <tr>
+                  <td style="font-weight:bold;">🧒 Số trẻ em:</td>
+                  <td>{$soTreEm} người</td>
+                </tr>
+              </table>
+            </td></tr>
+          </table>
+
+          <!-- Invoice info box -->
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:#fff8e1;border-left:4px solid #f9a825;border-radius:4px;margin-bottom:24px;">
+            <tr><td style="padding:20px 24px;">
+              <h3 style="color:#f57f17;margin:0 0 14px;font-size:16px;">💰 Thông tin hóa đơn</h3>
+              <table width="100%" cellpadding="6" cellspacing="0" style="font-size:14px;color:#444;">
+                <tr>
+                  <td width="45%" style="font-weight:bold;">Mã booking:</td>
+                  <td><span style="background:#e3f2fd;color:#1565c0;padding:2px 8px;border-radius:12px;font-family:monospace;">#BK{$bookingId}</span></td>
+                </tr>
+                <tr>
+                  <td style="font-weight:bold;">Tổng tiền:</td>
+                  <td style="font-size:16px;font-weight:bold;color:#c62828;">{$tongTien}</td>
+                </tr>
+                <tr>
+                  <td style="font-weight:bold;">Tiền cọc:</td>
+                  <td style="color:#2e7d32;font-weight:bold;">{$tienCoc}</td>
+                </tr>
+                <tr>
+                  <td style="font-weight:bold;">Trạng thái:</td>
+                  <td><span style="background:#fff3e0;color:#e65100;padding:2px 10px;border-radius:12px;">{$trangThai}</span></td>
+                </tr>
+              </table>
+            </td></tr>
+          </table>
+
+          <!-- CTA button -->
+          <p style="text-align:center;margin:0 0 28px;">
+            <a href="{$bookingLink}" style="display:inline-block;background:#1a73e8;color:#fff;text-decoration:none;padding:14px 36px;border-radius:6px;font-size:15px;font-weight:bold;">
+              Xem chi tiết booking
+            </a>
+          </p>
+
+          <p style="color:#777;font-size:13px;line-height:1.6;margin:0;">
+            Nếu bạn có bất kỳ thắc mắc nào, hãy liên hệ với chúng tôi qua email hoặc hotline.<br>
+            Chúc bạn có chuyến du lịch thật vui vẻ và ý nghĩa! 🌟
+          </p>
+        </td>
+      </tr>
+      <!-- Footer -->
+      <tr>
+        <td style="background:#f8f9fa;padding:20px 40px;text-align:center;border-top:1px solid #e0e0e0;">
+          <p style="color:#9e9e9e;font-size:12px;margin:0;">
+            © 2025 AVENTURA Tour Management. Email này được gửi tự động, vui lòng không reply.<br>
+            Bạn nhận email này vì đã đăng ký tài khoản tại hệ thống AVENTURA.
+          </p>
+        </td>
+      </tr>
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>
+HTML;
+
+            sendHtmlEmail(
+                $toEmail,
+                'Xác nhận đặt tour thành công – ' . ($tour['ten_tour'] ?? 'AVENTURA'),
+                $html
+            );
+
+        } catch (Exception $e) {
+            error_log('sendBookingConfirmationEmail error: ' . $e->getMessage());
+            // Không để lỗi email ảnh hưởng đến luồng booking
+        }
+    }
+
+    /**
+     * Phiên bản direct: dùng khi email & tên khách đã có sẵn (admin đặt hộ).
+     */
+    private function sendBookingConfirmationEmailDirect(
+        string $toEmail,
+        string $customerName,
+        int $bookingId,
+        array $data,
+        array $tour
+    ) {
+        try {
+            $hoTen = htmlspecialchars($customerName, ENT_QUOTES, 'UTF-8');
+
+            $tourName     = htmlspecialchars($tour['ten_tour'] ?? 'N/A', ENT_QUOTES, 'UTF-8');
+            $diaDiem      = htmlspecialchars($tour['dia_diem'] ?? '', ENT_QUOTES, 'UTF-8');
+            $ngayKhoiHanh = isset($data['ngay_khoi_hanh']) ? date('d/m/Y', strtotime($data['ngay_khoi_hanh'])) : 'N/A';
+            $ngayKetThuc  = isset($data['ngay_ket_thuc'])  ? date('d/m/Y', strtotime($data['ngay_ket_thuc']))  : 'N/A';
+            $soNguoiLon   = (int)($data['so_nguoi_lon']  ?? 0);
+            $soTreEm      = (int)($data['so_tre_em']     ?? 0);
+            $tongTienFmt  = isset($data['tong_tien']) ? number_format((float)$data['tong_tien'], 0, ',', '.') . ' đ' : 'N/A';
+            $tienCocFmt   = isset($data['tien_coc'])  ? number_format((float)$data['tien_coc'],  0, ',', '.') . ' đ' : 'N/A';
+            $trangThai    = htmlspecialchars($data['trang_thai'] ?? 'ChoXacNhan', ENT_QUOTES, 'UTF-8');
+
+            $baseUrl     = defined('BASE_URL') ? rtrim(BASE_URL, '/') : '';
+            $bookingLink = $baseUrl . '/index.php?act=booking/show&id=' . $bookingId;
+
+            $html = <<<HTML
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Xác nhận đặt tour</title>
+</head>
+<body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:30px 0;">
+  <tr><td align="center">
+    <table width="620" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.12);">
+      <tr>
+        <td style="background:linear-gradient(135deg,#1a73e8,#0d47a1);padding:36px 40px;text-align:center;">
+          <h1 style="color:#fff;margin:0;font-size:26px;letter-spacing:1px;">AVENTURA</h1>
+          <p style="color:#c8dcff;margin:6px 0 0;font-size:14px;">Hệ thống Quản lý Tour Du lịch</p>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:36px 40px;">
+          <p style="font-size:16px;color:#333;margin:0 0 8px;">Xin chào <strong>{$hoTen}</strong>,</p>
+          <p style="color:#555;margin:0 0 24px;line-height:1.6;">
+            Booking tour của bạn đã được nhân viên <strong>AVENTURA</strong> xác nhận. Dưới đây là thông tin chi tiết.
+          </p>
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f7ff;border-left:4px solid #1a73e8;border-radius:4px;margin-bottom:24px;">
+            <tr><td style="padding:20px 24px;">
+              <h2 style="color:#1a73e8;margin:0 0 16px;font-size:18px;">{$tourName}</h2>
+              <table width="100%" cellpadding="6" cellspacing="0" style="font-size:14px;color:#444;">
+                <tr><td width="45%" style="font-weight:bold;">📍 Điểm đến:</td><td>{$diaDiem}</td></tr>
+                <tr><td style="font-weight:bold;">📅 Ngày khởi hành:</td><td>{$ngayKhoiHanh}</td></tr>
+                <tr><td style="font-weight:bold;">🏁 Ngày kết thúc:</td><td>{$ngayKetThuc}</td></tr>
+                <tr><td style="font-weight:bold;">👥 Số người lớn:</td><td>{$soNguoiLon} người</td></tr>
+                <tr><td style="font-weight:bold;">🧒 Số trẻ em:</td><td>{$soTreEm} người</td></tr>
+              </table>
+            </td></tr>
+          </table>
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:#fff8e1;border-left:4px solid #f9a825;border-radius:4px;margin-bottom:24px;">
+            <tr><td style="padding:20px 24px;">
+              <h3 style="color:#f57f17;margin:0 0 14px;font-size:16px;">💰 Thông tin hóa đơn</h3>
+              <table width="100%" cellpadding="6" cellspacing="0" style="font-size:14px;color:#444;">
+                <tr><td width="45%" style="font-weight:bold;">Mã booking:</td>
+                    <td><span style="background:#e3f2fd;color:#1565c0;padding:2px 8px;border-radius:12px;font-family:monospace;">#BK{$bookingId}</span></td></tr>
+                <tr><td style="font-weight:bold;">Tổng tiền:</td>
+                    <td style="font-size:16px;font-weight:bold;color:#c62828;">{$tongTienFmt}</td></tr>
+                <tr><td style="font-weight:bold;">Tiền cọc (30%):</td>
+                    <td style="color:#2e7d32;font-weight:bold;">{$tienCocFmt}</td></tr>
+                <tr><td style="font-weight:bold;">Trạng thái:</td>
+                    <td><span style="background:#fff3e0;color:#e65100;padding:2px 10px;border-radius:12px;">{$trangThai}</span></td></tr>
+              </table>
+            </td></tr>
+          </table>
+          <p style="text-align:center;margin:0 0 28px;">
+            <a href="{$bookingLink}" style="display:inline-block;background:#1a73e8;color:#fff;text-decoration:none;padding:14px 36px;border-radius:6px;font-size:15px;font-weight:bold;">
+              Xem chi tiết booking
+            </a>
+          </p>
+          <p style="color:#777;font-size:13px;line-height:1.6;margin:0;">
+            Nếu bạn có bất kỳ thắc mắc nào, hãy liên hệ với chúng tôi.<br>
+            Chúc bạn có chuyến du lịch thật vui vẻ và ý nghĩa! 🌟
+          </p>
+        </td>
+      </tr>
+      <tr>
+        <td style="background:#f8f9fa;padding:20px 40px;text-align:center;border-top:1px solid #e0e0e0;">
+          <p style="color:#9e9e9e;font-size:12px;margin:0;">
+            © 2025 AVENTURA Tour Management. Email này được gửi tự động, vui lòng không reply.
+          </p>
+        </td>
+      </tr>
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>
+HTML;
+            sendHtmlEmail(
+                $toEmail,
+                'Xác nhận đặt tour thành công – ' . ($tour['ten_tour'] ?? 'AVENTURA'),
+                $html
+            );
+        } catch (Exception $e) {
+            error_log('sendBookingConfirmationEmailDirect error: ' . $e->getMessage());
         }
     }
 

@@ -990,7 +990,7 @@ $nhaCungCapCount = isset($data_by_role['NhaCungCap']) ? count($data_by_role['Nha
     </div>
 </div>
 
-<script>
+<script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
     (function(){
         const modal = document.getElementById('nhanSuModal');
         const form = document.getElementById('nhanSuForm');

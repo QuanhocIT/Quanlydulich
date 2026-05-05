@@ -308,7 +308,7 @@ ob_start();
         </div>
     </div>
 </div>
-<script>
+<script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
     function escapeHtml(value) {
         return String(value || '')
             .replace(/&/g, '&amp;')

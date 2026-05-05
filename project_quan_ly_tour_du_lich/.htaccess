@@ -2,10 +2,8 @@ Options -Indexes
 
 # ── Force HTTPS (skip on localhost / 127.0.0.1) ────────────────────────────
 RewriteEngine On
-RewriteCond %{HTTPS} off
-RewriteCond %{HTTP_HOST} !^localhost [NC]
-RewriteCond %{HTTP_HOST} !^127\.0\.0\.1 [NC]
-RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+# HTTPS redirect handled in index.php for APP_ENV=production
+# (disabled here to support ngrok tunneling in development)
 
 # ── Block direct access to sensitive file types ─────────────────────────────
 <FilesMatch "\.(env|log|json|sql|md|sh|bak|ini|gitignore|gitkeep|lock|pem|key|crt)$">

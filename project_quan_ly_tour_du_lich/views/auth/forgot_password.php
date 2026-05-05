@@ -69,10 +69,6 @@
             <p>Nhập email để nhận liên kết đặt lại mật khẩu</p>
         </div>
 
-        <div class="alert-box alert-info">
-            <i class="bi bi-info-circle me-1"></i><strong>Ghi chú:</strong> Do chức năng này cần cấu hình với bên thứ 3 mất phí nên tạm thời bị Dev vô hiệu.
-        </div>
-
         <?php if (!empty($info)): ?>
             <div class="alert-box alert-ok">
                 <i class="bi bi-check-circle me-1"></i><?php echo htmlspecialchars($info); ?>

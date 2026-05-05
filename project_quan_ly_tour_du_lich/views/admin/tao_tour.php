@@ -709,7 +709,7 @@ ob_start();
     </form>
 </div>
 
-<script>
+<script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
         let hinhAnhIndex = <?php echo !empty($hinhAnhList) ? count($hinhAnhList) : 0; ?>;
         
         function themHinhAnh() {

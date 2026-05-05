@@ -72,10 +72,6 @@
             <p>Nhập email đã đăng ký để nhận lại liên kết</p>
         </div>
 
-        <div class="alert-box alert-info">
-            <i class="bi bi-info-circle me-1"></i><strong>Ghi chú:</strong> Do chức năng này cần cấu hình với bên thứ 3 mất phí nên tạm thời bị Dev vô hiệu.
-        </div>
-
         <?php if (!empty($error)): ?>
             <div class="alert-box alert-err">
                 <i class="bi bi-exclamation-triangle me-1"></i><?php echo htmlspecialchars((string)$error); ?>
@@ -120,7 +116,7 @@
         </div>
     </div>
 </div>
-<script>
+<script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
 (function(){
     // Auto-redirect countdown after success
     const cntNum  = document.getElementById('cntNum');

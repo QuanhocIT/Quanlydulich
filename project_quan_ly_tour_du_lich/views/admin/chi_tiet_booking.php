@@ -762,7 +762,7 @@ ob_start();
     </div>
 </div>
 
-<script>
+<script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
     // Tự động đồng bộ trạng thái khi thay đổi tiền cọc hoặc trạng thái
     (function() {
         const tienCocInput = document.getElementById('tienCocInput');

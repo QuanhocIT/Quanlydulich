@@ -3,7 +3,7 @@ $pageTitle = 'Xuất tài liệu - Booking #' . (isset($booking['booking_id']) ?
 $currentPage = 'xuat_tai_lieu';
 ob_start();
 ?>
-<script>
+<script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
     var BOOKING_ID = <?php echo isset($booking['booking_id']) ? (int)$booking['booking_id'] : 0; ?>;
     var BOOKING_EMAIL = <?php echo json_encode(isset($booking['email']) ? $booking['email'] : ''); ?>;
     
@@ -477,7 +477,7 @@ ob_start();
 </div>
 </div>
 
-<script>
+<script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
     // Check on page load
     window.addEventListener('DOMContentLoaded', function() {
         console.log('=== PAGE READY ===');

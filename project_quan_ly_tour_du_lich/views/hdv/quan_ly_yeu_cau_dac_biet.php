@@ -403,7 +403,7 @@ $bookingList = $bookingList ?? [];
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
+    <script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
         const modalElement = document.getElementById('updateModal');
         modalElement.addEventListener('show.bs.modal', function (event) {
             const button = event.relatedTarget;

@@ -382,7 +382,7 @@ ob_start();
                 </div>
             </form>
         </div>
-        <script>
+        <script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
             document.addEventListener('DOMContentLoaded', function() {
                 const btn = document.getElementById('showCreateLuongBtn');
                 const formWrap = document.getElementById('createLuongFormWrap');
@@ -458,7 +458,7 @@ ob_start();
         </form>
     </div>
 
-    <script>
+    <script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
     document.addEventListener('DOMContentLoaded', function() {
         const searchInput = document.getElementById('searchNhanSu');
         const tableBody = document.querySelector('.luong-table tbody');

@@ -388,7 +388,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
+    <script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
         // Show/hide cách xử lý field
         document.getElementById('loai_nhat_ky').addEventListener('change', function() {
             var cachXuLyGroup = document.getElementById('cach_xu_ly_group');

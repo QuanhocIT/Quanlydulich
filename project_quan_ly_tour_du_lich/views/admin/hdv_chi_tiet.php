@@ -684,7 +684,7 @@ if (!empty($lich_lam_viec)) {
 </div>
 
 <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.9/index.global.min.js'></script>
-<script>
+<script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
     document.addEventListener('DOMContentLoaded', function() {
         var tabButtons = document.querySelectorAll('.tab-btn');
         var tabPanels = document.querySelectorAll('.tab-panel');

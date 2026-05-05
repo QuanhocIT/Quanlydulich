@@ -295,7 +295,7 @@ ob_start(); ?>
     </div>
 
 <?php if (!empty($latestPayment) && (($latestPayment['status'] ?? '') === 'DangXuLy')): ?>
-<script>
+<script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
 function copyTransferNoteExact() {
     var el = document.getElementById('transferNoteExact');
     if (!el) return;

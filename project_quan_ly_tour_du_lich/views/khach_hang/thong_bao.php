@@ -106,7 +106,7 @@ include __DIR__ . '/_layout/header.php'; ?>
         </div>
     </div>
 
-    <script>
+    <script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
     document.addEventListener('DOMContentLoaded', function () {
         var notificationUnreadCount = document.getElementById('notificationUnreadCount');
         var notificationList = document.getElementById('notificationList');

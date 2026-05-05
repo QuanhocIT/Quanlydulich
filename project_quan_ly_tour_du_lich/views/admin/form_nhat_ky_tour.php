@@ -259,7 +259,7 @@ ob_start();
     </div>
 </div>
 
-<script>
+<script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
         // Show/hide cách xử lý field
         document.getElementById('loai_nhat_ky').addEventListener('change', function() {
             var cachXuLyGroup = document.getElementById('cach_xu_ly_group');
