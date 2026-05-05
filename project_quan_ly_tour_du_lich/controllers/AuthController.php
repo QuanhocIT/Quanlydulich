@@ -49,7 +49,8 @@ class AuthController {
                 if (!isSecurePasswordHash($stored)) {
                     // Temporary compatibility mode: allow legacy plaintext login once,
                     // then upgrade to secure hash immediately.
-                    if ((string)$stored === $password) {
+                    // H6: Use hash_equals to prevent timing attacks on legacy plaintext comparison
+                    if (hash_equals((string)$stored, (string)$password)) {
                         $authenticated = true;
                         $newHash = password_hash($password, PASSWORD_DEFAULT);
                         $this->model->updatePassword($user['id'], $newHash);

@@ -58,7 +58,7 @@ register_shutdown_function(function () use ($__perfStart) {
     $logDir = __DIR__ . '/../storage';
     $logFile = $logDir . '/perf.log';
     if (!is_dir($logDir)) {
-        @mkdir($logDir, 0777, true);
+        @mkdir($logDir, 0750, true);
     }
 
     @file_put_contents($logFile, json_encode($payload, JSON_UNESCAPED_UNICODE) . PHP_EOL, FILE_APPEND);

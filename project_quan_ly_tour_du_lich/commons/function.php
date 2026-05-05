@@ -41,7 +41,7 @@ function dbColumnExists(string $tableName, string $columnName, ?PDO $conn = null
 function cacheBaseDir() {
     $dir = __DIR__ . '/../storage/cache/app';
     if (!is_dir($dir)) {
-        @mkdir($dir, 0777, true);
+        @mkdir($dir, 0750, true);
     }
     return $dir;
 }
@@ -924,7 +924,8 @@ function csrfToken(string $scope = 'default') {
         try {
             $_SESSION[$key] = bin2hex(random_bytes(32));
         } catch (Throwable $e) {
-            $_SESSION[$key] = bin2hex(openssl_random_pseudo_bytes(32));
+            $cryptoStrong = false;
+            $_SESSION[$key] = bin2hex(openssl_random_pseudo_bytes(32, $cryptoStrong));
         }
     }
 
@@ -1003,34 +1004,60 @@ function getValidationErrors() {
  * @param int    $httpCode    HTTP status code to send when rate-limited (default 429)
  */
 function enforceRateLimit(string $key, int $maxAttempts, int $windowSeconds, int $httpCode = 429): void {
-    $cacheDir = __DIR__ . '/../storage/cache/rate_limit';
-    if (!is_dir($cacheDir)) {
-        @mkdir($cacheDir, 0777, true);
-    }
+    $exceeded = false;
 
-    $file = $cacheDir . '/' . sha1($key) . '.json';
-    $now  = time();
-
-    $state = ['hits' => []];
-    if (is_file($file)) {
-        $raw     = @file_get_contents($file);
-        $decoded = $raw !== false ? json_decode((string)$raw, true) : null;
-        if (is_array($decoded)) {
-            $state = $decoded;
+    // P4: Redis path — atomic INCR, không tranh file lock ─────────────────────
+    $redis = getRedisConnection();
+    if ($redis !== null) {
+        try {
+            $rKey = 'rl:' . sha1($key);
+            $count = $redis->incr($rKey);
+            if ($count === 1) {
+                // TTL chỉ set lần đầu — fixed-window đủ cho rate-limiting
+                $redis->expire($rKey, $windowSeconds);
+            }
+            if ($count > $maxAttempts) {
+                $exceeded = true;
+            }
+        } catch (Throwable $e) {
+            // Redis lỗi → tiếp tục bằng file fallback
+            $redis = null;
         }
     }
 
-    // Drop hits outside the sliding window
-    $hits = is_array($state['hits'] ?? null) ? $state['hits'] : [];
-    $hits = array_values(array_filter($hits, fn($t) => is_int($t) && $t > ($now - $windowSeconds)));
-    $hits[] = $now;
+    // File-based fallback (khi không có Redis) ─────────────────────────────────
+    if ($redis === null) {
+        $cacheDir = __DIR__ . '/../storage/cache/rate_limit';
+        if (!is_dir($cacheDir)) {
+            @mkdir($cacheDir, 0750, true);
+        }
 
-    @file_put_contents($file, json_encode(['hits' => $hits]), LOCK_EX);
+        $file = $cacheDir . '/' . sha1($key) . '.json';
+        $now  = time();
 
-    if (count($hits) > $maxAttempts) {
+        $state = ['hits' => []];
+        if (is_file($file)) {
+            $raw     = @file_get_contents($file);
+            $decoded = $raw !== false ? json_decode((string)$raw, true) : null;
+            if (is_array($decoded)) {
+                $state = $decoded;
+            }
+        }
+
+        $hits = is_array($state['hits'] ?? null) ? $state['hits'] : [];
+        $hits = array_values(array_filter($hits, fn($t) => is_int($t) && $t > ($now - $windowSeconds)));
+        $hits[] = $now;
+
+        @file_put_contents($file, json_encode(['hits' => $hits]), LOCK_EX);
+
+        if (count($hits) > $maxAttempts) {
+            $exceeded = true;
+        }
+    }
+
+    if ($exceeded) {
         logSecurityEvent('rate_limit_exceeded', [
             'key'   => $key,
-            'count' => count($hits),
             'ip'    => $_SERVER['REMOTE_ADDR'] ?? '',
         ]);
         http_response_code($httpCode);

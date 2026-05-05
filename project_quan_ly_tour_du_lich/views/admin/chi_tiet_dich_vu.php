@@ -151,13 +151,13 @@ ob_start();
 
     <?php if (isset($_SESSION['success'])): ?>
         <div class="alert alert-success">
-            <div><i class="bi bi-check-circle"></i> <?php echo $_SESSION['success']; unset($_SESSION['success']); ?></div>
+            <div><i class="bi bi-check-circle"></i> <?php echo htmlspecialchars((string)($_SESSION['success'] ?? ''), ENT_QUOTES, 'UTF-8'); unset($_SESSION['success']); ?></div>
             <button type="button" onclick="this.parentElement.remove()" style="background: none; border: none; color: inherit; font-size: 1.2rem; cursor: pointer;">&times;</button>
         </div>
     <?php endif; ?>
     <?php if (isset($_SESSION['error'])): ?>
         <div class="alert alert-danger">
-            <div><i class="bi bi-exclamation-triangle"></i> <?php echo $_SESSION['error']; unset($_SESSION['error']); ?></div>
+            <div><i class="bi bi-exclamation-triangle"></i> <?php echo htmlspecialchars((string)($_SESSION['error'] ?? ''), ENT_QUOTES, 'UTF-8'); unset($_SESSION['error']); ?></div>
             <button type="button" onclick="this.parentElement.remove()" style="background: none; border: none; color: inherit; font-size: 1.2rem; cursor: pointer;">&times;</button>
         </div>
     <?php endif; ?>

@@ -5,7 +5,7 @@ require_once __DIR__ . '/../models/PaymentLog.php';
 require_once __DIR__ . '/PaymentFinanceService.php';
 
 class PaymentReconcileService {
-    public static function buildReconcileRowsSummary($conn, array $filters) {
+    public static function buildReconcileRowsSummary(PDO $conn, array $filters): array {
         $reconcileRows = [];
         $summary = [
             'total' => 0,
@@ -100,17 +100,16 @@ class PaymentReconcileService {
         ];
     }
 
-    public static function runAutoReconcileTick($conn) {
+    public static function runAutoReconcileTick(PDO $conn): void {
+        $now = time();
         $cacheDir = __DIR__ . '/../storage/cache';
         $cacheFile = $cacheDir . '/auto_reconcile_payments.json';
         $intervalSeconds = 600;
 
         try {
             if (!is_dir($cacheDir)) {
-                @mkdir($cacheDir, 0777, true);
+                @mkdir($cacheDir, 0750, true);
             }
-
-            $now = time();
             if (is_file($cacheFile)) {
                 $raw = @file_get_contents($cacheFile);
                 $data = $raw ? json_decode($raw, true) : null;
@@ -208,7 +207,7 @@ class PaymentReconcileService {
         }
     }
 
-    public static function repairMissingFinanceTransaction($conn, $paymentId, $repairReason = '') {
+    public static function repairMissingFinanceTransaction(PDO $conn, int $paymentId, string $repairReason = ''): array {
         if ($paymentId <= 0) {
             return ['ok' => false, 'message' => 'Payment ID khong hop le.'];
         }
@@ -296,7 +295,7 @@ class PaymentReconcileService {
         }
     }
 
-    public static function ensureReconcileAuditTable($conn) {
+    public static function ensureReconcileAuditTable(PDO $conn): void {
         try {
             $conn->query('SELECT audit_id, payment_id, booking_id FROM payment_reconcile_audit LIMIT 1');
         } catch (Throwable $e) {
@@ -306,12 +305,12 @@ class PaymentReconcileService {
         }
     }
 
-    public static function refreshDailyMismatchReportCache($conn) {
+    public static function refreshDailyMismatchReportCache(PDO $conn): array {
         $cacheDir = __DIR__ . '/../storage/cache';
         $cacheFile = $cacheDir . '/payment_mismatch_daily_report.json';
 
         if (!is_dir($cacheDir)) {
-            @mkdir($cacheDir, 0777, true);
+            @mkdir($cacheDir, 0750, true);
         }
 
         $today = date('Y-m-d');
@@ -335,7 +334,7 @@ class PaymentReconcileService {
         return $report;
     }
 
-    private static function createReconcileAudit($conn, array $data) {
+    private static function createReconcileAudit(PDO $conn, array $data): void {
         $stmt = $conn->prepare('INSERT INTO payment_reconcile_audit (payment_id, booking_id, action, reason, performed_by, before_json, after_json, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
         $stmt->execute([
             (int)($data['payment_id'] ?? 0),
@@ -349,7 +348,7 @@ class PaymentReconcileService {
         ]);
     }
 
-    private static function buildDailyMismatchReport($conn, $dateYmd) {
+    private static function buildDailyMismatchReport(PDO $conn, string $dateYmd): array {
         $summary = [
             'date' => (string)$dateYmd,
             'total' => 0,
@@ -402,7 +401,7 @@ class PaymentReconcileService {
         return $summary;
     }
 
-    private static function getFinanceThuSummaryByBookingIds($conn, array $bookingIds) {
+    private static function getFinanceThuSummaryByBookingIds(PDO $conn, array $bookingIds): array {
         $normalized = [];
         foreach ($bookingIds as $bookingId) {
             $id = (int)$bookingId;

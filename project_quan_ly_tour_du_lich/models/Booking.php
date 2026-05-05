@@ -2,7 +2,7 @@
 // Model cho Booking - tương tác với cơ sở dữ liệu
 class Booking 
 {
-    public $conn;
+    public PDO $conn;
     private static $columnExistsCache = [];
     private static $tableColumnsCache = [];
     private const HIDDEN_REASON_PREFIX = '[AN_HOAN_TAT]';
@@ -12,7 +12,7 @@ class Booking
         $this->conn = connectDB();
     }
 
-    private function hasColumn($tableName, $columnName) {
+    private function hasColumn(string $tableName, string $columnName): bool {
         $key = $tableName . '.' . $columnName;
         if (array_key_exists($key, self::$columnExistsCache)) {
             return self::$columnExistsCache[$key];
@@ -43,7 +43,7 @@ class Booking
     }
 
     // Tìm booking theo tour_id và khach_hang_id (mã tour và mã khách hàng)
-    public function findByTourAndCustomer($tourId, $khachHangId) {
+    public function findByTourAndCustomer(int $tourId, int $khachHangId): mixed {
         $sql = "SELECT * FROM booking WHERE tour_id = ? AND khach_hang_id = ? ORDER BY ngay_dat DESC LIMIT 1";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([(int)$tourId, (int)$khachHangId]);
@@ -59,7 +59,7 @@ class Booking
     }
 
     // Lấy booking theo ID
-    public function findById($id) {
+    public function findById(int $id): mixed {
         $sql = "SELECT * FROM booking WHERE booking_id = ?";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([$id]);
@@ -91,11 +91,23 @@ class Booking
         
         if (!empty($conditions)) {
             $where = [];
+            // H4: Allowlist column names to prevent SQL injection via column name interpolation
+            $allowedColumns = [
+                'booking_id', 'tour_id', 'khach_hang_id', 'trang_thai',
+                'ngay_khoi_hanh', 'ngay_dat', 'is_hidden', 'so_nguoi',
+                'tong_tien', 'tien_coc', 'so_tien_con_lai', 'ghi_chu',
+                'trang_thai_hanh_khach', 'nhan_vien_id',
+            ];
             foreach ($conditions as $key => $value) {
+                if (!in_array($key, $allowedColumns, true)) {
+                    continue;
+                }
                 $where[] = "$key = ?";
                 $params[] = $value;
             }
-            $sql .= " WHERE " . implode(" AND ", $where);
+            if (!empty($where)) {
+                $sql .= " WHERE " . implode(" AND ", $where);
+            }
         }
         
         $sql .= " ORDER BY ngay_dat DESC";
@@ -106,7 +118,7 @@ class Booking
     }
 
     // Thêm booking mới
-    public function insert($data) {
+    public function insert(array $data): int|false {
         // Kiểm tra cột so_tien_con_lai
         $hasSoTienConLai = $this->hasColumn('booking', 'so_tien_con_lai');
             $soTienConLai = 0; // Khởi tạo biến số tiền còn lại
@@ -157,7 +169,7 @@ class Booking
     }
 
     // Cập nhật booking
-    public function update($id, $data) {
+    public function update(int $id, array $data): bool {
         // Kiểm tra xem cột tien_coc và trang_thai_coc có tồn tại không
         $hasTienCoc = $this->hasColumn('booking', 'tien_coc');
         
@@ -215,7 +227,7 @@ class Booking
     }
 
     // Cập nhật trạng thái booking và lưu lịch sử
-    public function updateTrangThai($id, $trangThaiMoi, $nguoiThayDoiId, $ghiChu = null) {
+    public function updateTrangThai(int $id, string $trangThaiMoi, int $nguoiThayDoiId, ?string $ghiChu = null): bool {
         // Lấy trạng thái cũ
         $booking = $this->findById($id);
         if (!$booking) {
@@ -444,7 +456,7 @@ class Booking
         return $stmt->fetchAll();
     }
 
-    public function isBookingHidden($bookingId) {
+    public function isBookingHidden(int $bookingId): bool {
         $sql = "SELECT 1
                 FROM booking_deletion_history
                 WHERE booking_id = ?
@@ -460,14 +472,14 @@ class Booking
     }
 
     // Xóa booking
-    public function delete($id) {
+    public function delete(int $id): bool {
         $sql = "DELETE FROM booking WHERE booking_id = ?";
         $stmt = $this->conn->prepare($sql);
         return $stmt->execute([$id]);
     }
 
     // Lấy tổng số người đã đặt cho một tour và ngày khởi hành cụ thể
-    public function getSoNguoiDaDat($tourId, $ngayKhoiHanh) {
+    public function getSoNguoiDaDat(int $tourId, string $ngayKhoiHanh): int {
         $sql = "SELECT COALESCE(SUM(so_nguoi), 0) as tong_nguoi 
                 FROM booking 
                 WHERE tour_id = ? 
@@ -479,7 +491,7 @@ class Booking
         return (int)($result['tong_nguoi'] ?? 0);
     }
 
-    public function getSoNguoiDaDatTheoLich($tourId, $ngayKhoiHanh, $includeNullNgayKhoiHanh = false) {
+    public function getSoNguoiDaDatTheoLich(int $tourId, string $ngayKhoiHanh, bool $includeNullNgayKhoiHanh = false): int {
         $tourId = (int)$tourId;
         $ngayKhoiHanh = trim((string)$ngayKhoiHanh);
         if ($tourId <= 0 || $ngayKhoiHanh === '') {
@@ -507,7 +519,7 @@ class Booking
     }
 
     // Kiểm tra chỗ trống cho tour và ngày khởi hành
-    public function kiemTraChoTrong($tourId, $ngayKhoiHanh, $soNguoiCanDat, $soChoToiDa = 50) {
+    public function kiemTraChoTrong(int $tourId, string $ngayKhoiHanh, int $soNguoiCanDat, int $soChoToiDa = 50): array {
         $soNguoiDaDat = $this->getSoNguoiDaDat($tourId, $ngayKhoiHanh);
         $choTrong = $soChoToiDa - $soNguoiDaDat;
         return [
@@ -519,7 +531,7 @@ class Booking
     }
 
     // Lấy booking với thông tin tour và khách hàng
-    public function getBookingWithDetails($bookingId) {
+    public function getBookingWithDetails(int $bookingId): mixed {
         $sql = "SELECT b.*, 
                 t.ten_tour, t.gia_co_ban, t.mo_ta, t.loai_tour, t.chinh_sach,
                 kh.khach_hang_id, kh.dia_chi,
@@ -540,7 +552,7 @@ class Booking
     }
 
     // Lấy danh sách yêu cầu đặc biệt dành cho một lịch khởi hành cụ thể
-    public function getSpecialRequestsByLichKhoiHanh($tourId, $ngayKhoiHanh) {
+    public function getSpecialRequestsByLichKhoiHanh(int $tourId, string $ngayKhoiHanh): array {
         $sql = "SELECT 
                     y.id as yeu_cau_id,
                     y.tieu_de,
@@ -569,7 +581,7 @@ class Booking
     }
 
     // Lấy danh sách khách/nhóm tham gia tour cho một lịch cụ thể
-    public function getKhachByTourAndNgayKhoiHanh($tourId, $ngayKhoiHanh) {
+    public function getKhachByTourAndNgayKhoiHanh(int $tourId, string $ngayKhoiHanh): array {
         // Lưu ý: KHÔNG giới hạn quá chặt theo trạng_thai để tránh mất khách ở màn HDV
         // Chỉ loại các booking đã hủy (DaHuy) nếu có, còn lại hiển thị cho HDV/Admin xử lý.
         $sql = "SELECT 
@@ -610,7 +622,7 @@ class Booking
     
     // Lấy danh sách khách/nhóm tham gia tour theo lich_khoi_hanh.id
     // Phương thức này đảm bảo lấy đúng booking theo lịch khởi hành cụ thể
-    public function getKhachByLichKhoiHanhId($lichKhoiHanhId) {
+    public function getKhachByLichKhoiHanhId(int $lichKhoiHanhId): array {
         $sql = "SELECT 
                     b.booking_id,
                     b.khach_hang_id,
@@ -729,7 +741,7 @@ class Booking
     }
 
     // Lấy booking theo khách hàng ID
-    public function getByKhachHangId($khachHangId) {
+    public function getByKhachHangId(int $khachHangId): array {
         $sql = "SELECT b.*, 
                 t.ten_tour, t.gia_co_ban, t.mo_ta, t.loai_tour, t.chinh_sach,
                 t.trang_thai as tour_trang_thai,
@@ -745,7 +757,7 @@ class Booking
     }
 
     // Lấy booking theo user ID (nguoi_dung_id)
-    public function getByUserId($userId) {
+    public function getByUserId(int $userId): array {
         $sql = "SELECT b.*, 
                 t.ten_tour, t.gia_co_ban, t.mo_ta, t.loai_tour, t.chinh_sach,
                 t.trang_thai as tour_trang_thai,

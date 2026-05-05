@@ -751,9 +751,14 @@ class AdminController {
         $bookingManageStats = $dashboardData['bookingManageStats'] ?? [];
         $lichKhoiHanhStats = $dashboardData['lichKhoiHanhStats'] ?? [];
 
-        // === KPI Alerts Data (dùng $bookingStatusStats đã có, thêm 2 truy vấn nhẹ) ===
-        $kpiAlerts = $this->buildKpiAlerts($bookingStatusStats);
-        $automationSnapshot = $this->buildAutomationSnapshot();
+        // P5: Wrap buildKpiAlerts + buildAutomationSnapshot vào cache ngắn (60s)
+        // để tránh 7 extra queries mỗi lần load dashboard khi nhiều admin đồng thời.
+        $kpiAlerts = cacheRemember('admin_kpi_alerts_v1', 60, function () use ($bookingStatusStats) {
+            return $this->buildKpiAlerts($bookingStatusStats);
+        });
+        $automationSnapshot = cacheRemember('admin_automation_snapshot_v1', 60, function () {
+            return $this->buildAutomationSnapshot();
+        });
 
         require 'views/admin/dashboard.php';
     }
@@ -1722,18 +1727,29 @@ class AdminController {
     // API: đề xuất HDV rảnh cho khoảng thời gian (trả danh sách hdv_id)
     public function hdvApiSuggest() {
         header('Content-Type: application/json');
-        $start = $_GET['start'] ?? null;
-        $end = $_GET['end'] ?? null;
+        $start   = $_GET['start'] ?? null;
+        $end     = $_GET['end']   ?? null;
         $groupId = isset($_GET['group_id']) ? (int)$_GET['group_id'] : null;
-        $hdvModel = new HDV();
+
+        $hdvModel   = new HDV();
         $candidates = $hdvModel->getAll($groupId, true);
+
+        if (empty($candidates) || $start === null || $end === null) {
+            echo json_encode(['available' => []]); exit;
+        }
+
+        // P6: Một batch query thay vì N query trong vòng lặp
+        $allIds       = array_map(fn($c) => (int)$c['nhan_su_id'], $candidates);
+        $availableIds = array_flip($hdvModel->getAvailableIdsBatch($allIds, $start, $end));
+
         $available = [];
         foreach ($candidates as $c) {
-            if ($hdvModel->isAvailable($c['nhan_su_id'], $start, $end)) {
-                $available[] = ['id'=>$c['nhan_su_id'],'ho_ten'=>$c['ho_ten']];
+            if (isset($availableIds[(int)$c['nhan_su_id']])) {
+                $available[] = ['id' => (int)$c['nhan_su_id'], 'ho_ten' => $c['ho_ten']];
             }
         }
-        echo json_encode(['available'=>$available]); exit;
+
+        echo json_encode(['available' => $available]); exit;
     }
 
     public function nhanSuCreate() {
@@ -2405,11 +2421,17 @@ class AdminController {
             $maxFiles = min(count($_FILES['hinh_anh']['name']), 5);
             for ($i = 0; $i < $maxFiles; $i++) {
                 if ($_FILES['hinh_anh']['error'][$i] === UPLOAD_ERR_OK) {
-                    $fileName = time() . '_' . $i . '_' . basename($_FILES['hinh_anh']['name'][$i]);
-                    $targetFile = $uploadDir . $fileName;
-                    
-                    if (move_uploaded_file($_FILES['hinh_anh']['tmp_name'][$i], $targetFile)) {
-                        $imageUrls[] = $targetFile;
+                    // C4: dùng uploadFile() helper — kiểm tra MIME thật + tạo tên file ngẫu nhiên
+                    $singleFile = [
+                        'tmp_name' => $_FILES['hinh_anh']['tmp_name'][$i],
+                        'name'     => $_FILES['hinh_anh']['name'][$i],
+                        'size'     => $_FILES['hinh_anh']['size'][$i],
+                        'error'    => $_FILES['hinh_anh']['error'][$i],
+                        'type'     => $_FILES['hinh_anh']['type'][$i],
+                    ];
+                    $savedPath = uploadFile($singleFile, 'uploads/nhat_ky');
+                    if ($savedPath !== null) {
+                        $imageUrls[] = $savedPath;
                     }
                 }
             }

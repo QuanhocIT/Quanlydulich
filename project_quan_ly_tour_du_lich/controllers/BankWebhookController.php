@@ -686,14 +686,10 @@ class BankWebhookController {
         $alertFile = __DIR__ . '/../storage/bank_webhook_alert.log';
 
         if (!is_dir($cacheDir)) {
-            @mkdir($cacheDir, 0777, true);
+            @mkdir($cacheDir, 0750, true);
         }
 
-        $state = [
-            'events' => [],
-            'last_alert' => 0,
-        ];
-
+        $state = ['events' => []];
         if (is_file($cacheFile)) {
             $raw = @file_get_contents($cacheFile);
             $decoded = $raw ? json_decode((string)$raw, true) : null;

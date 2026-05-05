@@ -9,11 +9,37 @@ class SessionSecurity {
     public static function initialize($sessionDir = null) {
         $sessionPath = $sessionDir ?: (__DIR__ . '/../storage/sessions');
         if (!is_dir($sessionPath)) {
-            @mkdir($sessionPath, 0777, true);
+            @mkdir($sessionPath, 0750, true);
         }
 
-        if (is_dir($sessionPath) && is_writable($sessionPath)) {
-            session_save_path($sessionPath);
+        // P3: Dùng Redis session handler khi Redis khả dụng — tránh file-lock tranh chấp
+        $redisHost = defined('REDIS_HOST') ? (string)REDIS_HOST : '';
+        if ($redisHost !== '' && extension_loaded('redis')) {
+            $redisPort = defined('REDIS_PORT') ? (int)REDIS_PORT : 6379;
+            $redisPass = defined('REDIS_PASS') ? (string)REDIS_PASS : '';
+            $redisDb   = defined('REDIS_DB')   ? (int)REDIS_DB   : 0;
+            $prefix    = defined('REDIS_PREFIX') ? (string)REDIS_PREFIX : 'qdl:';
+
+            $dsn = 'tcp://' . $redisHost . ':' . $redisPort
+                 . '?persistent=1'
+                 . '&database=' . $redisDb
+                 . '&prefix=' . urlencode($prefix . 'sess:');
+            if ($redisPass !== '') {
+                $dsn .= '&auth=' . urlencode($redisPass);
+            }
+
+            ini_set('session.save_handler', 'redis');
+            ini_set('session.save_path', $dsn);
+            // Khi dùng Redis, tắt PHP GC file (không cần quét file nữa)
+            ini_set('session.gc_probability', '0');
+        } else {
+            // File-based fallback
+            if (is_dir($sessionPath) && is_writable($sessionPath)) {
+                session_save_path($sessionPath);
+            }
+            // Giảm GC probability để ít chạy hơn — dùng cron để dọn session cũ
+            ini_set('session.gc_probability', '1');
+            ini_set('session.gc_divisor', '1000');
         }
 
         ini_set('session.use_strict_mode', '1');
@@ -86,7 +112,7 @@ class SessionSecurity {
         return ['invalidated' => false, 'reason' => null];
     }
 
-    public static function completeLogin($userId, $role, $userName, array $extraSessionData = []) {
+    public static function completeLogin(int $userId, string $role, string $userName, array $extraSessionData = []): void {
         self::start();
 
         session_regenerate_id(true);
@@ -124,14 +150,14 @@ class SessionSecurity {
         session_destroy();
     }
 
-    public static function recordFailedLogin($identifier, $reason = 'invalid_credentials') {
+    public static function recordFailedLogin(string $identifier, string $reason = 'invalid_credentials'): void {
         self::logSecurityEvent('login_failed', [
             'identifier' => self::sanitize($identifier),
             'reason' => self::sanitize($reason),
         ]);
     }
 
-    public static function generateOAuthState($provider) {
+    public static function generateOAuthState(string $provider): string {
         self::start();
 
         $provider = self::sanitize($provider);
@@ -144,7 +170,7 @@ class SessionSecurity {
         return $state;
     }
 
-    public static function verifyOAuthState($provider, $state) {
+    public static function verifyOAuthState(string $provider, string $state): bool {
         self::start();
 
         $provider = self::sanitize($provider);
@@ -172,11 +198,11 @@ class SessionSecurity {
         return true;
     }
 
-    public static function logSecurityEvent($event, array $context = []) {
+    public static function logSecurityEvent(string $event, array $context = []): void {
         $logDir = __DIR__ . '/../storage';
         $logFile = $logDir . '/security.log';
         if (!is_dir($logDir)) {
-            @mkdir($logDir, 0777, true);
+            @mkdir($logDir, 0750, true);
         }
 
         $normalizedContext = [];
@@ -201,7 +227,7 @@ class SessionSecurity {
         @file_put_contents($logFile, json_encode($payload, JSON_UNESCAPED_UNICODE) . PHP_EOL, FILE_APPEND);
     }
 
-    private static function initializeMetadata($now, $authenticated = false) {
+    private static function initializeMetadata(int $now, bool $authenticated = false): void {
         $_SESSION['_session'] = [
             'created_at' => isset($_SESSION['_session']['created_at']) ? (int)$_SESSION['_session']['created_at'] : $now,
             'last_activity' => $now,
@@ -211,7 +237,7 @@ class SessionSecurity {
         ];
     }
 
-    private static function invalidateAuthenticatedSession($reason, $message) {
+    private static function invalidateAuthenticatedSession(string $reason, string $message): array {
         self::logSecurityEvent($reason, [
             'user_id' => (int)($_SESSION['user_id'] ?? 0),
         ]);
@@ -246,7 +272,7 @@ class SessionSecurity {
         return $forwardedProto === 'https';
     }
 
-    private static function sanitize($value) {
+    private static function sanitize(mixed $value): ?string {
         if ($value === null) {
             return null;
         }

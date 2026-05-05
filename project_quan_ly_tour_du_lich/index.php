@@ -62,9 +62,29 @@ if (APP_ENV === 'production') {
     }
     error_reporting(E_ALL);
 } else {
-    ini_set('display_errors', '1');
-    ini_set('display_startup_errors', '1');
-    error_reporting(E_ALL);
+    // M7: Guard against forgetting to set APP_ENV=production on a live server.
+    // If the current host is NOT localhost/127.0.0.1/::1, treat the request as
+    // production-safe regardless of the APP_ENV value so errors are never
+    // displayed to real users, and emit a single log warning.
+    $requestHost = strtolower((string)($_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? ''));
+    $hostWithoutPort = explode(':', $requestHost)[0];
+    $isLocalHost = in_array($hostWithoutPort, ['localhost', '127.0.0.1', '::1', ''], true);
+
+    if (!$isLocalHost) {
+        // Public-facing server but APP_ENV is not 'production' — apply production-safe settings.
+        ini_set('display_errors', '0');
+        ini_set('display_startup_errors', '0');
+        ini_set('log_errors', '1');
+        if (ini_get('error_log') === '') {
+            ini_set('error_log', __DIR__ . '/storage/php_error.log');
+        }
+        error_reporting(E_ALL);
+        error_log('[SECURITY] M7: APP_ENV is "' . APP_ENV . '" but request host is "' . $requestHost . '". Set APP_ENV=production in .env to suppress this warning.');
+    } else {
+        ini_set('display_errors', '1');
+        ini_set('display_startup_errors', '1');
+        error_reporting(E_ALL);
+    }
 }
 
 // ── CSP nonce (generated once per request) ───────────────────────────────

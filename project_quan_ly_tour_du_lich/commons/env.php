@@ -103,6 +103,15 @@ define('DB_USERNAME', $_ENV['DB_USERNAME'] ?? 'root');
 define('DB_PASSWORD', $_ENV['DB_PASSWORD'] ?? '');
 define('DB_NAME'    , $_ENV['DB_NAME'] ?? 'quan_ly_tour_du_lich');  // Tên database
 
+// C5: Ngăn chạy production với thông tin DB mặc định không an toàn
+if (defined('APP_ENV') && APP_ENV === 'production') {
+    if (DB_USERNAME === 'root' && DB_PASSWORD === '') {
+        error_log('[SECURITY] Production environment is using default DB credentials (root/empty). Set DB_USERNAME and DB_PASSWORD in .env');
+        http_response_code(503);
+        exit('[CONFIG ERROR] Database credentials are not configured for production.');
+    }
+}
+
 // Path Configuration
 define('PATH_ROOT', __DIR__ . '/../');
 define('PATH_UPLOADS', PATH_ROOT . 'uploads/');
@@ -140,6 +149,15 @@ define('BANK_WEBHOOK_PROVIDER', $_ENV['BANK_WEBHOOK_PROVIDER'] ?? 'custom'); // 
 define('BANK_WEBHOOK_SECRET', $_ENV['BANK_WEBHOOK_SECRET'] ?? '');
 define('BANK_WEBHOOK_ALLOW_OVERPAY', (($_ENV['BANK_WEBHOOK_ALLOW_OVERPAY'] ?? '1') === '1'));
 
+// H3: Ngăn chạy production với webhook secret rỗng
+if (defined('APP_ENV') && APP_ENV === 'production' && BANK_WEBHOOK_ENABLED) {
+    if (BANK_WEBHOOK_SECRET === '') {
+        error_log('[SECURITY] Production environment has BANK_WEBHOOK_ENABLED=true but BANK_WEBHOOK_SECRET is empty. Set a strong random value in .env');
+        http_response_code(503);
+        exit('[CONFIG ERROR] BANK_WEBHOOK_SECRET must be set in production when BANK_WEBHOOK_ENABLED=true.');
+    }
+}
+
 // Mail delivery configuration
 define('MAIL_ENABLED', (($_ENV['MAIL_ENABLED'] ?? '1') === '1'));
 define('MAIL_FROM_ADDRESS', trim((string)($_ENV['MAIL_FROM_ADDRESS'] ?? '')));
@@ -164,6 +182,15 @@ define(
 );
 define('REALTIME_HMAC_SECRET', trim((string)($_ENV['REALTIME_HMAC_SECRET'] ?? 'change-me-in-production')));
 define('REALTIME_TOKEN_TTL_SECONDS', max(30, (int)($_ENV['REALTIME_TOKEN_TTL_SECONDS'] ?? 120)));
+
+// C6: Ngăn chạy production với HMAC secret mặc định (có thể bị forge token)
+if (defined('APP_ENV') && APP_ENV === 'production' && REALTIME_WS_ENABLED) {
+    if (REALTIME_HMAC_SECRET === 'change-me-in-production' || strlen(REALTIME_HMAC_SECRET) < 32) {
+        error_log('[SECURITY] Production environment is using default or weak REALTIME_HMAC_SECRET. Set a strong random value in .env');
+        http_response_code(503);
+        exit('[CONFIG ERROR] REALTIME_HMAC_SECRET is not configured for production.');
+    }
+}
 
 // Hàm tạo kết nối PDO.
 // Truyền $reset = true để giải phóng kết nối hiện tại (dùng trong SSE/long-poll trước sleep).

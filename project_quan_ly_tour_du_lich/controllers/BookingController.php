@@ -7,6 +7,7 @@ require_once 'models/BookingHistory.php';
 require_once 'models/BookingDeletionHistory.php';
 require_once 'models/LichKhoiHanh.php';
 require_once __DIR__ . '/../commons/mail.php';
+require_once __DIR__ . '/../services/EmailQueueService.php';
 
 if (file_exists(__DIR__ . '/../vendor/autoload.php')) {
     require_once __DIR__ . '/../vendor/autoload.php';
@@ -16,13 +17,13 @@ use Dompdf\Dompdf;
 use Dompdf\Options;
 
 class BookingController {
-    private $bookingModel;
-    private $tourModel;
-    private $khachHangModel;
-    private $nguoiDungModel;
-    private $historyModel;
-    private $deletionHistoryModel;
-    private $lichKhoiHanhModel;
+    private Booking $bookingModel;
+    private Tour $tourModel;
+    private KhachHang $khachHangModel;
+    private NguoiDung $nguoiDungModel;
+    private BookingHistory $historyModel;
+    private BookingDeletionHistory $deletionHistoryModel;
+    private LichKhoiHanh $lichKhoiHanhModel;
     
     public function __construct() {
         $this->bookingModel = new Booking();
@@ -50,7 +51,7 @@ class BookingController {
                 'ngay_ket_thuc' => ['type' => 'date', 'required' => false],
                 'so_nguoi' => ['type' => 'id', 'required' => true],
                 'tien_coc' => ['type' => 'money', 'required' => false, 'min' => 0],
-                'tong_tien' => ['type' => 'money', 'required' => false, 'min' => 0],
+                // tong_tien KHÔNG nhận từ client — tính phía server theo tour.gia_co_ban
             ], 'POST');
             if (!$schema['ok']) {
                 setValidationErrors($schema['errors'], 'Du lieu dat tour khong hop le.');
@@ -85,8 +86,8 @@ class BookingController {
             $soNguoi = (int)($schema['data']['so_nguoi'] ?? 1);
 
             $tienCoc = (float)($schema['data']['tien_coc'] ?? 0);
-            $tongTienInput = $schema['data']['tong_tien'];
-            $tongTien = $tongTienInput ?? ((float)($tour['gia_co_ban'] ?? 0) * $soNguoi);
+            // C2: Luôn tính giá phía server, bỏ qua tong_tien do client gửi lên
+            $tongTien = (float)($tour['gia_co_ban'] ?? 0) * $soNguoi;
 
             $data = [
                 'tour_id' => $tourId,
@@ -101,7 +102,48 @@ class BookingController {
                 'ghi_chu' => requestString('ghi_chu', '', 'POST')
             ];
             
-            $bookingId = $this->bookingModel->insert($data);
+            // H2: Chống race condition — dùng transaction + SELECT FOR UPDATE
+            $conn = connectDB();
+            $conn->beginTransaction();
+            try {
+                // Khóa dòng lich_khoi_hanh (nếu có) để ngăn concurrent booking
+                $stmtLock = $conn->prepare(
+                    "SELECT so_cho FROM lich_khoi_hanh WHERE tour_id = ? AND ngay_khoi_hanh = ? FOR UPDATE"
+                );
+                $stmtLock->execute([$tourId, $ngayKhoiHanh]);
+                $lichRow  = $stmtLock->fetch();
+                $soChoMax = $lichRow ? (int)$lichRow['so_cho'] : (int)($tour['so_cho_toi_da'] ?? 50);
+
+                // Đếm số ghế đã đặt (trong transaction, để tránh dirty read)
+                $stmtDaDat = $conn->prepare(
+                    "SELECT COALESCE(SUM(so_nguoi), 0) FROM booking
+                     WHERE tour_id = ? AND ngay_khoi_hanh = ? AND trang_thai NOT IN ('Huy')"
+                );
+                $stmtDaDat->execute([$tourId, $ngayKhoiHanh]);
+                $daDat = (int)$stmtDaDat->fetchColumn();
+
+                if ($daDat + $soNguoi > $soChoMax) {
+                    $conn->rollBack();
+                    $_SESSION['error'] = 'Không đủ chỗ. Chỉ còn ' . max(0, $soChoMax - $daDat) . ' chỗ trống cho ngày này.';
+                    header('Location: index.php?act=tour/index');
+                    exit();
+                }
+
+                $bookingId = $this->bookingModel->insert($data);
+                if (!$bookingId) {
+                    $conn->rollBack();
+                    header('Location: index.php?act=tour/index');
+                    exit();
+                }
+                $conn->commit();
+            } catch (Exception $e) {
+                $conn->rollBack();
+                error_log('Booking create transaction error: ' . $e->getMessage());
+                $_SESSION['error'] = 'Không thể tạo booking. Vui lòng thử lại.';
+                header('Location: index.php?act=tour/index');
+                exit();
+            }
+
             if ($bookingId) {
                 // Tự động tạo lịch khởi hành nếu chưa có
                 if (!empty($ngayKhoiHanh) && !empty($tourId)) {
@@ -115,7 +157,7 @@ class BookingController {
                             'gio_xuat_phat' => null,
                             'gio_ket_thuc' => null,
                             'diem_tap_trung' => '',
-                            'so_cho' => 50, // Mặc định
+                            'so_cho' => (int)($tour['so_cho_toi_da'] ?? $tour['so_cho'] ?? 50), // M3: lấy từ tour
                             'hdv_id' => null,
                             'trang_thai' => 'SapKhoiHanh',
                             'ghi_chu' => 'Tạo tự động từ booking #' . $bookingId
@@ -152,7 +194,7 @@ class BookingController {
     }
     
     public function show() {
-        // requireLogin();
+        requireLogin();
         $id = requestId('id', 0, 'GET') ?? 0;
         $booking = $this->bookingModel->findById($id);
         
@@ -165,7 +207,8 @@ class BookingController {
             }
         }
 
-        if (!$booking || ($khachHangId && $booking['khach_hang_id'] != $khachHangId)) {
+        // Fix IDOR: Admin xem được tất cả; KhachHang chỉ xem booking của mình
+        if (!$booking || (!hasRole(['Admin', 'HDV']) && $booking['khach_hang_id'] != $khachHangId)) {
             header('Location: index.php?act=tour/index');
             exit();
         }
@@ -174,7 +217,7 @@ class BookingController {
     }
     
     public function index() {
-        // requireLogin();
+        requireLogin();
         $filters = [];
         
         if (hasRole('KhachHang')) {
@@ -230,7 +273,12 @@ class BookingController {
 
     // Cập nhật trạng thái booking
     public function updateTrangThai() {
-        // requireLogin();
+        requireRole(['Admin', 'HDV']);
+        if (!verifyCsrfToken($_POST['_csrf_token'] ?? '', 'booking_status_update')) {
+            $_SESSION['error'] = 'Phiên làm việc không hợp lệ.';
+            header('Location: index.php?act=admin/quanLyBooking');
+            exit();
+        }
         $bookingId = validateId($_POST['booking_id'] ?? null) ?? 0;
         $trangThaiMoi = requestString('trang_thai', '', 'POST');
         $ghiChu = requestString('ghi_chu', '', 'POST');
@@ -287,7 +335,12 @@ class BookingController {
 
     // Cập nhật tiền cọc
     public function updateTienCoc() {
-        // requireLogin();
+        requireRole(['Admin', 'HDV']);
+        if (!verifyCsrfToken($_POST['_csrf_token'] ?? '', 'booking_payment_update')) {
+            $_SESSION['error'] = 'Phiên làm việc không hợp lệ.';
+            header('Location: index.php?act=admin/quanLyBooking');
+            exit();
+        }
         $bookingId = validateId($_POST['booking_id'] ?? null) ?? 0;
         
         if ($bookingId <= 0) {
@@ -408,7 +461,7 @@ class BookingController {
 
     // Xem chi tiết booking
     public function chiTiet() {
-        // requireLogin();
+        requireLogin();
         $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
         
         if ($id <= 0) {
@@ -838,7 +891,7 @@ class BookingController {
     }
 
     // Kiểm tra quyền cập nhật
-    private function checkPermissionToUpdate($bookingId) {
+    private function checkPermissionToUpdate(int $bookingId): bool {
         if (!isset($_SESSION['user_id'])) {
             return false;
         }
@@ -856,7 +909,7 @@ class BookingController {
         return false;
     }
 
-    private function canCurrentHdvManageBooking($bookingId) {
+    private function canCurrentHdvManageBooking(int $bookingId): bool {
         $bookingId = (int)$bookingId;
         if ($bookingId <= 0) {
             return false;
@@ -902,7 +955,7 @@ class BookingController {
         return (int)$stmt->fetchColumn();
     }
 
-    private function resolveLichKhoiHanhIdForPermission($bookingId) {
+    private function resolveLichKhoiHanhIdForPermission(int $bookingId): int {
         $conn = connectDB();
         $stmt = $conn->prepare('SELECT lich_khoi_hanh_id, tour_id, ngay_khoi_hanh FROM booking WHERE booking_id = ? LIMIT 1');
         $stmt->execute([(int)$bookingId]);
@@ -928,7 +981,7 @@ class BookingController {
     }
 
     // Kiểm tra quyền xem
-    private function checkPermissionToView($booking) {
+    private function checkPermissionToView(array $booking): bool {
         if (!isset($_SESSION['user_id'])) {
             return false;
         }
@@ -1031,13 +1084,7 @@ class BookingController {
                     throw new Exception('Tour không tồn tại.');
                 }
 
-                // Kiểm tra chỗ trống
-                $kiemTraCho = $this->bookingModel->kiemTraChoTrong($tourId, $ngayKhoiHanh, $soNguoi);
-                if (!$kiemTraCho['co_cho']) {
-                    throw new Exception("Không đủ chỗ trống. Chỉ còn {$kiemTraCho['cho_trong']} chỗ trống.");
-                }
-
-                // Tìm hoặc tạo người dùng
+                // Tìm hoặc tạo người dùng (trước transaction — idempotent, không cần lock)
                 $nguoiDung = $this->nguoiDungModel->findOrCreate($hoTen, $email, $soDienThoai, 'KhachHang');
                 if (!$nguoiDung) {
                     throw new Exception('Không thể tạo tài khoản khách hàng.');
@@ -1058,22 +1105,54 @@ class BookingController {
                 $giaCoBan = (float)($tour['gia_co_ban'] ?? 0);
                 $tongTien = $giaCoBan * $soNguoi;
 
-                // Tạo booking
-                $bookingData = [
-                    'tour_id' => $tourId,
-                    'khach_hang_id' => $khachHang['khach_hang_id'],
-                    'ngay_dat' => date('Y-m-d'),
-                    'ngay_khoi_hanh' => $ngayKhoiHanh,
-                    'ngay_ket_thuc' => $ngayKetThucForm,
-                    'so_nguoi' => $soNguoi,
-                    'tong_tien' => $tongTien,
-                    'trang_thai' => 'ChoXacNhan',
-                    'ghi_chu' => $ghiChu . ($loaiKhach === 'doan' && !empty($tenCongTy) ? " | Công ty/Tổ chức: {$tenCongTy}" : '')
-                ];
+                // M1: Dùng transaction + SELECT FOR UPDATE để chống race condition và đảm bảo atomicity
+                $conn = connectDB();
+                $conn->beginTransaction();
+                try {
+                    // Khóa dòng lich_khoi_hanh để ngăn oversell đồng thời
+                    $stmtLock = $conn->prepare(
+                        "SELECT so_cho FROM lich_khoi_hanh WHERE tour_id = ? AND ngay_khoi_hanh = ? FOR UPDATE"
+                    );
+                    $stmtLock->execute([$tourId, $ngayKhoiHanh]);
+                    $lichRow = $stmtLock->fetch();
+                    $soChoMax = $lichRow ? (int)$lichRow['so_cho'] : (int)($tour['so_cho_toi_da'] ?? 50);
 
-                $bookingId = $this->bookingModel->insert($bookingData);
-                if (!$bookingId) {
-                    throw new Exception('Không thể tạo booking.');
+                    $stmtDaDat = $conn->prepare(
+                        "SELECT COALESCE(SUM(so_nguoi), 0) FROM booking
+                         WHERE tour_id = ? AND ngay_khoi_hanh = ? AND trang_thai NOT IN ('Huy')"
+                    );
+                    $stmtDaDat->execute([$tourId, $ngayKhoiHanh]);
+                    $daDat = (int)$stmtDaDat->fetchColumn();
+
+                    if ($daDat + $soNguoi > $soChoMax) {
+                        $conn->rollBack();
+                        throw new Exception('Không đủ chỗ trống. Chỉ còn ' . max(0, $soChoMax - $daDat) . ' chỗ cho ngày này.');
+                    }
+
+                    // Tạo booking
+                    $bookingData = [
+                        'tour_id' => $tourId,
+                        'khach_hang_id' => $khachHang['khach_hang_id'],
+                        'ngay_dat' => date('Y-m-d'),
+                        'ngay_khoi_hanh' => $ngayKhoiHanh,
+                        'ngay_ket_thuc' => $ngayKetThucForm,
+                        'so_nguoi' => $soNguoi,
+                        'tong_tien' => $tongTien,
+                        'trang_thai' => 'ChoXacNhan',
+                        'ghi_chu' => $ghiChu . ($loaiKhach === 'doan' && !empty($tenCongTy) ? " | Công ty/Tổ chức: {$tenCongTy}" : '')
+                    ];
+
+                    $bookingId = $this->bookingModel->insert($bookingData);
+                    if (!$bookingId) {
+                        $conn->rollBack();
+                        throw new Exception('Không thể tạo booking.');
+                    }
+                    $conn->commit();
+                } catch (Exception $e) {
+                    if ($conn->inTransaction()) {
+                        $conn->rollBack();
+                    }
+                    throw $e;
                 }
 
                 // Tự động tạo lịch khởi hành nếu chưa có
@@ -1089,7 +1168,7 @@ class BookingController {
                             'gio_xuat_phat' => null,
                             'gio_ket_thuc' => null,
                             'diem_tap_trung' => '',
-                            'so_cho' => 50, // Mặc định
+                            'so_cho' => (int)($tour['so_cho_toi_da'] ?? $tour['so_cho'] ?? 50), // M3: lấy từ tour
                             'hdv_id' => null,
                             'trang_thai' => 'SapKhoiHanh',
                             'ghi_chu' => 'Tạo tự động từ booking #' . $bookingId
@@ -1235,7 +1314,7 @@ class BookingController {
     }
 
     // Generate PDF đơn giản (có thể thay bằng dompdf)
-    private function generateSimplePDF($html, $filename) {
+    private function generateSimplePDF(string $html, string $filename): void {
         // Cách 1: Sử dụng mPDF hoặc dompdf (cần cài qua composer)
         // require_once 'vendor/autoload.php';
         // $mpdf = new \Mpdf\Mpdf(['format' => 'A4']);
@@ -1250,7 +1329,7 @@ class BookingController {
     }
 
     // Convert HTML to PDF đơn giản
-    private function convertHTMLtoPDF($html, $filename) {
+    private function convertHTMLtoPDF(string $html, string $filename): string {
         // Thêm CSS cho print và auto print
         $pdfHTML = '
         <!DOCTYPE html>
@@ -1338,18 +1417,14 @@ class BookingController {
         $htmlContent = ob_get_clean();
         
         // Gửi email
-        $result = $this->sendHTMLEmail($email, $subject, $htmlContent, $booking['ho_ten']);
+        $this->sendHTMLEmail($email, $subject, $htmlContent, $booking['ho_ten']);
         
-        if ($result) {
-            echo json_encode(['success' => true, 'message' => 'Đã gửi email thành công']);
-        } else {
-            echo json_encode(['success' => false, 'message' => 'Không thể gửi email']);
-        }
+        echo json_encode(['success' => true, 'message' => 'Đã gửi email thành công']);
         exit();
     }
 
     // Function gửi HTML email
-    private function sendHTMLEmail($to, $subject, $htmlContent, $toName = '') {
+    private function sendHTMLEmail(string $to, string $subject, string $htmlContent, string $toName = ''): void {
         $message = '
         <!DOCTYPE html>
         <html lang="vi">
@@ -1389,7 +1464,7 @@ class BookingController {
         </body>
         </html>';
 
-        return sendHtmlEmail($to, $subject, $message, '', [
+        sendHtmlEmail($to, $subject, $message, '', [
             'from_name' => 'Công ty Du lịch ABC',
         ]);
     }
@@ -1658,7 +1733,8 @@ class BookingController {
 </html>
 HTML;
 
-            sendHtmlEmail(
+            // P2: Ghi vào hàng đợi thay vì gửi đồng bộ — tránh block Apache worker 20s
+            EmailQueueService::enqueue(
                 $toEmail,
                 'Xác nhận đặt tour thành công – ' . ($tour['ten_tour'] ?? 'AVENTURA'),
                 $html
@@ -1666,7 +1742,8 @@ HTML;
 
         } catch (Exception $e) {
             error_log('sendBookingConfirmationEmail error: ' . $e->getMessage());
-            // Không để lỗi email ảnh hưởng đến luồng booking
+            // M2: Ghi vào failed_emails.log để admin có thể theo dõi
+            $this->logFailedEmail($toEmail ?? '', $bookingId, $e->getMessage());
         }
     }
 
@@ -1771,13 +1848,39 @@ HTML;
 </body>
 </html>
 HTML;
-            sendHtmlEmail(
+            // P2: Ghi vào hàng đợi thay vì gửi đồng bộ — tránh block Apache worker 20s
+            EmailQueueService::enqueue(
                 $toEmail,
                 'Xác nhận đặt tour thành công – ' . ($tour['ten_tour'] ?? 'AVENTURA'),
                 $html
             );
         } catch (Exception $e) {
             error_log('sendBookingConfirmationEmailDirect error: ' . $e->getMessage());
+            // M2: Ghi vào failed_emails.log để admin có thể theo dõi
+            $this->logFailedEmail($toEmail, $bookingId, $e->getMessage());
+        }
+    }
+
+    /**
+     * M2: Ghi lỗi email vào storage/failed_emails.log để admin theo dõi.
+     * Format: JSON-lines — mỗi dòng là 1 lần gửi thất bại.
+     */
+    private function logFailedEmail(string $toEmail, int $bookingId, string $error): void {
+        try {
+            $logDir  = defined('PATH_ROOT') ? PATH_ROOT . 'storage' : __DIR__ . '/../storage';
+            $logFile = $logDir . '/failed_emails.log';
+            if (!is_dir($logDir)) {
+                @mkdir($logDir, 0750, true);
+            }
+            $entry = json_encode([
+                'time'       => date('c'),
+                'booking_id' => $bookingId,
+                'to'         => $toEmail,
+                'error'      => $error,
+            ], JSON_UNESCAPED_UNICODE) . PHP_EOL;
+            @file_put_contents($logFile, $entry, FILE_APPEND | LOCK_EX);
+        } catch (Exception $ex) {
+            error_log('logFailedEmail write error: ' . $ex->getMessage());
         }
     }
 
