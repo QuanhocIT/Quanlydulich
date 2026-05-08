@@ -369,13 +369,14 @@ class KhachHangController {
         $tourRatingMap = $danhGiaModel->getTourRatingMapByTourIds($tourIds);
 
         $thumbnailMap = $tourModel->getThumbnailMapByTourIds($tourIds);
+        $lichKhoiHanhMap = $tourModel->getLichKhoiHanhByTourIds($tourIds);
         foreach ($tours as &$tour) {
             $tourId = (int)($tour['tour_id'] ?? 0);
             $tour['hinh_anh'] = $thumbnailMap[$tourId] ?? null;
             $tour['diem_tb'] = (float)($tourRatingMap[$tourId]['diem_tb'] ?? 0);
             $tour['so_danh_gia'] = (int)($tourRatingMap[$tourId]['so_danh_gia'] ?? 0);
 
-            $lichKhoiHanhList = $tourId > 0 ? $tourModel->getLichKhoiHanhByTourId($tourId) : [];
+            $lichKhoiHanhList = $lichKhoiHanhMap[$tourId] ?? [];
             $nextSchedule = null;
             foreach ($lichKhoiHanhList as $lichKhoiHanh) {
                 if (empty($lichKhoiHanh['ngay_khoi_hanh'])) {

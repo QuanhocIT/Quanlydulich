@@ -555,19 +555,19 @@ $catalogServicesMap = $catalogServicesMap ?? [];
         <div>
             <!-- Nav Tabs -->
             <div style="display: flex; gap: 10px; margin-bottom: 30px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); flex-wrap: wrap;">
-                <button class="tab-btn active" onclick="switchTab('staff')" style="background: rgba(45, 45, 45, 0.5); border: none; color: var(--text-light); padding: 12px 24px; border-radius: 4px 4px 0 0; cursor: pointer; font-weight: 500; border-bottom: 2px solid var(--accent-gold);">
+                <button class="tab-btn active" data-tab="staff" style="background: rgba(45, 45, 45, 0.5); border: none; color: var(--text-light); padding: 12px 24px; border-radius: 4px 4px 0 0; cursor: pointer; font-weight: 500; border-bottom: 2px solid var(--accent-gold);">
                     <i class="bi bi-people"></i> Nhân sự
                 </button>
-                <button class="tab-btn" onclick="switchTab('customer')" style="background: rgba(45, 45, 45, 0.3); border: none; color: var(--text-muted); padding: 12px 24px; border-radius: 4px 4px 0 0; cursor: pointer; font-weight: 500;">
+                <button class="tab-btn" data-tab="customer" style="background: rgba(45, 45, 45, 0.3); border: none; color: var(--text-muted); padding: 12px 24px; border-radius: 4px 4px 0 0; cursor: pointer; font-weight: 500;">
                     <i class="bi bi-person-lines-fill"></i> Danh sách khách
                 </button>
-                <button class="tab-btn" onclick="switchTab('service')" style="background: rgba(45, 45, 45, 0.3); border: none; color: var(--text-muted); padding: 12px 24px; border-radius: 4px 4px 0 0; cursor: pointer; font-weight: 500;">
+                <button class="tab-btn" data-tab="service" style="background: rgba(45, 45, 45, 0.3); border: none; color: var(--text-muted); padding: 12px 24px; border-radius: 4px 4px 0 0; cursor: pointer; font-weight: 500;">
                     <i class="bi bi-gear"></i> Dịch vụ
                 </button>
-                <button class="tab-btn" onclick="switchTab('special-request')" style="background: rgba(45, 45, 45, 0.3); border: none; color: var(--text-muted); padding: 12px 24px; border-radius: 4px 4px 0 0; cursor: pointer; font-weight: 500;">
+                <button class="tab-btn" data-tab="special-request" style="background: rgba(45, 45, 45, 0.3); border: none; color: var(--text-muted); padding: 12px 24px; border-radius: 4px 4px 0 0; cursor: pointer; font-weight: 500;">
                     <i class="bi bi-heart-pulse"></i> ! Yêu cầu đặc biệt
                 </button>
-                <button class="tab-btn" onclick="switchTab('diary')" style="background: rgba(45, 45, 45, 0.3); border: none; color: var(--text-muted); padding: 12px 24px; border-radius: 4px 4px 0 0; cursor: pointer; font-weight: 500;">
+                <button class="tab-btn" data-tab="diary" style="background: rgba(45, 45, 45, 0.3); border: none; color: var(--text-muted); padding: 12px 24px; border-radius: 4px 4px 0 0; cursor: pointer; font-weight: 500;">
                     <i class="bi bi-journal-text"></i> Nhật ký tour
                 </button>
             </div>
@@ -846,7 +846,7 @@ $catalogServicesMap = $catalogServicesMap ?? [];
                     </div>
 
                                         <!-- Tab: Yêu cầu đặc biệt -->
-                    <div class="tab-pane fade" id="request" role="tabpanel">
+                    <div class="tab-pane" id="request" style="display: none;">
                         <!-- Add Request Form -->
                         <div class="add-form-card">
                             <h6 class="fw-bold mb-3">
@@ -1020,7 +1020,7 @@ $catalogServicesMap = $catalogServicesMap ?? [];
                     </div>
 
                     <!-- Tab: Nhật ký tour -->
-                    <div class="tab-pane fade" id="log" role="tabpanel">
+                    <div class="tab-pane" id="log" style="display: none;">
                         <!-- Add Log Entry Form -->
                         <div class="add-form-card">
                             <h6 class="fw-bold mb-3">
@@ -1642,36 +1642,34 @@ $catalogServicesMap = $catalogServicesMap ?? [];
 </div>
 
     <script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
-    // Tab switching function
-    function switchTab(tabName) {
-        // Hide all tab panes
-        document.querySelectorAll('.tab-pane').forEach(pane => {
+    // Tab switching — driven by data-tab attribute (no inline onclick, CSP-safe)
+    function switchTab(tabName, clickedBtn) {
+        document.querySelectorAll('.tab-pane').forEach(function(pane) {
             pane.style.display = 'none';
         });
-        
-        // Remove active class from all tab buttons
-        document.querySelectorAll('.tab-btn').forEach(btn => {
+        document.querySelectorAll('.tab-btn').forEach(function(btn) {
             btn.classList.remove('active');
             btn.style.background = 'rgba(45, 45, 45, 0.3)';
             btn.style.color = 'var(--text-muted)';
-            btn.style.borderBottom = 'none';
+            btn.style.borderBottom = '';
         });
-        
-        // Show selected tab pane
-        const selectedPane = document.getElementById(tabName);
+        var selectedPane = document.getElementById(tabName);
         if (selectedPane) {
             selectedPane.style.display = 'block';
         }
-        
-        // Add active class to selected tab button
-        const selectedBtn = event.target.closest('.tab-btn');
-        if (selectedBtn) {
-            selectedBtn.classList.add('active');
-            selectedBtn.style.background = 'rgba(45, 45, 45, 0.5)';
-            selectedBtn.style.color = 'var(--text-light)';
-            selectedBtn.style.borderBottom = '2px solid var(--accent-gold)';
+        if (clickedBtn) {
+            clickedBtn.classList.add('active');
+            clickedBtn.style.background = 'rgba(45, 45, 45, 0.5)';
+            clickedBtn.style.color = 'var(--text-light)';
+            clickedBtn.style.borderBottom = '2px solid var(--accent-gold)';
         }
     }
+    // Bind tab buttons via event delegation (CSP-safe, no inline onclick)
+    document.querySelectorAll('.tab-btn[data-tab]').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            switchTab(this.getAttribute('data-tab'), this);
+        });
+    });
     
     (function() {
         // --- Thêm/xóa form khách nhanh ---

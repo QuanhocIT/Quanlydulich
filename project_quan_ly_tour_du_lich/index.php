@@ -29,6 +29,9 @@ require_once __DIR__ . '/commons/env.php';
 require_once __DIR__ . '/commons/perf.php';
 require_once __DIR__ . '/commons/function.php';
 
+// Tự động khởi động WebSocket server nếu chưa chạy
+ensureWebSocketServerRunning();
+
 // Lazy load classes from controllers/models to avoid eager loading all files on every request.
 spl_autoload_register(function ($className) {
     static $baseDirs = null;
@@ -363,8 +366,9 @@ match ($act) {
     'admin/quanLyBooking' => (new AdminController())->quanLyBooking(),
     'admin/bookingDaHoanThanh' => (new AdminController())->bookingDaHoanThanh(),
     'admin/lichSuXoaBooking' => (new AdminController())->lichSuXoaBooking(),
-    'admin/lichSuXoaNhaCungCap' => (new AdminController())->lichSuXoaNhaCungCap(),
-    'admin/chiTietLichSuXoaNhaCungCap' => (new AdminController())->chiTietLichSuXoaNhaCungCap(),
+    // Nhà cung cấp (lịch sử xóa) → AdminNhaCungCapController
+    'admin/lichSuXoaNhaCungCap' => (new AdminNhaCungCapController())->lichSuXoaNhaCungCap(),
+    'admin/chiTietLichSuXoaNhaCungCap' => (new AdminNhaCungCapController())->chiTietLichSuXoaNhaCungCap(),
     'admin/chiTietTour' => (new AdminController())->chiTietTour(),
     'admin/chiTietBooking' => (new BookingController())->chiTiet(),
     'admin/chi_tiet_lich_khoi_hanh' => (new LichKhoiHanhController())->chiTiet(),
@@ -372,40 +376,47 @@ match ($act) {
     'admin/yeuCauDacBiet' => (new AdminController())->yeuCauDacBiet(),
     'admin/capNhatYeuCauDacBiet' => (new AdminController())->capNhatYeuCauDacBiet(),
     'admin/themYeuCauDacBiet' => (new AdminController())->taoYeuCauDacBiet(),
-    'admin/quanLyYeuCauTour' => (new AdminController())->quanLyYeuCauTour(),
-    'admin/yeuCauTourSnapshot' => (new AdminController())->yeuCauTourSnapshot(),
-    'admin/chiTietYeuCauTour' => (new AdminController())->chiTietYeuCauTour(),
-    'admin/phanHoiYeuCauTour' => (new AdminController())->phanHoiYeuCauTour(),
-    'admin/taoTourTuYeuCau' => (new AdminController())->taoTourTuYeuCau(),
-    'admin/quanLyNhatKyTour' => (new AdminController())->quanLyNhatKyTour(),
-    'admin/chiTietNhatKyTour' => (new AdminController())->chiTietNhatKyTour(),
-    'admin/formNhatKyTour' => (new AdminController())->formNhatKyTour(),
-    'admin/saveNhatKyTour' => (new AdminController())->saveNhatKyTour(),
-    'admin/deleteNhatKyTour' => (new AdminController())->deleteNhatKyTour(),
-    'admin/addNhacungcap' => (new AdminController())->addNhacungcap(),
-    'admin/quanLyNguoiDung' => (new AdminController())->quanLyNguoiDung(),
-    'admin/capNhatTrangThaiNguoiDung' => (new AdminController())->capNhatTrangThaiNguoiDung(),
-    'admin/quanLyLuongThuong' => (new AdminController())->quanLyLuongThuong(),
-    'admin/chiTietLuong' => (new AdminController())->chiTietLuong(),
-    'admin/ajaxChiTietLuong' => (new AdminController())->ajaxChiTietLuong(),
-    'admin/taoLuongThuong' => (new AdminController())->taoLuongThuong(),
-    'admin/capNhatLuongThuong' => (new AdminController())->capNhatLuongThuong(),
-    'admin/duyetLuongNhanSu' => (new AdminController())->duyetLuongNhanSu(),
-    'admin/thanhToanLuongNhanSu' => (new AdminController())->thanhToanLuongNhanSu(),
-    'admin/tinhLaiLuongNhanSu' => (new AdminController())->tinhLaiLuongNhanSu(),
-    'admin/capNhatLuongCoBan' => (new AdminController())->capNhatLuongCoBan(),
-    'admin/notificationCounts' => (new AdminController())->notificationCounts(),
-    'admin/notificationStream' => (new AdminController())->notificationStream(),
-    'admin/notificationSettings' => (new AdminController())->notificationSettings(),
-    'admin/saveNotificationSettings' => (new AdminController())->saveNotificationSettings(),
-    'admin/markNotificationsReadAll' => (new AdminController())->markNotificationsReadAll(),
+    // Yêu cầu tour → AdminYeuCauTourController
+    'admin/quanLyYeuCauTour' => (new AdminYeuCauTourController())->quanLyYeuCauTour(),
+    'admin/yeuCauTourSnapshot' => (new AdminYeuCauTourController())->yeuCauTourSnapshot(),
+    'admin/chiTietYeuCauTour' => (new AdminYeuCauTourController())->chiTietYeuCauTour(),
+    'admin/phanHoiYeuCauTour' => (new AdminYeuCauTourController())->phanHoiYeuCauTour(),
+    'admin/taoTourTuYeuCau' => (new AdminYeuCauTourController())->taoTourTuYeuCau(),
+    // Nhật ký tour → AdminNhatKyTourController
+    'admin/quanLyNhatKyTour' => (new AdminNhatKyTourController())->quanLyNhatKyTour(),
+    'admin/chiTietNhatKyTour' => (new AdminNhatKyTourController())->chiTietNhatKyTour(),
+    'admin/formNhatKyTour' => (new AdminNhatKyTourController())->formNhatKyTour(),
+    'admin/saveNhatKyTour' => (new AdminNhatKyTourController())->saveNhatKyTour(),
+    'admin/deleteNhatKyTour' => (new AdminNhatKyTourController())->deleteNhatKyTour(),
+    // Nhà cung cấp → AdminNhaCungCapController
+    'admin/addNhacungcap' => (new AdminNhaCungCapController())->addNhacungcap(),
+    // Người dùng → AdminNguoiDungController
+    'admin/quanLyNguoiDung' => (new AdminNguoiDungController())->quanLyNguoiDung(),
+    'admin/capNhatTrangThaiNguoiDung' => (new AdminNguoiDungController())->capNhatTrangThaiNguoiDung(),
+    // Lương/thưởng nhân sự → AdminLuongController
+    'admin/quanLyLuongThuong' => (new AdminLuongController())->quanLyLuongThuong(),
+    'admin/chiTietLuong' => (new AdminLuongController())->chiTietLuong(),
+    'admin/ajaxChiTietLuong' => (new AdminLuongController())->ajaxChiTietLuong(),
+    'admin/taoLuongThuong' => (new AdminLuongController())->taoLuongThuong(),
+    'admin/capNhatLuongThuong' => (new AdminLuongController())->capNhatLuongThuong(),
+    'admin/duyetLuongNhanSu' => (new AdminLuongController())->duyetLuongNhanSu(),
+    'admin/thanhToanLuongNhanSu' => (new AdminLuongController())->thanhToanLuongNhanSu(),
+    'admin/tinhLaiLuongNhanSu' => (new AdminLuongController())->tinhLaiLuongNhanSu(),
+    'admin/capNhatLuongCoBan' => (new AdminLuongController())->capNhatLuongCoBan(),
+    // Thông báo → AdminNotificationController
+    'admin/notificationCounts' => (new AdminNotificationController())->notificationCounts(),
+    'admin/notificationStream' => (new AdminNotificationController())->notificationStream(),
+    'admin/notificationSettings' => (new AdminNotificationController())->notificationSettings(),
+    'admin/saveNotificationSettings' => (new AdminNotificationController())->saveNotificationSettings(),
+    'admin/markNotificationsReadAll' => (new AdminNotificationController())->markNotificationsReadAll(),
     'admin/dashboardKpiSnapshot' => (new AdminController())->dashboardKpiSnapshot(),
     'admin/lichKhoiHanhStats' => (new AdminController())->lichKhoiHanhStats(),
-    'admin/automationDashboard' => (new AdminController())->automationDashboard(),
-    'admin/automationStatus' => (new AdminController())->automationStatus(),
-    'admin/toggleAutomation' => (new AdminController())->toggleAutomation(),
-    'admin/runAutomationJob' => (new AdminController())->runAutomationJob(),
-    'admin/updateDecisionAssistStatus' => (new AdminController())->updateDecisionAssistStatus(),
+    // Automation → AdminAutomationController
+    'admin/automationDashboard' => (new AdminAutomationController())->automationDashboard(),
+    'admin/automationStatus' => (new AdminAutomationController())->automationStatus(),
+    'admin/toggleAutomation' => (new AdminAutomationController())->toggleAutomation(),
+    'admin/runAutomationJob' => (new AdminAutomationController())->runAutomationJob(),
+    'admin/updateDecisionAssistStatus' => (new AdminAutomationController())->updateDecisionAssistStatus(),
     // Báo cáo tài chính
     'admin/baoCaoTaiChinh' => (new BaoCaoTaiChinhController())->dashboard(),
     'admin/lichSuGiaoDich' => (new BaoCaoTaiChinhController())->lichSuGiaoDich(),
@@ -460,20 +471,20 @@ match ($act) {
     'hdv/quanLyYeuCauDacBiet' => (new HDVController())->quanLyYeuCauDacBiet(),
     'hdv/updateYeuCauDacBiet' => (new HDVController())->updateYeuCauDacBiet(),
     'hdv/phanHoi' => (new HDVController())->phanHoi(),
-    // Admin - quản lý HDV
-    'admin/quanLyHDV' => (new AdminController())->quanLyHDV(),
-    'admin/quanLyHDV_create' => (new AdminController())->quanLyHDVCreate(),
-    'admin/quanLyHDV_update' => (new AdminController())->quanLyHDVUpdate(),
-    'admin/quanLyHDV_delete' => (new AdminController())->quanLyHDVDelete(),
-    // Admin - HDV schedule & profile
-    'admin/hdv_schedule' => (new AdminController())->hdvSchedule(),
-    'admin/hdv_profile' => (new AdminController())->hdvProfile(),
-    // API endpoints for AJAX
-    'admin/hdv_api_get_schedule' => (new AdminController())->hdvApiGetSchedule(),
-    'admin/hdv_api_check' => (new AdminController())->hdvApiCheck(),
-    'admin/hdv_api_assign' => (new AdminController())->hdvApiAssign(),
-    'admin/hdv_api_suggest' => (new AdminController())->hdvApiSuggest(),
-    'admin/nhanSu_get_users' => (new AdminController())->nhanSu_get_users(),
+    // Admin - quản lý HDV → AdminNhanSuController
+    'admin/quanLyHDV' => (new AdminNhanSuController())->quanLyHDV(),
+    'admin/quanLyHDV_create' => (new AdminNhanSuController())->quanLyHDVCreate(),
+    'admin/quanLyHDV_update' => (new AdminNhanSuController())->quanLyHDVUpdate(),
+    'admin/quanLyHDV_delete' => (new AdminNhanSuController())->quanLyHDVDelete(),
+    // Admin - HDV schedule & profile → AdminNhanSuController
+    'admin/hdv_schedule' => (new AdminNhanSuController())->hdvSchedule(),
+    'admin/hdv_profile' => (new AdminNhanSuController())->hdvProfile(),
+    // API endpoints for AJAX → AdminNhanSuController
+    'admin/hdv_api_get_schedule' => (new AdminNhanSuController())->hdvApiGetSchedule(),
+    'admin/hdv_api_check' => (new AdminNhanSuController())->hdvApiCheck(),
+    'admin/hdv_api_assign' => (new AdminNhanSuController())->hdvApiAssign(),
+    'admin/hdv_api_suggest' => (new AdminNhanSuController())->hdvApiSuggest(),
+    'admin/nhanSu_get_users' => (new AdminNhanSuController())->nhanSu_get_users(),
     // Admin - Quản lý khách theo tour
     'admin/danhSachKhachTheoTour' => (new AdminController())->danhSachKhachTheoTour(),
     'admin/themKhachLichKhoiHanh' => (new AdminController())->themKhachLichKhoiHanh(),
@@ -482,11 +493,11 @@ match ($act) {
     'admin/checkInKhach' => (new AdminController())->checkInKhach(),
     'admin/updateCheckIn' => (new AdminController())->updateCheckIn(),
     'admin/phanPhongKhachSan' => (new AdminController())->phanPhongKhachSan(),
-    'admin/nhaCungCap' => (new AdminController())->nhaCungCap(),
-    'admin/updateNhaCungCap' => (new AdminController())->updateNhaCungCap(),
-    'admin/deleteNhaCungCap' => (new AdminController())->deleteNhaCungCap(),
-    'admin/chiTietDichVu' => (new AdminController())->chiTietDichVu(),
-    'admin/supplierServiceAction' => (new AdminController())->supplierServiceAction(),
+    'admin/nhaCungCap' => (new AdminNhaCungCapController())->nhaCungCap(),
+    'admin/updateNhaCungCap' => (new AdminNhaCungCapController())->updateNhaCungCap(),
+    'admin/deleteNhaCungCap' => (new AdminNhaCungCapController())->deleteNhaCungCap(),
+    'admin/chiTietDichVu' => (new AdminNhaCungCapController())->chiTietDichVu(),
+    'admin/supplierServiceAction' => (new AdminNhaCungCapController())->supplierServiceAction(),
     
     // Nhà cung cấp
     'nhaCungCap/dashboard' => (new NhaCungCapController())->dashboard(),
@@ -528,21 +539,21 @@ match ($act) {
     'khachHang/nhapThongTinThamGia' => (new KhachHangController())->nhapThongTinThamGia(),
     'khachHang/paymentStatus' => (new KhachHangController())->paymentStatus(),
 
-    // Nhân sự
-    'admin/nhanSu' => (new AdminController())->nhanSu(),
-    'admin/nhanSuController' => (new AdminController())->nhanSu(),
-    'admin/nhanSu_create' => (new AdminController())->nhanSuCreate(),
-    'admin/nhanSu_update' => (new AdminController())->nhanSuUpdate(),
-    'admin/nhanSu_delete' => (new AdminController())->nhanSuDelete(),
-    'admin/nhanSu_chi_tiet' => (new AdminController())->nhanSuChiTiet(),
+    // Nhân sự → AdminNhanSuController
+    'admin/nhanSu' => (new AdminNhanSuController())->nhanSu(),
+    'admin/nhanSuController' => (new AdminNhanSuController())->nhanSu(),
+    'admin/nhanSu_create' => (new AdminNhanSuController())->nhanSuCreate(),
+    'admin/nhanSu_update' => (new AdminNhanSuController())->nhanSuUpdate(),
+    'admin/nhanSu_delete' => (new AdminNhanSuController())->nhanSuDelete(),
+    'admin/nhanSu_chi_tiet' => (new AdminNhanSuController())->nhanSuChiTiet(),
 
-    // Quản lý HDV nâng cao
-    'admin/hdv_advanced' => (new AdminController())->hdvAdvanced(),
-    'admin/hdv_lich_table' => (new AdminController())->hdvLichTable(),
-    'admin/hdv_add_schedule' => (new AdminController())->hdvAddSchedule(),
-    'admin/hdv_get_schedule' => (new AdminController())->hdvGetSchedule(),
-    'admin/hdv_send_notification' => (new AdminController())->hdvSendNotification(),
-    'admin/hdv_detail' => (new AdminController())->hdvDetail(),
+    // Quản lý HDV nâng cao → AdminNhanSuController
+    'admin/hdv_advanced' => (new AdminNhanSuController())->hdvAdvanced(),
+    'admin/hdv_lich_table' => (new AdminNhanSuController())->hdvLichTable(),
+    'admin/hdv_add_schedule' => (new AdminNhanSuController())->hdvAddSchedule(),
+    'admin/hdv_get_schedule' => (new AdminNhanSuController())->hdvGetSchedule(),
+    'admin/hdv_send_notification' => (new AdminNhanSuController())->hdvSendNotification(),
+    'admin/hdv_detail' => (new AdminNhanSuController())->hdvDetail(),
 
     // Công nợ HDV
     'hdv/thanhToanHDV' => (new CongNoHDVController())->thanhToanHDV(),

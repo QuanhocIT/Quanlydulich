@@ -292,6 +292,34 @@ class Tour
         return $stmt->fetchAll();
     }
 
+    // Batch: lấy lịch khởi hành cho nhiều tour_id trong 1 query, trả về map [tour_id => [rows]]
+    public function getLichKhoiHanhByTourIds(array $tourIds): array {
+        $normalized = [];
+        foreach ($tourIds as $id) {
+            $id = (int)$id;
+            if ($id > 0) {
+                $normalized[$id] = $id;
+            }
+        }
+        if (empty($normalized)) {
+            return [];
+        }
+        $idList = array_values($normalized);
+        $placeholders = implode(',', array_fill(0, count($idList), '?'));
+        $sql = "SELECT tour_id, ngay_khoi_hanh, ngay_ket_thuc, diem_tap_trung, so_cho, trang_thai
+                FROM lich_khoi_hanh
+                WHERE tour_id IN ($placeholders)
+                ORDER BY tour_id, ngay_khoi_hanh ASC";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute($idList);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $grouped = [];
+        foreach ($rows as $row) {
+            $grouped[(int)$row['tour_id']][] = $row;
+        }
+        return $grouped;
+    }
+
     // Lấy thông tin hướng dẫn viên từ lịch khởi hành theo tour_id
     public function getHDVByTourId(int $tourId) {
         $sql = "SELECT 

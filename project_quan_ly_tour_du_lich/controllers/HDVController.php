@@ -387,8 +387,14 @@ $stats = $this->yeuCauDacBietModel->getSummaryStatsForHDV($nhanSuId, $filters);
         
         // Lấy danh sách booking để tạo yêu cầu mới
         $bookingList = [];
+        $lichIds = array_column($lichKhoiHanhList, 'id');
+        $lichMap = [];
         foreach ($lichKhoiHanhList as $lich) {
-            $bookings = $this->bookingModel->getKhachByLichKhoiHanhId($lich['id']);
+            $lichMap[(int)$lich['id']] = $lich;
+        }
+        $groupedBookings = $this->bookingModel->getKhachByLichKhoiHanhIdsGrouped($lichIds);
+        foreach ($groupedBookings as $lichId => $bookings) {
+            $lich = $lichMap[$lichId] ?? [];
             foreach ($bookings as $bk) {
                 $bookingList[] = [
                     'booking_id' => $bk['booking_id'],

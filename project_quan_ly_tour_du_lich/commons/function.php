@@ -328,8 +328,56 @@ function saveAdminNotificationState(int $userId, array $updates, ?PDO $conn = nu
     return $state;
 }
 
-function realtimeWebSocketEnabled() {
+function realtimeWebSocketEnabled(): bool {
     return defined('REALTIME_WS_ENABLED') && REALTIME_WS_ENABLED;
+}
+
+/**
+ * Kiểm tra WS server có đang lắng nghe không, nếu chưa thì khởi động nền.
+ * Dùng PID file để tránh chạy nhiều instance đồng thời.
+ * Chỉ thực hiện khi REALTIME_WS_ENABLED=true.
+ */
+function ensureWebSocketServerRunning(): void {
+    if (!realtimeWebSocketEnabled()) {
+        return;
+    }
+
+    $host = defined('REALTIME_WS_HOST') ? (string)REALTIME_WS_HOST : '127.0.0.1';
+    // Kiểm tra kết nối nội bộ luôn dùng 127.0.0.1
+    $checkHost = (in_array(trim($host), ['0.0.0.0', ''], true)) ? '127.0.0.1' : $host;
+    $port = defined('REALTIME_WS_PORT') ? (int)REALTIME_WS_PORT : 8080;
+
+    // Kiểm tra port có mở chưa (timeout 0.2s)
+    $sock = @fsockopen($checkHost, $port, $errno, $errstr, 0.2);
+    if ($sock !== false) {
+        fclose($sock);
+        return; // Đã chạy rồi
+    }
+
+    // Tránh khởi động lại liên tục: throttle 10s
+    $pidFile = sys_get_temp_dir() . '/ws_tour_du_lich.pid';
+    if (is_file($pidFile)) {
+        $mtime = (int)@filemtime($pidFile);
+        if ((time() - $mtime) < 10) {
+            return; // Vừa mới thử khởi động, chờ thêm
+        }
+    }
+
+    // Ghi timestamp để throttle
+    @file_put_contents($pidFile, (string)time(), LOCK_EX);
+
+    $scriptPath = __DIR__ . '/../scripts/websocket_server.php';
+    $phpBin = PHP_BINARY;
+
+    if (PHP_OS_FAMILY === 'Windows') {
+        // Trên Windows: dùng cmd /c start /B để tách hoàn toàn khỏi tiến trình Apache/PHP-CGI
+        $cmd = 'cmd /c start /B "" "' . $phpBin . '" "' . $scriptPath . '" > NUL 2>&1';
+        pclose(popen($cmd, 'r'));
+    } else {
+        // Linux/Mac: nohup để tách tiến trình
+        $cmd = 'nohup "' . $phpBin . '" "' . $scriptPath . '" > /dev/null 2>&1 &';
+        exec($cmd);
+    }
 }
 
 function realtimeWebSocketPublicUrl() {
