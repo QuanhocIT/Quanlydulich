@@ -58,6 +58,58 @@ if ($realtimeWsEnabled && isset($_SESSION['user_id']) && $currentRole !== null) 
             <link rel="stylesheet" href="<?php echo $css; ?>">
         <?php endforeach; ?>
     <?php endif; ?>
+    <style>
+        .table-auto-pagination {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin: 12px 0 0;
+        }
+
+        .table-auto-pagination-meta {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.72);
+        }
+
+        .table-auto-pagination-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .table-auto-pagination-btn {
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+            border-radius: 999px;
+            padding: 4px 11px;
+            font-size: 12px;
+            line-height: 1.25;
+            cursor: pointer;
+            transition: background-color 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+        }
+
+        .table-auto-pagination-btn:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.34);
+            transform: translateY(-1px);
+        }
+
+        .table-auto-pagination-btn.is-active {
+            background: #32d4af;
+            border-color: #32d4af;
+            color: #082a24;
+            font-weight: 700;
+        }
+
+        .table-auto-pagination-btn:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+            transform: none;
+        }
+    </style>
 </head>
 <body class="<?php echo htmlspecialchars(trim(implode(' ', array_filter($bodyClasses))), ENT_QUOTES, 'UTF-8'); ?>">
     <div class="container">
@@ -801,6 +853,143 @@ if ($realtimeWsEnabled && isset($_SESSION['user_id']) && $currentRole !== null) 
             }, 700);
         }
 
+        function initTableAutoPagination() {
+            const rowsPerPage = 10;
+            const tables = document.querySelectorAll('.content-area table');
+
+            tables.forEach(function(table, tableIndex) {
+                if (!table || table.dataset.autoPagination === '1') return;
+                if (table.classList.contains('auto-pagination-skip')) return;
+
+                const tableWrapper = table.closest('.table-responsive') || table;
+                let hasExistingPagination = false;
+                let siblingCursor = tableWrapper.nextElementSibling;
+                let steps = 0;
+                while (siblingCursor && steps < 4) {
+                    if (
+                        siblingCursor.classList.contains('pagination-shell') ||
+                        siblingCursor.classList.contains('table-auto-pagination') ||
+                        siblingCursor.classList.contains('pagination') ||
+                        siblingCursor.querySelector('.pagination, .pagination-shell')
+                    ) {
+                        hasExistingPagination = true;
+                        break;
+                    }
+                    siblingCursor = siblingCursor.nextElementSibling;
+                    steps += 1;
+                }
+
+                if (hasExistingPagination) return;
+
+                const tbody = table.tBodies && table.tBodies.length > 0 ? table.tBodies[0] : null;
+                if (!tbody) return;
+
+                const rows = Array.from(tbody.rows).filter(function(row) {
+                    return !row.classList.contains('auto-pagination-ignore');
+                });
+
+                if (rows.length <= rowsPerPage) return;
+
+                table.dataset.autoPagination = '1';
+                let currentPage = 1;
+                const totalPages = Math.ceil(rows.length / rowsPerPage);
+
+                const shell = document.createElement('div');
+                shell.className = 'table-auto-pagination';
+                shell.setAttribute('role', 'navigation');
+                shell.setAttribute('aria-label', 'Phân trang bảng dữ liệu');
+
+                const meta = document.createElement('div');
+                meta.className = 'table-auto-pagination-meta';
+
+                const controls = document.createElement('div');
+                controls.className = 'table-auto-pagination-controls';
+
+                shell.appendChild(meta);
+                shell.appendChild(controls);
+
+                const wrapper = table.closest('.table-responsive');
+                if (wrapper && wrapper.parentNode) {
+                    wrapper.parentNode.insertBefore(shell, wrapper.nextSibling);
+                } else if (table.parentNode) {
+                    table.parentNode.insertBefore(shell, table.nextSibling);
+                }
+
+                function createPageButton(label, targetPage, options) {
+                    const button = document.createElement('button');
+                    button.type = 'button';
+                    button.className = 'table-auto-pagination-btn';
+                    button.textContent = label;
+
+                    if (options && options.active) {
+                        button.classList.add('is-active');
+                        button.setAttribute('aria-current', 'page');
+                    }
+                    if (options && options.disabled) {
+                        button.disabled = true;
+                    }
+
+                    button.addEventListener('click', function() {
+                        if (targetPage === currentPage || targetPage < 1 || targetPage > totalPages) return;
+                        currentPage = targetPage;
+                        renderPagination();
+                    });
+
+                    return button;
+                }
+
+                function renderPagination() {
+                    const startIndex = (currentPage - 1) * rowsPerPage;
+                    const endIndex = startIndex + rowsPerPage;
+
+                    rows.forEach(function(row, rowIndex) {
+                        row.style.display = rowIndex >= startIndex && rowIndex < endIndex ? '' : 'none';
+                    });
+
+                    const showingFrom = startIndex + 1;
+                    const showingTo = Math.min(endIndex, rows.length);
+                    meta.textContent = 'Hiển thị ' + showingFrom + '-' + showingTo + ' / ' + rows.length + ' mục (10 mục/trang)';
+
+                    controls.innerHTML = '';
+                    controls.appendChild(createPageButton('Trước', currentPage - 1, { disabled: currentPage === 1 }));
+
+                    const maxNumericButtons = 5;
+                    let startPage = Math.max(1, currentPage - 2);
+                    let endPage = Math.min(totalPages, startPage + maxNumericButtons - 1);
+                    startPage = Math.max(1, endPage - maxNumericButtons + 1);
+
+                    if (startPage > 1) {
+                        controls.appendChild(createPageButton('1', 1, { active: currentPage === 1 }));
+                        if (startPage > 2) {
+                            const dots = document.createElement('span');
+                            dots.className = 'table-auto-pagination-meta';
+                            dots.textContent = '...';
+                            controls.appendChild(dots);
+                        }
+                    }
+
+                    for (let page = startPage; page <= endPage; page += 1) {
+                        controls.appendChild(createPageButton(String(page), page, { active: page === currentPage }));
+                    }
+
+                    if (endPage < totalPages) {
+                        if (endPage < totalPages - 1) {
+                            const dots = document.createElement('span');
+                            dots.className = 'table-auto-pagination-meta';
+                            dots.textContent = '...';
+                            controls.appendChild(dots);
+                        }
+                        controls.appendChild(createPageButton(String(totalPages), totalPages, { active: currentPage === totalPages }));
+                    }
+
+                    controls.appendChild(createPageButton('Sau', currentPage + 1, { disabled: currentPage === totalPages }));
+                }
+
+                shell.dataset.tablePaginationId = 'table-pager-' + String(tableIndex + 1);
+                renderPagination();
+            });
+        }
+
         if (sidebar) {
             const shouldStartCollapsed = forceSidebarHiddenOnLoad
                 ? true
@@ -820,6 +1009,7 @@ if ($realtimeWsEnabled && isset($_SESSION['user_id']) && $currentRole !== null) 
         syncMobileUtilityTitles();
         updateMobileHeaderMetrics();
         initAdminMotion();
+        initTableAutoPagination();
 
         // Nav parent-child: cho phép mở nhiều menu con cùng lúc
         document.querySelectorAll('.nav-parent > .nav-toggle').forEach(toggle => {

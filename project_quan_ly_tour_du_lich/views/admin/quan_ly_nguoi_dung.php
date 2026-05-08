@@ -611,7 +611,6 @@ ob_start();
         <table class="table">
             <thead>
                 <tr>
-                    <th style="width: 80px;"><i class="bi bi-hash me-1"></i>ID</th>
                     <th><i class="bi bi-person me-1"></i>Tên đăng nhập</th>
                     <th><i class="bi bi-person-badge me-1"></i>Họ tên</th>
                     <th><i class="bi bi-envelope me-1"></i>Email</th>
@@ -626,7 +625,6 @@ ob_start();
                 <?php if (!empty($users)): ?>
                     <?php foreach ($users as $u): ?>
                         <tr>
-                            <td><?php echo htmlspecialchars($u['id']); ?></td>
                             <td><?php echo htmlspecialchars($u['ten_dang_nhap'] ?? ''); ?></td>
                             <td><?php echo htmlspecialchars($u['ho_ten'] ?? ''); ?></td>
                             <td><?php echo htmlspecialchars($u['email'] ?? ''); ?></td>
@@ -667,7 +665,7 @@ ob_start();
                     <?php endforeach; ?>
                 <?php else: ?>
                     <tr>
-                        <td colspan="9" class="empty-state">
+                        <td colspan="8" class="empty-state">
                             Không có dữ liệu phù hợp.
                         </td>
                     </tr>

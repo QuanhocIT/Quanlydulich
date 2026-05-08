@@ -458,7 +458,7 @@ ob_start();
             </thead>
             <tbody>
                 <?php foreach ($tours as $tour) : ?>
-                <tr>
+                <tr data-href="index.php?act=admin/chiTietTour&id=<?php echo (int)$tour['tour_id']; ?>">
                     <td>
                         <span class="badge badge-secondary">#<?php echo htmlspecialchars($tour['tour_id']); ?></span>
                     </td>
@@ -574,6 +574,15 @@ ob_start();
     </div>
 <?php endif; ?>
 
+<style>tr[data-href]{cursor:pointer;}tr[data-href]:hover td{background:rgba(255,255,255,0.04)!important;}</style>
+<script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
+document.querySelectorAll('tr[data-href]').forEach(function(row){
+    row.addEventListener('click',function(e){
+        if(e.target.closest('a,button,form,input,select,textarea')) return;
+        window.location.assign(row.dataset.href);
+    });
+});
+</script>
 <?php
 $content = ob_get_clean();
 require __DIR__ . '/../layouts/aventura.php';

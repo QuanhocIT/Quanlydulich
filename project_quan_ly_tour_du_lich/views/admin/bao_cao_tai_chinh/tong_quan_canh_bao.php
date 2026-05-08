@@ -186,7 +186,7 @@ ob_start();
                 </tr>
             </thead>
             <tbody>
-                <tr>
+                <tr data-href="index.php?act=admin/soSanhDuToan&du_toan_id=1">
                     <td>1</td>
                     <td>Tour Đà Nẵng 3N2Đ</td>
                     <td><span class="badge bg-danger">Vượt dự toán</span></td>
@@ -194,7 +194,7 @@ ob_start();
                     <td>100,000,000 đ</td>
                     <td><a href="index.php?act=admin/soSanhDuToan&du_toan_id=1" class="btn btn-info btn-sm">Xem chi tiết</a></td>
                 </tr>
-                <tr>
+                <tr data-href="index.php?act=admin/soSanhDuToan&du_toan_id=2">
                     <td>2</td>
                     <td>Tour Sapa 2N1Đ</td>
                     <td><span class="badge bg-warning text-dark">Gần vượt dự toán</span></td>
@@ -210,6 +210,15 @@ ob_start();
         <i class="fa fa-info-circle"></i> Các tour có cảnh báo cần được kiểm tra lại chi phí để tránh vượt ngân sách!
     </div>
 </div>
+<style>tr[data-href]{cursor:pointer;}tr[data-href]:hover td{background:rgba(255,255,255,0.04)!important;}</style>
+<script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
+document.querySelectorAll('tr[data-href]').forEach(function(row){
+    row.addEventListener('click',function(e){
+        if(e.target.closest('a,button,form,input,select,textarea')) return;
+        window.location.assign(row.dataset.href);
+    });
+});
+</script>
 <?php
 $content = ob_get_clean();
 require __DIR__ . '/../../layouts/aventura.php';

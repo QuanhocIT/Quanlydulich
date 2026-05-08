@@ -9,7 +9,7 @@ use Dompdf\Dompdf;
 use Dompdf\Options;
 
 class DanhGiaController {
-    private $model;
+    private DanhGia $model;
     
     public function __construct() {
         $this->model = new DanhGia();
@@ -152,7 +152,7 @@ class DanhGiaController {
         }
     }
     
-    private function exportExcel($data, $loai) {
+    private function exportExcel(array $data, string $loai): void {
         header('Content-Type: application/vnd.ms-excel');
         header('Content-Disposition: attachment; filename="bao-cao-danh-gia-' . $loai . '-' . date('Y-m-d') . '.xls"');
         
@@ -180,7 +180,7 @@ class DanhGiaController {
         exit();
     }
     
-    private function exportPDF($data, $loai) {
+    private function exportPDF(array $data, string $loai): void {
         if (!class_exists(Dompdf::class)) {
             $_SESSION['error'] = 'Khong tim thay thu vien PDF. Vui long kiem tra composer install.';
             header('Location: index.php?act=admin/danhGia/baoCao&loai=' . urlencode((string)$loai));
@@ -202,7 +202,7 @@ class DanhGiaController {
         exit();
     }
 
-    private function renderPdfHtml($data, $loai) {
+    private function renderPdfHtml(array $data, string $loai): string {
         $title = 'Bao cao danh gia - ' . ucfirst((string)$loai);
         $rowsHtml = '';
 

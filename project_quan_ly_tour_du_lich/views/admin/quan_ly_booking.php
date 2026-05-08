@@ -1016,7 +1016,7 @@ $huy = count(array_filter($bookingsPage, fn($b) => $b['trang_thai'] === 'Huy'));
                 </thead>
                 <tbody>
                     <?php foreach ($bookings as $booking): ?>
-                    <tr>
+                    <tr data-href="index.php?act=booking/chiTiet&id=<?php echo (int)($booking['booking_id'] ?? 0); ?>">
                         <td>
                             <span style="font-family: monospace; font-weight: 600; color: var(--accent-gold);">
                                 #<?php echo htmlspecialchars($booking['booking_id'] ?? 'N/A'); ?>
@@ -1155,7 +1155,14 @@ $huy = count(array_filter($bookingsPage, fn($b) => $b['trang_thai'] === 'Huy'));
         </div>
     <?php endif; ?>
 </div>
+<style>tr[data-href]{cursor:pointer;}tr[data-href]:hover td{background:rgba(255,255,255,0.04)!important;}</style>
 <script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
+document.querySelectorAll('tr[data-href]').forEach(function(row){
+    row.addEventListener('click',function(e){
+        if(e.target.closest('a,button,form,input,select,textarea')) return;
+        window.location.assign(row.dataset.href);
+    });
+});
 (function() {
     var prevPaymentCount = null;
     document.addEventListener('adminNotification', function(e) {

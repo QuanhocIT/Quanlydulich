@@ -1,6 +1,8 @@
 <?php
 $pageTitle = 'Lịch Sử Giao Dịch';
 $currentPage = 'baoCaoTaiChinh';
+/** @var float $tongThu */ $tongThu ??= 0.0;
+/** @var float $tongChi */ $tongChi ??= 0.0;
 ob_start();
 ?>
 <style>
@@ -230,7 +232,7 @@ ob_start();
                         <tr><td colspan="6" style="text-align: center; color: #999;">Chưa có giao dịch</td></tr>
                     <?php else: ?>
                         <?php foreach($giaoDichs as $gd): ?>
-                            <tr>
+                            <tr data-href="index.php?act=admin/chiTietGiaoDich&id=<?= (int)$gd['id'] ?>">
                                 <td><?= date('d/m/Y', strtotime($gd['ngay_giao_dich'])) ?></td>
                                 <td>
                                     <span class="badge-<?= $gd['loai'] == 'Thu' ? 'thu' : 'chi' ?>">
@@ -279,6 +281,15 @@ ob_start();
         </div>
     <?php endif; ?>
 </div>
+<style>tr[data-href]{cursor:pointer;}tr[data-href]:hover td{background:rgba(255,255,255,0.04)!important;}</style>
+<script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
+document.querySelectorAll('tr[data-href]').forEach(function(row){
+    row.addEventListener('click',function(e){
+        if(e.target.closest('a,button,form,input,select,textarea')) return;
+        window.location.assign(row.dataset.href);
+    });
+});
+</script>
 <?php
 $content = ob_get_clean();
 require __DIR__ . '/../../layouts/aventura.php';

@@ -111,7 +111,7 @@ ob_start();
                         <tr><td colspan="7" style="text-align: center; color: #999;">Chưa có tour nào</td></tr>
                     <?php else: ?>
                         <?php foreach($tours as $tour): ?>
-                            <tr>
+                            <tr data-href="index.php?act=admin/giaoDichTheoTour&tour_id=<?= (int)$tour['tour_id'] ?>">
                                 <td><strong><?= htmlspecialchars($tour['ten_tour']) ?></strong></td>
                                 <td><?= number_format($tour['tong_thu'] ?? 0) ?>đ</td>
                                 <td><?= number_format($tour['tong_chi_thuc_te'] ?? 0) ?>đ</td>
@@ -146,6 +146,15 @@ ob_start();
             </table>
     </div>
 </div>
+<style>tr[data-href]{cursor:pointer;}tr[data-href]:hover td{background:rgba(255,255,255,0.04)!important;}</style>
+<script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
+document.querySelectorAll('tr[data-href]').forEach(function(row){
+    row.addEventListener('click',function(e){
+        if(e.target.closest('a,button,form,input,select,textarea')) return;
+        window.location.assign(row.dataset.href);
+    });
+});
+</script>
 <?php
 $content = ob_get_clean();
 require __DIR__ . '/../../layouts/aventura.php';

@@ -187,7 +187,7 @@ ob_start();
                         <tr><td colspan="5" style="text-align: center; color: #999;">Chưa có dữ liệu</td></tr>
                     <?php else: ?>
                         <?php foreach($baoCao as $item): ?>
-                            <tr>
+                            <tr data-href="index.php?act=admin/giaoDichTheoTour&tour_id=<?= (int)($item['tour']['tour_id'] ?? 0) ?>">
                                 <td><strong><?= htmlspecialchars($item['tour']['ten_tour']) ?></strong></td>
                                 <td><?= number_format($item['doanh_thu']) ?>đ</td>
                                 <td><?= number_format($item['chi_phi']) ?>đ</td>
@@ -204,6 +204,15 @@ ob_start();
             </table>
     </div>
 </div>
+<style>tr[data-href]{cursor:pointer;}tr[data-href]:hover td{background:rgba(255,255,255,0.04)!important;}</style>
+<script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
+document.querySelectorAll('tr[data-href]').forEach(function(row){
+    row.addEventListener('click',function(e){
+        if(e.target.closest('a,button,form,input,select,textarea')) return;
+        window.location.assign(row.dataset.href);
+    });
+});
+</script>
 <?php
 $content = ob_get_clean();
 require __DIR__ . '/../../layouts/aventura.php';

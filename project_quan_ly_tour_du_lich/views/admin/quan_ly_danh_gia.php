@@ -1,6 +1,8 @@
 <?php
 $pageTitle = 'Quản lý Đánh giá & Phản hồi';
 $currentPage = 'danhGia';
+/** @var array $stats */ $stats ??= ['tong_danh_gia'=>0,'diem_trung_binh'=>0,'hai_long'=>0,'khong_hai_long'=>0];
+/** @var array $danhGiaList */ $danhGiaList ??= [];
 ob_start();
 ?>
 
@@ -778,7 +780,7 @@ ob_start();
                     </thead>
                     <tbody>
                         <?php foreach ($danhGiaList as $dg): ?>
-                            <tr class="review-card" style="border-left-color: <?= $dg['diem'] >= 4 ? '#198754' : ($dg['diem'] <= 2 ? '#dc3545' : '#ffc107') ?>;">
+                            <tr class="review-card" data-href="index.php?act=admin/danhGia/chiTiet&id=<?= (int)$dg['danh_gia_id'] ?>" style="border-left-color: <?= $dg['diem'] >= 4 ? '#198754' : ($dg['diem'] <= 2 ? '#dc3545' : '#ffc107') ?>;">
                                 <td><?= date('d/m/Y', strtotime($dg['ngay_danh_gia'])) ?></td>
                                 <td>
                                     <span class="customer-name"><?= htmlspecialchars($dg['ten_khach_hang'] ?? 'N/A') ?></span>
@@ -856,7 +858,15 @@ ob_start();
 </div>
 
  </div>
-
+<style>tr[data-href]{cursor:pointer;}tr[data-href]:hover td{background:rgba(255,255,255,0.04)!important;}</style>
+<script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
+document.querySelectorAll('tr[data-href]').forEach(function(row){
+    row.addEventListener('click',function(e){
+        if(e.target.closest('a,button,form,input,select,textarea')) return;
+        window.location.assign(row.dataset.href);
+    });
+});
+</script>
 <?php
 $content = ob_get_clean();
 require __DIR__ . '/../layouts/aventura.php';

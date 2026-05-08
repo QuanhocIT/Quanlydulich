@@ -85,117 +85,16 @@ ob_start(); ?>
         }
 
         .page-shell {
-            width: min(1500px, calc(100% - 48px));
+            width: min(1400px, calc(100% - 32px));
             margin: 0 auto;
-            padding: 24px 0 56px;
-        }
-
-        .topbar {
-            align-items: center;
-            background: rgba(11,18,32,.92);
-            border: 1px solid rgba(214,178,109,.22);
-            border-radius: 20px;
-            backdrop-filter: blur(10px);
-            display: flex;
-            gap: 16px;
-            justify-content: space-between;
-            margin-bottom: 18px;
-            padding: 12px 14px;
-            box-shadow: 0 12px 34px rgba(2,6,23,.18);
-        }
-
-        .brand {
-            align-items: center;
-            color: #fff;
-            display: inline-flex;
-            font-weight: 800;
-            gap: 10px;
-            letter-spacing: .08em;
-            text-decoration: none;
-            text-transform: uppercase;
-        }
-
-        .brand-mark {
-            align-items: center;
-            background: linear-gradient(135deg, var(--leaf), var(--teal));
-            border-radius: 16px;
-            color: var(--gold);
-            display: inline-flex;
-            height: 44px;
-            justify-content: center;
-            width: 44px;
-        }
-
-        .nav-actions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            justify-content: flex-end;
-        }
-
-        .nav-pill {
-            align-items: center;
-            background: rgba(255,255,255,.06);
-            border: 1px solid rgba(214,178,109,.28);
-            border-radius: 999px;
-            color: rgba(255,255,255,.9);
-            display: inline-flex;
-            font-size: 14px;
-            font-weight: 700;
-            gap: 8px;
-            padding: 10px 15px;
-            text-decoration: none;
-            transition: background .2s, border-color .2s, color .2s;
-        }
-
-        .nav-pill:hover {
-            background: rgba(214,178,109,.18);
-            border-color: rgba(214,178,109,.46);
-            color: #fff;
-        }
-
-        .nav-pill.is-active {
-            background: linear-gradient(135deg, var(--gold), #e2bf78);
-            border-color: rgba(214,178,109,.72);
-            color: #132033;
-            box-shadow: 0 10px 24px rgba(185,137,61,.24);
-        }
-
-        .hero {
-            position: relative;
-            overflow: hidden;
-            border-radius: 32px;
-            border: 1px solid rgba(214,178,109,.2);
-            background:
-                linear-gradient(115deg, rgba(11,18,32,.93), rgba(21,35,59,.78)),
-                url('https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1800&q=80') center/cover;
-            box-shadow: 0 30px 80px rgba(2,6,23,.22);
-            color: #fff;
-            padding: 28px;
-        }
-
-        .hero h1 {
-            max-width: 820px;
-            margin: 44px 0 12px;
-            font-family: "Playfair Display", serif;
-            font-size: clamp(2rem, 4vw, 3.35rem);
-            line-height: 1.05;
-            letter-spacing: .2px;
-        }
-
-        .hero p {
-            max-width: 720px;
-            margin: 0;
-            color: rgba(255,255,255,.82);
-            font-size: 1.05rem;
-            line-height: 1.7;
+            padding: 8px 0 56px;
         }
 
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(4, minmax(0, 1fr));
-            gap: 14px;
-            margin: 22px 0;
+            gap: 16px;
+            margin: 8px 0 22px;
         }
 
         .stat-card,
@@ -208,22 +107,43 @@ ob_start(); ?>
         }
 
         .stat-card {
-            border-radius: 22px;
+            align-items: center;
+            border-radius: 18px;
+            display: flex;
+            gap: 14px;
             padding: 18px;
         }
 
-        .stat-card span {
-            display: block;
-            color: var(--muted);
-            font-size: .78rem;
-            font-weight: 900;
-            letter-spacing: .1em;
-            text-transform: uppercase;
+        .stat-icon {
+            align-items: center;
+            border-radius: 14px;
+            display: inline-flex;
+            flex: 0 0 48px;
+            font-size: 1.32rem;
+            height: 48px;
+            justify-content: center;
+            width: 48px;
         }
 
-        .stat-card strong {
+        .stat-icon.is-blue { background: rgba(59,130,246,.12); color: #3b82f6; }
+        .stat-icon.is-green { background: rgba(34,197,94,.12); color: #22c55e; }
+        .stat-icon.is-purple { background: rgba(139,92,246,.12); color: #8b5cf6; }
+        .stat-icon.is-orange { background: rgba(249,115,22,.14); color: #f97316; }
+
+        .stat-copy {
+            min-width: 0;
+        }
+
+        .stat-copy span {
             display: block;
-            margin-top: 8px;
+            color: var(--muted);
+            font-size: 13px;
+            font-weight: 700;
+            margin-top: 6px;
+        }
+
+        .stat-copy strong {
+            display: block;
             font-size: 2rem;
             line-height: 1;
         }
@@ -410,6 +330,8 @@ ob_start(); ?>
             margin: 0 0 8px;
             font-size: .98rem;
             line-height: 1.45;
+            font-weight: 900;
+        }
 
         .favorite-tour-item {
             align-items: center;
@@ -439,8 +361,6 @@ ob_start(); ?>
             color: var(--muted);
             font-size: .82rem;
             font-weight: 700;
-        }
-            font-weight: 900;
         }
 
         .side-card p {
@@ -505,25 +425,10 @@ ob_start(); ?>
 
         @media (max-width: 768px) {
             .page-shell {
-                width: min(100% - 24px, 1500px);
+                width: min(100% - 20px, 1500px);
                 padding-top: 18px;
             }
 
-            .topbar {
-                align-items: flex-start;
-                flex-direction: column;
-            }
-
-            .nav-actions {
-                justify-content: flex-start;
-            }
-
-            .hero {
-                border-radius: 24px;
-                padding: 20px;
-            }
-
-            .hero h1 { margin-top: 28px; }
             .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
             .booking-card { grid-template-columns: 1fr; }
             .booking-thumb { height: 220px; }
@@ -536,20 +441,32 @@ include __DIR__ . '/_layout/header.php'; ?>
 
         <section class="stats-grid" aria-label="Tổng quan booking">
             <div class="stat-card">
-                <span>Tổng booking</span>
-                <strong><?php echo count($bookings); ?></strong>
+                <span class="stat-icon is-blue"><i class="bi bi-briefcase"></i></span>
+                <div class="stat-copy">
+                    <strong><?php echo count($bookings); ?></strong>
+                    <span>Tổng booking</span>
+                </div>
             </div>
             <div class="stat-card">
-                <span>Đang hiệu lực</span>
-                <strong><?php echo count($validBookings); ?></strong>
+                <span class="stat-icon is-green"><i class="bi bi-shield-check"></i></span>
+                <div class="stat-copy">
+                    <strong><?php echo count($validBookings); ?></strong>
+                    <span>Đang hiệu lực</span>
+                </div>
             </div>
             <div class="stat-card">
-                <span>Cần nhập người tham gia</span>
-                <strong><?php echo $participantMissingCount; ?></strong>
+                <span class="stat-icon is-purple"><i class="bi bi-people"></i></span>
+                <div class="stat-copy">
+                    <strong><?php echo $participantMissingCount; ?></strong>
+                    <span>Cần nhập người tham gia</span>
+                </div>
             </div>
             <div class="stat-card">
-                <span>Sắp khởi hành</span>
-                <strong><?php echo count($upcomingReminders); ?></strong>
+                <span class="stat-icon is-orange"><i class="bi bi-alarm"></i></span>
+                <div class="stat-copy">
+                    <strong><?php echo count($upcomingReminders); ?></strong>
+                    <span>Sắp khởi hành</span>
+                </div>
             </div>
         </section>
 

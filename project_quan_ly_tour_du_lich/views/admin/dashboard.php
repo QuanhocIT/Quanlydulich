@@ -1482,7 +1482,8 @@ $actionCards = [
         <div class="tour-card-grid">
             <?php if (!empty($topTours)): ?>
                 <?php foreach ($topTours as $tour): ?>
-                    <article class="tour-card">
+                    <?php $tourDetailHref = 'index.php?act=admin/chiTietTour&id=' . (int)($tour['tour_id'] ?? 0); ?>
+                    <article class="tour-card js-tour-link" data-href="<?php echo htmlspecialchars($tourDetailHref); ?>" style="cursor:pointer;">
                         <div class="tour-card-cover">
                             <i class="bi bi-globe-asia-australia"></i>
                         </div>
@@ -1566,8 +1567,9 @@ $actionCards = [
                         $departures = (int)($lichKhoiHanhStats[$tour['id_tour'] ?? ''] ?? 0);
                         $profitM = round($tourProfit / 1000000, 1);
                         $rankClass = ['r1', 'r2', 'r3'][$idx];
+                        $rankHref = 'index.php?act=admin/chiTietTour&id=' . (int)($tour['tour_id'] ?? 0);
                         ?>
-                        <div class="hero-tour-row">
+                        <div class="hero-tour-row js-tour-link" data-href="<?php echo htmlspecialchars($rankHref); ?>" style="cursor:pointer;">
                             <div class="hero-tour-rank <?php echo $rankClass; ?>"><?php echo $idx + 1; ?></div>
                             <div class="hero-tour-info">
                                 <span class="hero-tour-name"><?php echo $tourName; ?></span>
@@ -2031,6 +2033,14 @@ $actionCards = [
         scheduleKpiRefresh();
     });
 })();
+</script>
+<script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
+document.querySelectorAll('.js-tour-link[data-href]').forEach(function(el){
+    el.addEventListener('click', function(e){
+        if(e.target.closest('a,button,form')) return;
+        window.location.assign(el.dataset.href);
+    });
+});
 </script>
 
 <?php

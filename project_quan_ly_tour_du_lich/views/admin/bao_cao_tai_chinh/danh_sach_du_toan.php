@@ -145,7 +145,7 @@ ob_start();
                         <tr><td colspan="5" style="text-align: center; color: #999;">Chưa có dự toán nào</td></tr>
                     <?php else: ?>
                         <?php foreach($duToans as $dt): ?>
-                            <tr>
+                            <tr data-href="index.php?act=admin/soSanhDuToan&du_toan_id=<?= (int)$dt['du_toan_id'] ?>">
                                 <td><strong><?= htmlspecialchars($dt['ten_tour']) ?></strong></td>
                                 <td style="font-weight: 700; color: #667eea;">
                                     <?= number_format($dt['tong_du_toan']) ?>đ
@@ -154,7 +154,7 @@ ob_start();
                                 <td><?= date('d/m/Y H:i', strtotime($dt['ngay_tao'])) ?></td>
                                 <td>
                                     <a href="index.php?act=admin/formDuToan&id=<?= $dt['du_toan_id'] ?>" class="btn btn-sm">
-                                        <i class="fas fa-edit"></i>
+                                        <i class="fas fa-edit"></i> Sửa
                                     </a>
                                     <a href="index.php?act=admin/soSanhDuToan&du_toan_id=<?= $dt['du_toan_id'] ?>" class="btn btn-sm">
                                         <i class="fas fa-chart-bar"></i> So sánh
@@ -167,6 +167,15 @@ ob_start();
             </table>
     </div>
 </div>
+<style>tr[data-href]{cursor:pointer;}tr[data-href]:hover td{background:rgba(255,255,255,0.04)!important;}</style>
+<script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
+document.querySelectorAll('tr[data-href]').forEach(function(row){
+    row.addEventListener('click',function(e){
+        if(e.target.closest('a,button,form,input,select,textarea')) return;
+        window.location.assign(row.dataset.href);
+    });
+});
+</script>
 <?php
 $content = ob_get_clean();
 require __DIR__ . '/../../layouts/aventura.php';

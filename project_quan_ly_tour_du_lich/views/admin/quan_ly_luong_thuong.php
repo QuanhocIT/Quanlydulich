@@ -503,7 +503,7 @@ ob_start();
                                 $detailHref .= '&month=' . urlencode((string)$filterMonth) . '&year=' . urlencode((string)$filterYear);
                             }
                         ?>
-                        <tr>
+                        <tr data-href="<?php echo htmlspecialchars($detailHref); ?>">
                             <td><?php echo htmlspecialchars($row['ho_ten'] ?? ''); ?></td>
                             <td><?php echo htmlspecialchars($row['vai_tro'] ?? ''); ?></td>
                             <td><?php echo (int)($row['so_dong'] ?? 0); ?></td>
@@ -562,7 +562,15 @@ ob_start();
     </div>
 
 </div>
-
+<style>tr[data-href]{cursor:pointer;}tr[data-href]:hover td{background:rgba(255,255,255,0.04)!important;}</style>
+<script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
+document.querySelectorAll('tr[data-href]').forEach(function(row){
+    row.addEventListener('click',function(e){
+        if(e.target.closest('a,button,form,input,select,textarea')) return;
+        window.location.assign(row.dataset.href);
+    });
+});
+</script>
 <?php
 $content = ob_get_clean();
 require __DIR__ . '/../layouts/aventura.php';

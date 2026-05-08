@@ -26,6 +26,9 @@ $pageHero    = $pageHero    ?? null;
 $extraCss    = $extraCss    ?? '';
 $bodyClass   = $bodyClass   ?? '';
 
+$uniformHeroPages = ['tour', 'yeuCauTour', 'profile', 'hoaDon'];
+$useUniformHeroSize = in_array((string)$activePage, $uniformHeroPages, true);
+
 $navItems = [
     'dashboard'   => ['url' => 'index.php?act=khachHang/dashboard',       'icon' => 'bi-house',       'label' => 'Trang chủ'],
     'tour'        => ['url' => 'index.php?act=khachHang/danhSachTour',     'icon' => 'bi-stars',       'label' => 'Tour nổi bật'],
@@ -66,23 +69,23 @@ $navItems = [
         .kh-shell {
             width: min(1440px, calc(100% - 32px));
             margin: 0 auto;
-            padding: 16px 0 48px;
+            padding: 6px 0 48px;
         }
 
         /* ── TOPBAR ── */
         .kh-topbar {
             align-items: center;
-            background: rgba(11, 18, 32, .94);
-            border: 1px solid rgba(214, 178, 109, .22);
-            border-radius: 18px;
+            background: linear-gradient(135deg, rgba(8,22,47,.98), rgba(14,34,65,.96));
+            border: 0;
+            border-radius: 18px 18px 0 0;
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
-            box-shadow: 0 12px 34px rgba(2, 6, 23, .22);
+            box-shadow: none;
             display: flex;
             gap: 12px;
             justify-content: space-between;
-            margin-bottom: 14px;
-            padding: 10px 14px;
+            margin-bottom: 0;
+            padding: 12px 20px;
             flex-wrap: wrap;
         }
 
@@ -100,54 +103,59 @@ $navItems = [
         }
         .kh-brand-mark {
             align-items: center;
-            background: linear-gradient(135deg, #15233b, #20365f);
-            border-radius: 12px;
+            background: transparent;
+            border: 1px solid rgba(214, 154, 45, .35);
+            border-radius: 10px;
             color: #d6b26d;
             display: inline-flex;
-            height: 38px;
+            height: 30px;
             justify-content: center;
-            width: 38px;
-            font-size: 1.1rem;
+            width: 30px;
+            font-size: 1rem;
             flex-shrink: 0;
         }
-        .kh-brand span { font-family: "Playfair Display", serif; font-size: 1.1rem; }
+        .kh-brand span {
+            font-family: "Manrope", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+            font-size: .98rem;
+            letter-spacing: .04em;
+        }
 
         /* Nav area */
         .kh-nav-actions {
             display: flex;
             flex-wrap: wrap;
-            gap: 8px;
+            gap: 4px;
             align-items: center;
         }
 
         /* Nav pill */
         .kh-pill {
             align-items: center;
-            background: rgba(255, 255, 255, .06);
-            border: 1px solid rgba(214, 178, 109, .28);
+            background: transparent;
+            border: 1px solid transparent;
             border-radius: 999px;
             color: rgba(255, 255, 255, .88);
             display: inline-flex;
-            font-size: 13px;
+            font-size: 14px;
             font-weight: 700;
             gap: 7px;
-            padding: 8px 14px;
+            padding: 8px 12px;
             text-decoration: none;
             transition: background .2s, border-color .2s, color .2s;
             white-space: nowrap;
         }
         .kh-pill:hover {
-            background: rgba(214, 178, 109, .18);
-            border-color: rgba(214, 178, 109, .5);
+            background: rgba(255, 255, 255, .06);
+            border-color: rgba(255, 255, 255, .08);
             color: #fff;
         }
         .kh-pill.is-active {
-            background: linear-gradient(135deg, #d6b26d, #e2bf78);
-            border-color: rgba(214, 178, 109, .72);
-            color: #132033;
-            box-shadow: 0 8px 22px rgba(185, 137, 61, .26);
+            background: rgba(214, 154, 45, .16);
+            border-color: rgba(214, 154, 45, .24);
+            color: #ffe6b3;
+            box-shadow: none;
         }
-        .kh-pill.is-active:hover { color: #0b1520; }
+        .kh-pill.is-active:hover { color: #ffe6b3; }
 
         /* Icon-only notification pill */
         .kh-pill-icon {
@@ -183,15 +191,15 @@ $navItems = [
         /* ── HERO BANNER ── */
         .kh-hero {
             background:
-                linear-gradient(115deg, rgba(11, 18, 32, .93), rgba(21, 35, 59, .82)),
+                linear-gradient(110deg, rgba(6,17,37,.94) 8%, rgba(10,26,50,.78) 46%, rgba(5,17,37,.72) 100%),
                 url('https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1800&q=80') center/cover no-repeat;
-            border: 1px solid rgba(214, 178, 109, .2);
-            border-radius: 24px;
-            box-shadow: 0 28px 70px rgba(2, 6, 23, .22);
+            border: 0;
+            border-radius: 0 0 22px 22px;
+            box-shadow: 0 24px 48px rgba(2, 6, 23, .16);
             color: #fff;
             margin-bottom: 16px;
             overflow: hidden;
-            padding: 32px 36px;
+            padding: 28px 30px 34px;
             position: relative;
             animation: kh-fadeup .55s ease both;
         }
@@ -206,29 +214,44 @@ $navItems = [
             width: 260px;
             pointer-events: none;
         }
-        .kh-hero-inner { max-width: 780px; position: relative; z-index: 1; }
+        .kh-hero-inner { max-width: 820px; position: relative; z-index: 1; }
         .kh-hero-eyebrow {
-            color: #d6b26d;
-            font-size: 11px;
+            color: #e1ab43;
+            font-size: 14px;
             font-weight: 800;
-            letter-spacing: .16em;
-            text-transform: uppercase;
-            margin-bottom: 8px;
+            letter-spacing: 0;
+            text-transform: none;
+            margin-bottom: 10px;
         }
         .kh-hero h1 {
             font-family: "Playfair Display", serif;
-            font-size: clamp(1.8rem, 4vw, 3.2rem);
+            font-size: clamp(2.3rem, 4.8vw, 4.2rem);
             line-height: 1.05;
-            margin: 0 0 12px;
+            margin: 0 0 14px;
             letter-spacing: -.01em;
         }
-        .kh-hero p {
-            color: rgba(255, 255, 255, .82);
-            font-size: .96rem;
-            line-height: 1.7;
-            margin: 0 0 20px;
-            max-width: 640px;
+        .kh-hero h1 i {
+            display: inline-block;
+            margin-right: 14px;
         }
+        .kh-hero p {
+            color: rgba(255, 255, 255, .88);
+            font-size: 1.03rem;
+            line-height: 1.76;
+            margin: 0 0 20px;
+            max-width: 700px;
+        }
+        <?php if ($useUniformHeroSize): ?>
+        .kh-hero {
+            height: 310px;
+        }
+        .kh-hero-inner {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-height: 100%;
+        }
+        <?php endif; ?>
         .kh-hero-actions { display: flex; flex-wrap: wrap; gap: 10px; }
         .kh-hero-btn {
             align-items: center;
@@ -277,6 +300,212 @@ $navItems = [
         .kh-footer a:hover { color: #fff; }
         .kh-footer hr { border-color: rgba(255,255,255,.1); margin: 28px 0 16px; }
 
+        /* shared content primitives */
+        .kh-page {
+            padding: 6px 0 24px;
+        }
+        .kh-section {
+            margin-bottom: 22px;
+        }
+        .kh-surface {
+            background: rgba(255, 255, 255, .88);
+            border: 1px solid rgba(15, 23, 42, .1);
+            border-radius: 24px;
+            box-shadow: 0 18px 54px rgba(2, 6, 23, .09);
+            backdrop-filter: blur(12px);
+        }
+        .kh-surface-soft {
+            background: rgba(255, 255, 255, .72);
+            border: 1px solid rgba(15, 23, 42, .08);
+            border-radius: 20px;
+            box-shadow: 0 14px 38px rgba(2, 6, 23, .06);
+            backdrop-filter: blur(10px);
+        }
+        .kh-surface-body {
+            padding: 24px;
+        }
+        .kh-grid-2 {
+            display: grid;
+            gap: 22px;
+            grid-template-columns: minmax(0, 1.45fr) minmax(320px, .9fr);
+        }
+        .kh-grid-3 {
+            display: grid;
+            gap: 16px;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+        .kh-stat-card {
+            background: rgba(255,255,255,.82);
+            border: 1px solid rgba(15,23,42,.08);
+            border-radius: 18px;
+            box-shadow: 0 14px 36px rgba(2,6,23,.06);
+            padding: 18px;
+        }
+        .kh-stat-card span {
+            color: #64748b;
+            display: block;
+            font-size: .76rem;
+            font-weight: 800;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+        }
+        .kh-stat-card strong {
+            display: block;
+            font-size: 1.9rem;
+            line-height: 1;
+            margin-top: 8px;
+        }
+        .kh-section-head {
+            align-items: flex-end;
+            display: flex;
+            gap: 16px;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+        .kh-section-title {
+            color: #132033;
+            font-family: "Playfair Display", serif;
+            font-size: clamp(1.3rem, 2.2vw, 2rem);
+            line-height: 1.08;
+            margin: 0;
+        }
+        .kh-section-note {
+            color: #64748b;
+            font-size: .94rem;
+            line-height: 1.7;
+            margin: 6px 0 0;
+        }
+        .kh-label {
+            color: #4b5d79;
+            display: block;
+            font-size: .78rem;
+            font-weight: 800;
+            letter-spacing: .08em;
+            margin-bottom: 7px;
+            text-transform: uppercase;
+        }
+        .kh-form-control,
+        .kh-form-select,
+        .kh-form-textarea {
+            background: rgba(255,255,255,.9);
+            border: 1px solid rgba(15,23,42,.12);
+            border-radius: 14px;
+            color: #0f172a;
+            min-height: 48px;
+            padding: 11px 14px;
+            transition: border-color .2s, box-shadow .2s, background .2s;
+            width: 100%;
+        }
+        .kh-form-textarea {
+            min-height: 132px;
+            resize: vertical;
+        }
+        .kh-form-control:focus,
+        .kh-form-select:focus,
+        .kh-form-textarea:focus {
+            background: #fff;
+            border-color: rgba(214, 178, 109, .72);
+            box-shadow: 0 0 0 .22rem rgba(214, 178, 109, .16);
+            outline: 0;
+        }
+        .kh-help {
+            color: #64748b;
+            font-size: .82rem;
+            margin-top: 6px;
+        }
+        .kh-chip {
+            align-items: center;
+            background: rgba(21, 35, 59, .07);
+            border: 1px solid rgba(15, 23, 42, .08);
+            border-radius: 999px;
+            color: #21334e;
+            display: inline-flex;
+            font-size: .8rem;
+            font-weight: 800;
+            gap: 8px;
+            padding: 8px 12px;
+        }
+        .kh-btn-main,
+        .kh-btn-soft,
+        .kh-btn-ghost {
+            align-items: center;
+            border-radius: 999px;
+            display: inline-flex;
+            font-size: .88rem;
+            font-weight: 800;
+            gap: 8px;
+            justify-content: center;
+            min-height: 44px;
+            padding: 10px 18px;
+            text-decoration: none;
+            transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, background .18s ease, color .18s ease;
+        }
+        .kh-btn-main {
+            background: linear-gradient(135deg, #15233b, #20365f);
+            border: 1px solid rgba(21, 35, 59, .22);
+            box-shadow: 0 16px 34px rgba(21, 35, 59, .18);
+            color: #fff;
+        }
+        .kh-btn-soft {
+            background: #f3ead8;
+            border: 1px solid rgba(214, 178, 109, .28);
+            color: #17413b;
+        }
+        .kh-btn-ghost {
+            background: rgba(255,255,255,.72);
+            border: 1px solid rgba(15,23,42,.1);
+            color: #1e293b;
+        }
+        .kh-btn-main:hover,
+        .kh-btn-soft:hover,
+        .kh-btn-ghost:hover {
+            transform: translateY(-1px);
+        }
+        .kh-table-wrap {
+            border: 1px solid rgba(15,23,42,.08);
+            border-radius: 18px;
+            overflow: hidden;
+        }
+        .kh-table {
+            margin: 0;
+            width: 100%;
+        }
+        .kh-table thead th {
+            background: rgba(15, 23, 42, .04);
+            border-bottom: 1px solid rgba(15,23,42,.08);
+            color: #475569;
+            font-size: .76rem;
+            font-weight: 800;
+            letter-spacing: .08em;
+            padding: 14px 16px;
+            text-transform: uppercase;
+        }
+        .kh-table tbody td,
+        .kh-table tfoot th,
+        .kh-table tfoot td {
+            border-top: 1px solid rgba(15,23,42,.06);
+            padding: 14px 16px;
+            vertical-align: middle;
+        }
+        .kh-empty {
+            background: rgba(255,255,255,.7);
+            border: 1px dashed rgba(214,178,109,.44);
+            border-radius: 24px;
+            color: #64748b;
+            padding: 34px 20px;
+            text-align: center;
+        }
+        .kh-empty i {
+            color: #d6b26d;
+            display: block;
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        .kh-stack {
+            display: grid;
+            gap: 16px;
+        }
+
         /* ── ANIMATION ── */
         @keyframes kh-fadeup {
             from { opacity: 0; transform: translateY(14px); }
@@ -285,13 +514,25 @@ $navItems = [
 
         /* ── RESPONSIVE ── */
         @media (max-width: 640px) {
-            .kh-topbar { border-radius: 14px; padding: 10px 12px; }
+            .kh-topbar { border-radius: 16px 16px 0 0; padding: 10px 12px; }
             .kh-pill    { font-size: 12px; padding: 7px 10px; }
-            .kh-hero    { padding: 22px 18px; border-radius: 18px; }
+            .kh-hero    { padding: 22px 18px 28px; border-radius: 0 0 18px 18px; }
             .kh-hero h1 { font-size: 1.6rem; }
+            <?php if ($useUniformHeroSize): ?>
+            .kh-hero { min-height: 220px; height: auto; }
+            .kh-hero-inner { min-height: 0; justify-content: flex-start; }
+            <?php endif; ?>
+            .kh-surface-body { padding: 18px; }
+            .kh-section-head { align-items: flex-start; flex-direction: column; }
         }
         @media (max-width: 480px) {
             .kh-brand span { display: none; }
+        }
+        @media (max-width: 991px) {
+            .kh-grid-2,
+            .kh-grid-3 {
+                grid-template-columns: 1fr;
+            }
         }
 
         <?php if ($extraCss): ?>
@@ -381,8 +622,12 @@ $navItems = [
             <?php if (!empty($pageHero['actions'])): ?>
             <div class="kh-hero-actions">
                 <?php foreach ($pageHero['actions'] as $action): ?>
-                    <a href="<?php echo htmlspecialchars($action['url'] ?? '#', ENT_QUOTES, 'UTF-8'); ?>"
-                       class="kh-hero-btn <?php echo htmlspecialchars($action['style'] ?? 'ghost', ENT_QUOTES, 'UTF-8'); ?>">
+                    <?php
+                        $actionUrl = $action['url'] ?? $action['href'] ?? '#';
+                        $actionStyle = $action['style'] ?? (!empty($action['ghost']) ? 'ghost' : 'main');
+                    ?>
+                    <a href="<?php echo htmlspecialchars($actionUrl, ENT_QUOTES, 'UTF-8'); ?>"
+                       class="kh-hero-btn <?php echo htmlspecialchars($actionStyle, ENT_QUOTES, 'UTF-8'); ?>">
                         <?php if (!empty($action['icon'])): ?>
                             <i class="bi <?php echo htmlspecialchars($action['icon'], ENT_QUOTES, 'UTF-8'); ?>"></i>
                         <?php endif; ?>

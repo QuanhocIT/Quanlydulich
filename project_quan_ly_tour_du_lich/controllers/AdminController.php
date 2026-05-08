@@ -190,6 +190,7 @@ class AdminController {
                 $tongThu = (float)($tongThuChiMap[$tourId]['tong_thu'] ?? 0);
                 $tongChi = (float)($tongThuChiMap[$tourId]['tong_chi'] ?? 0);
                 $tours[] = [
+                    'tour_id' => $tourId,
                     'ten_tour' => $tour['ten_tour'],
                     'tong_thu' => $tongThu,
                     'tong_chi_thuc_te' => $tongChi,
