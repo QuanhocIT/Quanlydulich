@@ -19,15 +19,30 @@ class AdminController {
 
         try {
             $conn = connectDB();
+
+            // Prefer precomputed summary for speed; fallback to raw transactions if unavailable.
             $stmt = $conn->prepare(
-                "SELECT COALESCE(SUM(so_tien), 0)
-                 FROM giao_dich_tai_chinh
-                 WHERE loai = 'Thu'
-                   AND ngay_giao_dich >= ?
-                   AND ngay_giao_dich <= ?"
+                "SELECT COALESCE(SUM(revenue_success_amount), 0)
+                 FROM daily_kpi_summary
+                 WHERE summary_date >= ?
+                   AND summary_date <= ?"
             );
             $stmt->execute([$fromDate, $toDate]);
-            $total = (float)($stmt->fetchColumn() ?? 0);
+            $summaryRevenue = (float)($stmt->fetchColumn() ?? 0);
+
+            if ($summaryRevenue > 0) {
+                $total = $summaryRevenue;
+            } else {
+                $stmt = $conn->prepare(
+                    "SELECT COALESCE(SUM(so_tien), 0)
+                     FROM giao_dich_tai_chinh
+                     WHERE loai = 'Thu'
+                       AND ngay_giao_dich >= ?
+                       AND ngay_giao_dich <= ?"
+                );
+                $stmt->execute([$fromDate, $toDate]);
+                $total = (float)($stmt->fetchColumn() ?? 0);
+            }
         } catch (Throwable $e) {
             error_log('[AdminController::getMonthToDateRevenue] ' . $e->getMessage());
         }
@@ -232,6 +247,33 @@ class AdminController {
         });
         $automationSnapshot = cacheRemember('admin_automation_snapshot_v1', 60, function () {
             return (new AdminAutomationController())->buildAutomationSnapshot();
+        });
+
+        $dailyKpiSummary = cacheRemember('admin_dashboard_latest_daily_kpi', 60, function () {
+            try {
+                $conn = connectDB();
+                $kpiDate = $conn
+                    ->query("SELECT MAX(summary_date) FROM daily_kpi_summary")
+                    ->fetchColumn();
+
+                if (!$kpiDate) {
+                    return null;
+                }
+
+                $stmt = $conn->prepare(
+                    "SELECT summary_date, booking_new_count, booking_cancel_count,
+                            payment_success_count, revenue_success_amount, conversion_rate_pct
+                     FROM daily_kpi_summary
+                     WHERE summary_date = ?
+                     LIMIT 1"
+                );
+                $stmt->execute([$kpiDate]);
+
+                return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+            } catch (Throwable $e) {
+                error_log('[AdminController::dashboard] daily_kpi_summary unavailable: ' . $e->getMessage());
+                return null;
+            }
         });
 
         require 'views/admin/dashboard.php';
@@ -1021,6 +1063,23 @@ class AdminController {
             $result = cacheRemember('admin_dashboard_kpi_snapshot', 30, function () {
                 $conn = connectDB();
 
+                $kpiDate = $conn
+                    ->query("SELECT MAX(summary_date) FROM daily_kpi_summary")
+                    ->fetchColumn();
+
+                $summary = null;
+                if ($kpiDate) {
+                    $stmt = $conn->prepare(
+                        "SELECT summary_date, booking_new_count, booking_cancel_count,
+                                payment_success_count, revenue_success_amount, conversion_rate_pct
+                         FROM daily_kpi_summary
+                         WHERE summary_date = ?
+                         LIMIT 1"
+                    );
+                    $stmt->execute([$kpiDate]);
+                    $summary = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+                }
+
                 $totalRevenue = (float)$conn
                     ->query("SELECT COALESCE(SUM(so_tien), 0) FROM giao_dich_tai_chinh WHERE loai = 'Thu' AND ngay_giao_dich >= DATE_SUB(NOW(), INTERVAL 12 MONTH)")
                     ->fetchColumn();
@@ -1038,6 +1097,7 @@ class AdminController {
                     'total_revenue' => $totalRevenue,
                     'total_bookings' => $totalBookings,
                     'pending_bookings' => $pendingBookings,
+                    'daily_kpi' => $summary,
                 ];
             });
 

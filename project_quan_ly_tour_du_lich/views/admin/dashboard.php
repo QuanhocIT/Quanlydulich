@@ -17,6 +17,12 @@ $monthlyRevenue = (float)($kpiAlerts['monthToDateRevenue'] ?? 0);
 $pendingBookings = (int)($kpiAlerts['bookingPending'] ?? 0);
 $overdueDebt = (int)($kpiAlerts['overdueDebt'] ?? 0);
 $automationEvents = (int)($automationSnapshot['recentEvents24h'] ?? 0);
+$dailyKpiDateRaw = (string)($dailyKpiSummary['summary_date'] ?? '');
+$dailyKpiDateLabel = $dailyKpiDateRaw !== '' ? date('d/m/Y', strtotime($dailyKpiDateRaw)) : '--/--/----';
+$dailyKpiRevenue = (float)($dailyKpiSummary['revenue_success_amount'] ?? 0);
+$dailyKpiBookings = (int)($dailyKpiSummary['booking_new_count'] ?? 0);
+$dailyKpiCancelled = (int)($dailyKpiSummary['booking_cancel_count'] ?? 0);
+$dailyKpiConversion = (float)($dailyKpiSummary['conversion_rate_pct'] ?? 0);
 $totalDepartures = (int)array_sum(array_map('intval', array_values($lichKhoiHanhStats ?? [])));
 $orderSummaryTotal = max(1, $pendingBookings + $totalDepartures + $automationEvents);
 $pendingRatio = $totalBookings > 0 ? round(($pendingBookings / $totalBookings) * 100, 1) : 0;
@@ -1619,6 +1625,25 @@ $actionCards = [
                 </div>
             </div>
 
+            <div class="side-kpi-extended" style="margin-top: 2px;">
+                <div class="side-kpi-metric">
+                    <span class="side-kpi-metric-label">KPI ngày</span>
+                    <span class="side-kpi-metric-value" id="kpiDailyDate"><?php echo htmlspecialchars($dailyKpiDateLabel, ENT_QUOTES, 'UTF-8'); ?></span>
+                </div>
+                <div class="side-kpi-metric">
+                    <span class="side-kpi-metric-label">Doanh thu ngày</span>
+                    <span class="side-kpi-metric-value" id="kpiDailyRevenue"><?php echo number_format($dailyKpiRevenue / 1000000, 1, ',', '.'); ?>M</span>
+                </div>
+                <div class="side-kpi-metric">
+                    <span class="side-kpi-metric-label">Booking mới</span>
+                    <span class="side-kpi-metric-value" id="kpiDailyBookings"><?php echo number_format($dailyKpiBookings, 0, ',', '.'); ?></span>
+                </div>
+                <div class="side-kpi-metric">
+                    <span class="side-kpi-metric-label">Hủy / Chuyển đổi</span>
+                    <span class="side-kpi-metric-value" id="kpiDailyQuality"><?php echo number_format($dailyKpiCancelled, 0, ',', '.'); ?> / <?php echo number_format($dailyKpiConversion, 1, ',', '.'); ?>%</span>
+                </div>
+            </div>
+
             <!-- Extended metrics grid -->
             <div class="side-kpi-extended">
                 <div class="side-kpi-metric">
@@ -2013,6 +2038,10 @@ $actionCards = [
                 var elRevenue = document.getElementById('kpiTotalRevenue');
                 var elBookings = document.getElementById('kpiTotalBookings');
                 var elPending = document.getElementById('kpiPendingBookings');
+                var elDailyDate = document.getElementById('kpiDailyDate');
+                var elDailyRevenue = document.getElementById('kpiDailyRevenue');
+                var elDailyBookings = document.getElementById('kpiDailyBookings');
+                var elDailyQuality = document.getElementById('kpiDailyQuality');
                 if (elRevenue && data.total_revenue != null) {
                     var rev = Math.round(Number(data.total_revenue) / 1000000);
                     elRevenue.textContent = rev.toLocaleString('vi-VN') + 'M';
@@ -2023,6 +2052,34 @@ $actionCards = [
                 if (elPending && data.pending_bookings != null) {
                     elPending.textContent = String(data.pending_bookings);
                 }
+
+                if (data.daily_kpi && typeof data.daily_kpi === 'object') {
+                    var kpi = data.daily_kpi;
+                    if (elDailyDate && kpi.summary_date) {
+                        var dateParts = String(kpi.summary_date).split('-');
+                        if (dateParts.length === 3) {
+                            elDailyDate.textContent = dateParts[2] + '/' + dateParts[1] + '/' + dateParts[0];
+                        }
+                    }
+                    if (elDailyRevenue && kpi.revenue_success_amount != null) {
+                        var dailyRevenueM = Number(kpi.revenue_success_amount) / 1000000;
+                        elDailyRevenue.textContent = dailyRevenueM.toLocaleString('vi-VN', {
+                            minimumFractionDigits: 1,
+                            maximumFractionDigits: 1
+                        }) + 'M';
+                    }
+                    if (elDailyBookings && kpi.booking_new_count != null) {
+                        elDailyBookings.textContent = Number(kpi.booking_new_count).toLocaleString('vi-VN');
+                    }
+                    if (elDailyQuality) {
+                        var cancelCount = Number(kpi.booking_cancel_count || 0).toLocaleString('vi-VN');
+                        var conversion = Number(kpi.conversion_rate_pct || 0).toLocaleString('vi-VN', {
+                            minimumFractionDigits: 1,
+                            maximumFractionDigits: 1
+                        });
+                        elDailyQuality.textContent = cancelCount + ' / ' + conversion + '%';
+                    }
+                }
             }).catch(function() {});
         }, 800);
     }
@@ -2032,6 +2089,8 @@ $actionCards = [
         if (!payload || payload.success !== true) return;
         scheduleKpiRefresh();
     });
+
+    scheduleKpiRefresh();
 })();
 </script>
 <script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">

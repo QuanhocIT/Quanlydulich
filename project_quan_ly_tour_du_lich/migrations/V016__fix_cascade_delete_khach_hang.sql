@@ -6,11 +6,43 @@
 -- customer who still has bookings, forcing the operator to explicitly handle the data first.
 
 -- Step 1: Drop the cascading FKs
-ALTER TABLE `booking`
-    DROP FOREIGN KEY IF EXISTS `booking_ibfk_2`;
+SET @has_fk_booking_ibfk_2 = (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS
+    WHERE CONSTRAINT_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'booking'
+      AND CONSTRAINT_NAME = 'booking_ibfk_2'
+      AND CONSTRAINT_TYPE = 'FOREIGN KEY'
+);
 
-ALTER TABLE `booking_khach_hang`
-    DROP FOREIGN KEY IF EXISTS `booking_khach_hang_ibfk_2`;
+SET @drop_fk_booking = IF(
+    @has_fk_booking_ibfk_2 > 0,
+    'ALTER TABLE `booking` DROP FOREIGN KEY `booking_ibfk_2`',
+    "SELECT 'SKIP: booking_ibfk_2 not found'"
+);
+
+PREPARE stmt_drop_fk_booking FROM @drop_fk_booking;
+EXECUTE stmt_drop_fk_booking;
+DEALLOCATE PREPARE stmt_drop_fk_booking;
+
+SET @has_fk_booking_kh_ibfk_2 = (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS
+    WHERE CONSTRAINT_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'booking_khach_hang'
+      AND CONSTRAINT_NAME = 'booking_khach_hang_ibfk_2'
+      AND CONSTRAINT_TYPE = 'FOREIGN KEY'
+);
+
+SET @drop_fk_booking_kh = IF(
+    @has_fk_booking_kh_ibfk_2 > 0,
+    'ALTER TABLE `booking_khach_hang` DROP FOREIGN KEY `booking_khach_hang_ibfk_2`',
+    "SELECT 'SKIP: booking_khach_hang_ibfk_2 not found'"
+);
+
+PREPARE stmt_drop_fk_booking_kh FROM @drop_fk_booking_kh;
+EXECUTE stmt_drop_fk_booking_kh;
+DEALLOCATE PREPARE stmt_drop_fk_booking_kh;
 
 -- Step 2: Re-add with ON DELETE RESTRICT
 ALTER TABLE `booking`

@@ -9,7 +9,8 @@ Chạy:
 
 Các jobs được lên lịch:
     - Email queue: mỗi 1 phút
-    - Admin automation: mỗi 5 phút
+    - Admin automation: mỗi 5 phút (riêng departure_readiness: 15 phút)
+    - Daily KPI summary: mỗi ngày 00:05
     - Database backup: hàng ngày lúc 2:00 sáng
 """
 
@@ -80,18 +81,18 @@ def start_scheduler():
     logger.info('📧 Scheduled: Email queue processor (every 1 minute)')
 
     # Admin automation jobs: every 5 minutes
-    automation_jobs = [
+    automation_jobs_5m = [
         'sla_tour_requests',
         'booking_priority',
         'reconcile_digest',
         'self_heal_pending_payments',
         'webhook_anomaly',
+        'payment_anomaly_alert',
         'debt_reminder',
-        'departure_readiness',
         'tour_health_score',
     ]
 
-    for job_name in automation_jobs:
+    for job_name in automation_jobs_5m:
         scheduler.add_job(
             admin_automation_job,
             IntervalTrigger(minutes=5),
@@ -101,7 +102,31 @@ def start_scheduler():
             replace_existing=True,
             misfire_grace_time=300,
         )
-    logger.info(f'⚙️  Scheduled: {len(automation_jobs)} admin automation jobs (every 5 minutes)')
+    logger.info(f'⚙️  Scheduled: {len(automation_jobs_5m)} admin automation jobs (every 5 minutes)')
+
+    # Departure readiness reminders: every 15 minutes
+    scheduler.add_job(
+        admin_automation_job,
+        IntervalTrigger(minutes=15),
+        args=['departure_readiness'],
+        id='automation_departure_readiness_15m',
+        name='Admin Automation: departure_readiness (15m)',
+        replace_existing=True,
+        misfire_grace_time=600,
+    )
+    logger.info('🧭 Scheduled: departure readiness reminders (every 15 minutes)')
+
+    # Daily KPI summary: 00:05 AM daily (for previous day snapshot)
+    scheduler.add_job(
+        admin_automation_job,
+        CronTrigger(hour=0, minute=5),
+        args=['daily_kpi_summary'],
+        id='automation_daily_kpi_summary',
+        name='Admin Automation: daily_kpi_summary',
+        replace_existing=True,
+        misfire_grace_time=7200,
+    )
+    logger.info('📊 Scheduled: daily KPI summary (daily at 00:05)')
 
     # Database backup: 2:00 AM daily
     scheduler.add_job(
