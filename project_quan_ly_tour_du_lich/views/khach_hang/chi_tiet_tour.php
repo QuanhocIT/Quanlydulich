@@ -154,8 +154,8 @@ $camKetList = [
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chi tiết tour</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link href="<?php echo BASE_URL; ?>public/assets/bootstrap/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="<?php echo BASE_URL; ?>public/assets/bootstrap-icons/bootstrap-icons.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
@@ -1022,20 +1022,145 @@ $camKetList = [
         }
 
         @media (max-width: 991.98px){
+            .tourlux-hero .container{
+                padding-top: 20px;
+                padding-bottom: 26px;
+            }
+            .tourlux-hero-topbar{
+                align-items:flex-start;
+            }
+            .tourlux-top-actions{
+                width:100%;
+            }
             .tourlux-overview-grid,
             .feature-grid{
                 grid-template-columns:1fr 1fr;
             }
-            .tourlux-stats{ grid-template-columns:1fr; max-width:none; }
+            .tourlux-stats{
+                grid-template-columns:repeat(3, minmax(0, 1fr));
+                max-width:none;
+            }
             #dat-tour{ margin-top: 2px; }
             .tourlux-sticky{ position:static !important; top:auto !important; }
             .tour-action-stack .btn{ min-height:50px; font-size:.98rem; }
         }
         @media (max-width: 767.98px){
-            .tourlux-overview-grid,
+            .tourlux-hero{
+                border-radius: 0 0 22px 22px;
+            }
+            .tourlux-brand{
+                font-size:1.7rem;
+            }
+            .tourlux-top-actions{
+                display:grid;
+                grid-template-columns:repeat(2, minmax(0, 1fr));
+                gap:.6rem;
+            }
+            .tourlux-top-actions .tourlux-back:last-child{
+                grid-column:1 / -1;
+            }
+            .tourlux-back{
+                justify-content:center;
+                min-height:46px;
+                padding:.7rem .8rem;
+            }
+            .tourlux-kicker{
+                margin-top: 14px;
+            }
+            .tourlux-hero-title{
+                font-size: clamp(1.9rem, 7vw, 2.35rem);
+                margin-bottom:.75rem;
+            }
+            .tourlux-meta{
+                gap:.5rem;
+            }
+            .chip{
+                font-size:.85rem;
+                padding:.48rem .68rem;
+            }
+            .tourlux-stats{
+                grid-template-columns:1fr 1fr;
+                gap:8px;
+            }
+            .tourlux-stat:last-child{
+                grid-column:1 / -1;
+            }
+            .tourlux-stat{
+                min-height:72px;
+                padding:12px;
+            }
+            .tourlux-stat-v{
+                font-size:1rem;
+            }
+            .tourlux-hero-cta{
+                margin-top:.25rem;
+            }
+            .tourlux-hero-actions{
+                display:grid !important;
+                grid-template-columns:1fr 1fr;
+                width:100%;
+            }
+            .tourlux-hero-actions .btn{
+                min-height:50px;
+                width:100%;
+            }
+            .tourlux-overview-grid{
+                grid-template-columns:1fr;
+                gap:12px;
+            }
+            .tourlux-overview-card{
+                min-height:auto;
+                padding:16px;
+                border-radius:18px;
+            }
             .feature-grid,
             .schedule-meta{
                 grid-template-columns:1fr;
+            }
+            .panel{
+                border-radius:18px;
+            }
+            .panel-body{
+                padding:16px;
+            }
+            .promo{
+                padding:11px 12px;
+            }
+        }
+        @media (max-width: 575.98px){
+            main.container{
+                padding-left:14px;
+                padding-right:14px;
+            }
+            .tourlux-hero .container{
+                padding-left:16px;
+                padding-right:16px;
+            }
+            .tourlux-top-actions{
+                grid-template-columns:1fr;
+            }
+            .tourlux-top-actions .tourlux-back:last-child{
+                grid-column:auto;
+            }
+            .tourlux-stats{
+                grid-template-columns:1fr;
+            }
+            .tourlux-stat:last-child{
+                grid-column:auto;
+            }
+            .tourlux-hero-actions{
+                grid-template-columns:1fr;
+            }
+            .tour-info-row{
+                grid-template-columns:1fr;
+                row-gap:4px;
+            }
+            .tour-info-row.price{
+                grid-template-columns:1fr;
+                gap:2px;
+            }
+            .tour-info-row.price .v{
+                justify-self:start;
             }
         }
     </style>
@@ -1105,8 +1230,8 @@ $camKetList = [
                     </div>
                 </div>
 
-                <div class="col-lg-4">
-                    <div class="d-flex align-items-center justify-content-lg-end gap-2">
+                <div class="col-lg-4 tourlux-hero-cta">
+                    <div class="d-flex align-items-center justify-content-lg-end gap-2 tourlux-hero-actions">
                         <?php if ($isBookingLockedBy48h): ?>
                             <button type="button" class="btn btn-lux-outline px-3 py-2" disabled>
                                 <i class="bi bi-lock me-1"></i> Đặt nhanh đã khóa
@@ -1610,7 +1735,7 @@ $camKetList = [
         <?php endif; ?>
     </main>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="<?php echo BASE_URL; ?>public/assets/bootstrap/bootstrap.bundle.min.js"></script>
     <script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
         (function () {
             var revealEls = document.querySelectorAll('.js-reveal');

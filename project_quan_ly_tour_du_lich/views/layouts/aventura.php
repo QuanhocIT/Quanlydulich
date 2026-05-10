@@ -52,7 +52,7 @@ if ($realtimeWsEnabled && isset($_SESSION['user_id']) && $currentRole !== null) 
         <link rel="stylesheet" href="<?php echo BASE_URL; ?>public/css/finance-report-unified.css?v=<?php echo rawurlencode(ASSET_VERSION); ?>">
     <?php endif; ?>
     <link rel="icon" href="<?php echo BASE_URL; ?>public/images/momo.png" type="image/png">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="<?php echo BASE_URL; ?>public/assets/bootstrap-icons/bootstrap-icons.min.css">
     <?php if (isset($additionalCSS)): ?>
         <?php foreach ($additionalCSS as $css): ?>
             <link rel="stylesheet" href="<?php echo $css; ?>">

@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 $pageTitle = 'Quản lý HDV Nâng cao';
 $currentPage = 'nhanSu';
 ob_start();
@@ -1382,7 +1382,7 @@ ob_start();
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="<?php echo BASE_URL; ?>public/assets/bootstrap/bootstrap.bundle.min.js"></script>
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.9/index.global.min.js'></script>
     <script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
         function initAdvancedTabs() {

@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 $pageTitle = 'Lịch làm việc HDV - Dạng bảng';
 $currentPage = 'nhanSu';
 ob_start();
@@ -400,7 +400,7 @@ ob_start();
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="<?php echo BASE_URL; ?>public/assets/bootstrap/bootstrap.bundle.min.js"></script>
     <script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
         function filterTable() {
             const hdvFilter = document.getElementById('filterHDV').value;

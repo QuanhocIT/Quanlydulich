@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * SHARED CUSTOMER LAYOUT — FOOTER PARTIAL
  *
@@ -59,7 +59,7 @@ $extraJs = $extraJs ?? '';
     </div>
 </footer>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="<?php echo BASE_URL; ?>public/assets/bootstrap/bootstrap.bundle.min.js"></script>
 
 <!-- Notification badge live updater (works on all pages) -->
 <script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">

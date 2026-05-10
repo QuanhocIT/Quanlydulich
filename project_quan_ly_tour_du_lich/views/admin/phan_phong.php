@@ -1,4 +1,4 @@
-<?php 
+﻿<?php 
 if (!hasRole('Admin')) {
     header('Location: index.php?act=auth/login');
     exit;
@@ -10,8 +10,8 @@ if (!hasRole('Admin')) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Phân Phòng Khách Sạn - Quản Lý Tour Du Lịch</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link href="<?php echo BASE_URL; ?>public/assets/bootstrap/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="<?php echo BASE_URL; ?>public/assets/bootstrap-icons/bootstrap-icons.min.css">
     <style>
         .page-header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -445,6 +445,6 @@ if (!hasRole('Admin')) {
         <?php endif; ?>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="<?php echo BASE_URL; ?>public/assets/bootstrap/bootstrap.bundle.min.js"></script>
 </body>
 </html>

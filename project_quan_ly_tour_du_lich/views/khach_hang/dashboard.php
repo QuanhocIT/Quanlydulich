@@ -9,8 +9,8 @@ $favoriteTourIds = isset($favoriteTourIds) && is_array($favoriteTourIds) ? $favo
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Trang khách hàng - Du lịch</title>
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="<?php echo BASE_URL; ?>public/assets/bootstrap/bootstrap.min.css" rel="stylesheet">
+    <link href="<?php echo BASE_URL; ?>public/assets/bootstrap-icons/bootstrap-icons.min.css" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
@@ -3134,7 +3134,7 @@ function showTab(tab) {
             <p class="mb-0 text-center" style="color:rgba(255,255,255,.45); font-size:.84rem;">&copy; 2026 DuLichPro &mdash; Bản quyền thuộc về DuLichPro. Thiết kế với <i class="bi bi-heart-fill" style="color:#d6b26d;"></i> tại Việt Nam.</p>
         </div>
     </footer>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="<?php echo BASE_URL; ?>public/assets/bootstrap/bootstrap.bundle.min.js"></script>
     <script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
     document.addEventListener('DOMContentLoaded', function() {
         var myCarousel = document.querySelector('#bannerCarousel');
