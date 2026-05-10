@@ -1,0 +1,22 @@
+# Python WebSocket Server Dependencies
+websockets>=11.0
+mysql-connector-python>=8.0.30
+
+# Admin Automation & Email Queue (sẽ dùng sau)
+APScheduler>=3.10.0
+celery>=5.3.0
+redis>=5.0.0
+
+# Data Processing & Reports (sẽ dùng sau)
+pandas>=2.0.0
+numpy>=1.24.0
+SQLAlchemy>=2.0.0
+
+# HTTP Requests
+requests>=2.31.0
+
+# Configuration
+python-dotenv>=1.0.0
+
+# Logging & Monitoring
+python-json-logger>=2.0.0
