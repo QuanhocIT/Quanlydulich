@@ -12,17 +12,13 @@ class Booking
         $this->conn = connectDB();
     }
 
-    private function hasColumn(string $tableName, string $columnName): bool {
-        $key = $tableName . '.' . $columnName;
-        if (array_key_exists($key, self::$columnExistsCache)) {
-            return self::$columnExistsCache[$key];
-        }
-
+    private function getTableColumns(string $tableName): array {
         if (!array_key_exists($tableName, self::$tableColumnsCache)) {
             $sql = "SELECT COLUMN_NAME
                     FROM INFORMATION_SCHEMA.COLUMNS
                     WHERE TABLE_SCHEMA = DATABASE()
-                      AND TABLE_NAME = ?";
+                      AND TABLE_NAME = ?
+                    ORDER BY ORDINAL_POSITION";
             $stmt = $this->conn->prepare($sql);
             $stmt->execute([$tableName]);
             $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -37,14 +33,54 @@ class Booking
             self::$tableColumnsCache[$tableName] = $columnMap;
         }
 
-        self::$columnExistsCache[$key] = isset(self::$tableColumnsCache[$tableName][$columnName]);
+        return array_keys(self::$tableColumnsCache[$tableName]);
+    }
+
+    private function selectColumnsFromTable(string $tableName, string $alias = ''): string {
+        $columns = $this->getTableColumns($tableName);
+        if (empty($columns)) {
+            return $alias !== '' ? ($alias . '.booking_id') : 'booking_id';
+        }
+
+        if ($alias === '') {
+            return implode(', ', $columns);
+        }
+
+        $prefixed = array_map(static function ($column) use ($alias) {
+            return $alias . '.' . $column;
+        }, $columns);
+
+        return implode(', ', $prefixed);
+    }
+
+    private function bookingSelectColumns(string $alias = ''): string {
+        return $this->selectColumnsFromTable('booking', $alias);
+    }
+
+    private function hasColumn(string $tableName, string $columnName): bool {
+        $key = $tableName . '.' . $columnName;
+        if (array_key_exists($key, self::$columnExistsCache)) {
+            return self::$columnExistsCache[$key];
+        }
+
+        $columns = $this->getTableColumns($tableName);
+        self::$columnExistsCache[$key] = in_array($columnName, $columns, true);
 
         return self::$columnExistsCache[$key];
     }
 
+    private function bookingNotDeletedClause(string $alias = ''): string {
+        if (!$this->hasColumn('booking', 'is_deleted')) {
+            return '1=1';
+        }
+
+        $prefix = $alias !== '' ? ($alias . '.') : '';
+        return $prefix . 'is_deleted = 0';
+    }
+
     // Tìm booking theo tour_id và khach_hang_id (mã tour và mã khách hàng)
     public function findByTourAndCustomer(int $tourId, int $khachHangId): mixed {
-        $sql = "SELECT * FROM booking WHERE tour_id = ? AND khach_hang_id = ? AND is_deleted = 0 ORDER BY ngay_dat DESC LIMIT 1";
+        $sql = "SELECT " . $this->bookingSelectColumns() . " FROM booking WHERE tour_id = ? AND khach_hang_id = ? AND " . $this->bookingNotDeletedClause() . " ORDER BY ngay_dat DESC LIMIT 1";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([(int)$tourId, (int)$khachHangId]);
         return $stmt->fetch();
@@ -52,7 +88,7 @@ class Booking
 
     // Lấy tất cả booking
     public function getAll() {
-        $sql = "SELECT * FROM booking WHERE is_deleted = 0 ORDER BY ngay_dat DESC";
+        $sql = "SELECT " . $this->bookingSelectColumns() . " FROM booking WHERE " . $this->bookingNotDeletedClause() . " ORDER BY ngay_dat DESC";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute();
         return $stmt->fetchAll();
@@ -60,7 +96,7 @@ class Booking
 
     // Lấy booking theo ID
     public function findById(int $id): mixed {
-        $sql = "SELECT * FROM booking WHERE booking_id = ? AND is_deleted = 0";
+        $sql = "SELECT " . $this->bookingSelectColumns() . " FROM booking WHERE booking_id = ? AND " . $this->bookingNotDeletedClause();
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([$id]);
         return $stmt->fetch();
@@ -70,7 +106,7 @@ class Booking
     public function getStatusCounts() {
         $sql = "SELECT COALESCE(trang_thai, 'Khac') AS trang_thai, COUNT(*) AS total
                 FROM booking
-            WHERE is_deleted = 0
+                WHERE " . $this->bookingNotDeletedClause() . "
                 GROUP BY COALESCE(trang_thai, 'Khac')";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute();
@@ -87,7 +123,7 @@ class Booking
 
     // Tìm booking theo điều kiện
     public function find($conditions = []) {
-        $sql = "SELECT * FROM booking WHERE is_deleted = 0";
+        $sql = "SELECT " . $this->bookingSelectColumns() . " FROM booking WHERE " . $this->bookingNotDeletedClause();
         $params = [];
         
         if (!empty($conditions)) {
@@ -265,7 +301,7 @@ class Booking
 
     // Lấy booking với đầy đủ thông tin để hiển thị
     public function getAllWithDetails() {
-        $sql = "SELECT b.*,
+        $sql = "SELECT " . $this->bookingSelectColumns('b') . ",
                 t.ten_tour, t.gia_co_ban, t.loai_tour,
                 kh.khach_hang_id, kh.dia_chi,
                 nd.id AS nguoi_dung_id, nd.ho_ten, nd.email, nd.so_dien_thoai
@@ -273,7 +309,7 @@ class Booking
                 LEFT JOIN tour t ON b.tour_id = t.tour_id
                 LEFT JOIN khach_hang kh ON b.khach_hang_id = kh.khach_hang_id
                 LEFT JOIN nguoi_dung nd ON kh.nguoi_dung_id = nd.id
-            WHERE b.is_deleted = 0
+                WHERE " . $this->bookingNotDeletedClause('b') . "
                 ORDER BY b.ngay_dat DESC, b.booking_id DESC";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute();
@@ -293,7 +329,7 @@ class Booking
                 LEFT JOIN tour t ON b.tour_id = t.tour_id
                 LEFT JOIN khach_hang kh ON b.khach_hang_id = kh.khach_hang_id
                 LEFT JOIN nguoi_dung nd ON kh.nguoi_dung_id = nd.id
-                                WHERE b.is_deleted = 0
+                WHERE " . $this->bookingNotDeletedClause('b') . "
                                     AND (b.trang_thai IS NULL OR b.trang_thai <> 'DaHuy')
                 ORDER BY b.ngay_dat DESC, b.booking_id DESC
                 LIMIT ?";
@@ -362,7 +398,7 @@ class Booking
             }
         }
 
-        $baseWhere = ['b.is_deleted = 0'];
+        $baseWhere = [$this->bookingNotDeletedClause('b')];
         $whereClause = 'WHERE ' . implode(' AND ', array_merge($baseWhere, $where));
         $sql = "SELECT COUNT(*)
                 FROM booking b
@@ -434,9 +470,9 @@ class Booking
             }
         }
 
-        $baseWhere = ['b.is_deleted = 0'];
+        $baseWhere = [$this->bookingNotDeletedClause('b')];
         $whereClause = 'WHERE ' . implode(' AND ', array_merge($baseWhere, $where));
-        $sql = "SELECT b.*,
+        $sql = "SELECT " . $this->bookingSelectColumns('b') . ",
                 t.ten_tour, t.gia_co_ban, t.loai_tour,
                 kh.khach_hang_id, kh.dia_chi,
                 nd.id AS nguoi_dung_id, nd.ho_ten, nd.email, nd.so_dien_thoai,
@@ -478,11 +514,19 @@ class Booking
 
     // Xóa booking
     public function delete(int $id): bool {
-        $sql = "UPDATE booking
-                SET is_deleted = 1,
-                    deleted_at = NOW(),
-                    trang_thai = 'DaXoa'
-                WHERE booking_id = ? AND is_deleted = 0";
+        if ($this->hasColumn('booking', 'is_deleted')) {
+            $sql = "UPDATE booking
+                    SET is_deleted = 1";
+            if ($this->hasColumn('booking', 'deleted_at')) {
+                $sql .= ",
+                        deleted_at = NOW()";
+            }
+            $sql .= ",
+                        trang_thai = 'DaXoa'
+                    WHERE booking_id = ? AND is_deleted = 0";
+        } else {
+            $sql = "DELETE FROM booking WHERE booking_id = ?";
+        }
         $stmt = $this->conn->prepare($sql);
         return $stmt->execute([$id]);
     }
@@ -493,7 +537,7 @@ class Booking
                 FROM booking 
                 WHERE tour_id = ? 
                 AND ngay_khoi_hanh = ? 
-            AND is_deleted = 0
+            AND " . $this->bookingNotDeletedClause() . "
                 AND trang_thai IN ('DaCoc', 'HoanTat')";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([(int)$tourId, $ngayKhoiHanh]);
@@ -521,7 +565,7 @@ class Booking
         }
 
         $sql .= ")
-                  AND is_deleted = 0
+                  AND " . $this->bookingNotDeletedClause() . "
                   AND trang_thai IN ('DaCoc', 'HoanTat')";
 
         $stmt = $this->conn->prepare($sql);
@@ -543,7 +587,7 @@ class Booking
 
     // Lấy booking với thông tin tour và khách hàng
     public function getBookingWithDetails(int $bookingId): mixed {
-        $sql = "SELECT b.*, 
+        $sql = "SELECT " . $this->bookingSelectColumns('b') . ", 
                 t.ten_tour, t.gia_co_ban, t.mo_ta, t.loai_tour, t.chinh_sach,
                 kh.khach_hang_id, kh.dia_chi,
                 nd.ho_ten, nd.email, nd.so_dien_thoai
@@ -551,8 +595,8 @@ class Booking
                 LEFT JOIN tour t ON b.tour_id = t.tour_id
                 LEFT JOIN khach_hang kh ON b.khach_hang_id = kh.khach_hang_id
                 LEFT JOIN nguoi_dung nd ON kh.nguoi_dung_id = nd.id
-                                WHERE b.booking_id = ?
-                                    AND b.is_deleted = 0
+                WHERE b.booking_id = ?
+                    AND " . $this->bookingNotDeletedClause('b') . "
                                 LIMIT 1";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([$bookingId]);
@@ -755,7 +799,7 @@ class Booking
 
     // Lấy booking theo khách hàng ID
     public function getByKhachHangId(int $khachHangId): array {
-        $sql = "SELECT b.*, 
+        $sql = "SELECT " . $this->bookingSelectColumns('b') . ", 
                 t.ten_tour, t.gia_co_ban, t.mo_ta, t.loai_tour, t.chinh_sach,
                 t.trang_thai as tour_trang_thai,
                 lkh.ngay_khoi_hanh as lich_ngay_khoi_hanh, lkh.gio_xuat_phat as gio_khoi_hanh, lkh.diem_tap_trung
@@ -771,7 +815,7 @@ class Booking
 
     // Lấy booking theo user ID (nguoi_dung_id)
     public function getByUserId(int $userId): array {
-        $sql = "SELECT b.*, 
+        $sql = "SELECT " . $this->bookingSelectColumns('b') . ", 
                 t.ten_tour, t.gia_co_ban, t.mo_ta, t.loai_tour, t.chinh_sach,
                 t.trang_thai as tour_trang_thai,
                 lkh.ngay_khoi_hanh as lich_ngay_khoi_hanh, lkh.gio_xuat_phat as gio_khoi_hanh, lkh.diem_tap_trung

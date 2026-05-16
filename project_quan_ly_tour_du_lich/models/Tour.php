@@ -3,6 +3,12 @@
 class Tour 
 {
     public PDO $conn;
+    private static array $tableColumnsCache = [];
+    private ?bool $hasIsDeletedColumn = null;
+    private ?bool $hasDeletedAtColumn = null;
+    private ?bool $hasBookingIsDeletedColumn = null;
+    private ?bool $hasYeuCauDacBietDeletedAtColumn = null;
+    private ?bool $hasNhatKyTourDeletedAtColumn = null;
 
     private function clearTourReadCache() {
         cacheForgetByPrefix('tour_options_');
@@ -15,9 +21,175 @@ class Tour
         $this->conn = connectDB();
     }
 
+    private function getTableColumns(string $tableName): array {
+        if (!array_key_exists($tableName, self::$tableColumnsCache)) {
+            $sql = "SELECT COLUMN_NAME
+                    FROM INFORMATION_SCHEMA.COLUMNS
+                    WHERE TABLE_SCHEMA = DATABASE()
+                      AND TABLE_NAME = ?
+                    ORDER BY ORDINAL_POSITION";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute([$tableName]);
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $columns = [];
+            foreach ($rows as $row) {
+                $name = (string)($row['COLUMN_NAME'] ?? '');
+                if ($name !== '') {
+                    $columns[] = $name;
+                }
+            }
+
+            self::$tableColumnsCache[$tableName] = $columns;
+        }
+
+        return self::$tableColumnsCache[$tableName];
+    }
+
+    private function selectColumnsFromTable(string $tableName, string $alias = ''): string {
+        $columns = $this->getTableColumns($tableName);
+        if (empty($columns)) {
+            return $alias !== '' ? ($alias . '.id') : 'id';
+        }
+
+        if ($alias === '') {
+            return implode(', ', $columns);
+        }
+
+        $prefixed = array_map(static function ($column) use ($alias) {
+            return $alias . '.' . $column;
+        }, $columns);
+
+        return implode(', ', $prefixed);
+    }
+
+    private function tourSelectColumns(string $alias = ''): string {
+        return $this->selectColumnsFromTable('tour', $alias);
+    }
+
+    private function yeuCauDacBietSelectColumns(string $alias = ''): string {
+        return $this->selectColumnsFromTable('yeu_cau_dac_biet', $alias);
+    }
+
+    private function supportsIsDeleted(): bool {
+        if ($this->hasIsDeletedColumn !== null) {
+            return $this->hasIsDeletedColumn;
+        }
+
+        try {
+            $sql = "SELECT COUNT(*)
+                    FROM INFORMATION_SCHEMA.COLUMNS
+                    WHERE TABLE_SCHEMA = DATABASE()
+                      AND TABLE_NAME = 'tour'
+                      AND COLUMN_NAME = 'is_deleted'";
+            $stmt = $this->conn->query($sql);
+            $this->hasIsDeletedColumn = ((int)$stmt->fetchColumn() > 0);
+        } catch (Throwable $e) {
+            $this->hasIsDeletedColumn = false;
+        }
+
+        return $this->hasIsDeletedColumn;
+    }
+
+    private function notDeletedClause(): string {
+        return $this->supportsIsDeleted() ? 'is_deleted = 0' : '1=1';
+    }
+
+    private function supportsDeletedAt(): bool {
+        if ($this->hasDeletedAtColumn !== null) {
+            return $this->hasDeletedAtColumn;
+        }
+
+        try {
+            $sql = "SELECT COUNT(*)
+                    FROM INFORMATION_SCHEMA.COLUMNS
+                    WHERE TABLE_SCHEMA = DATABASE()
+                      AND TABLE_NAME = 'tour'
+                      AND COLUMN_NAME = 'deleted_at'";
+            $stmt = $this->conn->query($sql);
+            $this->hasDeletedAtColumn = ((int)$stmt->fetchColumn() > 0);
+        } catch (Throwable $e) {
+            $this->hasDeletedAtColumn = false;
+        }
+
+        return $this->hasDeletedAtColumn;
+    }
+
+    private function supportsBookingIsDeleted(): bool {
+        if ($this->hasBookingIsDeletedColumn !== null) {
+            return $this->hasBookingIsDeletedColumn;
+        }
+
+        try {
+            $sql = "SELECT COUNT(*)
+                    FROM INFORMATION_SCHEMA.COLUMNS
+                    WHERE TABLE_SCHEMA = DATABASE()
+                      AND TABLE_NAME = 'booking'
+                      AND COLUMN_NAME = 'is_deleted'";
+            $stmt = $this->conn->query($sql);
+            $this->hasBookingIsDeletedColumn = ((int)$stmt->fetchColumn() > 0);
+        } catch (Throwable $e) {
+            $this->hasBookingIsDeletedColumn = false;
+        }
+
+        return $this->hasBookingIsDeletedColumn;
+    }
+
+    private function bookingNotDeletedClause(string $alias = 'b'): string {
+        return $this->supportsBookingIsDeleted() ? ($alias . '.is_deleted = 0') : '1=1';
+    }
+
+    private function supportsYeuCauDacBietDeletedAt(): bool {
+        if ($this->hasYeuCauDacBietDeletedAtColumn !== null) {
+            return $this->hasYeuCauDacBietDeletedAtColumn;
+        }
+
+        try {
+            $sql = "SELECT COUNT(*)
+                    FROM INFORMATION_SCHEMA.COLUMNS
+                    WHERE TABLE_SCHEMA = DATABASE()
+                      AND TABLE_NAME = 'yeu_cau_dac_biet'
+                      AND COLUMN_NAME = 'deleted_at'";
+            $stmt = $this->conn->query($sql);
+            $this->hasYeuCauDacBietDeletedAtColumn = ((int)$stmt->fetchColumn() > 0);
+        } catch (Throwable $e) {
+            $this->hasYeuCauDacBietDeletedAtColumn = false;
+        }
+
+        return $this->hasYeuCauDacBietDeletedAtColumn;
+    }
+
+    private function yeuCauDacBietNotDeletedClause(string $alias = 'yc'): string {
+        return $this->supportsYeuCauDacBietDeletedAt() ? ($alias . '.deleted_at IS NULL') : '1=1';
+    }
+
+    private function supportsNhatKyTourDeletedAt(): bool {
+        if ($this->hasNhatKyTourDeletedAtColumn !== null) {
+            return $this->hasNhatKyTourDeletedAtColumn;
+        }
+
+        try {
+            $sql = "SELECT COUNT(*)
+                    FROM INFORMATION_SCHEMA.COLUMNS
+                    WHERE TABLE_SCHEMA = DATABASE()
+                      AND TABLE_NAME = 'nhat_ky_tour'
+                      AND COLUMN_NAME = 'deleted_at'";
+            $stmt = $this->conn->query($sql);
+            $this->hasNhatKyTourDeletedAtColumn = ((int)$stmt->fetchColumn() > 0);
+        } catch (Throwable $e) {
+            $this->hasNhatKyTourDeletedAtColumn = false;
+        }
+
+        return $this->hasNhatKyTourDeletedAtColumn;
+    }
+
+    private function nhatKyTourNotDeletedClause(string $alias = 'nkt'): string {
+        return $this->supportsNhatKyTourDeletedAt() ? ($alias . '.deleted_at IS NULL') : '1=1';
+    }
+
     // Lấy tất cả tour
     public function getAll($limit = null, $offset = 0) {
-        $sql = "SELECT * FROM tour WHERE is_deleted = 0 ORDER BY tour_id DESC";
+        $sql = "SELECT " . $this->tourSelectColumns() . " FROM tour WHERE " . $this->notDeletedClause() . " ORDER BY tour_id DESC";
         if ($limit !== null) {
             $sql .= " LIMIT ? OFFSET ?";
         }
@@ -37,7 +209,7 @@ class Tour
     public function getLightweightList($limit = null, $offset = 0) {
         $sql = "SELECT tour_id, ten_tour, loai_tour, mo_ta, gia_co_ban, trang_thai
                 FROM tour
-                WHERE is_deleted = 0
+                WHERE " . $this->notDeletedClause() . "
                 ORDER BY tour_id DESC";
         if ($limit !== null) {
             $sql .= " LIMIT ? OFFSET ?";
@@ -57,7 +229,7 @@ class Tour
         $cacheKey = 'tour_options_' . ($limitValue > 0 ? ('limit_' . $limitValue) : 'all');
 
         return cacheRemember($cacheKey, 300, function () use ($limitValue) {
-            $sql = "SELECT tour_id, ten_tour FROM tour WHERE is_deleted = 0 ORDER BY ten_tour ASC";
+            $sql = "SELECT tour_id, ten_tour FROM tour WHERE " . $this->notDeletedClause() . " ORDER BY ten_tour ASC";
             if ($limitValue > 0) {
                 $sql .= " LIMIT ?";
             }
@@ -72,7 +244,7 @@ class Tour
     }
 
     public function getPublicTours(array $filters = [], $limit = null, $offset = 0) {
-        $where = ["is_deleted = 0", "(trang_thai = 'HoatDong' OR trang_thai IS NULL)"];
+        $where = [$this->notDeletedClause(), "(trang_thai = 'HoatDong' OR trang_thai IS NULL)"];
         $params = [];
 
         if (!empty($filters['loai_tour'])) {
@@ -113,7 +285,7 @@ class Tour
                 FROM tour
                 WHERE loai_tour = ?
                   AND tour_id <> ?
-                                    AND is_deleted = 0
+                                    AND " . $this->notDeletedClause() . "
                   AND (trang_thai = 'HoatDong' OR trang_thai IS NULL)
                 ORDER BY tour_id DESC
                 LIMIT ?";
@@ -141,7 +313,7 @@ class Tour
         return cacheRemember('tour_dashboard_stats_v1', 120, function () {
             $sql = "SELECT tour_id, ten_tour, gia_co_ban, trang_thai
                 FROM tour
-                WHERE is_deleted = 0
+                WHERE " . $this->notDeletedClause() . "
                 ORDER BY tour_id DESC";
             $stmt = $this->conn->prepare($sql);
             $stmt->execute();
@@ -151,7 +323,7 @@ class Tour
 
     // Lấy tour theo ID
     public function findById(int $id) {
-        $sql = "SELECT * FROM tour WHERE tour_id = ? AND is_deleted = 0";
+        $sql = "SELECT " . $this->tourSelectColumns() . " FROM tour WHERE tour_id = ? AND " . $this->notDeletedClause();
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([$id]);
         return $stmt->fetch();
@@ -159,7 +331,7 @@ class Tour
 
     // Tìm tour theo điều kiện
     public function find($conditions = []) {
-        $sql = "SELECT * FROM tour WHERE is_deleted = 0";
+        $sql = "SELECT " . $this->tourSelectColumns() . " FROM tour WHERE " . $this->notDeletedClause();
         $params = [];
         
         if (isset($conditions) && count($conditions) > 0) {
@@ -234,11 +406,19 @@ class Tour
 
     // Xóa tour
     public function delete(int $id) {
-        $sql = "UPDATE tour
-                SET is_deleted = 1,
-                    deleted_at = NOW(),
-                    trang_thai = 'DaXoa'
-                WHERE tour_id = ? AND is_deleted = 0";
+        if ($this->supportsIsDeleted()) {
+            $sql = "UPDATE tour
+                    SET is_deleted = 1";
+            if ($this->supportsDeletedAt()) {
+                $sql .= ",
+                        deleted_at = NOW()";
+            }
+            $sql .= ",
+                        trang_thai = 'DaXoa'
+                    WHERE tour_id = ? AND is_deleted = 0";
+        } else {
+            $sql = "DELETE FROM tour WHERE tour_id = ?";
+        }
         $stmt = $this->conn->prepare($sql);
         $result = $stmt->execute([$id]);
 
@@ -336,7 +516,7 @@ class Tour
         }
 
         $sql = "SELECT DISTINCT
-                    t.*, 
+                    " . $this->tourSelectColumns('t') . ", 
                     MAX(lk.ngay_khoi_hanh) AS ngay_khoi_hanh_gan_nhat
                 FROM nhan_su ns
                 INNER JOIN lich_khoi_hanh lk
@@ -350,7 +530,7 @@ class Tour
                 UNION
                 
                 SELECT DISTINCT
-                    t.*, 
+                    " . $this->tourSelectColumns('t') . ", 
                     MAX(lk.ngay_khoi_hanh) AS ngay_khoi_hanh_gan_nhat
                 FROM nhan_su ns
                 INNER JOIN phan_bo_nhan_su pbn
@@ -479,7 +659,7 @@ class Tour
 
     // Đếm tour theo bộ lọc (dùng cho phân trang)
     public function countFiltered(array $conditions, string $search) {
-        $where = ['is_deleted = 0'];
+        $where = [$this->notDeletedClause()];
         $params = [];
         if (!empty($conditions['loai_tour'])) {
             $where[] = 'loai_tour = ?';
@@ -501,7 +681,7 @@ class Tour
 
     // Lấy tour có phân trang và bộ lọc SQL-side
     public function getAllPaginated(array $conditions, string $search, int $limit, int $offset) {
-        $where = ['is_deleted = 0'];
+        $where = [$this->notDeletedClause()];
         $params = [];
         if (!empty($conditions['loai_tour'])) {
             $where[] = 'loai_tour = ?';
@@ -515,7 +695,7 @@ class Tour
             $where[] = 'ten_tour LIKE ?';
             $params[] = '%' . $search . '%';
         }
-        $sql = 'SELECT * FROM tour WHERE ' . implode(' AND ', $where) . ' ORDER BY tour_id DESC LIMIT ? OFFSET ?';
+        $sql = 'SELECT ' . $this->tourSelectColumns() . ' FROM tour WHERE ' . implode(' AND ', $where) . ' ORDER BY tour_id DESC LIMIT ? OFFSET ?';
         $params[] = $limit;
         $params[] = $offset;
         $stmt = $this->conn->prepare($sql);
@@ -525,12 +705,12 @@ class Tour
 
     // Lấy danh sách yêu cầu đặc biệt theo tour_id
     public function getYeuCauDacBietByTourId(int $tourId) {
-        $sql = "SELECT yc.*, b.khach_hang_id 
+        $sql = "SELECT " . $this->yeuCauDacBietSelectColumns('yc') . ", b.khach_hang_id 
                 FROM yeu_cau_dac_biet yc
                 INNER JOIN booking b ON yc.booking_id = b.booking_id
                 WHERE b.tour_id = ? 
-              AND b.is_deleted = 0
-              AND yc.deleted_at IS NULL
+                            AND " . $this->bookingNotDeletedClause('b') . "
+              AND " . $this->yeuCauDacBietNotDeletedClause('yc') . "
                 ORDER BY yc.id DESC";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([(int)$tourId]);
@@ -560,7 +740,7 @@ public function getNhatKyTourByTourId(int $tourId) {
             LEFT JOIN nhan_su ns ON nkt.nhan_su_id = ns.nhan_su_id
             LEFT JOIN nguoi_dung nd ON ns.nguoi_dung_id = nd.id
             WHERE nkt.tour_id = ? 
-                            AND nkt.deleted_at IS NULL
+                            AND " . $this->nhatKyTourNotDeletedClause('nkt') . "
             ORDER BY nkt.ngay_ghi DESC, nkt.id DESC";
     $stmt = $this->conn->prepare($sql);
     $stmt->execute([(int)$tourId]);

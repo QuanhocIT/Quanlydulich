@@ -409,7 +409,19 @@ class DanhGia {
     
     // Xóa đánh giá
     public function delete($id) {
-        $sql = "UPDATE danh_gia SET deleted_at = NOW() WHERE danh_gia_id = ? AND deleted_at IS NULL";
+        $hasDeletedAt = false;
+        try {
+            $stmtCheck = $this->conn->prepare("SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'danh_gia' AND COLUMN_NAME = 'deleted_at'");
+            $stmtCheck->execute();
+            $hasDeletedAt = ((int)$stmtCheck->fetchColumn() > 0);
+        } catch (Throwable $e) {
+            $hasDeletedAt = false;
+        }
+        if ($hasDeletedAt) {
+            $sql = "UPDATE danh_gia SET deleted_at = NOW() WHERE danh_gia_id = ? AND deleted_at IS NULL";
+        } else {
+            $sql = "DELETE FROM danh_gia WHERE danh_gia_id = ?";
+        }
         $stmt = $this->conn->prepare($sql);
         return $stmt->execute([$id]);
     }

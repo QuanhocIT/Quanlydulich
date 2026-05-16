@@ -3,6 +3,40 @@
 class ThongBao 
 {
     public PDO $conn;
+    private static array $columnExistsCache = [];
+
+    private function hasColumn(string $tableName, string $columnName): bool
+    {
+        $key = $tableName . '.' . $columnName;
+        if (array_key_exists($key, self::$columnExistsCache)) {
+            return self::$columnExistsCache[$key];
+        }
+
+        try {
+            $sql = "SELECT COUNT(*)
+                    FROM INFORMATION_SCHEMA.COLUMNS
+                    WHERE TABLE_SCHEMA = DATABASE()
+                      AND TABLE_NAME = ?
+                      AND COLUMN_NAME = ?";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute([$tableName, $columnName]);
+            self::$columnExistsCache[$key] = ((int)$stmt->fetchColumn() > 0);
+        } catch (Throwable $e) {
+            self::$columnExistsCache[$key] = false;
+        }
+
+        return self::$columnExistsCache[$key];
+    }
+
+    private function thongBaoNotDeletedClause(string $alias = 'tb'): string
+    {
+        if (!$this->hasColumn('thong_bao', 'deleted_at')) {
+            return '1=1';
+        }
+
+        $prefix = $alias !== '' ? ($alias . '.') : '';
+        return $prefix . 'deleted_at IS NULL';
+    }
 
     /**
      * Điều kiện SQL nhận diện khiếu nại chuyển khoản sai/thiếu nội dung.
@@ -86,7 +120,7 @@ class ThongBao
                 FROM thong_bao tb
                 LEFT JOIN nguoi_dung nd_gui ON tb.nguoi_gui_id = nd_gui.id
                 LEFT JOIN nguoi_dung nd_nhan ON tb.nguoi_nhan_id = nd_nhan.id
-                WHERE tb.id = ? AND tb.deleted_at IS NULL";
+                WHERE tb.id = ? AND " . $this->thongBaoNotDeletedClause('tb');
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([(int)$id]);
         return $stmt->fetch();
@@ -100,7 +134,7 @@ class ThongBao
                 nd_gui.ho_ten as nguoi_gui_ten
                 FROM thong_bao tb
                 LEFT JOIN nguoi_dung nd_gui ON tb.nguoi_gui_id = nd_gui.id
-                WHERE tb.deleted_at IS NULL
+                WHERE " . $this->thongBaoNotDeletedClause('tb') . "
                 ORDER BY tb.created_at DESC
                 LIMIT ?";
         $stmt = $this->conn->prepare($sql);
@@ -117,7 +151,7 @@ class ThongBao
                 FROM thong_bao tb
                 LEFT JOIN nguoi_dung nd_gui ON tb.nguoi_gui_id = nd_gui.id
                 WHERE tb.loai_thong_bao = ?
-                                    AND tb.deleted_at IS NULL
+                                    AND " . $this->thongBaoNotDeletedClause('tb') . "
                 ORDER BY tb.created_at DESC";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([$loaiThongBao]);
@@ -133,7 +167,7 @@ class ThongBao
                 FROM thong_bao tb
                 LEFT JOIN nguoi_dung nd_gui ON tb.nguoi_gui_id = nd_gui.id
                                 WHERE (tb.vai_tro_nhan = ? OR tb.vai_tro_nhan IS NULL)
-                                    AND tb.deleted_at IS NULL
+                                    AND " . $this->thongBaoNotDeletedClause('tb') . "
                 ORDER BY tb.created_at DESC
                 LIMIT ?";
         $stmt = $this->conn->prepare($sql);
@@ -154,7 +188,7 @@ class ThongBao
             WHERE tb.nguoi_nhan_id = ?
               AND tb.vai_tro_nhan = 'KhachHang'
               AND tb.trang_thai = 'DaGui'
-                            AND tb.deleted_at IS NULL
+                            AND " . $this->thongBaoNotDeletedClause('tb') . "
               AND tb.nguoi_gui_id IS NOT NULL
               AND nd_gui.vai_tro = 'Admin'
                 ORDER BY tb.created_at DESC
@@ -174,7 +208,7 @@ class ThongBao
                 LEFT JOIN thong_bao_doc tbd ON tb.id = tbd.thong_bao_id AND tbd.nguoi_dung_id = ?
                                 WHERE tb.nguoi_nhan_id = ?
                                     AND tb.vai_tro_nhan = 'KhachHang'
-                                    AND tb.deleted_at IS NULL
+                                    AND " . $this->thongBaoNotDeletedClause('tb') . "
                                     AND tb.nguoi_gui_id IS NOT NULL
                                     AND nd_gui.vai_tro = 'Admin'
                   AND (tbd.da_doc IS NULL OR tbd.da_doc = 0)
@@ -208,7 +242,7 @@ class ThongBao
              WHERE tb.nguoi_nhan_id = ?
                AND tb.vai_tro_nhan = 'KhachHang'
                AND tb.trang_thai = 'DaGui'
-                             AND tb.deleted_at IS NULL
+                             AND " . $this->thongBaoNotDeletedClause('tb') . "
                AND (tbd.da_doc IS NULL OR tbd.da_doc = 0)"
         );
         $ids->execute([$nguoiDungId, $nguoiDungId]);
@@ -240,7 +274,7 @@ class ThongBao
             $sql .= ", thoi_gian_gui = NOW()";
         }
         
-        $sql .= " WHERE id = ? AND deleted_at IS NULL";
+        $sql .= " WHERE id = ? AND " . $this->thongBaoNotDeletedClause('');
         
         $stmt = $this->conn->prepare($sql);
         return $stmt->execute([$trangThai, (int)$id]);
@@ -250,7 +284,11 @@ class ThongBao
      * Xóa thông báo
      */
     public function delete(int $id) {
-        $sql = "UPDATE thong_bao SET deleted_at = NOW() WHERE id = ? AND deleted_at IS NULL";
+        if ($this->hasColumn('thong_bao', 'deleted_at')) {
+            $sql = "UPDATE thong_bao SET deleted_at = NOW() WHERE id = ? AND deleted_at IS NULL";
+        } else {
+            $sql = "DELETE FROM thong_bao WHERE id = ?";
+        }
         $stmt = $this->conn->prepare($sql);
         return $stmt->execute([(int)$id]);
     }
@@ -285,7 +323,7 @@ class ThongBao
                 SUM(CASE WHEN loai_thong_bao = 'KhachHang' THEN 1 ELSE 0 END) as khach_hang,
                 SUM(CASE WHEN loai_thong_bao = 'NhanSu' THEN 1 ELSE 0 END) as nhan_su
                 FROM thong_bao
-                WHERE deleted_at IS NULL";
+                WHERE " . $this->thongBaoNotDeletedClause('');
         $stmt = $this->conn->prepare($sql);
         $stmt->execute();
         return $stmt->fetch();
@@ -300,7 +338,7 @@ class ThongBao
                 FROM thong_bao tb
                 LEFT JOIN nguoi_dung nd_gui ON tb.nguoi_gui_id = nd_gui.id
                 WHERE tb.nguoi_gui_id = ?
-                                    AND tb.deleted_at IS NULL
+                                    AND " . $this->thongBaoNotDeletedClause('tb') . "
                 ORDER BY tb.created_at DESC";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([(int)$nguoiDungId]);
@@ -318,7 +356,7 @@ class ThongBao
                 FROM thong_bao tb
                 LEFT JOIN nguoi_dung nd_gui ON tb.nguoi_gui_id = nd_gui.id
             WHERE tb.tieu_de = 'Yêu cầu tour theo mong muốn'
-                AND tb.deleted_at IS NULL
+                                    AND " . $this->thongBaoNotDeletedClause('tb') . "
                   AND tb.vai_tro_nhan = 'Admin'";
         
         $params = [];
@@ -374,7 +412,7 @@ class ThongBao
                     SELECT nguoi_gui_id, MAX(id) AS latest_id
                     FROM thong_bao
                     WHERE tieu_de = 'YÃªu cáº§u tour theo mong muá»‘n'
-                                            AND deleted_at IS NULL
+                                            AND " . $this->thongBaoNotDeletedClause('') . "
                       AND vai_tro_nhan = 'Admin'
                       AND nguoi_gui_id IN ($placeholders)
                     GROUP BY nguoi_gui_id
@@ -401,7 +439,7 @@ class ThongBao
         $sql = "SELECT COUNT(*) as total
                 FROM thong_bao tb
                 WHERE tb.tieu_de = 'Yêu cầu tour theo mong muốn'
-                                    AND tb.deleted_at IS NULL
+                                    AND " . $this->thongBaoNotDeletedClause('tb') . "
                   AND tb.vai_tro_nhan = 'Admin'
                   AND tb.trang_thai = 'DaGui'";
         $stmt = $this->conn->prepare($sql);
@@ -421,7 +459,7 @@ class ThongBao
                 FROM thong_bao tb
                 LEFT JOIN nguoi_dung nd_gui ON tb.nguoi_gui_id = nd_gui.id
                                 WHERE " . $this->paymentComplaintWhereClause() . "
-                  AND tb.deleted_at IS NULL
+                                    AND " . $this->thongBaoNotDeletedClause('tb') . "
                   AND tb.vai_tro_nhan = 'Admin'";
 
         $params = [];
@@ -459,7 +497,7 @@ class ThongBao
         $sql = "SELECT COUNT(*) as total
                 FROM thong_bao tb
                                 WHERE " . $this->paymentComplaintWhereClause() . "
-                  AND tb.deleted_at IS NULL
+              AND " . $this->thongBaoNotDeletedClause('tb') . "
                   AND tb.vai_tro_nhan = 'Admin'
                   AND tb.trang_thai = 'DaGui'";
         $stmt = $this->conn->prepare($sql);

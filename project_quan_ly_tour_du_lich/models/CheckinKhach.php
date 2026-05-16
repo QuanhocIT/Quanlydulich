@@ -2,45 +2,127 @@
 
 class CheckinKhach
 {
-    public $conn;
+    public PDO $conn;
+    private static array $columnExistsCache = [];
+    private static array $tableColumnsCache = [];
 
     public function __construct()
     {
         $this->conn = connectDB();
     }
 
-    public function getByLichKhoiHanh($lichKhoiHanhId)
+    private function getTableColumns(string $tableName): array
     {
-        $sql = "SELECT *
+        if (!array_key_exists($tableName, self::$tableColumnsCache)) {
+            $sql = "SELECT COLUMN_NAME
+                    FROM INFORMATION_SCHEMA.COLUMNS
+                    WHERE TABLE_SCHEMA = DATABASE()
+                      AND TABLE_NAME = ?
+                    ORDER BY ORDINAL_POSITION";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute([$tableName]);
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $columns = [];
+            foreach ($rows as $row) {
+                $name = (string)($row['COLUMN_NAME'] ?? '');
+                if ($name !== '') {
+                    $columns[] = $name;
+                }
+            }
+            self::$tableColumnsCache[$tableName] = $columns;
+        }
+
+        return self::$tableColumnsCache[$tableName];
+    }
+
+    private function selectColumnsFromTable(string $tableName, string $alias = ''): string
+    {
+        $columns = $this->getTableColumns($tableName);
+        if (empty($columns)) {
+            return $alias !== '' ? ($alias . '.id') : 'id';
+        }
+
+        if ($alias === '') {
+            return implode(', ', $columns);
+        }
+
+        $prefixed = array_map(static function ($column) use ($alias) {
+            return $alias . '.' . $column;
+        }, $columns);
+        return implode(', ', $prefixed);
+    }
+
+    private function checkinSelectColumns(string $alias = ''): string
+    {
+        return $this->selectColumnsFromTable('tour_checkin', $alias);
+    }
+
+    private function hasColumn(string $tableName, string $columnName): bool
+    {
+        $key = $tableName . '.' . $columnName;
+        if (array_key_exists($key, self::$columnExistsCache)) {
+            return self::$columnExistsCache[$key];
+        }
+
+        try {
+            $sql = "SELECT COUNT(*)
+                    FROM INFORMATION_SCHEMA.COLUMNS
+                    WHERE TABLE_SCHEMA = DATABASE()
+                      AND TABLE_NAME = ?
+                      AND COLUMN_NAME = ?";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute([$tableName, $columnName]);
+            self::$columnExistsCache[$key] = ((int)$stmt->fetchColumn() > 0);
+        } catch (Throwable $e) {
+            self::$columnExistsCache[$key] = false;
+        }
+
+        return self::$columnExistsCache[$key];
+    }
+
+    private function notDeletedClause(string $alias = ''): string
+    {
+        if (!$this->hasColumn('tour_checkin', 'deleted_at')) {
+            return '1=1';
+        }
+
+        $prefix = $alias !== '' ? ($alias . '.') : '';
+        return $prefix . 'deleted_at IS NULL';
+    }
+
+    public function getByLichKhoiHanh(int $lichKhoiHanhId): array
+    {
+        $sql = "SELECT " . $this->checkinSelectColumns() . "
                 FROM tour_checkin
                 WHERE lich_khoi_hanh_id = ?
-              AND deleted_at IS NULL
+                                    AND " . $this->notDeletedClause() . "
                 ORDER BY updated_at DESC, checkin_time DESC";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([(int)$lichKhoiHanhId]);
         return $stmt->fetchAll();
     }
 
-    public function findOne($lichKhoiHanhId, $bookingId, $khachHangId)
+    public function findOne(int $lichKhoiHanhId, int $bookingId, int $khachHangId): mixed
     {
-        $sql = "SELECT *
+                $sql = "SELECT " . $this->checkinSelectColumns() . "
                 FROM tour_checkin
                 WHERE lich_khoi_hanh_id = ?
                   AND booking_id = ?
                   AND khach_hang_id = ?
-                                    AND deleted_at IS NULL
+                                    AND " . $this->notDeletedClause() . "
                 LIMIT 1";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([(int)$lichKhoiHanhId, (int)$bookingId, (int)$khachHangId]);
         return $stmt->fetch();
     }
 
-    public function getByBookingId($bookingId)
+    public function getByBookingId(int $bookingId): array
     {
-        $sql = "SELECT *
+        $sql = "SELECT " . $this->checkinSelectColumns() . "
                 FROM tour_checkin
                 WHERE booking_id = ?
-              AND deleted_at IS NULL
+                                    AND " . $this->notDeletedClause() . "
                 ORDER BY id ASC";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([(int)$bookingId]);
@@ -48,7 +130,7 @@ class CheckinKhach
     }
 
     // Lấy checkin theo nhiều booking_id trong một query, trả về map booking_id => rows.
-    public function getByBookingIdsGrouped(array $bookingIds)
+    public function getByBookingIdsGrouped(array $bookingIds): array
     {
         $normalized = [];
         foreach ($bookingIds as $bookingId) {
@@ -64,10 +146,10 @@ class CheckinKhach
 
         $idList = array_values($normalized);
         $placeholders = implode(',', array_fill(0, count($idList), '?'));
-        $sql = "SELECT *
+        $sql = "SELECT " . $this->checkinSelectColumns() . "
                 FROM tour_checkin
                 WHERE booking_id IN ($placeholders)
-              AND deleted_at IS NULL
+                                    AND " . $this->notDeletedClause() . "
                 ORDER BY booking_id ASC, id ASC";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute($idList);
@@ -88,26 +170,30 @@ class CheckinKhach
         return $grouped;
     }
 
-    public function findById($id)
+    public function findById(int $id): mixed
     {
-        $sql = "SELECT *
+        $sql = "SELECT " . $this->checkinSelectColumns() . "
                 FROM tour_checkin
                 WHERE id = ?
-              AND deleted_at IS NULL
+                                    AND " . $this->notDeletedClause() . "
                 LIMIT 1";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([(int)$id]);
         return $stmt->fetch();
     }
 
-    public function delete($id)
+    public function delete(int $id): bool
     {
-        $sql = "UPDATE tour_checkin SET deleted_at = NOW() WHERE id = ? AND deleted_at IS NULL";
+        if ($this->hasColumn('tour_checkin', 'deleted_at')) {
+            $sql = "UPDATE tour_checkin SET deleted_at = NOW() WHERE id = ? AND deleted_at IS NULL";
+        } else {
+            $sql = "DELETE FROM tour_checkin WHERE id = ?";
+        }
         $stmt = $this->conn->prepare($sql);
         return $stmt->execute([(int)$id]);
     }
 
-    public function ensureExtendedSchema()
+    public function ensureExtendedSchema(): void
     {
         static $initialized = false;
 
@@ -124,7 +210,7 @@ class CheckinKhach
         $initialized = true;
     }
 
-    public function insert($data)
+    public function insert(array $data): bool
     {
         $this->ensureExtendedSchema();
 
@@ -169,7 +255,7 @@ class CheckinKhach
         return $stmt->execute($values);
     }
 
-    public function update($id, $data)
+    public function update(int $id, array $data): bool
     {
         $sql = "UPDATE tour_checkin
                 SET trang_thai = ?,
@@ -187,7 +273,7 @@ class CheckinKhach
         ]);
     }
 
-    public function updateFull($id, $data)
+    public function updateFull(int $id, array $data): bool
     {
         $this->ensureExtendedSchema();
 

@@ -170,9 +170,21 @@ class ChiPhiThucTe
     
     // Xóa chi phí (chỉ được xóa nếu chưa duyệt)
     public function delete($id) {
-        $sql = "UPDATE chi_phi_thuc_te
-            SET deleted_at = NOW(), trang_thai = 'DaXoa'
-            WHERE chi_phi_id = ? AND trang_thai = 'ChoXacNhan' AND deleted_at IS NULL";
+        $hasDeletedAt = false;
+        try {
+            $stmtCheck = $this->conn->prepare("SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'chi_phi_thuc_te' AND COLUMN_NAME = 'deleted_at'");
+            $stmtCheck->execute();
+            $hasDeletedAt = ((int)$stmtCheck->fetchColumn() > 0);
+        } catch (Throwable $e) {
+            $hasDeletedAt = false;
+        }
+        if ($hasDeletedAt) {
+            $sql = "UPDATE chi_phi_thuc_te
+                SET deleted_at = NOW(), trang_thai = 'DaXoa'
+                WHERE chi_phi_id = ? AND trang_thai = 'ChoXacNhan' AND deleted_at IS NULL";
+        } else {
+            $sql = "DELETE FROM chi_phi_thuc_te WHERE chi_phi_id = ? AND trang_thai = 'ChoXacNhan'";
+        }
         $stmt = $this->conn->prepare($sql);
         return $stmt->execute([$id]);
     }

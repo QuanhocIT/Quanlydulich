@@ -1,15 +1,61 @@
 <?php
 class KhachHang 
 {
-    public $conn;
+    public PDO $conn;
+    private static array $tableColumnsCache = [];
     
     public function __construct()
     {
         $this->conn = connectDB();
     }
 
-    public function getAll($limit = null, $offset = 0) {
-        $sql = "SELECT * FROM khach_hang ORDER BY khach_hang_id DESC";
+    private function getTableColumns(string $tableName): array {
+        if (!array_key_exists($tableName, self::$tableColumnsCache)) {
+            $sql = "SELECT COLUMN_NAME
+                    FROM INFORMATION_SCHEMA.COLUMNS
+                    WHERE TABLE_SCHEMA = DATABASE()
+                      AND TABLE_NAME = ?
+                    ORDER BY ORDINAL_POSITION";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute([$tableName]);
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $columns = [];
+            foreach ($rows as $row) {
+                $name = (string)($row['COLUMN_NAME'] ?? '');
+                if ($name !== '') {
+                    $columns[] = $name;
+                }
+            }
+            self::$tableColumnsCache[$tableName] = $columns;
+        }
+
+        return self::$tableColumnsCache[$tableName];
+    }
+
+    private function selectColumnsFromTable(string $tableName, string $alias = ''): string {
+        $columns = $this->getTableColumns($tableName);
+        if (empty($columns)) {
+            return $alias !== '' ? ($alias . '.id') : 'id';
+        }
+
+        if ($alias === '') {
+            return implode(', ', $columns);
+        }
+
+        $prefixed = array_map(static function ($column) use ($alias) {
+            return $alias . '.' . $column;
+        }, $columns);
+
+        return implode(', ', $prefixed);
+    }
+
+    private function khachHangSelectColumns(string $alias = ''): string {
+        return $this->selectColumnsFromTable('khach_hang', $alias);
+    }
+
+    public function getAll(?int $limit = null, int $offset = 0): array {
+        $sql = "SELECT " . $this->khachHangSelectColumns() . " FROM khach_hang ORDER BY khach_hang_id DESC";
         if ($limit !== null) {
             $sql .= " LIMIT ? OFFSET ?";
         }
@@ -26,26 +72,26 @@ class KhachHang
         return $stmt->fetchAll();
     }
 
-    public function findById($id) {
-        $sql = "SELECT * FROM khach_hang WHERE khach_hang_id = ?";
+    public function findById(int $id): mixed {
+        $sql = "SELECT " . $this->khachHangSelectColumns() . " FROM khach_hang WHERE khach_hang_id = ?";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([$id]);
         return $stmt->fetch();
     }
 
-    public function findByNguoiDungId($nguoiDungId) {
-        $sql = "SELECT * FROM khach_hang WHERE nguoi_dung_id = ?";
+    public function findByNguoiDungId(int $nguoiDungId): mixed {
+        $sql = "SELECT " . $this->khachHangSelectColumns() . " FROM khach_hang WHERE nguoi_dung_id = ?";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([$nguoiDungId]);
         return $stmt->fetch();
     }
 
-    public function findByUserId($userId) {
+    public function findByUserId(int $userId): mixed {
         return $this->findByNguoiDungId($userId);
     }
 
     // Thống kê khách hàng mới theo tháng (dựa trên nguoi_dung.ngay_tao).
-    public function getNewCustomersByMonth($months = 12) {
+    public function getNewCustomersByMonth(int $months = 12): array {
         $months = max(1, (int)$months);
         $sql = "SELECT DATE_FORMAT(nd.ngay_tao, '%Y-%m') AS thang, COUNT(*) AS total
                 FROM khach_hang kh
@@ -69,7 +115,7 @@ class KhachHang
         return $result;
     }
 
-    public function insert($data) {
+    public function insert(array $data): string|false {
         $sql = "INSERT INTO khach_hang (nguoi_dung_id, dia_chi, gioi_tinh, ngay_sinh) VALUES (?, ?, ?, ?)";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([
@@ -82,7 +128,7 @@ class KhachHang
     }
 
     // Tìm hoặc tạo khách hàng từ thông tin người dùng
-    public function findOrCreateByNguoiDungInfo($nguoiDungId, $diaChi = null, $gioiTinh = null, $ngaySinh = null) {
+    public function findOrCreateByNguoiDungInfo(int $nguoiDungId, ?string $diaChi = null, ?string $gioiTinh = null, ?string $ngaySinh = null): mixed {
         // Tìm khách hàng hiện có
         $khachHang = $this->findByNguoiDungId($nguoiDungId);
         if ($khachHang) {
@@ -101,8 +147,8 @@ class KhachHang
     }
 
     // Lấy thông tin khách hàng với thông tin người dùng
-    public function getKhachHangWithNguoiDung($khachHangId) {
-        $sql = "SELECT kh.*, nd.ho_ten, nd.email, nd.so_dien_thoai, nd.vai_tro
+    public function getKhachHangWithNguoiDung(int $khachHangId): mixed {
+        $sql = "SELECT " . $this->khachHangSelectColumns('kh') . ", nd.ho_ten, nd.email, nd.so_dien_thoai, nd.vai_tro
                 FROM khach_hang kh
                 LEFT JOIN nguoi_dung nd ON kh.nguoi_dung_id = nd.id
                 WHERE kh.khach_hang_id = ?";

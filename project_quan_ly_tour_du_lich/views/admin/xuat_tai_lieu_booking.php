@@ -1,4 +1,9 @@
 <?php
+if (!isset($booking) || !is_array($booking)) {
+    $booking = [];
+}
+
+/** @var array<string, mixed> $booking */
 $pageTitle = 'Xuất tài liệu - Booking #' . (isset($booking['booking_id']) ? $booking['booking_id'] : 'N/A');
 $currentPage = 'xuat_tai_lieu';
 ob_start();
@@ -31,7 +36,7 @@ ob_start();
         }
     }
 
-    function sendEmail(type) {
+    function sendEmail(type, triggerButton) {
         try {
             if (!BOOKING_EMAIL) {
                 alert('Không có địa chỉ email của khách hàng!');
@@ -45,7 +50,7 @@ ob_start();
             
             var docName = getDocumentName(type);
             if (confirm('Gửi ' + docName + ' đến ' + BOOKING_EMAIL + '?')) {
-                var btn = window.event ? window.event.target : null;
+                var btn = triggerButton || null;
                 if (btn) {
                     btn = btn.closest ? btn.closest('button') : btn;
                     var originalHTML = btn.innerHTML;
@@ -373,13 +378,13 @@ ob_start();
                         <h4 class="mb-3">Báo Giá</h4>
                         <p class="text-muted mb-4">Tài liệu báo giá chi tiết gửi cho khách hàng</p>
                         <div class="action-buttons">
-                            <button onclick="showDocument('bao-gia')" class="btn btn-primary">
+                            <button type="button" class="btn btn-primary js-preview-btn" data-doc-type="bao-gia">
                                 <i class="bi bi-eye"></i> Xem trước
                             </button>
                             <a href="index.php?act=booking/exportPDF&id=<?php echo $booking['booking_id']; ?>&type=bao-gia" class="btn btn-success">
                                 <i class="bi bi-download"></i> Tải PDF
                             </a>
-                            <button onclick="sendEmail('bao-gia')" class="btn btn-info">
+                            <button type="button" class="btn btn-info js-email-btn" data-doc-type="bao-gia">
                                 <i class="bi bi-envelope"></i> Gửi email
                             </button>
                         </div>
@@ -394,13 +399,13 @@ ob_start();
                         <h4 class="mb-3">Hợp Đồng</h4>
                         <p class="text-muted mb-4">Hợp đồng dịch vụ du lịch giữa hai bên</p>
                         <div class="action-buttons">
-                            <button onclick="showDocument('hop-dong')" class="btn btn-primary">
+                            <button type="button" class="btn btn-primary js-preview-btn" data-doc-type="hop-dong">
                                 <i class="bi bi-eye"></i> Xem trước
                             </button>
                             <a href="index.php?act=booking/exportPDF&id=<?php echo $booking['booking_id']; ?>&type=hop-dong" class="btn btn-success">
                                 <i class="bi bi-download"></i> Tải PDF
                             </a>
-                            <button onclick="sendEmail('hop-dong')" class="btn btn-info">
+                            <button type="button" class="btn btn-info js-email-btn" data-doc-type="hop-dong">
                                 <i class="bi bi-envelope"></i> Gửi email
                             </button>
                         </div>
@@ -415,13 +420,13 @@ ob_start();
                         <h4 class="mb-3">Hóa Đơn</h4>
                         <p class="text-muted mb-4">Hóa đơn VAT thanh toán dịch vụ</p>
                         <div class="action-buttons">
-                            <button onclick="showDocument('hoa-don')" class="btn btn-primary">
+                            <button type="button" class="btn btn-primary js-preview-btn" data-doc-type="hoa-don">
                                 <i class="bi bi-eye"></i> Xem trước
                             </button>
                             <a href="index.php?act=booking/exportPDF&id=<?php echo $booking['booking_id']; ?>&type=hoa-don" class="btn btn-success">
                                 <i class="bi bi-download"></i> Tải PDF
                             </a>
-                            <button onclick="sendEmail('hoa-don')" class="btn btn-info">
+                            <button type="button" class="btn btn-info js-email-btn" data-doc-type="hoa-don">
                                 <i class="bi bi-envelope"></i> Gửi email
                             </button>
                         </div>
@@ -470,7 +475,7 @@ ob_start();
 
     <!-- Print Button (Fixed) -->
     <div class="no-print" style="position: fixed; bottom: 2rem; right: 2rem;">
-        <button onclick="window.print()" style="background: var(--accent-gold); color: #000; padding: 15px 25px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; font-size: 1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+        <button type="button" id="print-document-btn" style="background: var(--accent-gold); color: #000; padding: 15px 25px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; font-size: 1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
             <i class="bi bi-printer"></i> In tài liệu
         </button>
     </div>
@@ -488,6 +493,33 @@ ob_start();
         for (var i = 0; i < docs.length; i++) {
             var el = document.getElementById(docs[i]);
             console.log(docs[i] + ':', el ? 'EXISTS' : 'NOT FOUND');
+        }
+
+        var previewButtons = document.querySelectorAll('.js-preview-btn');
+        for (var j = 0; j < previewButtons.length; j++) {
+            previewButtons[j].addEventListener('click', function() {
+                var type = this.getAttribute('data-doc-type') || '';
+                if (type !== '') {
+                    showDocument(type);
+                }
+            });
+        }
+
+        var emailButtons = document.querySelectorAll('.js-email-btn');
+        for (var k = 0; k < emailButtons.length; k++) {
+            emailButtons[k].addEventListener('click', function() {
+                var type = this.getAttribute('data-doc-type') || '';
+                if (type !== '') {
+                    sendEmail(type, this);
+                }
+            });
+        }
+
+        var printButton = document.getElementById('print-document-btn');
+        if (printButton) {
+            printButton.addEventListener('click', function() {
+                window.print();
+            });
         }
     });
 </script>

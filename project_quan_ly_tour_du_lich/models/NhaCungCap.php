@@ -1,37 +1,118 @@
 <?php
 class NhaCungCap 
 {
-    public $conn;
+    public PDO $conn;
+    private static array $columnExistsCache = [];
+    private static array $tableColumnsCache = [];
     
     public function __construct()
     {
         $this->conn = connectDB();
     }
 
-    public function getAll() {
-        $sql = "SELECT * FROM nha_cung_cap WHERE is_deleted = 0";
+    private function getTableColumns(string $tableName): array {
+        if (!array_key_exists($tableName, self::$tableColumnsCache)) {
+            $sql = "SELECT COLUMN_NAME
+                    FROM INFORMATION_SCHEMA.COLUMNS
+                    WHERE TABLE_SCHEMA = DATABASE()
+                      AND TABLE_NAME = ?
+                    ORDER BY ORDINAL_POSITION";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute([$tableName]);
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $columns = [];
+            foreach ($rows as $row) {
+                $name = (string)($row['COLUMN_NAME'] ?? '');
+                if ($name !== '') {
+                    $columns[] = $name;
+                }
+            }
+            self::$tableColumnsCache[$tableName] = $columns;
+        }
+
+        return self::$tableColumnsCache[$tableName];
+    }
+
+    private function selectColumnsFromTable(string $tableName, string $alias = ''): string {
+        $columns = $this->getTableColumns($tableName);
+        if (empty($columns)) {
+            return $alias !== '' ? ($alias . '.id') : 'id';
+        }
+
+        if ($alias === '') {
+            return implode(', ', $columns);
+        }
+
+        $prefixed = array_map(static function ($column) use ($alias) {
+            return $alias . '.' . $column;
+        }, $columns);
+        return implode(', ', $prefixed);
+    }
+
+    private function nhaCungCapSelectColumns(string $alias = ''): string {
+        return $this->selectColumnsFromTable('nha_cung_cap', $alias);
+    }
+
+    private function phanBoDichVuSelectColumns(string $alias = ''): string {
+        return $this->selectColumnsFromTable('phan_bo_dich_vu', $alias);
+    }
+
+    private function hasColumn(string $tableName, string $columnName): bool {
+        $key = $tableName . '.' . $columnName;
+        if (array_key_exists($key, self::$columnExistsCache)) {
+            return self::$columnExistsCache[$key];
+        }
+
+        try {
+            $sql = "SELECT COUNT(*)
+                    FROM INFORMATION_SCHEMA.COLUMNS
+                    WHERE TABLE_SCHEMA = DATABASE()
+                      AND TABLE_NAME = ?
+                      AND COLUMN_NAME = ?";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute([$tableName, $columnName]);
+            self::$columnExistsCache[$key] = ((int)$stmt->fetchColumn() > 0);
+        } catch (Throwable $e) {
+            self::$columnExistsCache[$key] = false;
+        }
+
+        return self::$columnExistsCache[$key];
+    }
+
+    private function nhaCungCapNotDeletedClause(string $alias = ''): string {
+        if (!$this->hasColumn('nha_cung_cap', 'is_deleted')) {
+            return '1=1';
+        }
+
+        $prefix = $alias !== '' ? ($alias . '.') : '';
+        return $prefix . 'is_deleted = 0';
+    }
+
+    public function getAll(): array {
+        $sql = "SELECT " . $this->nhaCungCapSelectColumns() . " FROM nha_cung_cap WHERE " . $this->nhaCungCapNotDeletedClause();
         $stmt = $this->conn->prepare($sql);
         $stmt->execute();
         return $stmt->fetchAll();
     }
 
-    public function findById($id) {
-        $sql = "SELECT * FROM nha_cung_cap WHERE id_nha_cung_cap = ? AND is_deleted = 0";
+    public function findById(int $id): mixed {
+        $sql = "SELECT " . $this->nhaCungCapSelectColumns() . " FROM nha_cung_cap WHERE id_nha_cung_cap = ? AND " . $this->nhaCungCapNotDeletedClause();
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([$id]);
         return $stmt->fetch();
     }
 
-    public function findByUserId($userId) {
-        $sql = "SELECT * FROM nha_cung_cap WHERE nguoi_dung_id = ? AND is_deleted = 0";
+    public function findByUserId(int $userId): mixed {
+        $sql = "SELECT " . $this->nhaCungCapSelectColumns() . " FROM nha_cung_cap WHERE nguoi_dung_id = ? AND " . $this->nhaCungCapNotDeletedClause();
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([$userId]);
         return $stmt->fetch();
     }
 
     // Lấy danh sách dịch vụ được phân bổ kèm bộ lọc
-    public function getDichVu($nhaCungCapId, $filters = null) {
-        $sql = "SELECT pbdv.*, lkh.ngay_khoi_hanh, lkh.ngay_ket_thuc, 
+    public function getDichVu(int $nhaCungCapId, array|string|null $filters = null): array {
+        $sql = "SELECT " . $this->phanBoDichVuSelectColumns('pbdv') . ", lkh.ngay_khoi_hanh, lkh.ngay_ket_thuc, 
                 t.ten_tour, t.tour_id
                 FROM phan_bo_dich_vu pbdv
                 LEFT JOIN lich_khoi_hanh lkh ON pbdv.lich_khoi_hanh_id = lkh.id
@@ -76,8 +157,8 @@ class NhaCungCap
     }
 
     // Lấy chi tiết một dịch vụ theo ID
-    public function getDichVuById($dichVuId, $nhaCungCapId = null) {
-        $sql = "SELECT pbdv.*, lkh.ngay_khoi_hanh, lkh.ngay_ket_thuc, lkh.id as lich_khoi_hanh_id,
+    public function getDichVuById(int $dichVuId, ?int $nhaCungCapId = null): mixed {
+        $sql = "SELECT " . $this->phanBoDichVuSelectColumns('pbdv') . ", lkh.ngay_khoi_hanh, lkh.ngay_ket_thuc, lkh.id as lich_khoi_hanh_id,
                 t.ten_tour, t.tour_id, t.mo_ta as tour_mo_ta,
                 ncc.ten_don_vi as nha_cung_cap_ten
                 FROM phan_bo_dich_vu pbdv
@@ -96,7 +177,7 @@ class NhaCungCap
     }
 
     // Cập nhật trạng thái dịch vụ (xác nhận booking)
-    public function xacNhanDichVu($dichVuId, $giaTien = null) {
+    public function xacNhanDichVu(int $dichVuId, int|float|string|null $giaTien = null): bool {
         if ($giaTien !== null) {
             $sql = "UPDATE phan_bo_dich_vu 
                     SET trang_thai = 'DaXacNhan', 
@@ -118,7 +199,7 @@ class NhaCungCap
     }
 
     // Từ chối dịch vụ
-    public function tuChoiDichVu($dichVuId, $ghiChu = null) {
+    public function tuChoiDichVu(int $dichVuId, ?string $ghiChu = null): bool {
         if ($ghiChu) {
             $sql = "UPDATE phan_bo_dich_vu 
                     SET trang_thai = 'TuChoi', 
@@ -140,7 +221,7 @@ class NhaCungCap
     }
 
     // Cập nhật giá dịch vụ
-    public function capNhatGiaDichVu($dichVuId, $giaTien) {
+    public function capNhatGiaDichVu(int $dichVuId, int|float|string $giaTien): bool {
         $sql = "UPDATE phan_bo_dich_vu SET gia_tien = ? WHERE id = ?";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([$giaTien, $dichVuId]);
@@ -148,7 +229,7 @@ class NhaCungCap
     }
 
     // Tính tổng công nợ
-    public function getTongCongNo($nhaCungCapId) {
+    public function getTongCongNo(int $nhaCungCapId): mixed {
         $sql = "SELECT 
                     SUM(CASE WHEN trang_thai = 'DaXacNhan' THEN gia_tien ELSE 0 END) as tong_cong_no,
                     COUNT(CASE WHEN trang_thai = 'DaXacNhan' THEN 1 END) as so_dich_vu
@@ -160,8 +241,8 @@ class NhaCungCap
     }
 
     // Lịch sử hợp tác
-    public function getLichSuHopTac($nhaCungCapId, $limit = 50) {
-        $sql = "SELECT pbdv.*, lkh.ngay_khoi_hanh, lkh.ngay_ket_thuc,
+    public function getLichSuHopTac(int $nhaCungCapId, int $limit = 50): array {
+        $sql = "SELECT " . $this->phanBoDichVuSelectColumns('pbdv') . ", lkh.ngay_khoi_hanh, lkh.ngay_ket_thuc,
                 t.ten_tour, t.tour_id,
                 COUNT(DISTINCT b.booking_id) as so_booking
                 FROM phan_bo_dich_vu pbdv
@@ -178,7 +259,7 @@ class NhaCungCap
     }
 
     // Thêm nhà cung cấp mới
-    public function create($data) {
+    public function create(array $data): string|false {
         // Cho phép gắn với tài khoản người dùng (nguoi_dung_id) nếu có
         if (!empty($data['nguoi_dung_id'])) {
             $sql = "INSERT INTO nha_cung_cap (nguoi_dung_id, ten_don_vi, loai_dich_vu, dia_chi, lien_he, mo_ta) 
@@ -208,7 +289,7 @@ class NhaCungCap
     }
 
     // Cập nhật nhà cung cấp
-    public function update($id, $data) {
+    public function update(int $id, array $data): bool {
         $sql = "UPDATE nha_cung_cap 
                 SET ten_don_vi = ?, loai_dich_vu = ?, dia_chi = ?, lien_he = ?, mo_ta = ?
                 WHERE id_nha_cung_cap = ?";
@@ -224,17 +305,22 @@ class NhaCungCap
     }
 
     // Xóa nhà cung cấp
-    public function delete($id) {
-        $sql = "UPDATE nha_cung_cap
-                SET is_deleted = 1,
-                    deleted_at = NOW()
-                WHERE id_nha_cung_cap = ? AND is_deleted = 0";
+    public function delete(int $id): bool {
+        if ($this->hasColumn('nha_cung_cap', 'is_deleted')) {
+            $sql = "UPDATE nha_cung_cap SET is_deleted = 1";
+            if ($this->hasColumn('nha_cung_cap', 'deleted_at')) {
+                $sql .= ", deleted_at = NOW()";
+            }
+            $sql .= " WHERE id_nha_cung_cap = ? AND is_deleted = 0";
+        } else {
+            $sql = "DELETE FROM nha_cung_cap WHERE id_nha_cung_cap = ?";
+        }
         $stmt = $this->conn->prepare($sql);
         return $stmt->execute([$id]);
     }
 
     // Tổng quan dịch vụ đã cung cấp theo loại
-    public function getServiceTypeSummary($nhaCungCapId) {
+    public function getServiceTypeSummary(int $nhaCungCapId): array {
         $sql = "SELECT 
                     loai_dich_vu,
                     COUNT(*) AS so_lan_cung_cap,
@@ -252,7 +338,7 @@ class NhaCungCap
     }
 
     // Thống kê tổng hợp cho nhà cung cấp
-    public function getSupplierStats($nhaCungCapId) {
+    public function getSupplierStats(int $nhaCungCapId): mixed {
         $sql = "SELECT 
                     COUNT(*) AS tong_dich_vu,
                     SUM(CASE WHEN trang_thai = 'DaXacNhan' THEN 1 ELSE 0 END) AS da_xac_nhan,
@@ -269,9 +355,9 @@ class NhaCungCap
     }
 
     // Danh sách dịch vụ chi tiết theo tour
-    public function getSupplierServices($nhaCungCapId, $loaiDichVu = null, $limit = 50) {
+    public function getSupplierServices(int $nhaCungCapId, ?string $loaiDichVu = null, int $limit = 50): array {
         $sql = "SELECT 
-                    pbdv.*,
+                    " . $this->phanBoDichVuSelectColumns('pbdv') . ",
                     t.ten_tour,
                     lkh.ngay_khoi_hanh,
                     lkh.ngay_ket_thuc,
@@ -297,7 +383,7 @@ class NhaCungCap
     }
 
     // Lấy danh sách loại dịch vụ đã từng cung cấp
-    public function getDistinctServiceTypes($nhaCungCapId) {
+    public function getDistinctServiceTypes(int $nhaCungCapId): array {
         $sql = "SELECT DISTINCT loai_dich_vu 
                 FROM phan_bo_dich_vu 
                 WHERE nha_cung_cap_id = ?
@@ -308,7 +394,7 @@ class NhaCungCap
     }
 
     // Thống kê báo giá theo trạng thái
-    public function getBaoGiaStats($nhaCungCapId) {
+    public function getBaoGiaStats(int $nhaCungCapId): mixed {
         $sql = "SELECT 
                     SUM(CASE WHEN trang_thai = 'ChoXacNhan' THEN 1 ELSE 0 END) AS cho_xac_nhan,
                     SUM(CASE WHEN trang_thai = 'DaXacNhan' THEN 1 ELSE 0 END) AS da_xac_nhan,
@@ -323,7 +409,7 @@ class NhaCungCap
     }
 
     // Danh sách lịch khởi hành sắp tới để gửi báo giá thủ công
-    public function getUpcomingLichKhoiHanh($limit = 20) {
+    public function getUpcomingLichKhoiHanh(int $limit = 20): array {
         $sql = "SELECT lkh.id, t.ten_tour, lkh.ngay_khoi_hanh, lkh.ngay_ket_thuc,
                        lkh.diem_tap_trung, lkh.so_cho, lkh.trang_thai
                 FROM lich_khoi_hanh lkh

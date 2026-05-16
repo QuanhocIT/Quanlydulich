@@ -139,7 +139,19 @@ class DuToanTour
     
     // Xóa dự toán
     public function delete($id) {
-        $sql = "UPDATE du_toan_tour SET deleted_at = NOW() WHERE du_toan_id = ? AND deleted_at IS NULL";
+        $hasDeletedAt = false;
+        try {
+            $stmtCheck = $this->conn->prepare("SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'du_toan_tour' AND COLUMN_NAME = 'deleted_at'");
+            $stmtCheck->execute();
+            $hasDeletedAt = ((int)$stmtCheck->fetchColumn() > 0);
+        } catch (Throwable $e) {
+            $hasDeletedAt = false;
+        }
+        if ($hasDeletedAt) {
+            $sql = "UPDATE du_toan_tour SET deleted_at = NOW() WHERE du_toan_id = ? AND deleted_at IS NULL";
+        } else {
+            $sql = "DELETE FROM du_toan_tour WHERE du_toan_id = ?";
+        }
         $stmt = $this->conn->prepare($sql);
         return $stmt->execute([$id]);
     }

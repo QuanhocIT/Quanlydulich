@@ -2,16 +2,57 @@
 // Model cho BookingDeletionHistory - Lịch sử xóa booking
 class BookingDeletionHistory 
 {
-    public $conn;
+    public PDO $conn;
+    private static array $tableColumnsCache = [];
     
     public function __construct()
     {
         $this->conn = connectDB();
     }
 
+    private function getTableColumns(string $tableName): array {
+        if (!array_key_exists($tableName, self::$tableColumnsCache)) {
+            $sql = "SELECT COLUMN_NAME
+                    FROM INFORMATION_SCHEMA.COLUMNS
+                    WHERE TABLE_SCHEMA = DATABASE()
+                      AND TABLE_NAME = ?
+                    ORDER BY ORDINAL_POSITION";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute([$tableName]);
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $columns = [];
+            foreach ($rows as $row) {
+                $name = (string)($row['COLUMN_NAME'] ?? '');
+                if ($name !== '') {
+                    $columns[] = $name;
+                }
+            }
+            self::$tableColumnsCache[$tableName] = $columns;
+        }
+
+        return self::$tableColumnsCache[$tableName];
+    }
+
+    private function bookingDeletionSelectColumns(string $alias = ''): string {
+        $columns = $this->getTableColumns('booking_deletion_history');
+        if (empty($columns)) {
+            return $alias !== '' ? ($alias . '.id') : 'id';
+        }
+
+        if ($alias === '') {
+            return implode(', ', $columns);
+        }
+
+        $prefixed = array_map(static function ($column) use ($alias) {
+            return $alias . '.' . $column;
+        }, $columns);
+        return implode(', ', $prefixed);
+    }
+
     // Lấy tất cả lịch sử xóa
-    public function getAll() {
-        $sql = "SELECT bdh.*, 
+    public function getAll(): array {
+        $sql = "SELECT " . $this->bookingDeletionSelectColumns('bdh') . ", 
                 nd.ho_ten as nguoi_xoa, nd.email as email_nguoi_xoa,
                 t.ten_tour, t.tour_id,
                 kh.khach_hang_id,
@@ -28,8 +69,8 @@ class BookingDeletionHistory
     }
 
     // Lấy lịch sử xóa theo booking_id (nếu còn lưu)
-    public function getByBookingId($bookingId) {
-        $sql = "SELECT bdh.*, 
+    public function getByBookingId(int $bookingId): mixed {
+        $sql = "SELECT " . $this->bookingDeletionSelectColumns('bdh') . ", 
                 nd.ho_ten as nguoi_xoa, nd.email as email_nguoi_xoa
                 FROM booking_deletion_history bdh
                 LEFT JOIN nguoi_dung nd ON bdh.nguoi_xoa_id = nd.id
@@ -41,7 +82,7 @@ class BookingDeletionHistory
     }
 
     // Thêm lịch sử xóa
-    public function insert($data) {
+    public function insert(array $data): bool {
         $sql = "INSERT INTO booking_deletion_history (
                     booking_id, tour_id, khach_hang_id, 
                     nguoi_xoa_id, ly_do_xoa, thong_tin_booking, 

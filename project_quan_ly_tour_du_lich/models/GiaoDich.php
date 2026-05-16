@@ -1,7 +1,8 @@
 <?php
 class GiaoDich {
+    private static array $tableColumnsCache = [];
     // Lấy tổng thu các tháng gần nhất (mặc định 12 tháng)
-    public function getTongThuTheoThang($soThang = 12) {
+    public function getTongThuTheoThang(int $soThang = 12): array {
         $sql = "SELECT DATE_FORMAT(ngay_giao_dich, '%m/%Y') as thang, COALESCE(SUM(so_tien),0) as tong_thu
                 FROM giao_dich_tai_chinh
                 WHERE loai = 'Thu'
@@ -18,7 +19,7 @@ class GiaoDich {
         return $result;
     }
     // Lấy tổng thu của một tour
-    public function getTongThuByTourId($tourId) {
+    public function getTongThuByTourId(int $tourId): float {
         $sql = "SELECT SUM(so_tien) as tong_thu FROM giao_dich_tai_chinh WHERE tour_id = ? AND loai = 'Thu'";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([(int)$tourId]);
@@ -27,7 +28,7 @@ class GiaoDich {
     }
 
     // Lấy tổng chi của một tour
-    public function getTongChiByTourId($tourId) {
+    public function getTongChiByTourId(int $tourId): float {
         $sql = "SELECT SUM(so_tien) as tong_chi FROM giao_dich_tai_chinh WHERE tour_id = ? AND loai = 'Chi'";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([(int)$tourId]);
@@ -36,7 +37,7 @@ class GiaoDich {
     }
 
     // Lấy tổng thu/chi theo danh sách tour trong một query để tránh N+1.
-    public function getTongThuChiByTourIds(array $tourIds) {
+    public function getTongThuChiByTourIds(array $tourIds): array {
         $normalizedIds = [];
         foreach ($tourIds as $tourId) {
             $id = (int)$tourId;
@@ -75,12 +76,53 @@ class GiaoDich {
 
         return $result;
     }
-    public $conn;
+    public PDO $conn;
     public function __construct() {
         $this->conn = connectDB();
     }
 
-    private function buildFilterConditions($filters, &$params) {
+    private function getTableColumns(string $tableName): array {
+        if (!array_key_exists($tableName, self::$tableColumnsCache)) {
+            $sql = "SELECT COLUMN_NAME
+                    FROM INFORMATION_SCHEMA.COLUMNS
+                    WHERE TABLE_SCHEMA = DATABASE()
+                      AND TABLE_NAME = ?
+                    ORDER BY ORDINAL_POSITION";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute([$tableName]);
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $columns = [];
+            foreach ($rows as $row) {
+                $name = (string)($row['COLUMN_NAME'] ?? '');
+                if ($name !== '') {
+                    $columns[] = $name;
+                }
+            }
+            self::$tableColumnsCache[$tableName] = $columns;
+        }
+
+        return self::$tableColumnsCache[$tableName];
+    }
+
+    private function giaoDichSelectColumns(string $alias = ''): string {
+        $columns = $this->getTableColumns('giao_dich_tai_chinh');
+        if (empty($columns)) {
+            return $alias !== '' ? ($alias . '.id') : 'id';
+        }
+
+        if ($alias === '') {
+            return implode(', ', $columns);
+        }
+
+        $prefixed = array_map(static function ($column) use ($alias) {
+            return $alias . '.' . $column;
+        }, $columns);
+
+        return implode(', ', $prefixed);
+    }
+
+    private function buildFilterConditions(array $filters, array &$params): array {
         $conditions = [];
 
         if (!empty($filters['loai'])) {
@@ -117,13 +159,13 @@ class GiaoDich {
         return $conditions;
     }
 
-    public function getAll($limit = null, $offset = 0) {
+    public function getAll(?int $limit = null, int $offset = 0): array {
         return $this->getFiltered([], $limit, $offset);
     }
 
-    public function getFiltered($filters = [], $limit = null, $offset = 0) {
+    public function getFiltered(array $filters = [], ?int $limit = null, int $offset = 0): array {
         $params = [];
-        $sql = 'SELECT * FROM giao_dich_tai_chinh';
+        $sql = 'SELECT ' . $this->giaoDichSelectColumns() . ' FROM giao_dich_tai_chinh';
         $conditions = $this->buildFilterConditions($filters, $params);
 
         if (!empty($conditions)) {
@@ -149,7 +191,7 @@ class GiaoDich {
         return $stmt->fetchAll();
     }
 
-    public function countFiltered($filters = []) {
+    public function countFiltered(array $filters = []): int {
         $params = [];
         $sql = 'SELECT COUNT(*) FROM giao_dich_tai_chinh';
         $conditions = $this->buildFilterConditions($filters, $params);
@@ -163,7 +205,7 @@ class GiaoDich {
         return (int)$stmt->fetchColumn();
     }
 
-    public function getTongThuChiFiltered($filters = []) {
+    public function getTongThuChiFiltered(array $filters = []): array {
         $params = [];
         $sql = "SELECT
                     COALESCE(SUM(CASE WHEN loai = 'Thu' THEN so_tien ELSE 0 END), 0) AS tong_thu,
@@ -184,23 +226,23 @@ class GiaoDich {
         ];
     }
 
-    public function findById($id) {
-        $sql = "SELECT * FROM giao_dich_tai_chinh WHERE id = ?";
+    public function findById(int $id): mixed {
+        $sql = "SELECT " . $this->giaoDichSelectColumns() . " FROM giao_dich_tai_chinh WHERE id = ?";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([$id]);
         return $stmt->fetch();
     }
 
     // Lấy giao dịch theo tour
-    public function getByTourId($tourId) {
-        $sql = "SELECT * FROM giao_dich_tai_chinh WHERE tour_id = ? ORDER BY ngay_giao_dich DESC";
+    public function getByTourId(int $tourId): array {
+        $sql = "SELECT " . $this->giaoDichSelectColumns() . " FROM giao_dich_tai_chinh WHERE tour_id = ? ORDER BY ngay_giao_dich DESC";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([(int)$tourId]);
         return $stmt->fetchAll();
     }
 
     // Thêm giao dịch
-    public function insert($data) {
+    public function insert(array $data): bool {
         $sql = "INSERT INTO giao_dich_tai_chinh (tour_id, loai, so_tien, mo_ta, ngay_giao_dich) 
                 VALUES (?, ?, ?, ?, ?)";
         $stmt = $this->conn->prepare($sql);
@@ -214,7 +256,7 @@ class GiaoDich {
     }
 
     // Tính tổng thu theo tour
-    public function getTongThuByTour($tourId) {
+    public function getTongThuByTour(int $tourId): float {
         $sql = "SELECT COALESCE(SUM(so_tien), 0) as tong_thu 
                 FROM giao_dich_tai_chinh 
                 WHERE tour_id = ? AND loai = 'Thu'";
@@ -225,7 +267,7 @@ class GiaoDich {
     }
 
     // Tính tổng chi theo tour
-    public function getTongChiByTour($tourId) {
+    public function getTongChiByTour(int $tourId): float {
         $sql = "SELECT COALESCE(SUM(so_tien), 0) as tong_chi 
                 FROM giao_dich_tai_chinh 
                 WHERE tour_id = ? AND loai = 'Chi'";
@@ -236,14 +278,14 @@ class GiaoDich {
     }
 
     // Tính lãi/lỗ theo tour
-    public function getLaiLoByTour($tourId) {
+    public function getLaiLoByTour(int $tourId): float {
         $tongThu = $this->getTongThuByTour($tourId);
         $tongChi = $this->getTongChiByTour($tourId);
         return $tongThu - $tongChi;
     }
 
     // Thống kê tổng hợp theo tour
-    public function getThongKeByTour($tourId) {
+    public function getThongKeByTour(int $tourId): array {
         $sql = "SELECT 
                     COALESCE(SUM(CASE WHEN loai = 'Thu' THEN so_tien ELSE 0 END), 0) as tong_thu,
                     COALESCE(SUM(CASE WHEN loai = 'Chi' THEN so_tien ELSE 0 END), 0) as tong_chi,
@@ -264,7 +306,7 @@ class GiaoDich {
     }
 
     // Thống kê tổng hợp tất cả tour
-    public function getThongKeTongHop($startDate = null, $endDate = null) {
+    public function getThongKeTongHop(?string $startDate = null, ?string $endDate = null): array {
         $sql = "SELECT 
                     COALESCE(SUM(CASE WHEN loai = 'Thu' THEN so_tien ELSE 0 END), 0) as tong_thu,
                     COALESCE(SUM(CASE WHEN loai = 'Chi' THEN so_tien ELSE 0 END), 0) as tong_chi,
@@ -295,7 +337,7 @@ class GiaoDich {
     }
 
     // Thống kê theo từng tour
-    public function getThongKeTheoTour($startDate = null, $endDate = null) {
+    public function getThongKeTheoTour(?string $startDate = null, ?string $endDate = null): array {
         $sql = "SELECT 
                     t.tour_id,
                     t.ten_tour,
@@ -339,7 +381,7 @@ class GiaoDich {
     }
 
     // Lấy tổng thu chi cho tất cả tour bằng 1 truy vấn gộp.
-    public function getThuChiTatCaTour($startDate = null, $endDate = null) {
+    public function getThuChiTatCaTour(?string $startDate = null, ?string $endDate = null): array {
         $sql = "SELECT
                     t.tour_id,
                     t.ten_tour,

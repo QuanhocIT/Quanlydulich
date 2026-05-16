@@ -3,22 +3,67 @@
 class PhanBoNhanSu 
 {
     // Các trường lương linh hoạt
-    public $loai_luong;
-    public $so_tien_co_dinh;
-    public $phan_tram_hoa_hong;
-    public $tien_hoa_hong;
-    public $tong_luong;
-    public $trang_thai_luong;
-    public $ngay_tao_luong;
-    public $ngay_cap_nhat_luong;
-    public $conn;
+    public ?string $loai_luong = null;
+    public int|float|string|null $so_tien_co_dinh = null;
+    public int|float|string|null $phan_tram_hoa_hong = null;
+    public int|float|string|null $tien_hoa_hong = null;
+    public int|float|string|null $tong_luong = null;
+    public ?string $trang_thai_luong = null;
+    public ?string $ngay_tao_luong = null;
+    public ?string $ngay_cap_nhat_luong = null;
+    public PDO $conn;
     
     public function __construct()
     {
         $this->conn = connectDB();
     }
 
-    private function columnExists($table, $column) {
+    private function getTableColumns(string $tableName): array {
+        static $tableColumns = [];
+        if (!array_key_exists($tableName, $tableColumns)) {
+            $sql = "SELECT COLUMN_NAME
+                    FROM INFORMATION_SCHEMA.COLUMNS
+                    WHERE TABLE_SCHEMA = DATABASE()
+                      AND TABLE_NAME = ?
+                    ORDER BY ORDINAL_POSITION";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute([$tableName]);
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $columns = [];
+            foreach ($rows as $row) {
+                $name = (string)($row['COLUMN_NAME'] ?? '');
+                if ($name !== '') {
+                    $columns[] = $name;
+                }
+            }
+            $tableColumns[$tableName] = $columns;
+        }
+
+        return $tableColumns[$tableName];
+    }
+
+    private function selectColumnsFromTable(string $tableName, string $alias = ''): string {
+        $columns = $this->getTableColumns($tableName);
+        if (empty($columns)) {
+            return $alias !== '' ? ($alias . '.id') : 'id';
+        }
+
+        if ($alias === '') {
+            return implode(', ', $columns);
+        }
+
+        $prefixed = array_map(static function ($column) use ($alias) {
+            return $alias . '.' . $column;
+        }, $columns);
+        return implode(', ', $prefixed);
+    }
+
+    private function phanBoSelectColumns(string $alias = ''): string {
+        return $this->selectColumnsFromTable('phan_bo_nhan_su', $alias);
+    }
+
+    private function columnExists(string $table, string $column): bool {
         static $cache = [];
         static $tableColumns = [];
         $key = $table . '.' . $column;
@@ -52,24 +97,32 @@ class PhanBoNhanSu
         return $cache[$key];
     }
 
+    private function notDeletedClause(string $alias = 'pbn'): string {
+        if (!$this->columnExists('phan_bo_nhan_su', 'deleted_at')) {
+            return '1=1';
+        }
+        $prefix = $alias !== '' ? ($alias . '.') : '';
+        return $prefix . 'deleted_at IS NULL';
+    }
+
     // Lấy phân bổ theo ID
-    public function findById($id) {
-        $sql = "SELECT * FROM phan_bo_nhan_su WHERE id = ? AND deleted_at IS NULL";
+    public function findById(int $id): mixed {
+        $sql = "SELECT " . $this->phanBoSelectColumns() . " FROM phan_bo_nhan_su WHERE id = ? AND " . $this->notDeletedClause();
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([(int)$id]);
         return $stmt->fetch();
     }
 
     // Lấy phân bổ nhân sự theo lịch khởi hành
-    public function getByLichKhoiHanh($lichKhoiHanhId) {
-        $sql = "SELECT pbn.*, 
+    public function getByLichKhoiHanh(int $lichKhoiHanhId): array {
+        $sql = "SELECT " . $this->phanBoSelectColumns('pbn') . ", 
                 ns.nhan_su_id, ns.vai_tro as ns_vai_tro,
                 nd.ho_ten, nd.email, nd.so_dien_thoai
                 FROM phan_bo_nhan_su pbn
                 LEFT JOIN nhan_su ns ON pbn.nhan_su_id = ns.nhan_su_id
                 LEFT JOIN nguoi_dung nd ON ns.nguoi_dung_id = nd.id
                 WHERE pbn.lich_khoi_hanh_id = ?
-                                    AND pbn.deleted_at IS NULL
+                                    AND " . $this->notDeletedClause('pbn') . "
                 ORDER BY pbn.vai_tro, nd.ho_ten";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([(int)$lichKhoiHanhId]);
@@ -77,15 +130,15 @@ class PhanBoNhanSu
     }
 
     // Lấy phân bổ nhân sự theo vai trò
-    public function getByVaiTro($lichKhoiHanhId, $vaiTro) {
-        $sql = "SELECT pbn.*, 
+    public function getByVaiTro(int $lichKhoiHanhId, string $vaiTro): array {
+        $sql = "SELECT " . $this->phanBoSelectColumns('pbn') . ", 
                 ns.nhan_su_id,
                 nd.ho_ten, nd.email, nd.so_dien_thoai
                 FROM phan_bo_nhan_su pbn
                 LEFT JOIN nhan_su ns ON pbn.nhan_su_id = ns.nhan_su_id
                 LEFT JOIN nguoi_dung nd ON ns.nguoi_dung_id = nd.id
                                 WHERE pbn.lich_khoi_hanh_id = ? AND pbn.vai_tro = ?
-                                    AND pbn.deleted_at IS NULL";
+                                    AND " . $this->notDeletedClause('pbn');
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([(int)$lichKhoiHanhId, $vaiTro]);
         return $stmt->fetchAll();
@@ -93,7 +146,7 @@ class PhanBoNhanSu
 
 
     // Thêm phân bổ nhân sự (có lương)
-    public function insert($data) {
+    public function insert(array $data): string|false {
         $sql = "INSERT INTO phan_bo_nhan_su (lich_khoi_hanh_id, nhan_su_id, vai_tro, ghi_chu, trang_thai,
             loai_luong, so_tien_co_dinh, phan_tram_hoa_hong, tien_hoa_hong, tong_luong, trang_thai_luong, ngay_tao_luong, ngay_cap_nhat_luong)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
@@ -120,7 +173,7 @@ class PhanBoNhanSu
     }
 
     // Cập nhật lương cho nhân sự phân bổ
-    public function updateLuong($id, $data) {
+    public function updateLuong(int $id, array $data): bool {
         $sql = "UPDATE phan_bo_nhan_su SET 
             loai_luong = ?, so_tien_co_dinh = ?, phan_tram_hoa_hong = ?, tien_hoa_hong = ?, tong_luong = ?,
             trang_thai_luong = ?, ngay_cap_nhat_luong = NOW()
@@ -138,7 +191,7 @@ class PhanBoNhanSu
     }
 
     // Tính lương tự động cho nhân sự theo doanh thu tour (nếu là phần trăm hoặc kết hợp)
-    public function tinhLuongTuDong($phanBoId, $doanhThuTour) {
+    public function tinhLuongTuDong(int $phanBoId, int|float $doanhThuTour): float|false {
         $row = $this->findById($phanBoId);
         if (!$row) return false;
         $tongLuong = 0;
@@ -161,15 +214,15 @@ class PhanBoNhanSu
     }
 
     // Lấy thông tin lương của nhân sự theo lịch khởi hành
-    public function getLuongByLichKhoiHanh($lichKhoiHanhId) {
-        $sql = "SELECT * FROM phan_bo_nhan_su WHERE lich_khoi_hanh_id = ? AND deleted_at IS NULL";
+    public function getLuongByLichKhoiHanh(int $lichKhoiHanhId): array {
+        $sql = "SELECT " . $this->phanBoSelectColumns() . " FROM phan_bo_nhan_su WHERE lich_khoi_hanh_id = ? AND " . $this->notDeletedClause();
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([(int)$lichKhoiHanhId]);
         return $stmt->fetchAll();
     }
 
     // Cập nhật phân bổ nhân sự
-    public function update($id, $data) {
+    public function update(int $id, array $data): bool {
         $sql = "UPDATE phan_bo_nhan_su SET 
                 nhan_su_id = ?, vai_tro = ?, ghi_chu = ?, trang_thai = ?,
                 thoi_gian_xac_nhan = ?
@@ -190,14 +243,18 @@ class PhanBoNhanSu
     }
 
     // Xóa phân bổ nhân sự
-    public function delete($id) {
-        $sql = "UPDATE phan_bo_nhan_su SET deleted_at = NOW(), trang_thai = 'Huy' WHERE id = ? AND deleted_at IS NULL";
+    public function delete(int $id): bool {
+        if ($this->columnExists('phan_bo_nhan_su', 'deleted_at')) {
+            $sql = "UPDATE phan_bo_nhan_su SET deleted_at = NOW(), trang_thai = 'Huy' WHERE id = ? AND deleted_at IS NULL";
+        } else {
+            $sql = "DELETE FROM phan_bo_nhan_su WHERE id = ?";
+        }
         $stmt = $this->conn->prepare($sql);
         return $stmt->execute([(int)$id]);
     }
 
     // Cập nhật trạng thái xác nhận
-    public function updateTrangThai($id, $trangThai, $nguoiThayDoiId = null) {
+    public function updateTrangThai(int $id, string $trangThai, ?int $nguoiThayDoiId = null): bool {
         $sql = "UPDATE phan_bo_nhan_su SET 
                 trang_thai = ?,
                 thoi_gian_xac_nhan = ?
@@ -219,7 +276,7 @@ class PhanBoNhanSu
      * @param int $nhanSuId
      * @return array
      */
-    public function getScheduleConflictsForStaff($lichKhoiHanhId, $nhanSuId) {
+    public function getScheduleConflictsForStaff(int $lichKhoiHanhId, int $nhanSuId): array {
         $lichKhoiHanhId = (int)$lichKhoiHanhId;
         $nhanSuId = (int)$nhanSuId;
         if ($lichKhoiHanhId <= 0 || $nhanSuId <= 0) {
@@ -276,7 +333,7 @@ class PhanBoNhanSu
         return $stmt->fetchAll();
     }
 
-    private function extractHdvIdsFromSchedule(array $schedule) {
+    private function extractHdvIdsFromSchedule(array $schedule): array {
         $hdvIds = [];
 
         if (!empty($schedule['hdv_id'])) {
@@ -295,7 +352,7 @@ class PhanBoNhanSu
         return array_values(array_unique(array_filter($hdvIds)));
     }
 
-    private function schedulesOverlap(array $left, array $right) {
+    private function schedulesOverlap(array $left, array $right): bool {
         $leftStart = $left['ngay_khoi_hanh'] ?? null;
         $rightStart = $right['ngay_khoi_hanh'] ?? null;
         if (empty($leftStart) || empty($rightStart)) {
@@ -308,7 +365,7 @@ class PhanBoNhanSu
         return !($rightEnd < $leftStart || $leftEnd < $rightStart);
     }
 
-    public function getScheduleConflictSummary(array $scheduleRows) {
+    public function getScheduleConflictSummary(array $scheduleRows): array {
         if (empty($scheduleRows)) {
             return [];
         }
@@ -400,7 +457,7 @@ class PhanBoNhanSu
      * - Ưu tiên HDV đang sẵn sàng, đã dẫn ít tour hơn
      *
      */
-    public function autoAssignHDVIfMissing($lichKhoiHanhId) {
+    public function autoAssignHDVIfMissing(int $lichKhoiHanhId): ?int {
         $lichKhoiHanhId = (int)$lichKhoiHanhId;
         if ($lichKhoiHanhId <= 0) {
             return null;
@@ -512,8 +569,8 @@ class PhanBoNhanSu
     }
 
     // Lấy tất cả lương thưởng nhân sự (lọc theo nhân sự, tour, tháng, năm)
-    public function getAllLuong($filters = []) {
-        $sql = "SELECT pbn.*, nd.ho_ten, t.ten_tour, lk.ngay_khoi_hanh, lk.ngay_ket_thuc
+    public function getAllLuong(array $filters = []): array {
+        $sql = "SELECT " . $this->phanBoSelectColumns('pbn') . ", nd.ho_ten, t.ten_tour, lk.ngay_khoi_hanh, lk.ngay_ket_thuc
                 FROM phan_bo_nhan_su pbn
                 LEFT JOIN nhan_su ns ON pbn.nhan_su_id = ns.nhan_su_id
                 LEFT JOIN nguoi_dung nd ON ns.nguoi_dung_id = nd.id
@@ -546,8 +603,8 @@ class PhanBoNhanSu
     /**
      * Lấy chi tiết lương/thưởng của nhân sự theo tháng/năm
      */
-    public function getLuongByNhanSuThangNam($nhanSuId, $month, $year) {
-        $sql = "SELECT pbn.*, nd.ho_ten, t.ten_tour, lk.ngay_khoi_hanh, lk.ngay_ket_thuc
+    public function getLuongByNhanSuThangNam(int $nhanSuId, int $month, int $year): array {
+        $sql = "SELECT " . $this->phanBoSelectColumns('pbn') . ", nd.ho_ten, t.ten_tour, lk.ngay_khoi_hanh, lk.ngay_ket_thuc
                 FROM phan_bo_nhan_su pbn
                 LEFT JOIN nhan_su ns ON pbn.nhan_su_id = ns.nhan_su_id
                 LEFT JOIN nguoi_dung nd ON ns.nguoi_dung_id = nd.id
@@ -561,8 +618,8 @@ class PhanBoNhanSu
     }
 
     // Tìm phân bổ theo lịch khởi hành + nhân sự (để tránh tạo trùng)
-    public function findByLichKhoiHanhAndNhanSu($lichKhoiHanhId, $nhanSuId) {
-        $sql = "SELECT *
+    public function findByLichKhoiHanhAndNhanSu(int $lichKhoiHanhId, int $nhanSuId): mixed {
+        $sql = "SELECT " . $this->phanBoSelectColumns() . "
                 FROM phan_bo_nhan_su
                 WHERE lich_khoi_hanh_id = ? AND nhan_su_id = ?
                 ORDER BY id ASC
@@ -573,7 +630,7 @@ class PhanBoNhanSu
     }
 
     // Doanh thu ước tính theo lịch khởi hành (map từ booking theo tour_id + ngày khởi hành)
-    public function getDoanhThuByLichKhoiHanh($lichKhoiHanhId) {
+    public function getDoanhThuByLichKhoiHanh(int $lichKhoiHanhId): float {
         $sql = "SELECT COALESCE(SUM(b.tong_tien), 0) AS doanh_thu
                 FROM lich_khoi_hanh lk
                 LEFT JOIN booking b
@@ -588,7 +645,7 @@ class PhanBoNhanSu
     }
 
     // Tổng hợp lương theo nhân sự (lọc theo tour/tháng/năm/trạng thái)
-    public function getLuongTongHop($filters = []) {
+    public function getLuongTongHop(array $filters = []): array {
         $selectLuongCoBan = $this->columnExists('nhan_su', 'luong_co_ban')
             ? "COALESCE(ns.luong_co_ban, 0) AS luong_co_ban,"
             : "0 AS luong_co_ban,";
@@ -644,7 +701,7 @@ class PhanBoNhanSu
         return $stmt->fetchAll();
     }
 
-    public function updateLuongFull($id, $data) {
+    public function updateLuongFull(int $id, array $data): bool {
         $sql = "UPDATE phan_bo_nhan_su SET
                     loai_luong = ?,
                     so_tien_co_dinh = ?,
@@ -669,7 +726,7 @@ class PhanBoNhanSu
         ]);
     }
 
-    public function updateTrangThaiLuong($id, $trangThaiLuong) {
+    public function updateTrangThaiLuong(int $id, string $trangThaiLuong): bool {
         $sql = "UPDATE phan_bo_nhan_su
                 SET trang_thai_luong = ?, ngay_cap_nhat_luong = NOW()
                 WHERE id = ?";
@@ -677,7 +734,7 @@ class PhanBoNhanSu
         return $stmt->execute([$trangThaiLuong, (int)$id]);
     }
 
-    public function updateTrangThaiLuongByNhanSuThangNam($nhanSuId, $month, $year, $trangThaiLuong) {
+    public function updateTrangThaiLuongByNhanSuThangNam(int $nhanSuId, int $month, int $year, string $trangThaiLuong): int {
         $whereExtra = "";
         if ($trangThaiLuong === 'DaDuyet') {
             // Không duyệt lại các dòng đã thanh toán
@@ -705,12 +762,12 @@ class PhanBoNhanSu
     }
 
     // Tính lại lương/hoa hồng cho 1 nhân sự theo tháng/năm (bỏ qua các dòng đã thanh toán)
-    public function recalcLuongByNhanSuThangNam($nhanSuId, $month, $year) {
+    public function recalcLuongByNhanSuThangNam(int $nhanSuId, int $month, int $year): int {
         $selectHoaHongLk = $this->columnExists('lich_khoi_hanh', 'phan_tram_hoa_hong_hdv')
             ? ", lk.phan_tram_hoa_hong_hdv"
             : "";
 
-        $sql = "SELECT pbn.*, lk.ngay_khoi_hanh{$selectHoaHongLk}
+        $sql = "SELECT " . $this->phanBoSelectColumns('pbn') . ", lk.ngay_khoi_hanh{$selectHoaHongLk}
                 FROM phan_bo_nhan_su pbn
                 LEFT JOIN lich_khoi_hanh lk ON pbn.lich_khoi_hanh_id = lk.id
                 WHERE pbn.nhan_su_id = ?

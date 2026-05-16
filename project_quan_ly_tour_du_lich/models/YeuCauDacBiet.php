@@ -3,10 +3,37 @@
 class YeuCauDacBiet
 {
     public $conn;
+    private static array $columnExistsCache = [];
 
     public function __construct()
     {
         $this->conn = connectDB();
+    }
+
+    private function hasColumn(string $tableName, string $columnName): bool
+    {
+        $key = $tableName . '.' . $columnName;
+        if (array_key_exists($key, self::$columnExistsCache)) {
+            return self::$columnExistsCache[$key];
+        }
+        try {
+            $sql = "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute([$tableName, $columnName]);
+            self::$columnExistsCache[$key] = ((int)$stmt->fetchColumn() > 0);
+        } catch (Throwable $e) {
+            self::$columnExistsCache[$key] = false;
+        }
+        return self::$columnExistsCache[$key];
+    }
+
+    private function notDeletedClause(string $alias = 'yc'): string
+    {
+        if (!$this->hasColumn('yeu_cau_dac_biet', 'deleted_at')) {
+            return '1=1';
+        }
+        $prefix = $alias !== '' ? ($alias . '.') : '';
+        return $prefix . 'deleted_at IS NULL';
     }
 
     /**
@@ -34,7 +61,7 @@ class YeuCauDacBiet
                 FROM yeu_cau_dac_biet yc
                 INNER JOIN booking b ON yc.booking_id = b.booking_id
                 WHERE b.khach_hang_id = ? AND b.tour_id = ?
-                                    AND yc.deleted_at IS NULL
+              AND " . $this->notDeletedClause('yc') . "
                 ORDER BY yc.id DESC
                 LIMIT 1";
         $stmt = $this->conn->prepare($sql);
@@ -131,7 +158,7 @@ class YeuCauDacBiet
                 LEFT JOIN nguoi_dung nd_khach ON kh.nguoi_dung_id = nd_khach.id
                 LEFT JOIN nguoi_dung nd_tao ON yc.nguoi_tao_id = nd_tao.id
                 LEFT JOIN nguoi_dung nd_xuly ON yc.nguoi_xu_ly_id = nd_xuly.id
-                WHERE yc.deleted_at IS NULL";
+                WHERE " . $this->notDeletedClause('yc');
 
         $params = [];
 
@@ -195,7 +222,7 @@ class YeuCauDacBiet
                     SUM(CASE WHEN trang_thai = 'da_giai_quyet' THEN 1 ELSE 0 END) AS trang_thai_da_giai_quyet,
                     SUM(CASE WHEN trang_thai = 'khong_the_thuc_hien' THEN 1 ELSE 0 END) AS trang_thai_khong_the_thuc_hien
                     FROM yeu_cau_dac_biet
-                    WHERE deleted_at IS NULL";
+                    WHERE " . $this->notDeletedClause('');
         $stmt = $this->conn->prepare($sql);
         $stmt->execute();
         return $stmt->fetch() ?: [];
@@ -257,7 +284,7 @@ class YeuCauDacBiet
 
         $params[] = (int)$id;
 
-        $sql = "UPDATE yeu_cau_dac_biet SET " . implode(', ', $fields) . " WHERE id = ? AND deleted_at IS NULL";
+        $sql = "UPDATE yeu_cau_dac_biet SET " . implode(', ', $fields) . " WHERE id = ? AND " . $this->notDeletedClause('');
         $stmt = $this->conn->prepare($sql);
         $updated = $stmt->execute($params);
 
@@ -281,7 +308,7 @@ class YeuCauDacBiet
                 LEFT JOIN khach_hang kh ON b.khach_hang_id = kh.khach_hang_id
                 LEFT JOIN nguoi_dung nd_khach ON kh.nguoi_dung_id = nd_khach.id
                 WHERE yc.id = ?
-                                    AND yc.deleted_at IS NULL
+                                    AND " . $this->notDeletedClause('yc') . "
                 LIMIT 1";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([(int)$id]);
@@ -290,7 +317,11 @@ class YeuCauDacBiet
 
     public function deleteById($id)
     {
-        $sql = "UPDATE yeu_cau_dac_biet SET deleted_at = NOW(), trang_thai = 'da_xoa' WHERE id = ? AND deleted_at IS NULL";
+        if ($this->hasColumn('yeu_cau_dac_biet', 'deleted_at')) {
+            $sql = "UPDATE yeu_cau_dac_biet SET deleted_at = NOW(), trang_thai = 'da_xoa' WHERE id = ? AND deleted_at IS NULL";
+        } else {
+            $sql = "DELETE FROM yeu_cau_dac_biet WHERE id = ?";
+        }
         $stmt = $this->conn->prepare($sql);
         return $stmt->execute([(int)$id]);
     }
@@ -323,7 +354,7 @@ class YeuCauDacBiet
                 LEFT JOIN nguoi_dung nd_khach ON kh.nguoi_dung_id = nd_khach.id
                 LEFT JOIN nguoi_dung nd_tao ON yc.nguoi_tao_id = nd_tao.id
                 LEFT JOIN nguoi_dung nd_xuly ON yc.nguoi_xu_ly_id = nd_xuly.id
-                                WHERE yc.deleted_at IS NULL
+                                WHERE " . $this->notDeletedClause('yc') . "
                                     AND (lkh.hdv_id = ? OR (pbn.nhan_su_id = ? AND pbn.trang_thai = 'DaXacNhan'))";
 
         $params = [$nhanSuId, $nhanSuId, $nhanSuId];
@@ -392,7 +423,7 @@ public function getSummaryStatsForHDV($nhanSuId, $filters = [])
             LEFT JOIN booking b ON yc.booking_id = b.booking_id
             LEFT JOIN lich_khoi_hanh lkh ON b.tour_id = lkh.tour_id AND DATE(b.ngay_khoi_hanh) = DATE(lkh.ngay_khoi_hanh)
             LEFT JOIN phan_bo_nhan_su pbn ON lkh.id = pbn.lich_khoi_hanh_id AND pbn.nhan_su_id = ?
-                        WHERE yc.deleted_at IS NULL
+                        WHERE " . $this->notDeletedClause('yc') . "
                             AND (lkh.hdv_id = ? OR (pbn.nhan_su_id = ? AND pbn.trang_thai = 'DaXacNhan'))";
 
     $params = [$nhanSuId, $nhanSuId, $nhanSuId];

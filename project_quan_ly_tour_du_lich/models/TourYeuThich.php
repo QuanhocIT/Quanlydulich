@@ -4,6 +4,7 @@ class TourYeuThich
 {
     private PDO $conn;
     private static bool $tableEnsured = false;
+    private static ?bool $hasDeletedAtColumn = null;
 
     public function __construct()
     {
@@ -35,13 +36,44 @@ class TourYeuThich
         }
     }
 
+    private function hasDeletedAtColumn(): bool
+    {
+        if (self::$hasDeletedAtColumn !== null) {
+            return self::$hasDeletedAtColumn;
+        }
+
+        try {
+            $sql = "SELECT COUNT(*)
+                    FROM INFORMATION_SCHEMA.COLUMNS
+                    WHERE TABLE_SCHEMA = DATABASE()
+                      AND TABLE_NAME = 'khach_hang_tour_yeu_thich'
+                      AND COLUMN_NAME = 'deleted_at'";
+            $stmt = $this->conn->query($sql);
+            self::$hasDeletedAtColumn = ((int)$stmt->fetchColumn() > 0);
+        } catch (Throwable $e) {
+            self::$hasDeletedAtColumn = false;
+        }
+
+        return self::$hasDeletedAtColumn;
+    }
+
+    private function favoriteNotDeletedClause(string $alias = ''): string
+    {
+        if (!$this->hasDeletedAtColumn()) {
+            return '1=1';
+        }
+
+        $prefix = $alias !== '' ? ($alias . '.') : '';
+        return $prefix . 'deleted_at IS NULL';
+    }
+
     public function getFavoriteTourIdsByKhachHangId(int $khachHangId): array
     {
         if ($khachHangId <= 0) {
             return [];
         }
 
-        $sql = 'SELECT tour_id FROM khach_hang_tour_yeu_thich WHERE khach_hang_id = ? AND deleted_at IS NULL';
+        $sql = 'SELECT tour_id FROM khach_hang_tour_yeu_thich WHERE khach_hang_id = ? AND ' . $this->favoriteNotDeletedClause();
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([$khachHangId]);
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -64,15 +96,24 @@ class TourYeuThich
         }
 
         if ($this->isFavorite($khachHangId, $tourId)) {
-            $stmt = $this->conn->prepare('UPDATE khach_hang_tour_yeu_thich SET deleted_at = NOW() WHERE khach_hang_id = ? AND tour_id = ? AND deleted_at IS NULL');
+            if ($this->hasDeletedAtColumn()) {
+                $stmt = $this->conn->prepare('UPDATE khach_hang_tour_yeu_thich SET deleted_at = NOW() WHERE khach_hang_id = ? AND tour_id = ? AND deleted_at IS NULL');
+            } else {
+                $stmt = $this->conn->prepare('DELETE FROM khach_hang_tour_yeu_thich WHERE khach_hang_id = ? AND tour_id = ?');
+            }
             $stmt->execute([$khachHangId, $tourId]);
             return false;
         }
 
-        $restoreStmt = $this->conn->prepare('UPDATE khach_hang_tour_yeu_thich SET deleted_at = NULL WHERE khach_hang_id = ? AND tour_id = ?');
-        $restoreStmt->execute([$khachHangId, $tourId]);
-        if ($restoreStmt->rowCount() === 0) {
-            $stmt = $this->conn->prepare('INSERT INTO khach_hang_tour_yeu_thich (khach_hang_id, tour_id) VALUES (?, ?)');
+        if ($this->hasDeletedAtColumn()) {
+            $restoreStmt = $this->conn->prepare('UPDATE khach_hang_tour_yeu_thich SET deleted_at = NULL WHERE khach_hang_id = ? AND tour_id = ?');
+            $restoreStmt->execute([$khachHangId, $tourId]);
+            if ($restoreStmt->rowCount() === 0) {
+                $stmt = $this->conn->prepare('INSERT INTO khach_hang_tour_yeu_thich (khach_hang_id, tour_id) VALUES (?, ?)');
+                $stmt->execute([$khachHangId, $tourId]);
+            }
+        } else {
+            $stmt = $this->conn->prepare('INSERT IGNORE INTO khach_hang_tour_yeu_thich (khach_hang_id, tour_id) VALUES (?, ?)');
             $stmt->execute([$khachHangId, $tourId]);
         }
         return true;
@@ -84,7 +125,7 @@ class TourYeuThich
             return false;
         }
 
-        $stmt = $this->conn->prepare('SELECT 1 FROM khach_hang_tour_yeu_thich WHERE khach_hang_id = ? AND tour_id = ? AND deleted_at IS NULL LIMIT 1');
+        $stmt = $this->conn->prepare('SELECT 1 FROM khach_hang_tour_yeu_thich WHERE khach_hang_id = ? AND tour_id = ? AND ' . $this->favoriteNotDeletedClause() . ' LIMIT 1');
         $stmt->execute([$khachHangId, $tourId]);
         return (bool)$stmt->fetchColumn();
     }
@@ -113,7 +154,7 @@ class TourYeuThich
                         ORDER BY lk2.ngay_khoi_hanh ASC LIMIT 1
                     )
                 WHERE f.khach_hang_id = ?
-                                    AND f.deleted_at IS NULL
+                                    AND " . $this->favoriteNotDeletedClause('f') . "
                   AND (t.trang_thai = 'HoatDong' OR t.trang_thai IS NULL)
                 ORDER BY f.created_at DESC, f.id DESC
                 LIMIT ?";

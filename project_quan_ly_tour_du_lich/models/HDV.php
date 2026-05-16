@@ -2,14 +2,53 @@
 class HDV 
 {
     public PDO $conn;
+    private static array $columnExistsCache = [];
     
     public function __construct()
     {
         $this->conn = connectDB();
     }
+
+    private function hasColumn(string $tableName, string $columnName): bool {
+        $key = $tableName . '.' . $columnName;
+        if (array_key_exists($key, self::$columnExistsCache)) {
+            return self::$columnExistsCache[$key];
+        }
+
+        try {
+            $sql = "SELECT COUNT(*)
+                    FROM INFORMATION_SCHEMA.COLUMNS
+                    WHERE TABLE_SCHEMA = DATABASE()
+                      AND TABLE_NAME = ?
+                      AND COLUMN_NAME = ?";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute([$tableName, $columnName]);
+            self::$columnExistsCache[$key] = ((int)$stmt->fetchColumn() > 0);
+        } catch (Throwable $e) {
+            self::$columnExistsCache[$key] = false;
+        }
+
+        return self::$columnExistsCache[$key];
+    }
+
+    private function nhanSuNotDeletedClause(string $alias = ''): string {
+        if (!$this->hasColumn('nhan_su', 'is_deleted')) {
+            return '1=1';
+        }
+        $prefix = $alias !== '' ? ($alias . '.') : '';
+        return $prefix . 'is_deleted = 0';
+    }
+
+    private function nguoiDungNotDeletedClause(string $alias = ''): string {
+        if (!$this->hasColumn('nguoi_dung', 'is_deleted')) {
+            return '1=1';
+        }
+        $prefix = $alias !== '' ? ($alias . '.') : '';
+        return $prefix . 'is_deleted = 0';
+    }
     // Lấy tất cả HDV (có thể lọc theo nhóm hoặc trạng thái)
     public function getAll(?int $groupId = null, bool $availableOnly = false): array {
-        $conds = ["ns.vai_tro = 'HDV'", "ns.is_deleted = 0", "(nd.id IS NULL OR nd.is_deleted = 0)"];
+        $conds = ["ns.vai_tro = 'HDV'", $this->nhanSuNotDeletedClause('ns'), "(nd.id IS NULL OR " . $this->nguoiDungNotDeletedClause('nd') . ")"];
         $params = [];
         if ($groupId) {
             $conds[] = 'ns.group_id = ?';
@@ -29,7 +68,7 @@ class HDV
     }
 
     public function findById(int $id): mixed {
-        $sql = "SELECT * FROM nhan_su WHERE nhan_su_id = ? AND is_deleted = 0";
+        $sql = "SELECT * FROM nhan_su WHERE nhan_su_id = ? AND " . $this->nhanSuNotDeletedClause();
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([$id]);
         return $stmt->fetch();
@@ -79,10 +118,15 @@ class HDV
     }
 
     public function delete(int $id): bool {
-        $sql = "UPDATE nhan_su
-                SET is_deleted = 1,
-                    deleted_at = NOW()
-                WHERE nhan_su_id = ? AND is_deleted = 0";
+        if ($this->hasColumn('nhan_su', 'is_deleted')) {
+            $sql = "UPDATE nhan_su SET is_deleted = 1";
+            if ($this->hasColumn('nhan_su', 'deleted_at')) {
+                $sql .= ", deleted_at = NOW()";
+            }
+            $sql .= " WHERE nhan_su_id = ? AND is_deleted = 0";
+        } else {
+            $sql = "DELETE FROM nhan_su WHERE nhan_su_id = ?";
+        }
         $stmt = $this->conn->prepare($sql);
         return $stmt->execute([$id]);
     }

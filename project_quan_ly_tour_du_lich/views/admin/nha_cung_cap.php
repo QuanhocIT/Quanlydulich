@@ -1238,6 +1238,50 @@ $statusMap = [
 <?php endif; ?>
 
 <script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
+    const supplierPageCsrfToken = <?php echo json_encode(csrfToken('default')); ?>;
+
+    // Ensure all POST forms contain CSRF token.
+    document.querySelectorAll('form').forEach(form => {
+        const method = (form.getAttribute('method') || 'GET').toUpperCase();
+        if (method !== 'POST') {
+            return;
+        }
+        if (!form.querySelector('input[name="csrf_token"]')) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'csrf_token';
+            input.value = supplierPageCsrfToken;
+            form.appendChild(input);
+        }
+    });
+
+    // CSP-safe fallback for existing inline onclick modal toggles.
+    document.querySelectorAll('[onclick]').forEach(el => {
+        const handler = el.getAttribute('onclick') || '';
+
+        const openMatch = handler.match(/document\.getElementById\('([^']+)'\)\.classList\.add\('show'\)/);
+        if (openMatch) {
+            const modalId = openMatch[1];
+            el.addEventListener('click', function (e) {
+                e.preventDefault();
+                const modal = document.getElementById(modalId);
+                if (modal) {
+                    modal.classList.add('show');
+                }
+            });
+        }
+
+        if (handler.includes("closest('.modal').classList.remove('show')")) {
+            el.addEventListener('click', function (e) {
+                e.preventDefault();
+                const modal = this.closest('.modal');
+                if (modal) {
+                    modal.classList.remove('show');
+                }
+            });
+        }
+    });
+
     // Auto-fill form from user select
     (function() {
         const selectEl = document.getElementById('supplierUserSelect');

@@ -1681,7 +1681,20 @@ class KhachHangController {
                 $conn->beginTransaction();
                 $uploadedFilesToKeep = [];
 
-                $stmtDelete = $conn->prepare('UPDATE tour_checkin SET deleted_at = NOW() WHERE booking_id = ? AND deleted_at IS NULL');
+                $hasDeletedAt = false;
+                try {
+                    $stmtColumn = $conn->prepare("SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'tour_checkin' AND COLUMN_NAME = 'deleted_at'");
+                    $stmtColumn->execute();
+                    $hasDeletedAt = ((int)$stmtColumn->fetchColumn() > 0);
+                } catch (Throwable $e) {
+                    $hasDeletedAt = false;
+                }
+
+                if ($hasDeletedAt) {
+                    $stmtDelete = $conn->prepare('UPDATE tour_checkin SET deleted_at = NOW() WHERE booking_id = ? AND deleted_at IS NULL');
+                } else {
+                    $stmtDelete = $conn->prepare('DELETE FROM tour_checkin WHERE booking_id = ?');
+                }
                 $stmtDelete->execute([$bookingId]);
 
                 $lichKhoiHanhVal = $resolvedLichKhoiHanhId > 0 ? $resolvedLichKhoiHanhId : null;
