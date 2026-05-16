@@ -1,0 +1,22 @@
+CREATE TABLE IF NOT EXISTS booking_change_requests (
+    id INT NOT NULL AUTO_INCREMENT,
+    booking_id INT NOT NULL,
+    khach_hang_id INT NOT NULL,
+    loai_yeu_cau ENUM('Huy','DoiLich') NOT NULL,
+    lich_khoi_hanh_moi_id INT NULL,
+    ngay_khoi_hanh_moi DATE NULL,
+    phi_huy DECIMAL(14,2) NOT NULL DEFAULT 0,
+    ly_do VARCHAR(500) NOT NULL,
+    trang_thai ENUM('MoiTao','TuDongDuyet','DaDuyet','TuChoi') NOT NULL DEFAULT 'MoiTao',
+    ghi_chu_xu_ly TEXT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_bcr_booking (booking_id),
+    KEY idx_bcr_khach_hang (khach_hang_id),
+    KEY idx_bcr_trang_thai (trang_thai),
+    KEY idx_bcr_lich_moi (lich_khoi_hanh_moi_id),
+    CONSTRAINT fk_bcr_booking FOREIGN KEY (booking_id) REFERENCES booking(booking_id) ON DELETE CASCADE,
+    CONSTRAINT fk_bcr_khach_hang FOREIGN KEY (khach_hang_id) REFERENCES khach_hang(khach_hang_id) ON DELETE CASCADE,
+    CONSTRAINT fk_bcr_lich_khoi_hanh FOREIGN KEY (lich_khoi_hanh_moi_id) REFERENCES lich_khoi_hanh(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

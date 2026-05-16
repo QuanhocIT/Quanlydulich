@@ -333,6 +333,8 @@ match ($act) {
     'booking/xuatTaiLieu' => (new BookingController())->xuatTaiLieu(),
     'booking/exportPDF' => (new BookingController())->exportPDF(),
     'booking/sendEmail' => (new BookingController())->sendEmail(),
+    'booking/changeRequests' => (new BookingController())->changeRequests(),
+    'booking/processChangeRequest' => (new BookingController())->processChangeRequest(),
 
     
     // Lịch khởi hành
@@ -523,6 +525,7 @@ match ($act) {
     'khachHang/traCuu' => (new KhachHangController())->traCuu(),
     'khachHang/hoaDon' => (new KhachHangController())->hoaDon(),
     'khachHang/lichSuThanhToan' => (new KhachHangController())->lichSuThanhToan(),
+    'khachHang/timeline' => (new KhachHangController())->timeline(),
     'khachHang/lichTrinhTour' => (new KhachHangController())->lichTrinhTour(),
     'khachHang/thongBao' => (new KhachHangController())->thongBao(),
     'khachHang/capNhatThongTin' => (new KhachHangController())->capNhatThongTin(),
@@ -538,6 +541,12 @@ match ($act) {
     'khachHang/thanhToanTour' => (new KhachHangController())->thanhToanTour(),
     'khachHang/nhapThongTinThamGia' => (new KhachHangController())->nhapThongTinThamGia(),
     'khachHang/paymentStatus' => (new KhachHangController())->paymentStatus(),
+    'khachHang/traCuuPdf' => (new KhachHangController())->traCuuPdf(),
+    'khachHang/guiYeuCauThayDoiBooking' => (new KhachHangController())->guiYeuCauThayDoiBooking(),
+    'khachHang/tickets' => (new SupportTicketController())->customerTickets(),
+    'khachHang/ticketCreate' => (new SupportTicketController())->customerCreateTicket(),
+    'khachHang/ticketDetail' => (new SupportTicketController())->customerTicketDetail(),
+    'khachHang/ticketReply' => (new SupportTicketController())->customerTicketReply(),
 
     // Nhân sự → AdminNhanSuController
     'admin/nhanSu' => (new AdminNhanSuController())->nhanSu(),
@@ -554,6 +563,10 @@ match ($act) {
     'admin/hdv_get_schedule' => (new AdminNhanSuController())->hdvGetSchedule(),
     'admin/hdv_send_notification' => (new AdminNhanSuController())->hdvSendNotification(),
     'admin/hdv_detail' => (new AdminNhanSuController())->hdvDetail(),
+    'admin/tickets' => (new SupportTicketController())->adminTickets(),
+    'admin/ticketDetail' => (new SupportTicketController())->adminTicketDetail(),
+    'admin/ticketReply' => (new SupportTicketController())->adminTicketReply(),
+    'admin/ticketStatus' => (new SupportTicketController())->adminTicketStatus(),
 
     // Công nợ HDV
     'hdv/thanhToanHDV' => (new CongNoHDVController())->thanhToanHDV(),

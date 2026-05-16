@@ -3,6 +3,10 @@
 class KhachHangController {
     
     public function __construct() {
+        $act = trim((string)($_GET['act'] ?? ''));
+        if (in_array($act, ['khachHang/traCuu', 'khachHang/traCuuPdf'], true)) {
+            return;
+        }
         requireRole('KhachHang');
     }
 
@@ -329,8 +333,136 @@ class KhachHangController {
     
     // Tra cứu bằng mã tour và mã khách hàng (ID)
     public function traCuu() {
-        
+        require_once 'models/Booking.php';
+        require_once 'models/CheckinKhach.php';
+
+        $booking = null;
+        $lookupData = null;
+        $error = '';
+        $bookingRef = trim((string)($_POST['booking_ref'] ?? ''));
+        $verifier = trim((string)($_POST['verifier'] ?? ''));
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            if (!verifyCsrfToken((string)($_POST['_csrf_global'] ?? ''), 'global_form')) {
+                $error = 'Yêu cầu không hợp lệ. Vui lòng thử lại.';
+            } else {
+                enforceRateLimit('booking_lookup:' . ($_SERVER['REMOTE_ADDR'] ?? ''), 20, 3600);
+
+                if ($bookingRef === '' || $verifier === '') {
+                    $error = 'Vui lòng nhập đầy đủ mã booking và email hoặc số điện thoại.';
+                } else {
+                    $isEmail = filter_var($verifier, FILTER_VALIDATE_EMAIL) !== false;
+                    $digits = preg_replace('/\D+/', '', $verifier);
+                    if (!$isEmail && strlen((string)$digits) < 8) {
+                        $error = 'Thông tin xác thực phải là email hợp lệ hoặc số điện thoại có ít nhất 8 chữ số.';
+                    } else {
+                        $bookingModel = new Booking();
+                        $checkinModel = new CheckinKhach();
+                        $booking = $bookingModel->findByReferenceAndVerifier($bookingRef, $verifier);
+
+                        if (!$booking) {
+                            $error = 'Không tìm thấy booking phù hợp với thông tin đã nhập.';
+                        } else {
+                            $bookingId = (int)($booking['booking_id'] ?? 0);
+                            $participantRows = $checkinModel->getByBookingId($bookingId);
+                            $requiredParticipants = max(1, (int)($booking['so_nguoi'] ?? 1));
+                            $providedParticipants = count($participantRows);
+
+                            $latestPayment = $this->getLatestPaymentByBookingId($bookingModel->conn, $bookingId);
+                            $paymentStatus = strtoupper(trim((string)($latestPayment['status'] ?? '')));
+
+                            $lookupData = [
+                                'booking' => $booking,
+                                'booking_code' => $this->buildBookingLookupCode($bookingId),
+                                'latest_payment' => $latestPayment,
+                                'payment_status' => $paymentStatus,
+                                'required_participants' => $requiredParticipants,
+                                'provided_participants' => $providedParticipants,
+                                'participant_complete' => $providedParticipants >= $requiredParticipants,
+                            ];
+
+                            $exportToken = bin2hex(random_bytes(16));
+                            $_SESSION['booking_lookup_export'] = [
+                                'token' => $exportToken,
+                                'booking_id' => $bookingId,
+                                'issued_at' => time(),
+                                'expires_at' => time() + 900,
+                            ];
+                            $lookupData['export_token'] = $exportToken;
+                        }
+                    }
+                }
+            }
+        }
+
         require 'views/khach_hang/tra_cuu.php';
+    }
+
+    public function traCuuPdf() {
+        $sessionExport = $_SESSION['booking_lookup_export'] ?? null;
+        $token = trim((string)($_GET['token'] ?? ''));
+
+        if (!is_array($sessionExport)
+            || $token === ''
+            || !hash_equals((string)($sessionExport['token'] ?? ''), $token)
+            || (int)($sessionExport['expires_at'] ?? 0) < time()) {
+            $_SESSION['error'] = 'Phiên xuất PDF đã hết hạn. Vui lòng tra cứu lại booking.';
+            header('Location: index.php?act=khachHang/traCuu');
+            exit();
+        }
+
+        $bookingId = (int)($sessionExport['booking_id'] ?? 0);
+        if ($bookingId <= 0) {
+            $_SESSION['error'] = 'Không xác định được booking cần xuất PDF.';
+            header('Location: index.php?act=khachHang/traCuu');
+            exit();
+        }
+
+        require_once __DIR__ . '/../vendor/autoload.php';
+        require_once 'models/Booking.php';
+        require_once 'models/CheckinKhach.php';
+        require_once __DIR__ . '/../models/Payment.php';
+
+        if (!class_exists(\Dompdf\Dompdf::class)) {
+            $_SESSION['error'] = 'Thiếu thư viện xuất PDF. Vui lòng chạy composer install.';
+            header('Location: index.php?act=khachHang/traCuu');
+            exit();
+        }
+
+        $bookingModel = new Booking();
+        $checkinModel = new CheckinKhach();
+        $booking = $bookingModel->getBookingWithDetails($bookingId);
+        if (!$booking) {
+            $_SESSION['error'] = 'Không tìm thấy booking để xuất PDF.';
+            header('Location: index.php?act=khachHang/traCuu');
+            exit();
+        }
+
+        $latestPayment = $this->getLatestPaymentByBookingId($bookingModel->conn, $bookingId);
+        $providedParticipants = count($checkinModel->getByBookingId($bookingId));
+        $requiredParticipants = max(1, (int)($booking['so_nguoi'] ?? 1));
+
+        $payload = [
+            'booking' => $booking,
+            'booking_code' => $this->buildBookingLookupCode($bookingId),
+            'latest_payment' => $latestPayment,
+            'provided_participants' => $providedParticipants,
+            'required_participants' => $requiredParticipants,
+            'participant_complete' => $providedParticipants >= $requiredParticipants,
+            'generated_at' => date('d/m/Y H:i:s'),
+        ];
+
+        $html = $this->renderBookingLookupPdfHtml($payload);
+
+        $options = new \Dompdf\Options();
+        $options->set('isHtml5ParserEnabled', true);
+        $options->set('isRemoteEnabled', false);
+        $dompdf = new \Dompdf\Dompdf($options);
+        $dompdf->loadHtml($html, 'UTF-8');
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->render();
+        $dompdf->stream('xac_nhan_booking_' . $bookingId . '.pdf', ['Attachment' => true]);
+        exit();
     }
     
     public function danhSachTour() {
@@ -760,10 +892,14 @@ class KhachHangController {
         require_once 'models/Booking.php';
         require_once 'models/KhachHang.php';
         require_once 'models/GiaoDich.php';
+        require_once 'models/BookingChangeRequest.php';
+        require_once 'models/Tour.php';
         
         $bookingModel = new Booking();
         $khachHangModel = new KhachHang();
         $giaoDichModel = new GiaoDich();
+        $bookingChangeRequestModel = new BookingChangeRequest();
+        $tourModel = new Tour();
 
         // Tu dong dong giao dich treo qua lau truoc khi hien thi hoa don.
         $this->expireStalePendingPayments($bookingModel->conn);
@@ -780,6 +916,8 @@ class KhachHangController {
         $tour = null;
         $giaoDichList = [];
         $latestPayment = null;
+        $changeRequests = [];
+        $doiLichOptions = [];
         
         if ($bookingId > 0) {
             $booking = $bookingModel->getBookingWithDetails($bookingId);
@@ -788,6 +926,23 @@ class KhachHangController {
                 // Tính tổng đã thanh toán
                 $tongDaThanhToan = $giaoDichModel->getTongThuByTour($booking['tour_id']);
                 $latestPayment = $this->getLatestPaymentByBookingId($bookingModel->conn, $bookingId);
+
+                try {
+                    $changeRequests = $bookingChangeRequestModel->getByBookingId($bookingId);
+                } catch (Throwable $e) {
+                    $changeRequests = [];
+                }
+
+                $allLichKhoiHanh = $tourModel->getLichKhoiHanhByTourId((int)($booking['tour_id'] ?? 0));
+                $today = date('Y-m-d');
+                $currentDate = trim((string)($booking['ngay_khoi_hanh'] ?? ''));
+                foreach ($allLichKhoiHanh as $lich) {
+                    $departure = trim((string)($lich['ngay_khoi_hanh'] ?? ''));
+                    if ($departure === '' || $departure < $today || $departure === $currentDate) {
+                        continue;
+                    }
+                    $doiLichOptions[] = $lich;
+                }
             } else {
                 $_SESSION['error'] = 'Không tìm thấy hóa đơn';
                 header('Location: index.php?act=khachHang/dashboard');
@@ -799,6 +954,178 @@ class KhachHangController {
         }
         
         require 'views/khach_hang/hoa_don.php';
+    }
+
+    public function guiYeuCauThayDoiBooking() {
+        require_once 'models/Booking.php';
+        require_once 'models/KhachHang.php';
+        require_once 'models/BookingChangeRequest.php';
+
+        if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+            header('Location: index.php?act=khachHang/hoaDon');
+            exit();
+        }
+
+        if (!verifyCsrfToken((string)($_POST['_csrf_global'] ?? ''), 'global_form')) {
+            $_SESSION['error'] = 'Yêu cầu không hợp lệ (CSRF).';
+            header('Location: index.php?act=khachHang/hoaDon');
+            exit();
+        }
+
+        $bookingId = (int)($_POST['booking_id'] ?? 0);
+        $loaiYeuCau = trim((string)($_POST['loai_yeu_cau'] ?? ''));
+        $lyDo = trim((string)($_POST['ly_do'] ?? ''));
+        $lichMoiId = isset($_POST['lich_khoi_hanh_moi_id']) ? (int)$_POST['lich_khoi_hanh_moi_id'] : 0;
+
+        if ($bookingId <= 0 || !in_array($loaiYeuCau, ['Huy', 'DoiLich'], true)) {
+            $_SESSION['error'] = 'Thông tin yêu cầu không hợp lệ.';
+            header('Location: index.php?act=khachHang/hoaDon&booking_id=' . max(0, $bookingId));
+            exit();
+        }
+
+        if (mb_strlen($lyDo) < 10) {
+            $_SESSION['error'] = 'Lý do cần tối thiểu 10 ký tự.';
+            header('Location: index.php?act=khachHang/hoaDon&booking_id=' . $bookingId);
+            exit();
+        }
+
+        $bookingModel = new Booking();
+        $khachHangModel = new KhachHang();
+        $bookingChangeRequestModel = new BookingChangeRequest();
+
+        $khachHang = $khachHangModel->findByUserId((int)($_SESSION['user_id'] ?? 0));
+        if (!$khachHang) {
+            $_SESSION['error'] = 'Không tìm thấy thông tin khách hàng.';
+            header('Location: index.php?act=khachHang/hoaDon');
+            exit();
+        }
+
+        $booking = $bookingModel->getBookingWithDetails($bookingId);
+        if (!$booking || (int)($booking['khach_hang_id'] ?? 0) !== (int)$khachHang['khach_hang_id']) {
+            $_SESSION['error'] = 'Không tìm thấy booking hợp lệ.';
+            header('Location: index.php?act=khachHang/hoaDon');
+            exit();
+        }
+
+        if (in_array((string)($booking['trang_thai'] ?? ''), ['Huy', 'DaHuy', 'HoanTat'], true)) {
+            $_SESSION['error'] = 'Booking hiện tại không hỗ trợ gửi yêu cầu hủy/đổi lịch.';
+            header('Location: index.php?act=khachHang/hoaDon&booking_id=' . $bookingId);
+            exit();
+        }
+
+        try {
+            if ($bookingChangeRequestModel->hasOpenRequestByBookingId($bookingId)) {
+                $_SESSION['error'] = 'Booking này đang có yêu cầu thay đổi mở. Vui lòng chờ xử lý trước khi tạo yêu cầu mới.';
+                header('Location: index.php?act=khachHang/hoaDon&booking_id=' . $bookingId);
+                exit();
+            }
+        } catch (Throwable $e) {
+            $_SESSION['error'] = $e->getMessage();
+            header('Location: index.php?act=khachHang/hoaDon&booking_id=' . $bookingId);
+            exit();
+        }
+
+        $currentDeparture = trim((string)($booking['ngay_khoi_hanh'] ?? ''));
+        $departureTs = $currentDeparture !== '' ? strtotime($currentDeparture . ' 00:00:00') : false;
+        $secondsLeft = $departureTs !== false ? ($departureTs - time()) : 0;
+        $daysLeft = $secondsLeft > 0 ? (int)floor($secondsLeft / 86400) : 0;
+
+        $status = 'MoiTao';
+        $phiHuy = 0.0;
+        $ngayKhoiHanhMoi = null;
+        $autoMessage = '';
+
+        if ($loaiYeuCau === 'Huy') {
+            $phiRate = $daysLeft >= 7 ? 0.0 : ($daysLeft >= 3 ? 0.20 : 0.50);
+            $phiHuy = round(((float)($booking['tong_tien'] ?? 0)) * $phiRate, 2);
+
+            if ($daysLeft >= 7) {
+                $status = 'TuDongDuyet';
+                $append = '[AUTO_CANCEL] Khach yeu cau huy truoc khoi hanh >= 7 ngay. Phi huy=' . number_format($phiHuy, 0, ',', '.') . ' VND';
+                $oldNote = trim((string)($booking['ghi_chu'] ?? ''));
+                $newNote = $oldNote !== '' ? ($oldNote . "\n" . $append) : $append;
+
+                $updateData = [
+                    'so_nguoi' => (int)($booking['so_nguoi'] ?? 1),
+                    'ngay_khoi_hanh' => $booking['ngay_khoi_hanh'] ?? null,
+                    'ngay_ket_thuc' => $booking['ngay_ket_thuc'] ?? null,
+                    'tong_tien' => (float)($booking['tong_tien'] ?? 0),
+                    'trang_thai' => 'Huy',
+                    'ghi_chu' => $newNote,
+                ];
+                $bookingModel->update($bookingId, $updateData);
+                $autoMessage = 'Yêu cầu hủy đã được tự động duyệt theo chính sách (trước ngày khởi hành >= 7 ngày).';
+            }
+        } else {
+            if ($lichMoiId <= 0) {
+                $_SESSION['error'] = 'Vui lòng chọn lịch khởi hành mới.';
+                header('Location: index.php?act=khachHang/hoaDon&booking_id=' . $bookingId);
+                exit();
+            }
+
+            $stmt = $bookingModel->conn->prepare('SELECT id, ngay_khoi_hanh, ngay_ket_thuc, so_cho FROM lich_khoi_hanh WHERE id = ? AND tour_id = ? LIMIT 1');
+            $stmt->execute([$lichMoiId, (int)($booking['tour_id'] ?? 0)]);
+            $schedule = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+            if (!$schedule) {
+                $_SESSION['error'] = 'Lịch khởi hành mới không hợp lệ.';
+                header('Location: index.php?act=khachHang/hoaDon&booking_id=' . $bookingId);
+                exit();
+            }
+
+            $ngayKhoiHanhMoi = (string)($schedule['ngay_khoi_hanh'] ?? '');
+            if ($ngayKhoiHanhMoi === '' || strtotime($ngayKhoiHanhMoi . ' 00:00:00') <= time()) {
+                $_SESSION['error'] = 'Lịch khởi hành mới đã qua hoặc không hợp lệ.';
+                header('Location: index.php?act=khachHang/hoaDon&booking_id=' . $bookingId);
+                exit();
+            }
+
+            $soChoToiDa = max(1, (int)($schedule['so_cho'] ?? 0));
+            $soDaDat = $bookingModel->getSoNguoiDaDatTheoLich((int)($booking['tour_id'] ?? 0), $ngayKhoiHanhMoi, false);
+            $soNguoiBooking = max(1, (int)($booking['so_nguoi'] ?? 1));
+            if (($soChoToiDa - $soDaDat) < $soNguoiBooking) {
+                $_SESSION['error'] = 'Lịch mới không còn đủ chỗ trống cho nhóm của bạn.';
+                header('Location: index.php?act=khachHang/hoaDon&booking_id=' . $bookingId);
+                exit();
+            }
+
+            if ($daysLeft >= 3) {
+                $status = 'TuDongDuyet';
+                $updateData = [
+                    'so_nguoi' => (int)($booking['so_nguoi'] ?? 1),
+                    'ngay_khoi_hanh' => $ngayKhoiHanhMoi,
+                    'ngay_ket_thuc' => $schedule['ngay_ket_thuc'] ?? null,
+                    'tong_tien' => (float)($booking['tong_tien'] ?? 0),
+                    'trang_thai' => (string)($booking['trang_thai'] ?? 'ChoXacNhan'),
+                    'ghi_chu' => trim((string)($booking['ghi_chu'] ?? '')),
+                ];
+                $bookingModel->update($bookingId, $updateData);
+                $autoMessage = 'Yêu cầu đổi lịch đã được tự động duyệt (trước ngày khởi hành >= 3 ngày).';
+            }
+        }
+
+        try {
+            $bookingChangeRequestModel->create([
+                'booking_id' => $bookingId,
+                'khach_hang_id' => (int)$khachHang['khach_hang_id'],
+                'loai_yeu_cau' => $loaiYeuCau,
+                'lich_khoi_hanh_moi_id' => $loaiYeuCau === 'DoiLich' ? $lichMoiId : null,
+                'ngay_khoi_hanh_moi' => $ngayKhoiHanhMoi,
+                'phi_huy' => $phiHuy,
+                'ly_do' => mb_substr($lyDo, 0, 500),
+                'trang_thai' => $status,
+                'ghi_chu_xu_ly' => $status === 'TuDongDuyet' ? 'He thong tu dong duyet theo policy.' : null,
+            ]);
+        } catch (Throwable $e) {
+            $_SESSION['error'] = $e->getMessage();
+            header('Location: index.php?act=khachHang/hoaDon&booking_id=' . $bookingId);
+            exit();
+        }
+
+        $_SESSION['success'] = $autoMessage !== ''
+            ? $autoMessage
+            : 'Yêu cầu thay đổi booking đã được gửi. Hệ thống sẽ phản hồi sau khi kiểm tra.';
+        header('Location: index.php?act=khachHang/hoaDon&booking_id=' . $bookingId);
+        exit();
     }
 
     // Lịch sử thanh toán online của khách hàng
@@ -864,6 +1191,35 @@ class KhachHangController {
         }
 
         require 'views/khach_hang/lich_su_thanh_toan.php';
+    }
+
+    public function timeline() {
+        require_once 'models/KhachHang.php';
+        require_once 'models/LichSuKhachHang.php';
+
+        $khachHangModel = new KhachHang();
+        $lichSuModel = new LichSuKhachHang();
+
+        $khachHang = $khachHangModel->findByUserId((int)($_SESSION['user_id'] ?? 0));
+        if (!$khachHang || empty($khachHang['khach_hang_id'])) {
+            $_SESSION['error'] = 'Không tìm thấy thông tin khách hàng';
+            header('Location: index.php?act=khachHang/dashboard');
+            exit();
+        }
+
+        $typeFilter = trim((string)($_GET['type'] ?? 'all'));
+        if (!in_array($typeFilter, ['all', 'booking', 'thanh_toan', 'tuong_tac'], true)) {
+            $typeFilter = 'all';
+        }
+
+        $timeline = $lichSuModel->getTimeline((int)$khachHang['khach_hang_id']);
+        if ($typeFilter !== 'all') {
+            $timeline = array_values(array_filter($timeline, static function ($item) use ($typeFilter) {
+                return (string)($item['type'] ?? '') === $typeFilter;
+            }));
+        }
+
+        require 'views/khach_hang/timeline.php';
     }
     
     // Xem lịch trình tour chi tiết
@@ -1157,14 +1513,38 @@ class KhachHangController {
     // Gửi yêu cầu hỗ trợ
     public function guiYeuCauHoTro() {
         require_once 'models/ThongBao.php';
+        require_once 'models/SupportTicket.php';
         require_once 'models/KhachHang.php';
         
         $thongBaoModel = new ThongBao();
+        $supportTicketModel = new SupportTicket();
         $khachHangModel = new KhachHang();
         
         $khachHang = $khachHangModel->findByUserId($_SESSION['user_id']);
         
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $subject = trim((string)($_POST['tieu_de'] ?? 'Yêu cầu hỗ trợ'));
+            $content = trim((string)($_POST['noi_dung'] ?? ''));
+            $priority = trim((string)($_POST['muc_do_uu_tien'] ?? 'TrungBinh'));
+
+            if ($content !== '' && $khachHang && !empty($khachHang['khach_hang_id'])) {
+                try {
+                    $ticketId = $supportTicketModel->createTicket([
+                        'khach_hang_id' => (int)$khachHang['khach_hang_id'],
+                        'subject' => mb_substr($subject, 0, 255),
+                        'message' => mb_substr($content, 0, 2000),
+                        'priority' => $priority,
+                        'sender_id' => (int)($_SESSION['user_id'] ?? 0),
+                    ]);
+
+                    $_SESSION['success'] = 'Đã tạo ticket hỗ trợ thành công. Mã ticket #' . $ticketId . '.';
+                    header('Location: index.php?act=khachHang/ticketDetail&id=' . $ticketId);
+                    exit();
+                } catch (Throwable $e) {
+                    // fallback to legacy thong_bao flow when support_tickets table is unavailable.
+                }
+            }
+
             $data = [
                 'tieu_de' => $_POST['tieu_de'] ?? 'Yêu cầu hỗ trợ',
                 'noi_dung' => $_POST['noi_dung'] ?? '',
@@ -2362,5 +2742,74 @@ class KhachHangController {
                 ? 'Tour này chỉ cho phép đặt trước ít nhất 48 giờ so với ngày khởi hành.'
                 : '',
         ];
+    }
+
+    private function buildBookingLookupCode(int $bookingId): string {
+        if ($bookingId <= 0) {
+            return 'N/A';
+        }
+
+        return 'BK-' . str_pad((string)$bookingId, 6, '0', STR_PAD_LEFT);
+    }
+
+    private function renderBookingLookupPdfHtml(array $payload): string {
+        $booking = (array)($payload['booking'] ?? []);
+        $payment = (array)($payload['latest_payment'] ?? []);
+
+        $bookingCode = htmlspecialchars((string)($payload['booking_code'] ?? 'N/A'), ENT_QUOTES, 'UTF-8');
+        $customerName = htmlspecialchars((string)($booking['ho_ten'] ?? ''), ENT_QUOTES, 'UTF-8');
+        $customerEmail = htmlspecialchars((string)($booking['email'] ?? ''), ENT_QUOTES, 'UTF-8');
+        $customerPhone = htmlspecialchars((string)($booking['so_dien_thoai'] ?? ''), ENT_QUOTES, 'UTF-8');
+        $tourName = htmlspecialchars((string)($booking['ten_tour'] ?? 'N/A'), ENT_QUOTES, 'UTF-8');
+        $bookingStatus = htmlspecialchars((string)($booking['trang_thai'] ?? 'N/A'), ENT_QUOTES, 'UTF-8');
+        $paymentStatus = htmlspecialchars((string)($payment['status'] ?? 'ChuaCoGiaoDich'), ENT_QUOTES, 'UTF-8');
+        $participants = (int)($payload['provided_participants'] ?? 0) . '/' . (int)($payload['required_participants'] ?? 0);
+        $participants = htmlspecialchars($participants, ENT_QUOTES, 'UTF-8');
+
+        $tongTien = number_format((float)($booking['tong_tien'] ?? 0), 0, ',', '.');
+        $tongTien = htmlspecialchars($tongTien . ' VND', ENT_QUOTES, 'UTF-8');
+
+        $ngayKhoiHanhRaw = trim((string)($booking['ngay_khoi_hanh'] ?? ''));
+        $ngayKhoiHanh = $ngayKhoiHanhRaw !== '' ? date('d/m/Y', strtotime($ngayKhoiHanhRaw)) : 'Chua cap nhat';
+        $ngayKhoiHanh = htmlspecialchars($ngayKhoiHanh, ENT_QUOTES, 'UTF-8');
+
+        $generatedAt = htmlspecialchars((string)($payload['generated_at'] ?? date('d/m/Y H:i:s')), ENT_QUOTES, 'UTF-8');
+
+        return '<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: DejaVu Sans, sans-serif; color:#0f172a; font-size:13px; }
+        h1 { font-size:20px; margin-bottom:4px; }
+        .sub { color:#475569; margin-bottom:14px; }
+        .box { border:1px solid #cbd5e1; border-radius:8px; padding:10px 12px; margin-bottom:10px; }
+        .label { color:#475569; width:180px; display:inline-block; }
+        .row { margin:4px 0; }
+        .footer { margin-top:16px; color:#64748b; font-size:11px; }
+    </style>
+</head>
+<body>
+    <h1>Xac Nhan Thong Tin Booking</h1>
+    <div class="sub">Ma tra cuu: ' . $bookingCode . '</div>
+
+    <div class="box">
+        <div class="row"><span class="label">Khach hang:</span> ' . $customerName . '</div>
+        <div class="row"><span class="label">Email:</span> ' . $customerEmail . '</div>
+        <div class="row"><span class="label">So dien thoai:</span> ' . $customerPhone . '</div>
+    </div>
+
+    <div class="box">
+        <div class="row"><span class="label">Tour:</span> ' . $tourName . '</div>
+        <div class="row"><span class="label">Ngay khoi hanh:</span> ' . $ngayKhoiHanh . '</div>
+        <div class="row"><span class="label">Tong tien:</span> ' . $tongTien . '</div>
+        <div class="row"><span class="label">Trang thai booking:</span> ' . $bookingStatus . '</div>
+        <div class="row"><span class="label">Trang thai thanh toan:</span> ' . $paymentStatus . '</div>
+        <div class="row"><span class="label">Ho so hanh khach:</span> ' . $participants . '</div>
+    </div>
+
+    <div class="footer">Tai lieu duoc tao luc ' . $generatedAt . '.</div>
+</body>
+</html>';
     }
 }

@@ -6,6 +6,7 @@ require_once 'models/NguoiDung.php';
 require_once 'models/BookingHistory.php';
 require_once 'models/BookingDeletionHistory.php';
 require_once 'models/LichKhoiHanh.php';
+require_once 'models/BookingChangeRequest.php';
 require_once __DIR__ . '/../services/BookingService.php';
 
 if (file_exists(__DIR__ . '/../vendor/autoload.php')) {
@@ -573,6 +574,160 @@ class BookingController
         $this->service->sendDocumentEmail($email, $subject, $htmlBody, $booking['ho_ten'] ?? '');
 
         echo json_encode(['success' => true, 'message' => 'Đã gửi email thành công']);
+        exit();
+    }
+
+    public function changeRequests(): void
+    {
+        requireRole('Admin');
+
+        $status = trim((string)($_GET['trang_thai'] ?? ''));
+        $allowedStatus = ['MoiTao', 'TuDongDuyet', 'DaDuyet', 'TuChoi'];
+        if ($status !== '' && !in_array($status, $allowedStatus, true)) {
+            $status = '';
+        }
+
+        $model = new BookingChangeRequest();
+        try {
+            $requests = $model->getAllWithDetails($status, 500);
+        } catch (Throwable $e) {
+            $requests = [];
+            $_SESSION['error'] = $e->getMessage();
+        }
+
+        require 'views/admin/booking_change_requests.php';
+    }
+
+    public function processChangeRequest(): void
+    {
+        requireRole('Admin');
+
+        if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+            header('Location: index.php?act=booking/changeRequests');
+            exit();
+        }
+
+        $requestId = (int)($_POST['request_id'] ?? 0);
+        $action = trim((string)($_POST['action'] ?? ''));
+        $note = trim((string)($_POST['ghi_chu_xu_ly'] ?? ''));
+
+        if ($requestId <= 0 || !in_array($action, ['approve', 'reject'], true)) {
+            $_SESSION['error'] = 'Thông tin xử lý yêu cầu không hợp lệ.';
+            header('Location: index.php?act=booking/changeRequests');
+            exit();
+        }
+
+        $changeModel = new BookingChangeRequest();
+        $request = $changeModel->findById($requestId);
+        if (!$request) {
+            $_SESSION['error'] = 'Không tìm thấy yêu cầu cần xử lý.';
+            header('Location: index.php?act=booking/changeRequests');
+            exit();
+        }
+
+        $currentStatus = (string)($request['trang_thai'] ?? '');
+        if (in_array($currentStatus, ['DaDuyet', 'TuChoi'], true)) {
+            $_SESSION['error'] = 'Yêu cầu này đã được xử lý trước đó.';
+            header('Location: index.php?act=booking/changeRequests');
+            exit();
+        }
+
+        $bookingId = (int)($request['booking_id'] ?? 0);
+        $booking = $this->bookingModel->getBookingWithDetails($bookingId);
+        if (!$booking) {
+            $_SESSION['error'] = 'Booking liên quan không còn tồn tại.';
+            header('Location: index.php?act=booking/changeRequests');
+            exit();
+        }
+
+        if ($action === 'reject') {
+            $ok = $changeModel->updateStatus($requestId, 'TuChoi', $note !== '' ? $note : 'Admin từ chối yêu cầu.');
+            $_SESSION[$ok ? 'success' : 'error'] = $ok
+                ? 'Đã từ chối yêu cầu thay đổi booking.'
+                : 'Không thể cập nhật trạng thái yêu cầu.';
+            header('Location: index.php?act=booking/changeRequests');
+            exit();
+        }
+
+        $conn = $this->bookingModel->conn;
+        try {
+            $conn->beginTransaction();
+
+            $type = (string)($request['loai_yeu_cau'] ?? '');
+            if ($type === 'Huy') {
+                $append = '[ADMIN_APPROVE_CANCEL] phi_huy=' . number_format((float)($request['phi_huy'] ?? 0), 0, ',', '.') . ' VND';
+                $oldNote = trim((string)($booking['ghi_chu'] ?? ''));
+                $mergedNote = $oldNote !== '' ? ($oldNote . "\n" . $append) : $append;
+
+                $updated = $this->bookingModel->update((int)$bookingId, [
+                    'so_nguoi' => (int)($booking['so_nguoi'] ?? 1),
+                    'ngay_khoi_hanh' => $booking['ngay_khoi_hanh'] ?? null,
+                    'ngay_ket_thuc' => $booking['ngay_ket_thuc'] ?? null,
+                    'tong_tien' => (float)($booking['tong_tien'] ?? 0),
+                    'trang_thai' => 'Huy',
+                    'ghi_chu' => $mergedNote,
+                ]);
+
+                if (!$updated) {
+                    throw new RuntimeException('Không thể cập nhật booking khi duyệt yêu cầu hủy.');
+                }
+            } elseif ($type === 'DoiLich') {
+                $scheduleId = (int)($request['lich_khoi_hanh_moi_id'] ?? 0);
+                if ($scheduleId <= 0) {
+                    throw new RuntimeException('Yêu cầu đổi lịch thiếu lịch khởi hành mới.');
+                }
+
+                $stmt = $conn->prepare('SELECT id, ngay_khoi_hanh, ngay_ket_thuc, so_cho FROM lich_khoi_hanh WHERE id = ? AND tour_id = ? LIMIT 1');
+                $stmt->execute([$scheduleId, (int)($booking['tour_id'] ?? 0)]);
+                $schedule = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+                if (!$schedule) {
+                    throw new RuntimeException('Lịch khởi hành mới không hợp lệ.');
+                }
+
+                $newDate = (string)($schedule['ngay_khoi_hanh'] ?? '');
+                if ($newDate === '' || strtotime($newDate . ' 00:00:00') <= time()) {
+                    throw new RuntimeException('Lịch khởi hành mới không còn hợp lệ theo thời gian.');
+                }
+
+                $soChoToiDa = max(1, (int)($schedule['so_cho'] ?? 0));
+                $soDaDat = $this->bookingModel->getSoNguoiDaDatTheoLich((int)($booking['tour_id'] ?? 0), $newDate, false);
+                $soNguoiBooking = max(1, (int)($booking['so_nguoi'] ?? 1));
+                if (($soChoToiDa - $soDaDat) < $soNguoiBooking) {
+                    throw new RuntimeException('Lịch mới không đủ chỗ để duyệt yêu cầu đổi lịch.');
+                }
+
+                $updated = $this->bookingModel->update((int)$bookingId, [
+                    'so_nguoi' => (int)($booking['so_nguoi'] ?? 1),
+                    'ngay_khoi_hanh' => $newDate,
+                    'ngay_ket_thuc' => $schedule['ngay_ket_thuc'] ?? null,
+                    'tong_tien' => (float)($booking['tong_tien'] ?? 0),
+                    'trang_thai' => (string)($booking['trang_thai'] ?? 'ChoXacNhan'),
+                    'ghi_chu' => trim((string)($booking['ghi_chu'] ?? '')),
+                ]);
+
+                if (!$updated) {
+                    throw new RuntimeException('Không thể cập nhật booking khi duyệt yêu cầu đổi lịch.');
+                }
+            } else {
+                throw new RuntimeException('Loại yêu cầu không hợp lệ.');
+            }
+
+            $statusNote = $note !== '' ? $note : 'Đã duyệt bởi admin.';
+            $statusOk = $changeModel->updateStatus($requestId, 'DaDuyet', $statusNote);
+            if (!$statusOk) {
+                throw new RuntimeException('Không thể cập nhật trạng thái yêu cầu sau khi duyệt.');
+            }
+
+            $conn->commit();
+            $_SESSION['success'] = 'Đã duyệt yêu cầu thay đổi booking thành công.';
+        } catch (Throwable $e) {
+            if ($conn->inTransaction()) {
+                $conn->rollBack();
+            }
+            $_SESSION['error'] = $e->getMessage();
+        }
+
+        header('Location: index.php?act=booking/changeRequests');
         exit();
     }
 }

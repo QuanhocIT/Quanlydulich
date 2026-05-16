@@ -8,6 +8,7 @@ $pageHero = [
     'actions' => [
         ['label' => 'Quay lại trang chủ', 'url' => 'index.php?act=khachHang/dashboard', 'icon' => 'bi-arrow-left', 'style' => 'ghost'],
         ['label' => 'Xem tour đã đặt', 'url' => 'index.php?act=khachHang/yeuCauTour', 'icon' => 'bi-suitcase2'],
+        ['label' => 'Trung tâm ticket', 'url' => 'index.php?act=khachHang/tickets', 'icon' => 'bi-ticket-perforated'],
     ],
 ];
 ob_start(); ?>
@@ -100,6 +101,7 @@ include __DIR__ . '/_layout/header.php';
                     </div>
 
                     <div class="d-flex flex-wrap gap-2 justify-content-end">
+                        <a class="kh-btn-ghost" href="index.php?act=khachHang/tickets"><i class="bi bi-ticket-perforated"></i> Trung tâm ticket</a>
                         <a class="kh-btn-ghost" href="index.php?act=khachHang/dashboard"><i class="bi bi-arrow-left"></i> Quay lại</a>
                         <button type="submit" class="kh-btn-main border-0"><i class="bi bi-send"></i> Gửi yêu cầu hỗ trợ</button>
                     </div>

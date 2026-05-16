@@ -829,4 +829,74 @@ class Booking
         $stmt->execute([(int)$userId]);
         return $stmt->fetchAll();
     }
+
+    private function parseBookingIdFromReference(string $reference): int {
+        $trimmed = trim($reference);
+        if ($trimmed === '') {
+            return 0;
+        }
+
+        if (ctype_digit($trimmed)) {
+            return (int)$trimmed;
+        }
+
+        if (preg_match('/(\d{1,10})/', $trimmed, $matches) === 1) {
+            return (int)$matches[1];
+        }
+
+        return 0;
+    }
+
+    private function normalizePhoneDigits(string $value): string {
+        $digits = preg_replace('/\D+/', '', $value);
+        return is_string($digits) ? $digits : '';
+    }
+
+    // Tra cứu booking theo mã tham chiếu + email hoặc số điện thoại.
+    public function findByReferenceAndVerifier(string $bookingReference, string $verifier): mixed {
+        $bookingId = $this->parseBookingIdFromReference($bookingReference);
+        if ($bookingId <= 0) {
+            return null;
+        }
+
+        $verifier = trim($verifier);
+        if ($verifier === '') {
+            return null;
+        }
+
+        $isEmail = filter_var($verifier, FILTER_VALIDATE_EMAIL) !== false;
+        $verifierEmail = mb_strtolower($verifier);
+        $verifierDigits = $this->normalizePhoneDigits($verifier);
+
+        $sql = "SELECT " . $this->bookingSelectColumns('b') . ",
+                       t.ten_tour, t.loai_tour,
+                       lkh.ngay_khoi_hanh AS lich_ngay_khoi_hanh,
+                       lkh.ngay_ket_thuc AS lich_ngay_ket_thuc,
+                       lkh.diem_tap_trung,
+                       nd.ho_ten, nd.email, nd.so_dien_thoai
+                FROM booking b
+                INNER JOIN khach_hang kh ON b.khach_hang_id = kh.khach_hang_id
+                INNER JOIN nguoi_dung nd ON kh.nguoi_dung_id = nd.id
+                LEFT JOIN tour t ON b.tour_id = t.tour_id
+                LEFT JOIN lich_khoi_hanh lkh
+                    ON lkh.tour_id = b.tour_id
+                   AND DATE(lkh.ngay_khoi_hanh) = DATE(b.ngay_khoi_hanh)
+                WHERE b.booking_id = ?
+                  AND " . $this->bookingNotDeletedClause('b') . "
+                  AND (
+                      LOWER(COALESCE(nd.email, '')) = ?
+                      OR REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(nd.so_dien_thoai, ''), ' ', ''), '.', ''), '-', ''), '(', ''), ')', '') = ?
+                  )
+                LIMIT 1";
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute([
+            $bookingId,
+            $isEmail ? $verifierEmail : '__no_email_match__',
+            $isEmail ? '__no_phone_match__' : $verifierDigits,
+        ]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return $row ?: null;
+    }
 }

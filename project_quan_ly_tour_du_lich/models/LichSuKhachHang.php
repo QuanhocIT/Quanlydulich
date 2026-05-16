@@ -26,12 +26,11 @@ class LichSuKhachHang
     public function getLichSuBooking($khachHangId) {
         $sql = "SELECT b.*, 
                        t.ten_tour,
-                       t.hinh_anh,
-                       lkh.ngay_khoi_hanh,
-                       lkh.ngay_ket_thuc
+                       NULL AS hinh_anh,
+                       b.ngay_khoi_hanh,
+                       b.ngay_ket_thuc
                 FROM booking b
                 LEFT JOIN tour t ON b.tour_id = t.tour_id
-                LEFT JOIN lich_khoi_hanh lkh ON b.lich_khoi_hanh_id = lkh.id
                 WHERE b.khach_hang_id = ?
                 ORDER BY b.ngay_dat DESC";
         $stmt = $this->conn->prepare($sql);

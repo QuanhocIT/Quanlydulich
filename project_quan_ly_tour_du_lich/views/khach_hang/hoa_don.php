@@ -230,6 +230,83 @@ ob_start(); ?>
                     </div>
                 <?php endif; ?>
 
+                <?php if (in_array($booking['trang_thai'], ['ChoXacNhan', 'DaCoc'], true)): ?>
+                    <div class="mt-4 pt-3 border-top">
+                        <h5 class="mb-3">Yêu cầu hủy hoặc đổi lịch</h5>
+                        <form method="POST" action="index.php?act=khachHang/guiYeuCauThayDoiBooking" class="row g-3">
+                            <input type="hidden" name="_csrf_global" value="<?php echo htmlspecialchars(csrfToken('global_form'), ENT_QUOTES, 'UTF-8'); ?>">
+                            <input type="hidden" name="booking_id" value="<?php echo (int)$booking['booking_id']; ?>">
+
+                            <div class="col-md-4">
+                                <label class="form-label">Loại yêu cầu</label>
+                                <select name="loai_yeu_cau" id="bookingChangeType" class="form-select" required>
+                                    <option value="Huy">Hủy booking</option>
+                                    <option value="DoiLich">Đổi lịch khởi hành</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-8" id="bookingChangeScheduleWrap" style="display:none;">
+                                <label class="form-label">Lịch khởi hành mới</label>
+                                <select name="lich_khoi_hanh_moi_id" class="form-select">
+                                    <option value="">Chọn lịch mới</option>
+                                    <?php foreach (($doiLichOptions ?? []) as $opt): ?>
+                                        <option value="<?php echo (int)($opt['id'] ?? 0); ?>">
+                                            <?php echo htmlspecialchars((string)($opt['ngay_khoi_hanh'] ?? '')); ?>
+                                            <?php if (!empty($opt['ngay_ket_thuc'])): ?>
+                                                - <?php echo htmlspecialchars((string)$opt['ngay_ket_thuc']); ?>
+                                            <?php endif; ?>
+                                            <?php if (!empty($opt['diem_tap_trung'])): ?>
+                                                - <?php echo htmlspecialchars((string)$opt['diem_tap_trung']); ?>
+                                            <?php endif; ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <div class="form-text">Chỉ hiển thị lịch tương lai và khác lịch hiện tại.</div>
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label">Lý do</label>
+                                <textarea name="ly_do" class="form-control" rows="3" minlength="10" maxlength="500" placeholder="Mô tả lý do hủy hoặc đổi lịch..." required></textarea>
+                            </div>
+
+                            <div class="col-12 d-flex justify-content-end">
+                                <button type="submit" class="btn btn-outline-danger">
+                                    <i class="bi bi-send me-1"></i> Gửi yêu cầu thay đổi
+                                </button>
+                            </div>
+                        </form>
+
+                        <?php if (!empty($changeRequests)): ?>
+                            <div class="table-responsive mt-3">
+                                <table class="table table-sm table-bordered align-middle">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Loại</th>
+                                            <th>Lịch mới</th>
+                                            <th>Phí hủy</th>
+                                            <th>Trạng thái</th>
+                                            <th>Ngày gửi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($changeRequests as $req): ?>
+                                            <tr>
+                                                <td><?php echo (int)($req['id'] ?? 0); ?></td>
+                                                <td><?php echo htmlspecialchars((string)($req['loai_yeu_cau'] ?? '')); ?></td>
+                                                <td><?php echo !empty($req['ngay_khoi_hanh_moi']) ? htmlspecialchars((string)$req['ngay_khoi_hanh_moi']) : '-'; ?></td>
+                                                <td><?php echo number_format((float)($req['phi_huy'] ?? 0)); ?> VNĐ</td>
+                                                <td><?php echo htmlspecialchars((string)($req['trang_thai'] ?? '')); ?></td>
+                                                <td><?php echo !empty($req['created_at']) ? date('d/m/Y H:i', strtotime((string)$req['created_at'])) : '-'; ?></td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
+
                 <?php if (!empty($booking['ghi_chu'])): ?>
                     <div class="mt-4">
                         <h5>Ghi chú</h5>
@@ -315,4 +392,20 @@ function copyTransferNoteExact() {
 setTimeout(function () { window.location.reload(); }, 10000);
 </script>
 <?php endif; ?>
+<script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
+(function () {
+    var typeSelect = document.getElementById('bookingChangeType');
+    var scheduleWrap = document.getElementById('bookingChangeScheduleWrap');
+    if (!typeSelect || !scheduleWrap) {
+        return;
+    }
+
+    function syncChangeType() {
+        scheduleWrap.style.display = typeSelect.value === 'DoiLich' ? '' : 'none';
+    }
+
+    typeSelect.addEventListener('change', syncChangeType);
+    syncChangeType();
+})();
+</script>
 <?php include __DIR__ . '/_layout/footer.php'; ?>

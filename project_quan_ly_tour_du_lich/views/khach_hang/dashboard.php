@@ -59,6 +59,33 @@ $favoriteTourIds = isset($favoriteTourIds) && is_array($favoriteTourIds) ? $favo
             align-items: center;
         }
 
+        .post-booking-hub {
+            position: relative;
+            z-index: 3;
+            margin-top: -52px;
+            margin-bottom: 2rem;
+        }
+
+        .post-booking-hub .card {
+            border-radius: 24px !important;
+            overflow: hidden;
+            background: rgba(255,255,255,0.94);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 24px 54px rgba(15,23,42,0.14);
+            border: 1px solid rgba(255,255,255,0.58);
+        }
+
+        .post-booking-hub .bg-light {
+            background: linear-gradient(180deg, rgba(248,250,252,0.96), rgba(241,245,249,0.9)) !important;
+            transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+        }
+
+        .post-booking-hub a:hover .bg-light {
+            transform: translateY(-3px);
+            box-shadow: 0 18px 34px rgba(15,23,42,0.08);
+            border-color: rgba(13,110,253,0.14);
+        }
+
         /* BOOKING BOX */
         .booking-box {
             background: rgba(0,0,0,0.75);
@@ -123,8 +150,8 @@ $favoriteTourIds = isset($favoriteTourIds) && is_array($favoriteTourIds) ? $favo
             <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-2">
                 <li class="nav-item"><a class="nav-link px-3 fw-semibold active" href="#home"><i class="bi bi-house-door"></i> Trang chủ</a></li>
                 <li class="nav-item"><a class="nav-link px-3 fw-semibold" href="index.php?act=khachHang/danhSachTour"><i class="bi bi-stars"></i> Tour nổi bật</a></li>
-                <li class="nav-item"><a class="nav-link px-3 fw-semibold" href="#reviews"><i class="bi bi-chat-dots"></i> Đánh giá</a></li>
-                <li class="nav-item"><a class="nav-link px-3 fw-semibold" href="#support"><i class="bi bi-headset"></i> Hỗ trợ</a></li>
+                <li class="nav-item"><a class="nav-link px-3 fw-semibold" href="index.php?act=khachHang/traCuu"><i class="bi bi-search"></i> Tra cứu booking</a></li>
+                <li class="nav-item"><a class="nav-link px-3 fw-semibold" href="index.php?act=khachHang/tickets"><i class="bi bi-ticket-perforated"></i> Ticket hỗ trợ</a></li>
 
                 <li class="nav-item">
                     <a class="nav-link px-3 fw-bold luxury-cta" href="index.php?act=khachHang/guiYeuCauTour">
@@ -247,6 +274,20 @@ $favoriteTourIds = isset($favoriteTourIds) && is_array($favoriteTourIds) ? $favo
                 <small>Danh sách tour nổi bật</small>
             </span>
         </a>
+        <a href="index.php?act=khachHang/traCuu" class="mobile-shortcut-card">
+            <span class="mobile-shortcut-icon"><i class="bi bi-search"></i></span>
+            <span>
+                <strong>Tra cứu booking</strong>
+                <small>Theo mã booking + SĐT/email</small>
+            </span>
+        </a>
+        <a href="index.php?act=khachHang/tickets" class="mobile-shortcut-card">
+            <span class="mobile-shortcut-icon"><i class="bi bi-ticket-perforated"></i></span>
+            <span>
+                <strong>Ticket hỗ trợ</strong>
+                <small>Theo dõi trạng thái và SLA</small>
+            </span>
+        </a>
         <a href="#reviews" class="mobile-shortcut-card">
             <span class="mobile-shortcut-icon"><i class="bi bi-chat-quote"></i></span>
             <span>
@@ -270,6 +311,53 @@ $favoriteTourIds = isset($favoriteTourIds) && is_array($favoriteTourIds) ? $favo
         </a>
     </div>
 </div>
+
+<section class="container post-booking-hub">
+    <div class="card border-0 shadow-sm" style="border-radius:18px; overflow:hidden;">
+        <div class="card-body p-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                <div>
+                    <h2 class="h5 mb-1">Trung tâm tự phục vụ sau đặt tour</h2>
+                    <div class="text-muted">Tất cả tính năng hủy/đổi lịch, tra cứu, ticket SLA và timeline ở đây.</div>
+                </div>
+            </div>
+            <div class="row g-3">
+                <div class="col-md-6 col-xl-3">
+                    <a href="index.php?act=khachHang/traCuu" class="text-decoration-none d-block h-100">
+                        <div class="border rounded-4 p-3 h-100 bg-light">
+                            <div class="fw-bold mb-1"><i class="bi bi-search me-1"></i> Tra cứu booking</div>
+                            <small class="text-muted">Xem trạng thái booking, thanh toán, hồ sơ hành khách và in PDF xác nhận.</small>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-md-6 col-xl-3">
+                    <a href="index.php?act=khachHang/traCuu" class="text-decoration-none d-block h-100">
+                        <div class="border rounded-4 p-3 h-100 bg-light">
+                            <div class="fw-bold mb-1"><i class="bi bi-arrow-repeat me-1"></i> Hủy/đổi lịch online</div>
+                            <small class="text-muted">Vào tra cứu booking, mở hóa đơn và gửi yêu cầu hủy hoặc đổi lịch khởi hành.</small>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-md-6 col-xl-3">
+                    <a href="index.php?act=khachHang/tickets" class="text-decoration-none d-block h-100">
+                        <div class="border rounded-4 p-3 h-100 bg-light">
+                            <div class="fw-bold mb-1"><i class="bi bi-ticket-perforated me-1"></i> Ticket hỗ trợ + SLA</div>
+                            <small class="text-muted">Tạo ticket, xem tiến độ xử lý, gửi bổ sung thông tin và theo dõi hạn phản hồi.</small>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-md-6 col-xl-3">
+                    <a href="index.php?act=khachHang/timeline" class="text-decoration-none d-block h-100">
+                        <div class="border rounded-4 p-3 h-100 bg-light">
+                            <div class="fw-bold mb-1"><i class="bi bi-clock-history me-1"></i> Dòng thời gian của tôi</div>
+                            <small class="text-muted">Theo dõi mốc đặt tour, thanh toán, checkin, hỗ trợ và đánh giá theo bộ lọc.</small>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
 
 <!-- CURRENCY CONVERTER + TABS -->
 <style>
@@ -441,6 +529,10 @@ $favoriteTourIds = isset($favoriteTourIds) && is_array($favoriteTourIds) ? $favo
 }
 
 @media (max-width: 991.98px) {
+    .post-booking-hub {
+        margin-top: -54px;
+    }
+
     #tools {
         margin-top: 28px !important;
     }
@@ -461,6 +553,10 @@ $favoriteTourIds = isset($favoriteTourIds) && is_array($favoriteTourIds) ? $favo
 
 /* ===== MOBILE: thu nhỏ bảng quy đổi tỉ giá ===== */
 @media (max-width: 767.98px) {
+    .post-booking-hub {
+        margin-top: 1rem;
+    }
+
     #tab-content-currency {
         padding: 14px 12px !important;
     }

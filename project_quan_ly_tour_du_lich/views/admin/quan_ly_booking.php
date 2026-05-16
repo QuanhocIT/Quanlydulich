@@ -887,6 +887,12 @@ $huy = count(array_filter($bookingsPage, fn($b) => $b['trang_thai'] === 'Huy'));
                 <a href="index.php?act=admin/lichSuXoaBooking" class="btn btn-secondary">
                     🕐 Lịch sử xóa
                 </a>
+                <a href="index.php?act=booking/changeRequests" class="btn btn-secondary">
+                    🔁 Yêu cầu hủy/đổi lịch
+                </a>
+                <a href="index.php?act=admin/tickets" class="btn btn-secondary">
+                    🎫 Ticket hỗ trợ
+                </a>
                 <a href="index.php?act=admin/quanLyYeuCauTour" class="btn btn-secondary">
                     ⭐ Yêu cầu đặt tour
                 </a>
@@ -914,6 +920,9 @@ $huy = count(array_filter($bookingsPage, fn($b) => $b['trang_thai'] === 'Huy'));
     <div class="booking-view-switch">
         <a href="index.php?act=admin/quanLyBooking" class="view-switch-link <?php echo !$isCompletedView ? 'active' : ''; ?>">
             📋 Danh sách booking
+        </a>
+        <a href="index.php?act=booking/changeRequests" class="view-switch-link">
+            🔁 Yêu cầu hủy/đổi lịch
         </a>
         <a href="index.php?act=admin/bookingDaHoanThanh" class="view-switch-link <?php echo $isCompletedView ? 'active' : ''; ?>">
             ✅ Booking đã hoàn thành
