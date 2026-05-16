@@ -215,14 +215,6 @@ class AdminNhaCungCapController {
                         'nguoi_dung_id'   => $nhaCungCap['nguoi_dung_id'] ?? null,
                     ], JSON_UNESCAPED_UNICODE);
 
-                    $sql1 = "DELETE FROM phan_bo_dich_vu WHERE nha_cung_cap_id = ?";
-                    $stmt1 = $nhaCungCapModel->conn->prepare($sql1);
-                    $stmt1->execute([$id]);
-
-                    $sql2 = "DELETE FROM dich_vu_nha_cung_cap WHERE nha_cung_cap_id = ?";
-                    $stmt2 = $nhaCungCapModel->conn->prepare($sql2);
-                    $stmt2->execute([$id]);
-
                     $result = $nhaCungCapModel->delete($id);
 
                     if ($result) {
@@ -238,9 +230,9 @@ class AdminNhaCungCapController {
                             $nguoiDungModel->update($nhaCungCap['nguoi_dung_id'], ['vai_tro' => 'KhachHang']);
                         }
 
-                        $_SESSION['success'] = 'Xóa nhà cung cấp thành công';
+                        $_SESSION['success'] = 'Đã ẩn nhà cung cấp (xóa mềm) thành công';
                     } else {
-                        $_SESSION['error'] = 'Không thể xóa nhà cung cấp';
+                        $_SESSION['error'] = 'Không thể ẩn nhà cung cấp';
                     }
                 }
             } catch (Exception $e) {

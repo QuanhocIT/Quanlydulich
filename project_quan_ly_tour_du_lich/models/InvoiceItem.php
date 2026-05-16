@@ -9,17 +9,17 @@ class InvoiceItem {
 
     public static function all($conn, $invoice_id = null) {
         if ($invoice_id) {
-            $stmt = $conn->prepare("SELECT * FROM invoice_items WHERE invoice_id = ?");
+            $stmt = $conn->prepare("SELECT * FROM invoice_items WHERE invoice_id = ? AND deleted_at IS NULL");
             $stmt->execute([$invoice_id]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } else {
-            $stmt = $conn->prepare("SELECT * FROM invoice_items");
+            $stmt = $conn->prepare("SELECT * FROM invoice_items WHERE deleted_at IS NULL");
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         }
     }
     public static function find($conn, $id) {
-        $stmt = $conn->prepare("SELECT * FROM invoice_items WHERE item_id = ?");
+        $stmt = $conn->prepare("SELECT * FROM invoice_items WHERE item_id = ? AND deleted_at IS NULL");
         $stmt->execute([$id]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
@@ -36,7 +36,7 @@ class InvoiceItem {
         ]);
     }
     public static function delete($conn, $id) {
-        $stmt = $conn->prepare("DELETE FROM invoice_items WHERE item_id = ?");
+        $stmt = $conn->prepare("UPDATE invoice_items SET deleted_at = NOW() WHERE item_id = ? AND deleted_at IS NULL");
         return $stmt->execute([$id]);
     }
 }

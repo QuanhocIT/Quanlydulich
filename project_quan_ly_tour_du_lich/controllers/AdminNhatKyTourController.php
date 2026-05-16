@@ -42,7 +42,7 @@ class AdminNhatKyTourController {
                 LEFT JOIN tour t ON nkt.tour_id = t.tour_id
                 LEFT JOIN nhan_su ns ON nkt.nhan_su_id = ns.nhan_su_id
                 LEFT JOIN nguoi_dung nd ON ns.nguoi_dung_id = nd.id
-                WHERE 1=1";
+            WHERE nkt.deleted_at IS NULL";
         $params = [];
 
         if ($filter_tour) {
@@ -87,7 +87,8 @@ class AdminNhatKyTourController {
                         SUM(CASE WHEN loai_nhat_ky = 'su_co' THEN 1 ELSE 0 END) as su_co,
                         SUM(CASE WHEN loai_nhat_ky = 'phan_hoi' THEN 1 ELSE 0 END) as phan_hoi,
                         SUM(CASE WHEN loai_nhat_ky = 'hoat_dong' THEN 1 ELSE 0 END) as hoat_dong
-                     FROM nhat_ky_tour";
+                            FROM nhat_ky_tour
+                            WHERE deleted_at IS NULL";
         $stmtStats = $conn->prepare($sqlStats);
         $stmtStats->execute();
         $statsResult = $stmtStats->fetch(PDO::FETCH_ASSOC);
@@ -122,7 +123,8 @@ class AdminNhatKyTourController {
                     LEFT JOIN tour t ON nkt.tour_id = t.tour_id
                     LEFT JOIN nhan_su ns ON nkt.nhan_su_id = ns.nhan_su_id
                     LEFT JOIN nguoi_dung nd ON ns.nguoi_dung_id = nd.id
-                    WHERE nkt.id = ?";
+                                        WHERE nkt.id = ?
+                                            AND nkt.deleted_at IS NULL";
             $stmt = $conn->prepare($sql);
             $stmt->execute([$id]);
             $entry = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -162,6 +164,7 @@ class AdminNhatKyTourController {
                 LEFT JOIN nhan_su ns ON nkt.nhan_su_id = ns.nhan_su_id
                 LEFT JOIN nguoi_dung nd ON ns.nguoi_dung_id = nd.id
                 WHERE nkt.id = ?
+                                    AND nkt.deleted_at IS NULL
                 LIMIT 1";
         $stmt = $conn->prepare($sql);
         $stmt->execute([$id]);
@@ -231,7 +234,7 @@ class AdminNhatKyTourController {
                 // Update
                 if (!empty($imageUrls)) {
                     // Xóa hình ảnh cũ nếu có
-                    $sqlOld = "SELECT hinh_anh FROM nhat_ky_tour WHERE id = ?";
+                    $sqlOld = "SELECT hinh_anh FROM nhat_ky_tour WHERE id = ? AND deleted_at IS NULL";
                     $stmtOld = $conn->prepare($sqlOld);
                     $stmtOld->execute([$id]);
                     $oldEntry = $stmtOld->fetch(PDO::FETCH_ASSOC);
@@ -315,7 +318,7 @@ class AdminNhatKyTourController {
 
         try {
             // Lấy thông tin nhật ký để xóa hình ảnh
-            $sql = "SELECT hinh_anh FROM nhat_ky_tour WHERE id = ?";
+            $sql = "SELECT hinh_anh FROM nhat_ky_tour WHERE id = ? AND deleted_at IS NULL";
             $stmt = $conn->prepare($sql);
             $stmt->execute([$id]);
             $entry = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -333,14 +336,14 @@ class AdminNhatKyTourController {
                     }
                 }
 
-                // Xóa nhật ký
-                $sql = "DELETE FROM nhat_ky_tour WHERE id = ?";
+                // Xóa mềm nhật ký
+                $sql = "UPDATE nhat_ky_tour SET deleted_at = NOW() WHERE id = ? AND deleted_at IS NULL";
                 $stmt = $conn->prepare($sql);
                 $result = $stmt->execute([$id]);
 
                 $_SESSION[$result ? 'success' : 'error'] = $result
-                    ? 'Xóa nhật ký thành công'
-                    : 'Lỗi khi xóa nhật ký';
+                    ? 'Đã ẩn nhật ký thành công'
+                    : 'Lỗi khi ẩn nhật ký';
             } else {
                 $_SESSION['error'] = 'Không tìm thấy nhật ký';
             }

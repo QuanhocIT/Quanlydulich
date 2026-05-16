@@ -11,7 +11,7 @@ class DichVuNhaCungCap
 
     public function getAllBySupplier($nhaCungCapId)
     {
-        $sql = "SELECT * FROM dich_vu_nha_cung_cap WHERE nha_cung_cap_id = ? ORDER BY updated_at DESC";
+        $sql = "SELECT * FROM dich_vu_nha_cung_cap WHERE nha_cung_cap_id = ? AND deleted_at IS NULL ORDER BY updated_at DESC";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([(int)$nhaCungCapId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -19,7 +19,7 @@ class DichVuNhaCungCap
 
     public function findById($id, $nhaCungCapId)
     {
-        $sql = "SELECT * FROM dich_vu_nha_cung_cap WHERE id = ? AND nha_cung_cap_id = ?";
+        $sql = "SELECT * FROM dich_vu_nha_cung_cap WHERE id = ? AND nha_cung_cap_id = ? AND deleted_at IS NULL";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([(int)$id, (int)$nhaCungCapId]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
@@ -56,6 +56,7 @@ class DichVuNhaCungCap
         $placeholders = implode(',', array_fill(0, count($supplierIds), '?'));
         $sql = "SELECT * FROM dich_vu_nha_cung_cap 
                 WHERE nha_cung_cap_id IN ($placeholders)
+              AND deleted_at IS NULL
                 ORDER BY nha_cung_cap_id, ten_dich_vu";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute($supplierIds);
@@ -87,7 +88,7 @@ class DichVuNhaCungCap
 
     public function delete($id, $nhaCungCapId)
     {
-        $sql = "DELETE FROM dich_vu_nha_cung_cap WHERE id = ? AND nha_cung_cap_id = ?";
+        $sql = "UPDATE dich_vu_nha_cung_cap SET deleted_at = NOW() WHERE id = ? AND nha_cung_cap_id = ? AND deleted_at IS NULL";
         $stmt = $this->conn->prepare($sql);
         return $stmt->execute([(int)$id, (int)$nhaCungCapId]);
     }

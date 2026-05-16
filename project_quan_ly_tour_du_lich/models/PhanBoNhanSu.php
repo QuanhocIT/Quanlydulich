@@ -54,7 +54,7 @@ class PhanBoNhanSu
 
     // Lấy phân bổ theo ID
     public function findById($id) {
-        $sql = "SELECT * FROM phan_bo_nhan_su WHERE id = ?";
+        $sql = "SELECT * FROM phan_bo_nhan_su WHERE id = ? AND deleted_at IS NULL";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([(int)$id]);
         return $stmt->fetch();
@@ -69,6 +69,7 @@ class PhanBoNhanSu
                 LEFT JOIN nhan_su ns ON pbn.nhan_su_id = ns.nhan_su_id
                 LEFT JOIN nguoi_dung nd ON ns.nguoi_dung_id = nd.id
                 WHERE pbn.lich_khoi_hanh_id = ?
+                                    AND pbn.deleted_at IS NULL
                 ORDER BY pbn.vai_tro, nd.ho_ten";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([(int)$lichKhoiHanhId]);
@@ -83,7 +84,8 @@ class PhanBoNhanSu
                 FROM phan_bo_nhan_su pbn
                 LEFT JOIN nhan_su ns ON pbn.nhan_su_id = ns.nhan_su_id
                 LEFT JOIN nguoi_dung nd ON ns.nguoi_dung_id = nd.id
-                WHERE pbn.lich_khoi_hanh_id = ? AND pbn.vai_tro = ?";
+                                WHERE pbn.lich_khoi_hanh_id = ? AND pbn.vai_tro = ?
+                                    AND pbn.deleted_at IS NULL";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([(int)$lichKhoiHanhId, $vaiTro]);
         return $stmt->fetchAll();
@@ -160,7 +162,7 @@ class PhanBoNhanSu
 
     // Lấy thông tin lương của nhân sự theo lịch khởi hành
     public function getLuongByLichKhoiHanh($lichKhoiHanhId) {
-        $sql = "SELECT * FROM phan_bo_nhan_su WHERE lich_khoi_hanh_id = ?";
+        $sql = "SELECT * FROM phan_bo_nhan_su WHERE lich_khoi_hanh_id = ? AND deleted_at IS NULL";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([(int)$lichKhoiHanhId]);
         return $stmt->fetchAll();
@@ -189,7 +191,7 @@ class PhanBoNhanSu
 
     // Xóa phân bổ nhân sự
     public function delete($id) {
-        $sql = "DELETE FROM phan_bo_nhan_su WHERE id = ?";
+        $sql = "UPDATE phan_bo_nhan_su SET deleted_at = NOW(), trang_thai = 'Huy' WHERE id = ? AND deleted_at IS NULL";
         $stmt = $this->conn->prepare($sql);
         return $stmt->execute([(int)$id]);
     }

@@ -170,8 +170,9 @@ class ChiPhiThucTe
     
     // Xóa chi phí (chỉ được xóa nếu chưa duyệt)
     public function delete($id) {
-        $sql = "DELETE FROM chi_phi_thuc_te 
-                WHERE chi_phi_id = ? AND trang_thai = 'ChoXacNhan'";
+        $sql = "UPDATE chi_phi_thuc_te
+            SET deleted_at = NOW(), trang_thai = 'DaXoa'
+            WHERE chi_phi_id = ? AND trang_thai = 'ChoXacNhan' AND deleted_at IS NULL";
         $stmt = $this->conn->prepare($sql);
         return $stmt->execute([$id]);
     }

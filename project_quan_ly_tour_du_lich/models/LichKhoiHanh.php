@@ -21,6 +21,7 @@ class LichKhoiHanh
         $sqlHoanThanh = "UPDATE lich_khoi_hanh
                          SET trang_thai = 'HoanThanh'
                          WHERE trang_thai IN ('SapKhoiHanh','DangChay')
+                                                     AND deleted_at IS NULL
                            AND (
                                ngay_ket_thuc < CURDATE()
                                OR (ngay_ket_thuc = CURDATE() AND gio_ket_thuc IS NOT NULL AND gio_ket_thuc <= CURTIME())
@@ -32,6 +33,7 @@ class LichKhoiHanh
         $sqlDangChay = "UPDATE lich_khoi_hanh
                         SET trang_thai = 'DangChay'
                         WHERE trang_thai = 'SapKhoiHanh'
+                                                    AND deleted_at IS NULL
                           AND ngay_khoi_hanh <= CURDATE()
                           AND (ngay_ket_thuc IS NULL OR ngay_ket_thuc >= CURDATE())";
         $stmt2 = $this->conn->prepare($sqlDangChay);
@@ -51,7 +53,8 @@ class LichKhoiHanh
                     COUNT(DISTINCT pbn.id) AS so_nhan_su
                 FROM lich_khoi_hanh lk
                 LEFT JOIN tour t ON lk.tour_id = t.tour_id
-                LEFT JOIN phan_bo_nhan_su pbn ON pbn.lich_khoi_hanh_id = lk.id
+                LEFT JOIN phan_bo_nhan_su pbn ON pbn.lich_khoi_hanh_id = lk.id AND pbn.deleted_at IS NULL
+                WHERE lk.deleted_at IS NULL
                 GROUP BY lk.id
                 ORDER BY lk.ngay_khoi_hanh DESC, lk.gio_xuat_phat DESC";
         if ($limit !== null) {
@@ -77,6 +80,7 @@ class LichKhoiHanh
             $sql = "SELECT lk.id, lk.ngay_khoi_hanh, t.ten_tour
                     FROM lich_khoi_hanh lk
                     LEFT JOIN tour t ON lk.tour_id = t.tour_id
+                    WHERE lk.deleted_at IS NULL
                     ORDER BY lk.ngay_khoi_hanh DESC, lk.id DESC";
             if ($limitValue > 0) {
                 $sql .= " LIMIT ?";
@@ -100,7 +104,8 @@ class LichKhoiHanh
             $sql = "SELECT lk.id, lk.ngay_khoi_hanh, lk.trang_thai, t.ten_tour
                     FROM lich_khoi_hanh lk
                     LEFT JOIN tour t ON lk.tour_id = t.tour_id
-                    WHERE lk.ngay_khoi_hanh >= CURDATE()
+                                        WHERE lk.deleted_at IS NULL
+                                            AND lk.ngay_khoi_hanh >= CURDATE()
                       AND lk.ngay_khoi_hanh <= DATE_ADD(CURDATE(), INTERVAL ? DAY)
                     ORDER BY lk.ngay_khoi_hanh ASC, lk.id ASC
                     LIMIT ?";
@@ -124,8 +129,9 @@ class LichKhoiHanh
                     GROUP_CONCAT(DISTINCT CASE WHEN pbn.vai_tro = 'HDV' THEN pbn.nhan_su_id END ORDER BY pbn.nhan_su_id SEPARATOR ',') AS hdv_ids
                 FROM lich_khoi_hanh lk
                 LEFT JOIN tour t ON lk.tour_id = t.tour_id
-                LEFT JOIN phan_bo_nhan_su pbn ON pbn.lich_khoi_hanh_id = lk.id
-                LEFT JOIN phan_bo_dich_vu pbdv ON pbdv.lich_khoi_hanh_id = lk.id";
+                LEFT JOIN phan_bo_nhan_su pbn ON pbn.lich_khoi_hanh_id = lk.id AND pbn.deleted_at IS NULL
+                LEFT JOIN phan_bo_dich_vu pbdv ON pbdv.lich_khoi_hanh_id = lk.id AND pbdv.deleted_at IS NULL
+                WHERE lk.deleted_at IS NULL";
 
         $where = [];
         $having = [];
@@ -152,7 +158,7 @@ class LichKhoiHanh
         }
 
         if (!empty($where)) {
-            $sql .= ' WHERE ' . implode(' AND ', $where);
+            $sql .= ' AND ' . implode(' AND ', $where);
         }
 
         $sql .= ' GROUP BY lk.id';
@@ -184,7 +190,7 @@ class LichKhoiHanh
         $sql = "SELECT lk.*, t.ten_tour, t.loai_tour, t.gia_co_ban
                 FROM lich_khoi_hanh lk
                 LEFT JOIN tour t ON lk.tour_id = t.tour_id
-                WHERE lk.id = ?";
+            WHERE lk.id = ? AND lk.deleted_at IS NULL";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([(int)$id]);
         return $stmt->fetch();
@@ -195,7 +201,8 @@ class LichKhoiHanh
         $sql = "SELECT lk.*, t.ten_tour, t.gia_co_ban
                 FROM lich_khoi_hanh lk
                 LEFT JOIN tour t ON lk.tour_id = t.tour_id
-                WHERE lk.tour_id = ?
+                                WHERE lk.tour_id = ?
+                                    AND lk.deleted_at IS NULL
                 ORDER BY lk.ngay_khoi_hanh ASC";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([(int)$tourId]);
@@ -208,6 +215,7 @@ class LichKhoiHanh
         $sql = "SELECT DATE_FORMAT(ngay_khoi_hanh, '%Y-%m') AS thang, COUNT(*) AS total
                 FROM lich_khoi_hanh
                 WHERE ngay_khoi_hanh IS NOT NULL
+                                    AND deleted_at IS NULL
                   AND ngay_khoi_hanh >= DATE_SUB(CURDATE(), INTERVAL ? MONTH)
                 GROUP BY DATE_FORMAT(ngay_khoi_hanh, '%Y-%m')
                 ORDER BY DATE_FORMAT(ngay_khoi_hanh, '%Y-%m') ASC";
@@ -230,6 +238,7 @@ class LichKhoiHanh
     public function findByTourAndNgayKhoiHanh($tourId, $ngayKhoiHanh) {
         $sql = "SELECT * FROM lich_khoi_hanh 
                 WHERE tour_id = ? AND ngay_khoi_hanh = ?
+              AND deleted_at IS NULL
                 ORDER BY id ASC
                 LIMIT 1";
         $stmt = $this->conn->prepare($sql);
@@ -305,7 +314,7 @@ class LichKhoiHanh
 
     // Gán HDV chính cho lịch khởi hành
     public function assignHDV($lichKhoiHanhId, $nhanSuId) {
-        $sql = "UPDATE lich_khoi_hanh SET hdv_id = ? WHERE id = ?";
+        $sql = "UPDATE lich_khoi_hanh SET hdv_id = ? WHERE id = ? AND deleted_at IS NULL";
         $stmt = $this->conn->prepare($sql);
         $result = $stmt->execute([
             $nhanSuId !== null ? (int)$nhanSuId : null,
@@ -321,7 +330,7 @@ class LichKhoiHanh
 
     // Xóa lịch khởi hành
     public function delete($id) {
-        $sql = "DELETE FROM lich_khoi_hanh WHERE id = ?";
+        $sql = "UPDATE lich_khoi_hanh SET deleted_at = NOW(), trang_thai = 'DaHuy' WHERE id = ? AND deleted_at IS NULL";
         $stmt = $this->conn->prepare($sql);
         $result = $stmt->execute([(int)$id]);
         if ($result) {
@@ -340,8 +349,9 @@ class LichKhoiHanh
                 LEFT JOIN tour t ON lk.tour_id = t.tour_id
                 LEFT JOIN booking b ON lk.tour_id = b.tour_id 
                     AND b.ngay_khoi_hanh = lk.ngay_khoi_hanh
+                    AND b.is_deleted = 0
                     AND b.trang_thai IN ('ChoXacNhan', 'DaCoc', 'HoanTat')
-                WHERE lk.id = ?
+                WHERE lk.id = ? AND lk.deleted_at IS NULL
                 GROUP BY lk.id";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([(int)$id]);
@@ -356,7 +366,8 @@ class LichKhoiHanh
                        t.gia_co_ban
                 FROM lich_khoi_hanh lk
                 LEFT JOIN tour t ON lk.tour_id = t.tour_id
-                WHERE lk.hdv_id = ?
+                                WHERE lk.hdv_id = ?
+                                    AND lk.deleted_at IS NULL
                 ORDER BY lk.ngay_khoi_hanh DESC, lk.gio_xuat_phat DESC";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([(int)$hdvId]);

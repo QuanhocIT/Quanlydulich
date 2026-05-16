@@ -17,6 +17,7 @@ class TourCheckin {
                 LEFT JOIN booking b ON tc.booking_id = b.booking_id
                 LEFT JOIN khach_hang kh ON tc.khach_hang_id = kh.khach_hang_id
                 LEFT JOIN nguoi_dung nd ON kh.nguoi_dung_id = nd.id
+                WHERE tc.deleted_at IS NULL
                 ORDER BY tc.created_at DESC";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute();
@@ -25,7 +26,7 @@ class TourCheckin {
 
     // Lấy check-in theo ID
     public function findById($id) {
-        $sql = "SELECT * FROM tour_checkin WHERE id = ?";
+        $sql = "SELECT * FROM tour_checkin WHERE id = ? AND deleted_at IS NULL";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([$id]);
         return $stmt->fetch();
@@ -38,7 +39,8 @@ class TourCheckin {
                 FROM tour_checkin tc
                 LEFT JOIN khach_hang kh ON tc.khach_hang_id = kh.khach_hang_id
                 LEFT JOIN nguoi_dung nd ON kh.nguoi_dung_id = nd.id
-                WHERE tc.booking_id = ?";
+                                WHERE tc.booking_id = ?
+                                    AND tc.deleted_at IS NULL";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([$bookingId]);
         return $stmt->fetchAll();
@@ -53,7 +55,8 @@ class TourCheckin {
                 LEFT JOIN booking b ON tc.booking_id = b.booking_id
                 LEFT JOIN khach_hang kh ON tc.khach_hang_id = kh.khach_hang_id
                 LEFT JOIN nguoi_dung nd ON kh.nguoi_dung_id = nd.id
-                WHERE tc.lich_khoi_hanh_id = ?
+                                WHERE tc.lich_khoi_hanh_id = ?
+                                    AND tc.deleted_at IS NULL
                 ORDER BY tc.checkin_time DESC";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([$lichKhoiHanhId]);
@@ -125,7 +128,7 @@ class TourCheckin {
 
     // Xóa check-in
     public function delete($id) {
-        $sql = "DELETE FROM tour_checkin WHERE id = ?";
+        $sql = "UPDATE tour_checkin SET deleted_at = NOW() WHERE id = ? AND deleted_at IS NULL";
         $stmt = $this->conn->prepare($sql);
         return $stmt->execute([$id]);
     }
@@ -138,7 +141,8 @@ class TourCheckin {
                 SUM(CASE WHEN trang_thai = 'ChuaCheckIn' THEN 1 ELSE 0 END) as chua_checkin,
                 SUM(CASE WHEN trang_thai = 'DaCheckOut' THEN 1 ELSE 0 END) as da_checkout
                 FROM tour_checkin 
-                WHERE lich_khoi_hanh_id = ?";
+                                WHERE lich_khoi_hanh_id = ?
+                                    AND deleted_at IS NULL";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([$lichKhoiHanhId]);
         return $stmt->fetch();

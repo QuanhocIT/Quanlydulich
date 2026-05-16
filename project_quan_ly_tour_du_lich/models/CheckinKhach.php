@@ -14,6 +14,7 @@ class CheckinKhach
         $sql = "SELECT *
                 FROM tour_checkin
                 WHERE lich_khoi_hanh_id = ?
+              AND deleted_at IS NULL
                 ORDER BY updated_at DESC, checkin_time DESC";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([(int)$lichKhoiHanhId]);
@@ -27,6 +28,7 @@ class CheckinKhach
                 WHERE lich_khoi_hanh_id = ?
                   AND booking_id = ?
                   AND khach_hang_id = ?
+                                    AND deleted_at IS NULL
                 LIMIT 1";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([(int)$lichKhoiHanhId, (int)$bookingId, (int)$khachHangId]);
@@ -38,6 +40,7 @@ class CheckinKhach
         $sql = "SELECT *
                 FROM tour_checkin
                 WHERE booking_id = ?
+              AND deleted_at IS NULL
                 ORDER BY id ASC";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([(int)$bookingId]);
@@ -64,6 +67,7 @@ class CheckinKhach
         $sql = "SELECT *
                 FROM tour_checkin
                 WHERE booking_id IN ($placeholders)
+              AND deleted_at IS NULL
                 ORDER BY booking_id ASC, id ASC";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute($idList);
@@ -89,6 +93,7 @@ class CheckinKhach
         $sql = "SELECT *
                 FROM tour_checkin
                 WHERE id = ?
+              AND deleted_at IS NULL
                 LIMIT 1";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([(int)$id]);
@@ -97,7 +102,7 @@ class CheckinKhach
 
     public function delete($id)
     {
-        $sql = "DELETE FROM tour_checkin WHERE id = ?";
+        $sql = "UPDATE tour_checkin SET deleted_at = NOW() WHERE id = ? AND deleted_at IS NULL";
         $stmt = $this->conn->prepare($sql);
         return $stmt->execute([(int)$id]);
     }

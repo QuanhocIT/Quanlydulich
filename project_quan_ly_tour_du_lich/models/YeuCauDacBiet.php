@@ -34,6 +34,7 @@ class YeuCauDacBiet
                 FROM yeu_cau_dac_biet yc
                 INNER JOIN booking b ON yc.booking_id = b.booking_id
                 WHERE b.khach_hang_id = ? AND b.tour_id = ?
+                                    AND yc.deleted_at IS NULL
                 ORDER BY yc.id DESC
                 LIMIT 1";
         $stmt = $this->conn->prepare($sql);
@@ -130,7 +131,7 @@ class YeuCauDacBiet
                 LEFT JOIN nguoi_dung nd_khach ON kh.nguoi_dung_id = nd_khach.id
                 LEFT JOIN nguoi_dung nd_tao ON yc.nguoi_tao_id = nd_tao.id
                 LEFT JOIN nguoi_dung nd_xuly ON yc.nguoi_xu_ly_id = nd_xuly.id
-                WHERE 1 = 1";
+                WHERE yc.deleted_at IS NULL";
 
         $params = [];
 
@@ -193,7 +194,8 @@ class YeuCauDacBiet
                     SUM(CASE WHEN trang_thai = 'dang_xu_ly' THEN 1 ELSE 0 END) AS trang_thai_dang_xu_ly,
                     SUM(CASE WHEN trang_thai = 'da_giai_quyet' THEN 1 ELSE 0 END) AS trang_thai_da_giai_quyet,
                     SUM(CASE WHEN trang_thai = 'khong_the_thuc_hien' THEN 1 ELSE 0 END) AS trang_thai_khong_the_thuc_hien
-                FROM yeu_cau_dac_biet";
+                    FROM yeu_cau_dac_biet
+                    WHERE deleted_at IS NULL";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute();
         return $stmt->fetch() ?: [];
@@ -255,7 +257,7 @@ class YeuCauDacBiet
 
         $params[] = (int)$id;
 
-        $sql = "UPDATE yeu_cau_dac_biet SET " . implode(', ', $fields) . " WHERE id = ?";
+        $sql = "UPDATE yeu_cau_dac_biet SET " . implode(', ', $fields) . " WHERE id = ? AND deleted_at IS NULL";
         $stmt = $this->conn->prepare($sql);
         $updated = $stmt->execute($params);
 
@@ -279,6 +281,7 @@ class YeuCauDacBiet
                 LEFT JOIN khach_hang kh ON b.khach_hang_id = kh.khach_hang_id
                 LEFT JOIN nguoi_dung nd_khach ON kh.nguoi_dung_id = nd_khach.id
                 WHERE yc.id = ?
+                                    AND yc.deleted_at IS NULL
                 LIMIT 1";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([(int)$id]);
@@ -287,7 +290,7 @@ class YeuCauDacBiet
 
     public function deleteById($id)
     {
-        $sql = "DELETE FROM yeu_cau_dac_biet WHERE id = ?";
+        $sql = "UPDATE yeu_cau_dac_biet SET deleted_at = NOW(), trang_thai = 'da_xoa' WHERE id = ? AND deleted_at IS NULL";
         $stmt = $this->conn->prepare($sql);
         return $stmt->execute([(int)$id]);
     }
@@ -320,7 +323,8 @@ class YeuCauDacBiet
                 LEFT JOIN nguoi_dung nd_khach ON kh.nguoi_dung_id = nd_khach.id
                 LEFT JOIN nguoi_dung nd_tao ON yc.nguoi_tao_id = nd_tao.id
                 LEFT JOIN nguoi_dung nd_xuly ON yc.nguoi_xu_ly_id = nd_xuly.id
-                WHERE (lkh.hdv_id = ? OR (pbn.nhan_su_id = ? AND pbn.trang_thai = 'DaXacNhan'))";
+                                WHERE yc.deleted_at IS NULL
+                                    AND (lkh.hdv_id = ? OR (pbn.nhan_su_id = ? AND pbn.trang_thai = 'DaXacNhan'))";
 
         $params = [$nhanSuId, $nhanSuId, $nhanSuId];
 
@@ -388,7 +392,8 @@ public function getSummaryStatsForHDV($nhanSuId, $filters = [])
             LEFT JOIN booking b ON yc.booking_id = b.booking_id
             LEFT JOIN lich_khoi_hanh lkh ON b.tour_id = lkh.tour_id AND DATE(b.ngay_khoi_hanh) = DATE(lkh.ngay_khoi_hanh)
             LEFT JOIN phan_bo_nhan_su pbn ON lkh.id = pbn.lich_khoi_hanh_id AND pbn.nhan_su_id = ?
-            WHERE (lkh.hdv_id = ? OR (pbn.nhan_su_id = ? AND pbn.trang_thai = 'DaXacNhan'))";
+                        WHERE yc.deleted_at IS NULL
+                            AND (lkh.hdv_id = ? OR (pbn.nhan_su_id = ? AND pbn.trang_thai = 'DaXacNhan'))";
 
     $params = [$nhanSuId, $nhanSuId, $nhanSuId];
 

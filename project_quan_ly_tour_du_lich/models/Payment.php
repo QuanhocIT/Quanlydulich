@@ -16,7 +16,7 @@ class Payment {
     public $note;
 
     public static function all($conn) {
-        $stmt = $conn->prepare("SELECT * FROM payments ORDER BY payment_id DESC");
+        $stmt = $conn->prepare("SELECT * FROM payments WHERE deleted_at IS NULL ORDER BY payment_id DESC");
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
@@ -142,13 +142,13 @@ class Payment {
     }
 
     public static function find($conn, $id) {
-        $stmt = $conn->prepare("SELECT * FROM payments WHERE payment_id = ?");
+        $stmt = $conn->prepare("SELECT * FROM payments WHERE payment_id = ? AND deleted_at IS NULL");
         $stmt->execute([$id]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
     public static function findForUpdate($conn, $id) {
-        $stmt = $conn->prepare("SELECT * FROM payments WHERE payment_id = ? FOR UPDATE");
+        $stmt = $conn->prepare("SELECT * FROM payments WHERE payment_id = ? AND deleted_at IS NULL FOR UPDATE");
         $stmt->execute([(int)$id]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
@@ -160,13 +160,13 @@ class Payment {
         ]);
     }
     public static function update($conn, $id, $data) {
-        $stmt = $conn->prepare("UPDATE payments SET booking_id=?, amount=?, payment_method=?, payment_date=?, status=?, note=? WHERE payment_id=?");
+        $stmt = $conn->prepare("UPDATE payments SET booking_id=?, amount=?, payment_method=?, payment_date=?, status=?, note=? WHERE payment_id=? AND deleted_at IS NULL");
         return $stmt->execute([
             $data['booking_id'], $data['amount'], $data['payment_method'], $data['payment_date'], $data['status'], $data['note'], $id
         ]);
     }
     public static function delete($conn, $id) {
-        $stmt = $conn->prepare("DELETE FROM payments WHERE payment_id = ?");
+        $stmt = $conn->prepare("UPDATE payments SET deleted_at = NOW() WHERE payment_id = ? AND deleted_at IS NULL");
         return $stmt->execute([$id]);
     }
 }

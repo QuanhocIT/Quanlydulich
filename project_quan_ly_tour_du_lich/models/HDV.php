@@ -9,7 +9,7 @@ class HDV
     }
     // Lấy tất cả HDV (có thể lọc theo nhóm hoặc trạng thái)
     public function getAll(?int $groupId = null, bool $availableOnly = false): array {
-        $conds = ["ns.vai_tro = 'HDV'"];
+        $conds = ["ns.vai_tro = 'HDV'", "ns.is_deleted = 0", "(nd.id IS NULL OR nd.is_deleted = 0)"];
         $params = [];
         if ($groupId) {
             $conds[] = 'ns.group_id = ?';
@@ -29,7 +29,7 @@ class HDV
     }
 
     public function findById(int $id): mixed {
-        $sql = "SELECT * FROM nhan_su WHERE nhan_su_id = ?";
+        $sql = "SELECT * FROM nhan_su WHERE nhan_su_id = ? AND is_deleted = 0";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([$id]);
         return $stmt->fetch();
@@ -79,7 +79,10 @@ class HDV
     }
 
     public function delete(int $id): bool {
-        $sql = "DELETE FROM nhan_su WHERE nhan_su_id = ?";
+        $sql = "UPDATE nhan_su
+                SET is_deleted = 1,
+                    deleted_at = NOW()
+                WHERE nhan_su_id = ? AND is_deleted = 0";
         $stmt = $this->conn->prepare($sql);
         return $stmt->execute([$id]);
     }

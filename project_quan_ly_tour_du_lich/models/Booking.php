@@ -44,7 +44,7 @@ class Booking
 
     // Tìm booking theo tour_id và khach_hang_id (mã tour và mã khách hàng)
     public function findByTourAndCustomer(int $tourId, int $khachHangId): mixed {
-        $sql = "SELECT * FROM booking WHERE tour_id = ? AND khach_hang_id = ? ORDER BY ngay_dat DESC LIMIT 1";
+        $sql = "SELECT * FROM booking WHERE tour_id = ? AND khach_hang_id = ? AND is_deleted = 0 ORDER BY ngay_dat DESC LIMIT 1";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([(int)$tourId, (int)$khachHangId]);
         return $stmt->fetch();
@@ -52,7 +52,7 @@ class Booking
 
     // Lấy tất cả booking
     public function getAll() {
-        $sql = "SELECT * FROM booking ORDER BY ngay_dat DESC";
+        $sql = "SELECT * FROM booking WHERE is_deleted = 0 ORDER BY ngay_dat DESC";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute();
         return $stmt->fetchAll();
@@ -60,7 +60,7 @@ class Booking
 
     // Lấy booking theo ID
     public function findById(int $id): mixed {
-        $sql = "SELECT * FROM booking WHERE booking_id = ?";
+        $sql = "SELECT * FROM booking WHERE booking_id = ? AND is_deleted = 0";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([$id]);
         return $stmt->fetch();
@@ -70,6 +70,7 @@ class Booking
     public function getStatusCounts() {
         $sql = "SELECT COALESCE(trang_thai, 'Khac') AS trang_thai, COUNT(*) AS total
                 FROM booking
+            WHERE is_deleted = 0
                 GROUP BY COALESCE(trang_thai, 'Khac')";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute();
@@ -86,7 +87,7 @@ class Booking
 
     // Tìm booking theo điều kiện
     public function find($conditions = []) {
-        $sql = "SELECT * FROM booking";
+        $sql = "SELECT * FROM booking WHERE is_deleted = 0";
         $params = [];
         
         if (!empty($conditions)) {
@@ -106,7 +107,7 @@ class Booking
                 $params[] = $value;
             }
             if (!empty($where)) {
-                $sql .= " WHERE " . implode(" AND ", $where);
+                $sql .= " AND " . implode(" AND ", $where);
             }
         }
         
@@ -272,6 +273,7 @@ class Booking
                 LEFT JOIN tour t ON b.tour_id = t.tour_id
                 LEFT JOIN khach_hang kh ON b.khach_hang_id = kh.khach_hang_id
                 LEFT JOIN nguoi_dung nd ON kh.nguoi_dung_id = nd.id
+            WHERE b.is_deleted = 0
                 ORDER BY b.ngay_dat DESC, b.booking_id DESC";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute();
@@ -291,7 +293,8 @@ class Booking
                 LEFT JOIN tour t ON b.tour_id = t.tour_id
                 LEFT JOIN khach_hang kh ON b.khach_hang_id = kh.khach_hang_id
                 LEFT JOIN nguoi_dung nd ON kh.nguoi_dung_id = nd.id
-                WHERE (b.trang_thai IS NULL OR b.trang_thai <> 'DaHuy')
+                                WHERE b.is_deleted = 0
+                                    AND (b.trang_thai IS NULL OR b.trang_thai <> 'DaHuy')
                 ORDER BY b.ngay_dat DESC, b.booking_id DESC
                 LIMIT ?";
         $stmt = $this->conn->prepare($sql);
@@ -359,7 +362,8 @@ class Booking
             }
         }
 
-        $whereClause = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
+        $baseWhere = ['b.is_deleted = 0'];
+        $whereClause = 'WHERE ' . implode(' AND ', array_merge($baseWhere, $where));
         $sql = "SELECT COUNT(*)
                 FROM booking b
                 LEFT JOIN tour t ON b.tour_id = t.tour_id
@@ -430,7 +434,8 @@ class Booking
             }
         }
 
-        $whereClause = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
+        $baseWhere = ['b.is_deleted = 0'];
+        $whereClause = 'WHERE ' . implode(' AND ', array_merge($baseWhere, $where));
         $sql = "SELECT b.*,
                 t.ten_tour, t.gia_co_ban, t.loai_tour,
                 kh.khach_hang_id, kh.dia_chi,
@@ -473,7 +478,11 @@ class Booking
 
     // Xóa booking
     public function delete(int $id): bool {
-        $sql = "DELETE FROM booking WHERE booking_id = ?";
+        $sql = "UPDATE booking
+                SET is_deleted = 1,
+                    deleted_at = NOW(),
+                    trang_thai = 'DaXoa'
+                WHERE booking_id = ? AND is_deleted = 0";
         $stmt = $this->conn->prepare($sql);
         return $stmt->execute([$id]);
     }
@@ -484,6 +493,7 @@ class Booking
                 FROM booking 
                 WHERE tour_id = ? 
                 AND ngay_khoi_hanh = ? 
+            AND is_deleted = 0
                 AND trang_thai IN ('DaCoc', 'HoanTat')";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([(int)$tourId, $ngayKhoiHanh]);
@@ -511,6 +521,7 @@ class Booking
         }
 
         $sql .= ")
+                  AND is_deleted = 0
                   AND trang_thai IN ('DaCoc', 'HoanTat')";
 
         $stmt = $this->conn->prepare($sql);
@@ -540,7 +551,9 @@ class Booking
                 LEFT JOIN tour t ON b.tour_id = t.tour_id
                 LEFT JOIN khach_hang kh ON b.khach_hang_id = kh.khach_hang_id
                 LEFT JOIN nguoi_dung nd ON kh.nguoi_dung_id = nd.id
-                WHERE b.booking_id = ? LIMIT 1";
+                                WHERE b.booking_id = ?
+                                    AND b.is_deleted = 0
+                                LIMIT 1";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([$bookingId]);
         $result = $stmt->fetchAll();

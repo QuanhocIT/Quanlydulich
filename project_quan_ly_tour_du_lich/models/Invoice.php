@@ -10,12 +10,12 @@ class Invoice {
     public $note;
 
     public static function all($conn) {
-        $stmt = $conn->prepare("SELECT * FROM invoices");
+        $stmt = $conn->prepare("SELECT * FROM invoices WHERE deleted_at IS NULL");
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
     public static function find($conn, $id) {
-        $stmt = $conn->prepare("SELECT * FROM invoices WHERE invoice_id = ?");
+        $stmt = $conn->prepare("SELECT * FROM invoices WHERE invoice_id = ? AND deleted_at IS NULL");
         $stmt->execute([$id]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
@@ -32,7 +32,7 @@ class Invoice {
         ]);
     }
     public static function delete($conn, $id) {
-        $stmt = $conn->prepare("DELETE FROM invoices WHERE invoice_id = ?");
+        $stmt = $conn->prepare("UPDATE invoices SET deleted_at = NOW() WHERE invoice_id = ? AND deleted_at IS NULL");
         return $stmt->execute([$id]);
     }
 }

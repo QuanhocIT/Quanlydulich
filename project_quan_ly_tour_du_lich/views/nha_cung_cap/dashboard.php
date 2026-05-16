@@ -301,7 +301,7 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+    <script src="<?php echo BASE_URL; ?>public/assets/chartjs/chart.umd.min.js"></script>
     <script src="<?php echo BASE_URL; ?>public/assets/bootstrap/bootstrap.bundle.min.js"></script>
     <script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
         Chart.defaults.color = '#776759';

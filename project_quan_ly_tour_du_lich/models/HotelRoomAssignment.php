@@ -109,7 +109,7 @@ class HotelRoomAssignment {
 
     // Xóa phân phòng
     public function delete($id) {
-        $sql = "DELETE FROM hotel_room_assignment WHERE id = ?";
+        $sql = "UPDATE hotel_room_assignment SET deleted_at = NOW() WHERE id = ? AND deleted_at IS NULL";
         $stmt = $this->conn->prepare($sql);
         return $stmt->execute([$id]);
     }

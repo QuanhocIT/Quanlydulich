@@ -409,7 +409,7 @@ class DanhGia {
     
     // Xóa đánh giá
     public function delete($id) {
-        $sql = "DELETE FROM danh_gia WHERE danh_gia_id = ?";
+        $sql = "UPDATE danh_gia SET deleted_at = NOW() WHERE danh_gia_id = ? AND deleted_at IS NULL";
         $stmt = $this->conn->prepare($sql);
         return $stmt->execute([$id]);
     }

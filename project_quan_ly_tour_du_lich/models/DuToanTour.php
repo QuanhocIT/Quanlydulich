@@ -139,7 +139,7 @@ class DuToanTour
     
     // Xóa dự toán
     public function delete($id) {
-        $sql = "DELETE FROM du_toan_tour WHERE du_toan_id = ?";
+        $sql = "UPDATE du_toan_tour SET deleted_at = NOW() WHERE du_toan_id = ? AND deleted_at IS NULL";
         $stmt = $this->conn->prepare($sql);
         return $stmt->execute([$id]);
     }

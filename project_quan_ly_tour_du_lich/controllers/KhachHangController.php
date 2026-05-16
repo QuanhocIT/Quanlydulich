@@ -1681,7 +1681,7 @@ class KhachHangController {
                 $conn->beginTransaction();
                 $uploadedFilesToKeep = [];
 
-                $stmtDelete = $conn->prepare('DELETE FROM tour_checkin WHERE booking_id = ?');
+                $stmtDelete = $conn->prepare('UPDATE tour_checkin SET deleted_at = NOW() WHERE booking_id = ? AND deleted_at IS NULL');
                 $stmtDelete->execute([$bookingId]);
 
                 $lichKhoiHanhVal = $resolvedLichKhoiHanhId > 0 ? $resolvedLichKhoiHanhId : null;

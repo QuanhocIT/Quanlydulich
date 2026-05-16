@@ -16,6 +16,7 @@ class PhanBoDichVu
                 FROM phan_bo_dich_vu pbd
                 LEFT JOIN nha_cung_cap ncc ON pbd.nha_cung_cap_id = ncc.id_nha_cung_cap
                 WHERE pbd.lich_khoi_hanh_id = ?
+                                    AND pbd.deleted_at IS NULL
                 ORDER BY pbd.loai_dich_vu, pbd.ngay_bat_dau";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([(int)$lichKhoiHanhId]);
@@ -28,7 +29,8 @@ class PhanBoDichVu
                 ncc.ten_don_vi
                 FROM phan_bo_dich_vu pbd
                 LEFT JOIN nha_cung_cap ncc ON pbd.nha_cung_cap_id = ncc.id_nha_cung_cap
-                WHERE pbd.lich_khoi_hanh_id = ? AND pbd.loai_dich_vu = ?";
+                                WHERE pbd.lich_khoi_hanh_id = ? AND pbd.loai_dich_vu = ?
+                                    AND pbd.deleted_at IS NULL";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([(int)$lichKhoiHanhId, $loaiDichVu]);
         return $stmt->fetchAll();
@@ -100,7 +102,7 @@ class PhanBoDichVu
 
     // Xóa phân bổ dịch vụ
     public function delete($id) {
-        $sql = "DELETE FROM phan_bo_dich_vu WHERE id = ?";
+        $sql = "UPDATE phan_bo_dich_vu SET deleted_at = NOW(), trang_thai = 'Huy' WHERE id = ? AND deleted_at IS NULL";
         $stmt = $this->conn->prepare($sql);
         return $stmt->execute([(int)$id]);
     }
@@ -123,7 +125,7 @@ class PhanBoDichVu
     public function getTongChiPhi($lichKhoiHanhId) {
         $sql = "SELECT COALESCE(SUM(gia_tien * so_luong), 0) as tong_chi_phi
                 FROM phan_bo_dich_vu
-                WHERE lich_khoi_hanh_id = ? AND trang_thai != 'Huy'";
+            WHERE lich_khoi_hanh_id = ? AND trang_thai != 'Huy' AND deleted_at IS NULL";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([(int)$lichKhoiHanhId]);
         $result = $stmt->fetch();

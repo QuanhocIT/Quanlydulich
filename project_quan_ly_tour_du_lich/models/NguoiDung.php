@@ -14,7 +14,7 @@ class NguoiDung
 
     // Lấy tất cả người dùng
     public function getAll() {
-        $sql = "SELECT * FROM nguoi_dung ORDER BY ngay_tao DESC";
+        $sql = "SELECT * FROM nguoi_dung WHERE is_deleted = 0 ORDER BY ngay_tao DESC";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute();
         return $stmt->fetchAll();
@@ -22,7 +22,7 @@ class NguoiDung
 
     // Lấy người dùng theo ID
     public function findById($id) {
-        $sql = "SELECT * FROM nguoi_dung WHERE id = ?";
+        $sql = "SELECT * FROM nguoi_dung WHERE id = ? AND is_deleted = 0";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([$id]);
         return $stmt->fetch();
@@ -30,7 +30,7 @@ class NguoiDung
 
     // Tìm người dùng theo email
     public function findByEmail($email) {
-        $sql = "SELECT * FROM nguoi_dung WHERE email = ?";
+        $sql = "SELECT * FROM nguoi_dung WHERE email = ? AND is_deleted = 0";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([$email]);
         return $stmt->fetch();
@@ -38,7 +38,7 @@ class NguoiDung
 
     // Tìm người dùng theo số điện thoại
     public function findByPhone($soDienThoai) {
-        $sql = "SELECT * FROM nguoi_dung WHERE so_dien_thoai = ?";
+        $sql = "SELECT * FROM nguoi_dung WHERE so_dien_thoai = ? AND is_deleted = 0";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([$soDienThoai]);
         return $stmt->fetch();
@@ -90,7 +90,7 @@ class NguoiDung
              return []; 
         }
 
-        $sql = "SELECT * FROM nguoi_dung WHERE 1=1";
+        $sql = "SELECT * FROM nguoi_dung WHERE is_deleted = 0";
         $params = [];
         if (!empty($search)) {
             $sql .= " AND (ten_dang_nhap LIKE :search OR ho_ten LIKE :search OR email LIKE :search OR so_dien_thoai LIKE :search)";
@@ -132,7 +132,7 @@ class NguoiDung
             ];
         }
 
-        $sql = "SELECT vai_tro, trang_thai, COUNT(*) AS total FROM nguoi_dung WHERE 1=1";
+        $sql = "SELECT vai_tro, trang_thai, COUNT(*) AS total FROM nguoi_dung WHERE is_deleted = 0";
         $params = [];
 
         if (!empty($search)) {
@@ -191,7 +191,7 @@ class NguoiDung
 
     // Tìm người dùng theo điều kiện
     public function find($conditions = []) {
-        $sql = "SELECT * FROM nguoi_dung";
+        $sql = "SELECT * FROM nguoi_dung WHERE is_deleted = 0";
         $params = [];
         
         if (!empty($conditions)) {
@@ -200,7 +200,7 @@ class NguoiDung
                 $where[] = "$key = ?";
                 $params[] = $value;
             }
-            $sql .= " WHERE " . implode(" AND ", $where);
+            $sql .= " AND " . implode(" AND ", $where);
         }
         
         $stmt = $this->conn->prepare($sql);
@@ -289,7 +289,11 @@ class NguoiDung
 
     // Xóa người dùng
     public function delete($id) {
-        $sql = "DELETE FROM nguoi_dung WHERE id = ?";
+        $sql = "UPDATE nguoi_dung
+                SET is_deleted = 1,
+                    deleted_at = NOW(),
+                    trang_thai = 'BiKhoa'
+                WHERE id = ? AND is_deleted = 0";
         $stmt = $this->conn->prepare($sql);
         return $stmt->execute([$id]);
     }

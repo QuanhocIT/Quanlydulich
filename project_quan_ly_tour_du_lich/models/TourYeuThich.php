@@ -41,7 +41,7 @@ class TourYeuThich
             return [];
         }
 
-        $sql = 'SELECT tour_id FROM khach_hang_tour_yeu_thich WHERE khach_hang_id = ?';
+        $sql = 'SELECT tour_id FROM khach_hang_tour_yeu_thich WHERE khach_hang_id = ? AND deleted_at IS NULL';
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([$khachHangId]);
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -64,13 +64,17 @@ class TourYeuThich
         }
 
         if ($this->isFavorite($khachHangId, $tourId)) {
-            $stmt = $this->conn->prepare('DELETE FROM khach_hang_tour_yeu_thich WHERE khach_hang_id = ? AND tour_id = ?');
+            $stmt = $this->conn->prepare('UPDATE khach_hang_tour_yeu_thich SET deleted_at = NOW() WHERE khach_hang_id = ? AND tour_id = ? AND deleted_at IS NULL');
             $stmt->execute([$khachHangId, $tourId]);
             return false;
         }
 
-        $stmt = $this->conn->prepare('INSERT INTO khach_hang_tour_yeu_thich (khach_hang_id, tour_id) VALUES (?, ?)');
-        $stmt->execute([$khachHangId, $tourId]);
+        $restoreStmt = $this->conn->prepare('UPDATE khach_hang_tour_yeu_thich SET deleted_at = NULL WHERE khach_hang_id = ? AND tour_id = ?');
+        $restoreStmt->execute([$khachHangId, $tourId]);
+        if ($restoreStmt->rowCount() === 0) {
+            $stmt = $this->conn->prepare('INSERT INTO khach_hang_tour_yeu_thich (khach_hang_id, tour_id) VALUES (?, ?)');
+            $stmt->execute([$khachHangId, $tourId]);
+        }
         return true;
     }
 
@@ -80,7 +84,7 @@ class TourYeuThich
             return false;
         }
 
-        $stmt = $this->conn->prepare('SELECT 1 FROM khach_hang_tour_yeu_thich WHERE khach_hang_id = ? AND tour_id = ? LIMIT 1');
+        $stmt = $this->conn->prepare('SELECT 1 FROM khach_hang_tour_yeu_thich WHERE khach_hang_id = ? AND tour_id = ? AND deleted_at IS NULL LIMIT 1');
         $stmt->execute([$khachHangId, $tourId]);
         return (bool)$stmt->fetchColumn();
     }
@@ -109,6 +113,7 @@ class TourYeuThich
                         ORDER BY lk2.ngay_khoi_hanh ASC LIMIT 1
                     )
                 WHERE f.khach_hang_id = ?
+                                    AND f.deleted_at IS NULL
                   AND (t.trang_thai = 'HoatDong' OR t.trang_thai IS NULL)
                 ORDER BY f.created_at DESC, f.id DESC
                 LIMIT ?";

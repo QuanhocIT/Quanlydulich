@@ -929,6 +929,7 @@ $stats = $this->yeuCauDacBietModel->getSummaryStatsForHDV($nhanSuId, $filters);
                 // Lấy nhật ký tour - sử dụng tour_id từ bảng tour
                 $sql = "SELECT * FROM nhat_ky_tour 
                         WHERE tour_id = ? AND nhan_su_id = ?
+                    AND deleted_at IS NULL
                         ORDER BY ngay_ghi DESC, id DESC";
                 $stmt = $this->nhanSuModel->conn->prepare($sql);
                 $stmt->execute([$tour['tour_table_id'], $nhanSuId]);
@@ -936,7 +937,7 @@ $stats = $this->yeuCauDacBietModel->getSummaryStatsForHDV($nhanSuId, $filters);
                 
                 // Nếu có edit_id, lấy dữ liệu để sửa
                 if ($edit_id > 0) {
-                    $sql = "SELECT * FROM nhat_ky_tour WHERE id = ? AND nhan_su_id = ?";
+                    $sql = "SELECT * FROM nhat_ky_tour WHERE id = ? AND nhan_su_id = ? AND deleted_at IS NULL";
                     $stmt = $this->nhanSuModel->conn->prepare($sql);
                     $stmt->execute([$edit_id, $nhanSuId]);
                     $edit_entry = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -1024,6 +1025,7 @@ $stats = $this->yeuCauDacBietModel->getSummaryStatsForHDV($nhanSuId, $filters);
                 // Lấy danh sách điểm check-in - dùng tour_id từ lich_khoi_hanh
                 $sql = "SELECT * FROM diem_checkin 
                         WHERE tour_id = ?
+                    AND deleted_at IS NULL
                         ORDER BY thu_tu ASC, thoi_gian_du_kien ASC";
                 $stmt = $this->nhanSuModel->conn->prepare($sql);
                 $stmt->execute([$tour['tour_id']]);
@@ -1031,7 +1033,7 @@ $stats = $this->yeuCauDacBietModel->getSummaryStatsForHDV($nhanSuId, $filters);
                 
                 // Nếu có điểm check-in được chọn
                 if ($diem_id > 0) {
-                    $sql = "SELECT * FROM diem_checkin WHERE id = ? AND tour_id = ?";
+                    $sql = "SELECT * FROM diem_checkin WHERE id = ? AND tour_id = ? AND deleted_at IS NULL";
                     $stmt = $this->nhanSuModel->conn->prepare($sql);
                     $stmt->execute([$diem_id, $tour['tour_id']]);
                     $diem_hien_tai = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -1316,7 +1318,7 @@ $stats = $this->yeuCauDacBietModel->getSummaryStatsForHDV($nhanSuId, $filters);
         $tour_id = (int)($schema['data']['tour_id'] ?? 0);
         
         try {
-            $sql = "DELETE FROM diem_checkin WHERE id = ?";
+            $sql = "UPDATE diem_checkin SET deleted_at = NOW() WHERE id = ? AND deleted_at IS NULL";
             $stmt = $this->nhanSuModel->conn->prepare($sql);
             $stmt->execute([$diem_id]);
             $_SESSION['success'] = 'Xóa điểm check-in thành công';
@@ -1370,7 +1372,7 @@ $stats = $this->yeuCauDacBietModel->getSummaryStatsForHDV($nhanSuId, $filters);
         
         try {
             // Lấy thông tin điểm check-in để biết lich_khoi_hanh_id
-            $sql = "SELECT tour_id FROM diem_checkin WHERE id = ?";
+            $sql = "SELECT tour_id FROM diem_checkin WHERE id = ? AND deleted_at IS NULL";
             $stmt = $this->nhanSuModel->conn->prepare($sql);
             $stmt->execute([$diem_checkin_id]);
             $diemCheckin = $stmt->fetch();
@@ -1691,7 +1693,7 @@ $stats = $this->yeuCauDacBietModel->getSummaryStatsForHDV($nhanSuId, $filters);
         $tour_id = (int)($schema['data']['tour_id'] ?? 0);
         
         try {
-            $sql = "DELETE FROM yeu_cau_dac_biet WHERE id = ?";
+            $sql = "UPDATE yeu_cau_dac_biet SET deleted_at = NOW(), trang_thai = 'da_xoa' WHERE id = ? AND deleted_at IS NULL";
             $stmt = $this->nhanSuModel->conn->prepare($sql);
             $stmt->execute([$yeu_cau_id]);
             $_SESSION['success'] = 'Xóa yêu cầu thành công';
@@ -1987,7 +1989,7 @@ $stats = $this->yeuCauDacBietModel->getSummaryStatsForHDV($nhanSuId, $filters);
         
         try {
             // Lấy thông tin nhật ký để xóa hình ảnh
-            $sql = "SELECT hinh_anh FROM nhat_ky_tour WHERE id = ? AND nhan_su_id = ?";
+            $sql = "SELECT hinh_anh FROM nhat_ky_tour WHERE id = ? AND nhan_su_id = ? AND deleted_at IS NULL";
             $stmt = $this->nhanSuModel->conn->prepare($sql);
             $stmt->execute([$entry_id, $nhanSu['nhan_su_id']]);
             $entry = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -2006,7 +2008,7 @@ $stats = $this->yeuCauDacBietModel->getSummaryStatsForHDV($nhanSuId, $filters);
                 }
                 
                 // Xóa nhật ký
-                $sql = "DELETE FROM nhat_ky_tour WHERE id = ? AND nhan_su_id = ?";
+                $sql = "UPDATE nhat_ky_tour SET deleted_at = NOW() WHERE id = ? AND nhan_su_id = ? AND deleted_at IS NULL";
                 $stmt = $this->nhanSuModel->conn->prepare($sql);
                 $result = $stmt->execute([$entry_id, $nhanSu['nhan_su_id']]);
                 
@@ -2073,7 +2075,7 @@ $stats = $this->yeuCauDacBietModel->getSummaryStatsForHDV($nhanSuId, $filters);
                     FROM phan_hoi_hdv ph
                     LEFT JOIN tour t ON ph.tour_id = t.tour_id
                     LEFT JOIN nhan_su ns ON ph.nguoi_xu_ly_id = ns.nhan_su_id
-                    WHERE ph.tour_id = ? AND ph.hdv_id = ?";
+                    WHERE ph.tour_id = ? AND ph.hdv_id = ? AND ph.deleted_at IS NULL";
             
             $params = [$tour['tour_id'], $nhanSuId];
             
@@ -2109,7 +2111,7 @@ $stats = $this->yeuCauDacBietModel->getSummaryStatsForHDV($nhanSuId, $filters);
                     SUM(CASE WHEN trang_thai = 'da_xu_ly' THEN 1 ELSE 0 END) as da_xu_ly,
                     AVG(diem_danh_gia) as diem_tb
                     FROM phan_hoi_hdv 
-                    WHERE tour_id = ? AND hdv_id = ?";
+                    WHERE tour_id = ? AND hdv_id = ? AND deleted_at IS NULL";
             $stmt = $this->nhanSuModel->conn->prepare($sql);
             $stmt->execute([$tour['tour_id'], $nhanSuId]);
             $stats = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -2291,7 +2293,7 @@ $stats = $this->yeuCauDacBietModel->getSummaryStatsForHDV($nhanSuId, $filters);
         $tour_id = (int)($schema['data']['tour_id'] ?? 0);
         
         // Xóa ảnh trước
-        $sql = "SELECT hinh_anh FROM phan_hoi_hdv WHERE id = ? AND hdv_id = ?";
+        $sql = "SELECT hinh_anh FROM phan_hoi_hdv WHERE id = ? AND hdv_id = ? AND deleted_at IS NULL";
         $stmt = $this->nhanSuModel->conn->prepare($sql);
         $stmt->execute([$id, $nhanSuId]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -2308,7 +2310,7 @@ $stats = $this->yeuCauDacBietModel->getSummaryStatsForHDV($nhanSuId, $filters);
         }
         
         // Xóa phản hồi
-        $sql = "DELETE FROM phan_hoi_hdv WHERE id = ? AND hdv_id = ?";
+        $sql = "UPDATE phan_hoi_hdv SET deleted_at = NOW() WHERE id = ? AND hdv_id = ? AND deleted_at IS NULL";
         $stmt = $this->nhanSuModel->conn->prepare($sql);
         $stmt->execute([$id, $nhanSuId]);
         

@@ -9,21 +9,21 @@ class NhaCungCap
     }
 
     public function getAll() {
-        $sql = "SELECT * FROM nha_cung_cap";
+        $sql = "SELECT * FROM nha_cung_cap WHERE is_deleted = 0";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute();
         return $stmt->fetchAll();
     }
 
     public function findById($id) {
-        $sql = "SELECT * FROM nha_cung_cap WHERE id_nha_cung_cap = ?";
+        $sql = "SELECT * FROM nha_cung_cap WHERE id_nha_cung_cap = ? AND is_deleted = 0";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([$id]);
         return $stmt->fetch();
     }
 
     public function findByUserId($userId) {
-        $sql = "SELECT * FROM nha_cung_cap WHERE nguoi_dung_id = ?";
+        $sql = "SELECT * FROM nha_cung_cap WHERE nguoi_dung_id = ? AND is_deleted = 0";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([$userId]);
         return $stmt->fetch();
@@ -225,7 +225,10 @@ class NhaCungCap
 
     // Xóa nhà cung cấp
     public function delete($id) {
-        $sql = "DELETE FROM nha_cung_cap WHERE id_nha_cung_cap = ?";
+        $sql = "UPDATE nha_cung_cap
+                SET is_deleted = 1,
+                    deleted_at = NOW()
+                WHERE id_nha_cung_cap = ? AND is_deleted = 0";
         $stmt = $this->conn->prepare($sql);
         return $stmt->execute([$id]);
     }

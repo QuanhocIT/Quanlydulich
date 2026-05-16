@@ -38,6 +38,7 @@ class NhanSu
         $sql = "SELECT ns.*, nd.ho_ten, nd.email, nd.so_dien_thoai, nd.ten_dang_nhap, nd.id as nguoi_dung_id_full
                 FROM nhan_su AS ns
                 LEFT JOIN nguoi_dung AS nd ON ns.nguoi_dung_id = nd.id
+                WHERE ns.is_deleted = 0 AND (nd.id IS NULL OR nd.is_deleted = 0)
                 ORDER BY nd.ho_ten ASC";
         if ($limit !== null) {
             $sql .= " LIMIT ? OFFSET ?";
@@ -58,11 +59,12 @@ class NhanSu
     public function getOptions($role = null, $limit = null) {
         $sql = "SELECT ns.nhan_su_id, ns.vai_tro, nd.ho_ten
                 FROM nhan_su AS ns
-                LEFT JOIN nguoi_dung AS nd ON ns.nguoi_dung_id = nd.id";
+            LEFT JOIN nguoi_dung AS nd ON ns.nguoi_dung_id = nd.id
+            WHERE ns.is_deleted = 0 AND (nd.id IS NULL OR nd.is_deleted = 0)";
         $params = [];
 
         if ($role !== null && $role !== '') {
-            $sql .= " WHERE ns.vai_tro = ?";
+            $sql .= " AND ns.vai_tro = ?";
             $params[] = $role;
         }
 
@@ -88,7 +90,9 @@ class NhanSu
         $sql = "SELECT ns.*, nd.ho_ten, nd.email, nd.so_dien_thoai, nd.ten_dang_nhap, nd.id as nguoi_dung_id_full
                 FROM nhan_su AS ns
                 LEFT JOIN nguoi_dung AS nd ON ns.nguoi_dung_id = nd.id
-                WHERE ns.vai_tro = ?
+                                WHERE ns.vai_tro = ?
+                                    AND ns.is_deleted = 0
+                                    AND (nd.id IS NULL OR nd.is_deleted = 0)
                 ORDER BY nd.ho_ten ASC";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([$role]);
@@ -99,7 +103,7 @@ class NhanSu
     public function getRoles() {
         $roles = [];
         try {
-            $sql = "SELECT DISTINCT vai_tro AS role FROM nhan_su WHERE vai_tro IS NOT NULL AND vai_tro != ''";
+            $sql = "SELECT DISTINCT vai_tro AS role FROM nhan_su WHERE vai_tro IS NOT NULL AND vai_tro != '' AND is_deleted = 0";
             $stmt = $this->conn->prepare($sql);
             $stmt->execute();
             $rows = $stmt->fetchAll();
@@ -115,7 +119,9 @@ class NhanSu
         $sql = "SELECT ns.*, nd.ho_ten, nd.email, nd.so_dien_thoai, nd.ten_dang_nhap, nd.id as nguoi_dung_id_full
                 FROM nhan_su AS ns
                 LEFT JOIN nguoi_dung AS nd ON ns.nguoi_dung_id = nd.id
-                WHERE ns.nhan_su_id = ?";
+                                WHERE ns.nhan_su_id = ?
+                                    AND ns.is_deleted = 0
+                                    AND (nd.id IS NULL OR nd.is_deleted = 0)";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([$id]);
         return $stmt->fetch();
@@ -186,7 +192,10 @@ class NhanSu
 
     // Xóa nhân sự (chỉ xóa bản ghi, giữ lại tài khoản người dùng)
     public function delete($id) {
-        $sql = "DELETE FROM nhan_su WHERE nhan_su_id = ?";
+        $sql = "UPDATE nhan_su
+                SET is_deleted = 1,
+                    deleted_at = NOW()
+                WHERE nhan_su_id = ? AND is_deleted = 0";
         $stmt = $this->conn->prepare($sql);
         return $stmt->execute([$id]);
     }
@@ -206,29 +215,13 @@ class NhanSu
             return false;
         }
         
-        // Cascade delete: xóa các bản ghi liên quan trong khach_hang
-        try {
-            $stmt = $this->conn->prepare("DELETE FROM khach_hang WHERE nguoi_dung_id = ?");
-            $stmt->execute([$nguoi_dung_id]);
-        } catch (Exception $e) {
-            // Log error nếu cần
-        }
-        
-        // Cascade delete: xóa các bản ghi liên quan trong nha_cung_cap
-        try {
-            $stmt = $this->conn->prepare("DELETE FROM nha_cung_cap WHERE nguoi_dung_id = ?");
-            $stmt->execute([$nguoi_dung_id]);
-        } catch (Exception $e) {
-            // Log error nếu cần
-        }
-        
-        // Xóa bản ghi nhan_su
-        $sql1 = "DELETE FROM nhan_su WHERE nhan_su_id = ?";
+        // Soft delete bản ghi nhan_su
+        $sql1 = "UPDATE nhan_su SET is_deleted = 1, deleted_at = NOW() WHERE nhan_su_id = ? AND is_deleted = 0";
         $stmt1 = $this->conn->prepare($sql1);
         $result1 = $stmt1->execute([$nhan_su_id]);
-        
-        // Xóa tài khoản người dùng
-        $sql2 = "DELETE FROM nguoi_dung WHERE id = ?";
+
+        // Soft delete tài khoản người dùng
+        $sql2 = "UPDATE nguoi_dung SET is_deleted = 1, deleted_at = NOW(), trang_thai = 'BiKhoa' WHERE id = ? AND is_deleted = 0";
         $stmt2 = $this->conn->prepare($sql2);
         $result2 = $stmt2->execute([$nguoi_dung_id]);
         
@@ -240,7 +233,7 @@ class NhanSu
         $reasons = [];
         // Bị tham chiếu bởi tour (trường tao_boi) - KHÔNG THỂ CASCADE
         try {
-            $stmt = $this->conn->prepare("SELECT COUNT(*) AS c FROM tour WHERE tao_boi = ?");
+            $stmt = $this->conn->prepare("SELECT COUNT(*) AS c FROM tour WHERE tao_boi = ? AND is_deleted = 0");
             $stmt->execute([$nguoi_dung_id]);
             $row = $stmt->fetch();
             if (!empty($row['c']) && (int)$row['c'] > 0) {
@@ -275,7 +268,7 @@ class NhanSu
 
         // Bị tham chiếu bởi tour (trường tao_boi)
         try {
-            $stmt = $this->conn->prepare("SELECT COUNT(*) AS c FROM tour WHERE tao_boi = ?");
+            $stmt = $this->conn->prepare("SELECT COUNT(*) AS c FROM tour WHERE tao_boi = ? AND is_deleted = 0");
             $stmt->execute([$nguoi_dung_id]);
             $row = $stmt->fetch();
             if (!empty($row['c']) && (int)$row['c'] > 0) {
@@ -290,7 +283,8 @@ class NhanSu
     public function getAvailableUsers() {
         $sql = "SELECT id, ho_ten, email, ten_dang_nhap, vai_tro 
                 FROM nguoi_dung 
-                WHERE id NOT IN (SELECT DISTINCT nguoi_dung_id FROM nhan_su WHERE nguoi_dung_id IS NOT NULL)
+            WHERE id NOT IN (SELECT DISTINCT nguoi_dung_id FROM nhan_su WHERE nguoi_dung_id IS NOT NULL AND is_deleted = 0)
+            AND is_deleted = 0
                 ORDER BY ho_ten ASC";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute();
@@ -334,7 +328,9 @@ class NhanSu
         $sql = "SELECT ns.*, nd.ho_ten, nd.email, nd.so_dien_thoai, nd.ten_dang_nhap, nd.id as nguoi_dung_id_full
                 FROM nhan_su AS ns
                 LEFT JOIN nguoi_dung AS nd ON ns.nguoi_dung_id = nd.id
-                WHERE nd.ho_ten LIKE ? OR nd.email LIKE ? OR nd.so_dien_thoai LIKE ? OR ns.vai_tro LIKE ?
+                                WHERE (nd.ho_ten LIKE ? OR nd.email LIKE ? OR nd.so_dien_thoai LIKE ? OR ns.vai_tro LIKE ?)
+              AND ns.is_deleted = 0
+              AND (nd.id IS NULL OR nd.is_deleted = 0)
                 ORDER BY nd.ho_ten ASC";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([$keyword, $keyword, $keyword, $keyword]);

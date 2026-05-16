@@ -6,6 +6,10 @@ if (!hasRole('Admin')) {
 $pageTitle = 'Check-in Khách';
 $currentPage = 'checkin';
 ob_start();
+// Defensive defaults for static analysis and direct view access.
+$booking = isset($booking) ? $booking : null;
+$checkin = isset($checkin) ? $checkin : null;
+$lichKhoiHanhId = isset($lichKhoiHanhId) ? (int) $lichKhoiHanhId : 0;
 ?>
 <style>
         .checkin-container {

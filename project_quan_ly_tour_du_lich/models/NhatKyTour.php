@@ -14,7 +14,8 @@ class NhatKyTour
         $sql = "SELECT nkt.*, t.ten_tour
                 FROM nhat_ky_tour nkt
                 INNER JOIN tour t ON nkt.tour_id = t.tour_id
-                WHERE nkt.nhan_su_id = ?";
+                                WHERE nkt.nhan_su_id = ?
+                                    AND nkt.deleted_at IS NULL";
         $params = [(int)$nhanSuId];
 
         if ($tourId) {
@@ -31,7 +32,7 @@ class NhatKyTour
 
     public function getById($id, $nhanSuId)
     {
-        $sql = "SELECT * FROM nhat_ky_tour WHERE id = ? AND nhan_su_id = ? LIMIT 1";
+        $sql = "SELECT * FROM nhat_ky_tour WHERE id = ? AND nhan_su_id = ? AND deleted_at IS NULL LIMIT 1";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([(int)$id, (int)$nhanSuId]);
         return $stmt->fetch();
@@ -54,7 +55,7 @@ class NhatKyTour
     {
         $sql = "UPDATE nhat_ky_tour
                 SET tour_id = ?, noi_dung = ?, ngay_ghi = ?
-                WHERE id = ? AND nhan_su_id = ?";
+                WHERE id = ? AND nhan_su_id = ? AND deleted_at IS NULL";
         $stmt = $this->conn->prepare($sql);
         return $stmt->execute([
             (int)$data['tour_id'],
@@ -67,7 +68,7 @@ class NhatKyTour
 
     public function deleteById($id)
     {
-        $sql = "DELETE FROM nhat_ky_tour WHERE id = ?";
+        $sql = "UPDATE nhat_ky_tour SET deleted_at = NOW() WHERE id = ? AND deleted_at IS NULL";
         $stmt = $this->conn->prepare($sql);
         return $stmt->execute([(int)$id]);
     }

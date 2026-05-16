@@ -17,7 +17,7 @@ class Tour
 
     // Lấy tất cả tour
     public function getAll($limit = null, $offset = 0) {
-        $sql = "SELECT * FROM tour ORDER BY tour_id DESC";
+        $sql = "SELECT * FROM tour WHERE is_deleted = 0 ORDER BY tour_id DESC";
         if ($limit !== null) {
             $sql .= " LIMIT ? OFFSET ?";
         }
@@ -37,6 +37,7 @@ class Tour
     public function getLightweightList($limit = null, $offset = 0) {
         $sql = "SELECT tour_id, ten_tour, loai_tour, mo_ta, gia_co_ban, trang_thai
                 FROM tour
+                WHERE is_deleted = 0
                 ORDER BY tour_id DESC";
         if ($limit !== null) {
             $sql .= " LIMIT ? OFFSET ?";
@@ -56,7 +57,7 @@ class Tour
         $cacheKey = 'tour_options_' . ($limitValue > 0 ? ('limit_' . $limitValue) : 'all');
 
         return cacheRemember($cacheKey, 300, function () use ($limitValue) {
-            $sql = "SELECT tour_id, ten_tour FROM tour ORDER BY ten_tour ASC";
+            $sql = "SELECT tour_id, ten_tour FROM tour WHERE is_deleted = 0 ORDER BY ten_tour ASC";
             if ($limitValue > 0) {
                 $sql .= " LIMIT ?";
             }
@@ -71,7 +72,7 @@ class Tour
     }
 
     public function getPublicTours(array $filters = [], $limit = null, $offset = 0) {
-        $where = ["(trang_thai = 'HoatDong' OR trang_thai IS NULL)"];
+        $where = ["is_deleted = 0", "(trang_thai = 'HoatDong' OR trang_thai IS NULL)"];
         $params = [];
 
         if (!empty($filters['loai_tour'])) {
@@ -112,6 +113,7 @@ class Tour
                 FROM tour
                 WHERE loai_tour = ?
                   AND tour_id <> ?
+                                    AND is_deleted = 0
                   AND (trang_thai = 'HoatDong' OR trang_thai IS NULL)
                 ORDER BY tour_id DESC
                 LIMIT ?";
@@ -139,6 +141,7 @@ class Tour
         return cacheRemember('tour_dashboard_stats_v1', 120, function () {
             $sql = "SELECT tour_id, ten_tour, gia_co_ban, trang_thai
                 FROM tour
+                WHERE is_deleted = 0
                 ORDER BY tour_id DESC";
             $stmt = $this->conn->prepare($sql);
             $stmt->execute();
@@ -148,7 +151,7 @@ class Tour
 
     // Lấy tour theo ID
     public function findById(int $id) {
-        $sql = "SELECT * FROM tour WHERE tour_id = ?";
+        $sql = "SELECT * FROM tour WHERE tour_id = ? AND is_deleted = 0";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([$id]);
         return $stmt->fetch();
@@ -156,7 +159,7 @@ class Tour
 
     // Tìm tour theo điều kiện
     public function find($conditions = []) {
-        $sql = "SELECT * FROM tour";
+        $sql = "SELECT * FROM tour WHERE is_deleted = 0";
         $params = [];
         
         if (isset($conditions) && count($conditions) > 0) {
@@ -165,7 +168,7 @@ class Tour
                 $where[] = "$key = ?";
                 $params[] = $value;
             }
-            $sql .= " WHERE " . implode(" AND ", $where);
+            $sql .= " AND " . implode(" AND ", $where);
         }
         
         $stmt = $this->conn->prepare($sql);
@@ -231,35 +234,11 @@ class Tour
 
     // Xóa tour
     public function delete(int $id) {
-        // Xóa tất cả các bản ghi liên quan trước khi xóa tour
-        // Thứ tự xóa: từ bảng con đến bảng cha để tránh vi phạm foreign key constraint
-        
-        // 1. Xóa hình ảnh tour
-        $this->deleteHinhAnhByTourId($id);
-        
-        // 2. Xóa lịch trình tour
-        $this->deleteLichTrinhByTourId($id);
-        
-        // 3. Xóa lịch khởi hành
-        $this->deleteLichKhoiHanhByTourId($id);
-        
-        // 4. Xóa nhật ký tour
-        $this->deleteNhatKyByTourId($id);
-        
-        // 5. Xóa phản hồi đánh giá
-        $this->deletePhanHoiDanhGiaByTourId($id);
-        
-        // 6. Xóa giao dịch tài chính
-        $this->deleteGiaoDichTaiChinhByTourId($id);
-        
-        // 7. Xóa yêu cầu đặc biệt
-        $this->deleteYeuCauDacBietByTourId($id);
-        
-        // 8. Xóa booking (nếu muốn xóa cả booking khi xóa tour)
-        $this->deleteBookingByTourId($id);
-        
-        // 9. Cuối cùng mới xóa tour
-        $sql = "DELETE FROM tour WHERE tour_id = ?";
+        $sql = "UPDATE tour
+                SET is_deleted = 1,
+                    deleted_at = NOW(),
+                    trang_thai = 'DaXoa'
+                WHERE tour_id = ? AND is_deleted = 0";
         $stmt = $this->conn->prepare($sql);
         $result = $stmt->execute([$id]);
 
@@ -500,7 +479,7 @@ class Tour
 
     // Đếm tour theo bộ lọc (dùng cho phân trang)
     public function countFiltered(array $conditions, string $search) {
-        $where = ['1=1'];
+        $where = ['is_deleted = 0'];
         $params = [];
         if (!empty($conditions['loai_tour'])) {
             $where[] = 'loai_tour = ?';
@@ -522,7 +501,7 @@ class Tour
 
     // Lấy tour có phân trang và bộ lọc SQL-side
     public function getAllPaginated(array $conditions, string $search, int $limit, int $offset) {
-        $where = ['1=1'];
+        $where = ['is_deleted = 0'];
         $params = [];
         if (!empty($conditions['loai_tour'])) {
             $where[] = 'loai_tour = ?';
@@ -550,6 +529,8 @@ class Tour
                 FROM yeu_cau_dac_biet yc
                 INNER JOIN booking b ON yc.booking_id = b.booking_id
                 WHERE b.tour_id = ? 
+              AND b.is_deleted = 0
+              AND yc.deleted_at IS NULL
                 ORDER BY yc.id DESC";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([(int)$tourId]);
@@ -579,6 +560,7 @@ public function getNhatKyTourByTourId(int $tourId) {
             LEFT JOIN nhan_su ns ON nkt.nhan_su_id = ns.nhan_su_id
             LEFT JOIN nguoi_dung nd ON ns.nguoi_dung_id = nd.id
             WHERE nkt.tour_id = ? 
+                            AND nkt.deleted_at IS NULL
             ORDER BY nkt.ngay_ghi DESC, nkt.id DESC";
     $stmt = $this->conn->prepare($sql);
     $stmt->execute([(int)$tourId]);
