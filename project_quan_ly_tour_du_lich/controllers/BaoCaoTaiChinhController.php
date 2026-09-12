@@ -53,7 +53,53 @@ class BaoCaoTaiChinhController
         $loiNhuan = (float)($payload['loiNhuan'] ?? ($tongThu - $tongChi));
         $topTours = $payload['topTours'] ?? [];
 
+        $vueFinanceData = [
+            'thangHienTai' => $thangHienTai,
+            'tuNgay' => $tuNgay,
+            'denNgay' => $denNgay,
+            'tongThu' => $tongThu,
+            'tongChi' => $tongChi,
+            'loiNhuan' => $loiNhuan,
+            'topTours' => $topTours,
+            'csrfToken' => csrfToken('admin_form'),
+            'baseUrl' => BASE_URL
+        ];
+
         require __DIR__ . '/../views/admin/bao_cao_tai_chinh/dashboard.php';
+    }
+
+    public function apiDashboardData(): void
+    {
+        header('Content-Type: application/json; charset=utf-8');
+        header('Cache-Control: no-store');
+
+        $tuNgay  = requestString('tu_ngay', date('Y-m-01'));
+        $denNgay = requestString('den_ngay', date('Y-m-t'));
+
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $tuNgay)) {
+            $tuNgay = date('Y-m-01');
+        }
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $denNgay)) {
+            $denNgay = date('Y-m-t');
+        }
+
+        $payload  = $this->service->getDashboardPayload($tuNgay, $denNgay);
+        $tongThu  = (float)($payload['tongThu'] ?? 0);
+        $tongChi  = (float)($payload['tongChi'] ?? 0);
+        $loiNhuan = (float)($payload['loiNhuan'] ?? ($tongThu - $tongChi));
+        $topTours = $payload['topTours'] ?? [];
+
+        echo json_encode([
+            'success' => true,
+            'tuNgay' => $tuNgay,
+            'denNgay' => $denNgay,
+            'tongThu' => $tongThu,
+            'tongChi' => $tongChi,
+            'loiNhuan' => $loiNhuan,
+            'topTours' => $topTours,
+            'csrfToken' => csrfToken('admin_form')
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
     }
 
     // ==================== GIAO DICH ====================

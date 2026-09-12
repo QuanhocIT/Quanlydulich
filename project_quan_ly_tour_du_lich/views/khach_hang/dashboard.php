@@ -148,16 +148,15 @@ $favoriteTourIds = isset($favoriteTourIds) && is_array($favoriteTourIds) ? $favo
 
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-2">
-                <li class="nav-item"><a class="nav-link px-3 fw-semibold active" href="#home"><i class="bi bi-house-door"></i> Trang chủ</a></li>
-                <li class="nav-item"><a class="nav-link px-3 fw-semibold" href="index.php?act=khachHang/danhSachTour"><i class="bi bi-stars"></i> Tour nổi bật</a></li>
-                <li class="nav-item"><a class="nav-link px-3 fw-semibold" href="index.php?act=khachHang/traCuu"><i class="bi bi-search"></i> Tra cứu booking</a></li>
-                <li class="nav-item"><a class="nav-link px-3 fw-semibold" href="index.php?act=khachHang/tickets"><i class="bi bi-ticket-perforated"></i> Ticket hỗ trợ</a></li>
-
-                <li class="nav-item">
-                    <a class="nav-link px-3 fw-bold luxury-cta" href="index.php?act=khachHang/guiYeuCauTour">
-                        <i class="bi bi-plus-circle"></i> Tour của tôi
-                    </a>
-                </li>
+                                <li class="nav-item"><a class="nav-link px-3 fw-semibold active" href="#home"><i class="bi bi-house-door"></i> Trang chủ</a></li>
+                                <li class="nav-item"><a class="nav-link px-3 fw-semibold" href="index.php?act=khachHang/danhSachTour"><i class="bi bi-stars"></i> Tour nổi bật</a></li>
+                                <li class="nav-item"><a class="nav-link px-3 fw-semibold" href="#reviews"><i class="bi bi-chat-dots"></i> Đánh giá</a></li>
+                                <li class="nav-item"><a class="nav-link px-3 fw-semibold" href="#support"><i class="bi bi-headset"></i> Hỗ trợ</a></li>
+                                <li class="nav-item">
+                                    <a class="nav-link px-3 fw-bold luxury-cta" href="index.php?act=khachHang/guiYeuCauTour">
+                                        <i class="bi bi-plus-circle"></i> Tour của tôi
+                                    </a>
+                                </li>
 
                 <li class="nav-item">
                     <a class="nav-link nav-icon-link nav-notify-link" href="index.php?act=khachHang/thongBao" title="Thông báo" aria-label="Thông báo">

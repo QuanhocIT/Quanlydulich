@@ -899,4 +899,31 @@ class Booking
 
         return $row ?: null;
     }
+
+    public function getBookingStatusStats(): array {
+        try {
+            $sql = "SELECT trang_thai, COUNT(*) as cnt FROM booking GROUP BY trang_thai";
+            $stmt = $this->conn->query($sql);
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $stats = [
+                'pending' => 0,
+                'confirmed' => 0,
+                'deposited' => 0,
+                'completed' => 0,
+                'cancelled' => 0,
+            ];
+            foreach ($rows as $r) {
+                $st = (string)($r['trang_thai'] ?? '');
+                $c = (int)($r['cnt'] ?? 0);
+                if ($st === 'ChoXacNhan') $stats['pending'] += $c;
+                elseif ($st === 'DaXacNhan') $stats['confirmed'] += $c;
+                elseif ($st === 'DaCoc' || $st === 'DaDatCoc') $stats['deposited'] += $c;
+                elseif ($st === 'HoanTat' || $st === 'HoanThanh') $stats['completed'] += $c;
+                elseif ($st === 'Huy') $stats['cancelled'] += $c;
+            }
+            return $stats;
+        } catch (Throwable $e) {
+            return ['pending' => 0, 'confirmed' => 0, 'deposited' => 0, 'completed' => 0, 'cancelled' => 0];
+        }
+    }
 }

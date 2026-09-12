@@ -19,31 +19,100 @@ class AdminNguoiDungController {
         }
     }
 
+    public function apiUserList(): void {
+        header('Content-Type: application/json; charset=utf-8');
+
+        try {
+            require_once __DIR__ . '/../models/NguoiDung.php';
+            $nguoiDungModel = new NguoiDung();
+
+            $search = trim($_GET['search'] ?? '');
+            $role = trim($_GET['role'] ?? '');
+            $status = trim($_GET['status'] ?? '');
+
+            $users = $nguoiDungModel->getFilteredUsers($search, $role, $status);
+            $userStats = $nguoiDungModel->getUserStats($search, $role, $status);
+
+            echo json_encode([
+                'success' => true,
+                'data' => [
+                    'users' => $users,
+                    'userStats' => $userStats,
+                    'currentUserId' => (int)($_SESSION['user_id'] ?? 0),
+                    'csrfToken' => csrfToken('admin_form'),
+                    'csrfGlobal' => csrfToken('global_form'),
+                ]
+            ], JSON_UNESCAPED_UNICODE);
+        } catch (Throwable $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'error' => $e->getMessage()], JSON_UNESCAPED_UNICODE);
+        }
+        exit;
+    }
+
+    public function apiToggleStatus(): void {
+        header('Content-Type: application/json; charset=utf-8');
+
+        try {
+            $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+            $userId = (int)($input['user_id'] ?? 0);
+            $status = trim((string)($input['status'] ?? ''));
+            $adminId = (int)($_SESSION['user_id'] ?? 0);
+
+            $allowedStatus = ['HoatDong', 'BiKhoa'];
+            if ($userId <= 0 || !in_array($status, $allowedStatus, true)) {
+                echo json_encode(['success' => false, 'message' => 'Dữ liệu không hợp lệ.']);
+                exit;
+            }
+
+            if ($userId === $adminId && $status === 'BiKhoa') {
+                echo json_encode(['success' => false, 'message' => 'Không thể tự khóa tài khoản đang đăng nhập.']);
+                exit;
+            }
+
+            require_once __DIR__ . '/../models/NguoiDung.php';
+            $nguoiDungModel = new NguoiDung();
+            $targetUser = $nguoiDungModel->findById($userId);
+            if (!$targetUser) {
+                echo json_encode(['success' => false, 'message' => 'Người dùng không tồn tại.']);
+                exit;
+            }
+
+            $isUpdated = $nguoiDungModel->updateStatus($userId, $status);
+            echo json_encode([
+                'success' => (bool)$isUpdated,
+                'message' => $isUpdated ? 'Đã cập nhật trạng thái tài khoản.' : 'Không thể cập nhật trạng thái.',
+            ]);
+        } catch (Throwable $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        }
+        exit;
+    }
+
     public function quanLyNguoiDung() {
-        // 1. Lấy tham số tìm kiếm và lọc từ URL (GET)
-        // Các tên biến PHẢI khớp với tên trong form của View: name="search" và name="role"
         $search = trim($_GET['search'] ?? '');
         $role = $_GET['role'] ?? '';
         $status = $_GET['status'] ?? '';
 
-        // 2. Load Model và gọi phương thức lọc
-            require_once __DIR__ . '/../models/NguoiDung.php';
+        require_once __DIR__ . '/../models/NguoiDung.php';
         $nguoiDungModel = new NguoiDung();
 
-        // Phương thức này cần được bạn tạo trong NguoiDung.php
         $users = $nguoiDungModel->getFilteredUsers($search, $role, $status);
         $userStats = $nguoiDungModel->getUserStats($search, $role, $status);
 
-        // 3. Truyền các biến cần thiết xuống View
-        // View của bạn cần $users, $search, và $role để hiển thị dữ liệu và giữ trạng thái form.
-        // Nếu bạn không dùng framework, cách đơn giản nhất là khai báo chúng:
+        $vueUserManageData = [
+            'users' => $users,
+            'userStats' => $userStats,
+            'currentUserId' => (int)($_SESSION['user_id'] ?? 0),
+            'search' => $search,
+            'role' => $role,
+            'status' => $status,
+            'csrfToken' => csrfToken('admin_form'),
+            'csrfGlobal' => csrfToken('global_form'),
+        ];
 
-        // $users đã có
-        // $search đã có
-        // $role đã có
-
-        // 4. Load View
-            require __DIR__ . '/../views/admin/quan_ly_nguoi_dung.php';
+        require __DIR__ . '/../views/admin/quan_ly_nguoi_dung.php';
     }
 
     public function capNhatTrangThaiNguoiDung() {

@@ -115,7 +115,67 @@ class AdminNhaCungCapController {
             }
         }
 
+        $vueSupplierData = [
+            'suppliers' => $nhaCungCapList,
+            'supplierUsers' => $supplierUsers,
+            'selectedId' => $selectedId,
+            'selectedSupplier' => $selectedSupplier,
+            'serviceTypeSummary' => $serviceTypeSummary,
+            'supplierStats' => $supplierStats,
+            'supplierServices' => $supplierServices,
+            'serviceTypes' => $serviceTypes,
+            'selectedLoai' => $selectedLoai,
+            'csrfToken' => csrfToken('nha_cung_cap_form'),
+        ];
+
         require 'views/admin/nha_cung_cap.php';
+    }
+
+    public function apiNhaCungCapData(): void {
+        header('Content-Type: application/json; charset=utf-8');
+        try {
+            require_once __DIR__ . '/../models/NhaCungCap.php';
+            require_once __DIR__ . '/../models/NguoiDung.php';
+            $nhaCungCapModel = new NhaCungCap();
+            $nhaCungCapList = $nhaCungCapModel->getAll();
+
+            $selectedId = $_GET['id'] ?? $_GET['ncc_id'] ?? ($nhaCungCapList[0]['id_nha_cung_cap'] ?? null);
+            $selectedLoai = $_GET['loai'] ?? null;
+            $selectedSupplier = null;
+            $serviceTypeSummary = [];
+            $supplierStats = [];
+            $supplierServices = [];
+            $serviceTypes = [];
+
+            if ($selectedId) {
+                $selectedSupplier = $nhaCungCapModel->findById($selectedId);
+                if ($selectedSupplier) {
+                    $serviceTypeSummary = $nhaCungCapModel->getServiceTypeSummary($selectedId);
+                    $supplierStats = $nhaCungCapModel->getSupplierStats($selectedId);
+                    $serviceTypes = $nhaCungCapModel->getDistinctServiceTypes($selectedId);
+                    $supplierServices = $nhaCungCapModel->getSupplierServices($selectedId, $selectedLoai ?: null, 100);
+                }
+            }
+
+            echo json_encode([
+                'success' => true,
+                'data' => [
+                    'suppliers' => $nhaCungCapList,
+                    'selectedId' => $selectedId,
+                    'selectedSupplier' => $selectedSupplier,
+                    'serviceTypeSummary' => $serviceTypeSummary,
+                    'supplierStats' => $supplierStats,
+                    'supplierServices' => $supplierServices,
+                    'serviceTypes' => $serviceTypes,
+                    'selectedLoai' => $selectedLoai,
+                    'csrfToken' => csrfToken('nha_cung_cap_form'),
+                ]
+            ], JSON_UNESCAPED_UNICODE);
+        } catch (Throwable $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+        }
+        exit;
     }
 
     public function updateNhaCungCap() {

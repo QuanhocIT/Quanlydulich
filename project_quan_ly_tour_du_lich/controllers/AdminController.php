@@ -170,14 +170,7 @@ class AdminController {
         ];
     }
 
-    public function dashboard() {
-        $notifCtrl = new AdminNotificationController();
-        try {
-            $notifCtrl->markAdminDashboardNotificationsSeen();
-        } catch (Throwable $e) {
-            $notifCtrl->initAdminNotificationState();
-        }
-
+    public function getDashboardPayload(): array {
         $dashboardData = cacheRemember('admin_dashboard_overview_v1', 120, function () {
             require_once __DIR__ . '/../models/GiaoDich.php';
             require_once __DIR__ . '/../models/Booking.php';
@@ -209,8 +202,9 @@ class AdminController {
                     'ten_tour' => $tour['ten_tour'],
                     'tong_thu' => $tongThu,
                     'tong_chi_thuc_te' => $tongChi,
-                    'tong_du_toan' => $tour['gia_co_ban'],
+                    'tong_du_toan' => (float)$tour['gia_co_ban'],
                     'loi_nhuan' => $tongThu - $tongChi,
+                    'trang_thai' => $tour['trang_thai'] ?? 'HoatDong',
                 ];
 
                 $status = $tour['trang_thai'] ?? 'Khác';
@@ -231,21 +225,13 @@ class AdminController {
             ];
         });
 
-        $tours = $dashboardData['tours'] ?? [];
-        $doanhThuTheoThang = $dashboardData['doanhThuTheoThang'] ?? [];
         $bookingStatusStats = $dashboardData['bookingStatusStats'] ?? [];
-        $khachHangMoiTheoThang = $dashboardData['khachHangMoiTheoThang'] ?? [];
-        $tourStatusStats = $dashboardData['tourStatusStats'] ?? [];
-        $feedbackStats = $dashboardData['feedbackStats'] ?? [];
-        $bookingManageStats = $dashboardData['bookingManageStats'] ?? [];
-        $lichKhoiHanhStats = $dashboardData['lichKhoiHanhStats'] ?? [];
-
-        // P5: Wrap buildKpiAlerts + buildAutomationSnapshot vào cache ngắn (60s)
-        // để tránh 7 extra queries mỗi lần load dashboard khi nhiều admin đồng thời.
         $kpiAlerts = cacheRemember('admin_kpi_alerts_v1', 60, function () use ($bookingStatusStats) {
             return $this->buildKpiAlerts($bookingStatusStats);
         });
+
         $automationSnapshot = cacheRemember('admin_automation_snapshot_v1', 60, function () {
+            require_once __DIR__ . '/AdminAutomationController.php';
             return (new AdminAutomationController())->buildAutomationSnapshot();
         });
 
@@ -271,14 +257,136 @@ class AdminController {
 
                 return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
             } catch (Throwable $e) {
-                error_log('[AdminController::dashboard] daily_kpi_summary unavailable: ' . $e->getMessage());
+                error_log('[AdminController::getDashboardPayload] daily_kpi_summary unavailable: ' . $e->getMessage());
                 return null;
             }
         });
 
+        $tours = $dashboardData['tours'] ?? [];
+        $totalTours = count($tours);
+        $doanhThuTheoThang = $dashboardData['doanhThuTheoThang'] ?? [];
+        $totalRevenue = array_sum(array_map('floatval', array_values($doanhThuTheoThang)));
+        $totalBookings = array_sum(array_map('intval', array_values($bookingStatusStats)));
+        $khachHangMoiTheoThang = $dashboardData['khachHangMoiTheoThang'] ?? [];
+        $totalCustomers = array_sum(array_map('intval', array_values($khachHangMoiTheoThang)));
+        $monthlyRevenue = (float)($kpiAlerts['monthToDateRevenue'] ?? 0);
+        $pendingBookings = (int)($kpiAlerts['bookingPending'] ?? 0);
+        $overdueDebt = (int)($kpiAlerts['overdueDebt'] ?? 0);
+
+        usort($tours, static function ($a, $b) {
+            return ($b['loi_nhuan'] ?? 0) <=> ($a['loi_nhuan'] ?? 0);
+        });
+
+        return [
+            'metrics' => [
+                'total_tours' => $totalTours,
+                'total_revenue' => $totalRevenue,
+                'total_bookings' => $totalBookings,
+                'total_customers' => $totalCustomers,
+                'monthly_revenue' => $monthlyRevenue,
+                'pending_bookings' => $pendingBookings,
+                'overdue_debt' => $overdueDebt,
+                'automation_events_24h' => (int)($automationSnapshot['recentEvents24h'] ?? 0),
+            ],
+            'charts' => [
+                'revenue_by_month' => $doanhThuTheoThang,
+                'booking_status' => $bookingStatusStats,
+                'customers_by_month' => $khachHangMoiTheoThang,
+                'tour_status' => $dashboardData['tourStatusStats'] ?? [],
+            ],
+            'daily_kpi' => $dailyKpiSummary,
+            'kpi_alerts' => $kpiAlerts,
+            'top_tours' => array_slice($tours, 0, 10),
+            'recent_events' => $automationSnapshot['recentEvents'] ?? [],
+            'raw_tours' => $tours,
+        ];
+    }
+
+    public function apiDashboardData() {
+        header('Content-Type: application/json; charset=utf-8');
+        try {
+            $data = $this->getDashboardPayload();
+            echo json_encode(['success' => true, 'data' => $data], JSON_UNESCAPED_UNICODE);
+        } catch (Throwable $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'error' => $e->getMessage()], JSON_UNESCAPED_UNICODE);
+        }
+        exit;
+    }
+
+    public function dashboard() {
+        $notifCtrl = new AdminNotificationController();
+        try {
+            $notifCtrl->markAdminDashboardNotificationsSeen();
+        } catch (Throwable $e) {
+            $notifCtrl->initAdminNotificationState();
+        }
+
+        $payload = $this->getDashboardPayload();
+        $vueDashboardData = $payload;
+
+        $tours = $payload['raw_tours'] ?? [];
+        $totalTours = $payload['metrics']['total_tours'];
+        $totalRevenue = $payload['metrics']['total_revenue'];
+        $totalBookings = $payload['metrics']['total_bookings'];
+        $totalCustomers = $payload['metrics']['total_customers'];
+        $monthlyRevenue = $payload['metrics']['monthly_revenue'];
+        $pendingBookings = $payload['metrics']['pending_bookings'];
+        $overdueDebt = $payload['metrics']['overdue_debt'];
+        $automationEvents = $payload['metrics']['automation_events_24h'];
+        $doanhThuTheoThang = $payload['charts']['revenue_by_month'];
+        $bookingStatusStats = $payload['charts']['booking_status'];
+        $khachHangMoiTheoThang = $payload['charts']['customers_by_month'];
+        $tourStatusStats = $payload['charts']['tour_status'];
+        $dailyKpiSummary = $payload['daily_kpi'];
+        $kpiAlerts = $payload['kpi_alerts'];
+        $topTours = $payload['top_tours'];
+        $recentEvents = $payload['recent_events'];
+
         require 'views/admin/dashboard.php';
     }
     
+    public function apiTourList(): void {
+        requireRole('Admin');
+        header('Content-Type: application/json; charset=utf-8');
+
+        try {
+            $tourModel = new Tour();
+
+            $loaiTour = trim((string)($_GET['loai_tour'] ?? ''));
+            $trangThai = trim((string)($_GET['trang_thai'] ?? ''));
+            $search = trim((string)($_GET['search'] ?? ''));
+
+            $conditions = [];
+            if (!empty($loaiTour)) $conditions['loai_tour'] = $loaiTour;
+            if (!empty($trangThai)) $conditions['trang_thai'] = $trangThai;
+
+            $perPage = max(5, min(100, (int)($_GET['per_page'] ?? 20)));
+            $pageNumber = max(1, (int)($_GET['page'] ?? 1));
+            $offset = ($pageNumber - 1) * $perPage;
+
+            $totalTours = $tourModel->countFiltered($conditions, $search);
+            $tours = $tourModel->getAllPaginated($conditions, $search, $perPage, $offset);
+            $totalPages = (int)ceil($totalTours / $perPage);
+
+            echo json_encode([
+                'success' => true,
+                'data' => [
+                    'tours' => $tours,
+                    'totalTours' => $totalTours,
+                    'totalPages' => $totalPages,
+                    'pageNumber' => $pageNumber,
+                    'perPage' => $perPage,
+                    'csrfToken' => csrfToken('global_form'),
+                ]
+            ], JSON_UNESCAPED_UNICODE);
+        } catch (Throwable $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'error' => $e->getMessage()], JSON_UNESCAPED_UNICODE);
+        }
+        exit;
+    }
+
     public function quanLyTour() {
         $tourModel = new Tour();
 
@@ -297,6 +405,15 @@ class AdminController {
         $totalTours = $tourModel->countFiltered($conditions, $search);
         $tours = $tourModel->getAllPaginated($conditions, $search, $perPage, $offset);
         $totalPages = (int)ceil($totalTours / $perPage);
+
+        $vueTourListData = [
+            'tours' => $tours,
+            'totalTours' => $totalTours,
+            'totalPages' => $totalPages,
+            'pageNumber' => $pageNumber,
+            'perPage' => $perPage,
+            'csrfToken' => csrfToken('global_form'),
+        ];
 
         require 'views/admin/quan_ly_tour.php';
     }
@@ -327,9 +444,93 @@ class AdminController {
         require 'views/admin/chi_tiet_tour_admin.php';
     }
     
-    // File: controllers/AdminController.php
+    public function apiBookingList(): void {
+        requireRole('Admin');
+        header('Content-Type: application/json; charset=utf-8');
 
-// ... các code khác ...
+        try {
+            require_once 'models/Booking.php';
+            require_once 'models/Tour.php';
+            require_once 'models/ThongBao.php';
+
+            $bookingModel = new Booking();
+            $tourModel = new Tour();
+
+            $isCompleted = (($_GET['completed'] ?? '') === '1');
+            $pageNumber = max(1, (int)($_GET['page'] ?? 1));
+            $perPage = 20;
+            $offset = ($pageNumber - 1) * $perPage;
+
+            $search = trim((string)($_GET['search'] ?? ''));
+            $tourId = !empty($_GET['tour_id']) ? (int)$_GET['tour_id'] : 0;
+            $trangThai = trim((string)($_GET['trang_thai'] ?? ''));
+            $trangThaiTT = trim((string)($_GET['trang_thai_thanh_toan'] ?? ''));
+
+            $filters = [
+                'search' => $search,
+                'co_yeu_cau_tour' => isset($_GET['co_yeu_cau_tour']) ? (string)$_GET['co_yeu_cau_tour'] : '',
+            ];
+
+            if ($isCompleted) {
+                $filters['trang_thai'] = 'HoanTat';
+                $filters['exclude_hidden'] = false;
+            } else {
+                if (!empty($trangThai)) {
+                    $filters['trang_thai'] = $trangThai;
+                }
+                $filters['exclude_hidden'] = true;
+                $filters['only_paid'] = true;
+            }
+
+            if ($tourId > 0) {
+                $filters['tour_id'] = $tourId;
+            }
+            if (!empty($trangThaiTT)) {
+                $filters['trang_thai_thanh_toan'] = $trangThaiTT;
+            }
+
+            $totalBookings = $bookingModel->countAllWithDetailsFiltered($filters);
+            $bookings = $bookingModel->getAllWithDetailsFiltered($filters, $perPage, $offset);
+            $totalPages = (int)ceil($totalBookings / $perPage);
+
+            try {
+                $thongBaoModel = new ThongBao();
+                $yeuCauMap = $thongBaoModel->getYeuCauTourByUserIds(array_column($bookings, 'nguoi_dung_id'));
+
+                foreach ($bookings as &$booking) {
+                    $ndId = (int)($booking['nguoi_dung_id'] ?? 0);
+                    $booking['yeu_cau_tour'] = $ndId > 0 ? ($yeuCauMap[$ndId] ?? null) : null;
+                }
+                unset($booking);
+            } catch (Exception $e) {
+                foreach ($bookings as &$booking) {
+                    $booking['yeu_cau_tour'] = null;
+                }
+                unset($booking);
+            }
+
+            $stats = $bookingModel->getBookingStatusStats();
+            $toursList = $tourModel->getOptions();
+
+            echo json_encode([
+                'success' => true,
+                'data' => [
+                    'bookings' => $bookings,
+                    'totalBookings' => $totalBookings,
+                    'totalPages' => $totalPages,
+                    'page' => $pageNumber,
+                    'isCompletedView' => $isCompleted,
+                    'stats' => $stats,
+                    'toursList' => $toursList,
+                    'csrfToken' => csrfToken('booking_hide'),
+                ]
+            ], JSON_UNESCAPED_UNICODE);
+        } catch (Throwable $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'error' => $e->getMessage()], JSON_UNESCAPED_UNICODE);
+        }
+        exit;
+    }
 
     public function quanLyBooking() {
         $bookingModel = new Booking();
@@ -366,6 +567,21 @@ class AdminController {
             }
             unset($booking);
         }
+
+        $tourModel = new Tour();
+        $stats = $bookingModel->getBookingStatusStats();
+        $toursList = $tourModel->getOptions();
+
+        $vueBookingManageData = [
+            'bookings' => $bookings,
+            'totalBookings' => $totalBookings,
+            'totalPages' => $totalPages,
+            'page' => $pageNumber,
+            'isCompletedView' => false,
+            'stats' => $stats,
+            'toursList' => $toursList,
+            'csrfToken' => csrfToken('booking_hide'),
+        ];
 
         require 'views/admin/quan_ly_booking.php';
     }
@@ -405,6 +621,22 @@ class AdminController {
         }
 
         $isCompletedView = true;
+
+        $tourModel = new Tour();
+        $stats = $bookingModel->getBookingStatusStats();
+        $toursList = $tourModel->getOptions();
+
+        $vueBookingManageData = [
+            'bookings' => $bookings,
+            'totalBookings' => $totalBookings,
+            'totalPages' => $totalPages,
+            'page' => $pageNumber,
+            'isCompletedView' => true,
+            'stats' => $stats,
+            'toursList' => $toursList,
+            'csrfToken' => csrfToken('booking_hide'),
+        ];
+
         require 'views/admin/quan_ly_booking.php';
     }
 

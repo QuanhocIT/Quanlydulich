@@ -197,6 +197,13 @@ class AdminAutomationController {
             $decisionAssist = [];
         }
 
+        $highSeverityCount = 0;
+        foreach ($events as $ev) {
+            if (($ev['severity'] ?? '') === 'high') {
+                $highSeverityCount++;
+            }
+        }
+
         $pageTitle = 'Trung tâm Tự động hóa Admin';
         $currentPage = 'automation';
         $availableJobs = [
@@ -213,7 +220,119 @@ class AdminAutomationController {
             'decision_assist',
         ];
 
+        $vueAutomationData = [
+            'jobRuns' => $jobRuns,
+            'events' => $events,
+            'priorityBookings' => $priorityBookings,
+            'tourHealth' => $tourHealth,
+            'decisionAssist' => $decisionAssist,
+            'controlState' => $automationControlState,
+            'automationEnabled' => !empty($automationControlState['enabled']),
+            'automationUpdatedAt' => $automationControlState['updated_at'] ?? null,
+            'eventsCount' => count($events),
+            'highSeverityCount' => $highSeverityCount,
+            'decisionCount' => count($decisionAssist),
+            'tourHealthCount' => count($tourHealth),
+            'priorityCount' => count($priorityBookings),
+            'availableJobs' => $availableJobs,
+            'csrfToken' => csrfToken('admin_form'),
+            'timestamp' => date('Y-m-d H:i:s')
+        ];
+
         require 'views/admin/automation_dashboard.php';
+    }
+
+    public function apiAutomationData(): void {
+        header('Content-Type: application/json; charset=utf-8');
+        header('Cache-Control: no-store');
+
+        $conn = connectDB();
+        require_once __DIR__ . '/../services/AdminAutomationService.php';
+        $service = new AdminAutomationService($conn);
+
+        $automationControlState = $service->getAutomationControlState();
+
+        try {
+            $stmt = $conn->query("SELECT run_id, job_name, is_success, affected_count, message, duration_ms, created_at
+                                  FROM automation_job_runs
+                                  ORDER BY run_id DESC
+                                  LIMIT 40");
+            $jobRuns = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+        } catch (Throwable $e) {
+            $jobRuns = [];
+        }
+
+        try {
+            $stmt = $conn->query("SELECT event_id, job_name, severity, title, message, created_at
+                                  FROM automation_events
+                                  ORDER BY event_id DESC
+                                  LIMIT 40");
+            $events = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+        } catch (Throwable $e) {
+            $events = [];
+        }
+
+        try {
+            $stmt = $conn->query("SELECT bp.booking_id, bp.priority_label, bp.score, bp.computed_at,
+                                         b.ngay_khoi_hanh, b.tong_tien, b.trang_thai
+                                  FROM booking_priority bp
+                                  LEFT JOIN booking b ON b.booking_id = bp.booking_id
+                                  WHERE bp.priority_label = 'High'
+                                  ORDER BY bp.score DESC, bp.computed_at DESC
+                                  LIMIT 30");
+            $priorityBookings = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+        } catch (Throwable $e) {
+            $priorityBookings = [];
+        }
+
+        try {
+            $stmt = $conn->query("SELECT th.tour_id, th.score, th.health_level, th.computed_at, t.ten_tour
+                                  FROM tour_health_score th
+                                  LEFT JOIN tour t ON t.tour_id = th.tour_id
+                                  WHERE th.health_level IN ('Watch', 'Critical')
+                                  ORDER BY th.score ASC, th.computed_at DESC
+                                  LIMIT 30");
+            $tourHealth = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+        } catch (Throwable $e) {
+            $tourHealth = [];
+        }
+
+        try {
+            $stmt = $conn->query("SELECT assist_id, entity_type, entity_id, recommendation_text, status, updated_at
+                                  FROM admin_decision_assist
+                                  WHERE status = 'open'
+                                  ORDER BY updated_at DESC
+                                  LIMIT 40");
+            $decisionAssist = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+        } catch (Throwable $e) {
+            $decisionAssist = [];
+        }
+
+        $highSeverityCount = 0;
+        foreach ($events as $ev) {
+            if (($ev['severity'] ?? '') === 'high') {
+                $highSeverityCount++;
+            }
+        }
+
+        echo json_encode([
+            'success' => true,
+            'jobRuns' => $jobRuns,
+            'events' => $events,
+            'priorityBookings' => $priorityBookings,
+            'tourHealth' => $tourHealth,
+            'decisionAssist' => $decisionAssist,
+            'controlState' => $automationControlState,
+            'automationEnabled' => !empty($automationControlState['enabled']),
+            'automationUpdatedAt' => $automationControlState['updated_at'] ?? null,
+            'eventsCount' => count($events),
+            'highSeverityCount' => $highSeverityCount,
+            'decisionCount' => count($decisionAssist),
+            'tourHealthCount' => count($tourHealth),
+            'priorityCount' => count($priorityBookings),
+            'timestamp' => date('Y-m-d H:i:s')
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
     }
 
     public function toggleAutomation() {
@@ -230,10 +349,17 @@ class AdminAutomationController {
         $service = new AdminAutomationService($conn);
         $service->setAutomationEnabled($enabled);
 
-        $_SESSION['success'] = $enabled
+        $msg = $enabled
             ? 'Đã bật lại toàn bộ tự động hóa.'
             : 'Đã tạm tắt toàn bộ tự động hóa. Job tay và job nền sẽ bị bỏ qua cho đến khi bật lại.';
 
+        if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) || (isset($_SERVER['HTTP_ACCEPT']) && str_contains($_SERVER['HTTP_ACCEPT'], 'application/json'))) {
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode(['success' => true, 'enabled' => $enabled, 'message' => $msg], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        $_SESSION['success'] = $msg;
         header('Location: index.php?act=admin/automationDashboard');
         exit;
     }
@@ -298,6 +424,16 @@ class AdminAutomationController {
             }
         }
 
+        $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) || (isset($_SERVER['HTTP_ACCEPT']) && str_contains($_SERVER['HTTP_ACCEPT'], 'application/json'));
+        if ($isAjax) {
+            header('Content-Type: application/json; charset=utf-8');
+            $hasErr = isset($_SESSION['error']);
+            $msg = $_SESSION['error'] ?? $_SESSION['success'] ?? 'Hoàn tất';
+            unset($_SESSION['error'], $_SESSION['success']);
+            echo json_encode(['success' => !$hasErr, 'message' => $msg], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
         header('Location: index.php?act=admin/automationDashboard');
         exit;
     }
@@ -312,7 +448,13 @@ class AdminAutomationController {
         $assistId = requestId('assist_id', 0, 'POST') ?? 0;
         $status = requestString('status', 'open', 'POST');
         if (!in_array($status, ['open', 'done', 'ignored'], true) || $assistId <= 0) {
-            $_SESSION['error'] = 'Thông tin cập nhật gợi ý không hợp lệ.';
+            $err = 'Thông tin cập nhật gợi ý không hợp lệ.';
+            if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) || (isset($_SERVER['HTTP_ACCEPT']) && str_contains($_SERVER['HTTP_ACCEPT'], 'application/json'))) {
+                header('Content-Type: application/json; charset=utf-8');
+                echo json_encode(['success' => false, 'message' => $err], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+            $_SESSION['error'] = $err;
             header('Location: index.php?act=admin/automationDashboard');
             exit;
         }
@@ -323,7 +465,14 @@ class AdminAutomationController {
                                WHERE assist_id = ?");
         $stmt->execute([$status, $assistId]);
 
-        $_SESSION['success'] = 'Đã cập nhật trạng thái gợi ý #' . $assistId . '.';
+        $msg = 'Đã cập nhật trạng thái gợi ý #' . $assistId . '.';
+        if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) || (isset($_SERVER['HTTP_ACCEPT']) && str_contains($_SERVER['HTTP_ACCEPT'], 'application/json'))) {
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode(['success' => true, 'message' => $msg, 'assist_id' => $assistId, 'status' => $status], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        $_SESSION['success'] = $msg;
         header('Location: index.php?act=admin/automationDashboard');
         exit;
     }

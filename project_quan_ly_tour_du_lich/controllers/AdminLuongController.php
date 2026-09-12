@@ -114,18 +114,12 @@ class AdminLuongController
         exit;
     }
 
-    public function chiTietLuong(): void
+    public function getChiTietLuongData($nhanSuId, $month, $year, bool $showAll): ?array
     {
-        $nhanSuId = $_GET['nhan_su_id'] ?? null;
         if (empty($nhanSuId)) {
-            $_SESSION['error'] = 'Thiếu nhân_sự_id.';
-            header('Location: index.php?act=admin/quanLyLuongThuong');
-            exit;
+            return null;
         }
 
-        $month   = $_GET['month'] ?? '';
-        $year    = $_GET['year']  ?? '';
-        $showAll = (($_GET['all'] ?? '') === '1');
         if (!$showAll) {
             if ($month === '') $month = (int)date('n');
             if ($year  === '') $year  = (int)date('Y');
@@ -138,9 +132,7 @@ class AdminLuongController
 
         $nhanSu = $nhanSuModel->findById($nhanSuId);
         if (!$nhanSu) {
-            $_SESSION['error'] = 'Nhân sự không tồn tại.';
-            header('Location: index.php?act=admin/quanLyLuongThuong');
-            exit;
+            return null;
         }
 
         $filters = ['nhan_su_id' => $nhanSuId];
@@ -165,7 +157,69 @@ class AdminLuongController
             $tongLuong   = $luongCoBan + $tongHoaHong;
         }
 
-        $pageTitle   = 'Chi tiết lương nhân sự';
+        return [
+            'nhanSu' => $nhanSu,
+            'month' => $month,
+            'year' => $year,
+            'showAll' => $showAll,
+            'tongCoDinh' => $tongCoDinh,
+            'tongHoaHong' => $tongHoaHong,
+            'tongLuong' => $tongLuong,
+            'luongChiTiet' => $luongChiTiet,
+            'csrfToken' => csrfToken('global_form'),
+        ];
+    }
+
+    public function apiChiTietLuong(): void
+    {
+        header('Content-Type: application/json; charset=utf-8');
+        $nhanSuId = $_GET['nhan_su_id'] ?? null;
+        $month   = $_GET['month'] ?? '';
+        $year    = $_GET['year']  ?? '';
+        $showAll = (($_GET['all'] ?? '') === '1');
+
+        $data = $this->getChiTietLuongData($nhanSuId, $month, $year, $showAll);
+        if (!$data) {
+            http_response_code(404);
+            echo json_encode(['success' => false, 'error' => 'Không tìm thấy thông tin nhân sự']);
+            exit;
+        }
+
+        echo json_encode(['success' => true, 'data' => $data], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    public function chiTietLuong(): void
+    {
+        $nhanSuId = $_GET['nhan_su_id'] ?? null;
+        if (empty($nhanSuId)) {
+            $_SESSION['error'] = 'Thiếu nhân_sự_id.';
+            header('Location: index.php?act=admin/quanLyLuongThuong');
+            exit;
+        }
+
+        $month   = $_GET['month'] ?? '';
+        $year    = $_GET['year']  ?? '';
+        $showAll = (($_GET['all'] ?? '') === '1');
+
+        $data = $this->getChiTietLuongData($nhanSuId, $month, $year, $showAll);
+        if (!$data) {
+            $_SESSION['error'] = 'Nhân sự không tồn tại.';
+            header('Location: index.php?act=admin/quanLyLuongThuong');
+            exit;
+        }
+
+        $nhanSu = $data['nhanSu'];
+        $month = $data['month'];
+        $year = $data['year'];
+        $showAll = $data['showAll'];
+        $tongCoDinh = $data['tongCoDinh'];
+        $tongHoaHong = $data['tongHoaHong'];
+        $tongLuong = $data['tongLuong'];
+        $luongChiTiet = $data['luongChiTiet'];
+        $vueSalaryData = $data;
+
+        $pageTitle   = 'Chi tiết lương nhân sự - Vue 3';
         $currentPage = 'luongThuong';
         require 'views/admin/chi_tiet_luong.php';
     }
@@ -213,7 +267,21 @@ class AdminLuongController
         $tourList         = $tourModel->getOptions();
         $lichKhoiHanhList = $lichKhoiHanhModel->getUpcomingOptions(500, 365);
 
-        $pageTitle   = 'Quản lý lương thưởng nhân sự';
+        $vueSalaryManageData = [
+            'allLuongTongHop' => $allLuongTongHop,
+            'nhanSuList' => $nhanSuList,
+            'tourList' => $tourList,
+            'lichKhoiHanhList' => $lichKhoiHanhList,
+            'filterNhanSu' => $filterNhanSu,
+            'filterTour' => $filterTour,
+            'filterMonth' => $filterMonth,
+            'filterYear' => $filterYear,
+            'filterTrangThaiLuong' => $filterTrangThaiLuong,
+            'showAll' => $showAll,
+            'csrfToken' => csrfToken('global_form'),
+        ];
+
+        $pageTitle   = 'Quản lý lương thưởng nhân sự - Vue 3';
         $currentPage = 'luongThuong';
 
         require 'views/admin/quan_ly_luong_thuong.php';

@@ -70,6 +70,58 @@ class AdminNhanSuController {
         return null;
     }
 
+    public function apiNhanSuList(): void {
+        header('Content-Type: application/json; charset=utf-8');
+        try {
+            $nhanSuModel = new NhanSu();
+            $q = isset($_GET['q']) ? trim($_GET['q']) : '';
+            $role = isset($_GET['role']) ? trim($_GET['role']) : '';
+            $allNhanSu = $nhanSuModel->getAll();
+            $data_by_role = [];
+            foreach ($allNhanSu as $item) {
+                $itemRole = trim((string)($item['vai_tro'] ?? ''));
+                if ($itemRole === '') {
+                    $itemRole = 'Khac';
+                }
+                if (!isset($data_by_role[$itemRole])) {
+                    $data_by_role[$itemRole] = [];
+                }
+                $data_by_role[$itemRole][] = $item;
+            }
+            $roles = array_keys($data_by_role);
+            sort($roles);
+
+            if ($q !== '') {
+                $nhan_su_list = $nhanSuModel->search($q);
+                $active_role = null;
+            } elseif ($role !== '' && isset($data_by_role[$role])) {
+                $nhan_su_list = $data_by_role[$role];
+                $active_role = $role;
+            } else {
+                $nhan_su_list = $allNhanSu;
+                $active_role = null;
+            }
+
+            echo json_encode([
+                'success' => true,
+                'data' => [
+                    'nhanSuList' => $nhan_su_list,
+                    'roles' => $roles,
+                    'dataByRole' => $data_by_role,
+                    'activeRole' => $active_role,
+                    'q' => $q,
+                    'total' => count($allNhanSu),
+                    'csrfToken' => csrfToken('admin_form'),
+                    'csrfGlobal' => csrfToken('global_form'),
+                ]
+            ], JSON_UNESCAPED_UNICODE);
+        } catch (Throwable $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+        }
+        exit;
+    }
+
     public function nhanSu() {
         $nhanSuModel = new NhanSu();
         $q = isset($_GET['q']) ? trim($_GET['q']) : '';
@@ -100,6 +152,17 @@ class AdminNhanSuController {
             $nhan_su_list = $allNhanSu;
             $active_role = null;
         }
+
+        $vueNhanSuData = [
+            'nhanSuList' => $nhan_su_list,
+            'roles' => $roles,
+            'dataByRole' => $data_by_role,
+            'activeRole' => $active_role,
+            'q' => $q,
+            'total' => count($allNhanSu),
+            'csrfToken' => csrfToken('admin_form'),
+            'csrfGlobal' => csrfToken('global_form'),
+        ];
 
         require 'views/admin/quan_ly_nhan_su.php';
     }

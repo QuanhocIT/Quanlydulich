@@ -339,6 +339,8 @@ match ($act) {
     
     // Lịch khởi hành
     'lichKhoiHanh/index' => (new LichKhoiHanhController())->index(),
+    'lichKhoiHanh/apiList' => (new LichKhoiHanhController())->apiLichKhoiHanhList(),
+    'admin/apiLichKhoiHanhList' => (new LichKhoiHanhController())->apiLichKhoiHanhList(),
     'lichKhoiHanh/create' => (new LichKhoiHanhController())->create(),
     'lichKhoiHanh/chiTiet' => (new LichKhoiHanhController())->chiTiet(),
     'lichKhoiHanh/chiTietTheoBooking' => (new LichKhoiHanhController())->chiTietTheoBooking(),
@@ -364,8 +366,11 @@ match ($act) {
     'lichKhoiHanh/xoaNhatKy' => (new LichKhoiHanhController())->xoaNhatKy(),
     // Admin
     'admin/dashboard' => (new AdminController())->dashboard(),
+    'admin/apiDashboardData' => (new AdminController())->apiDashboardData(),
     'admin/quanLyTour' => (new AdminController())->quanLyTour(),
+    'admin/apiTourList' => (new AdminController())->apiTourList(),
     'admin/quanLyBooking' => (new AdminController())->quanLyBooking(),
+    'admin/apiBookingList' => (new AdminController())->apiBookingList(),
     'admin/bookingDaHoanThanh' => (new AdminController())->bookingDaHoanThanh(),
     'admin/lichSuXoaBooking' => (new AdminController())->lichSuXoaBooking(),
     // Nhà cung cấp (lịch sử xóa) → AdminNhaCungCapController
@@ -394,10 +399,13 @@ match ($act) {
     'admin/addNhacungcap' => (new AdminNhaCungCapController())->addNhacungcap(),
     // Người dùng → AdminNguoiDungController
     'admin/quanLyNguoiDung' => (new AdminNguoiDungController())->quanLyNguoiDung(),
+    'admin/apiNguoiDungList' => (new AdminNguoiDungController())->apiUserList(),
+    'admin/apiToggleUserStatus' => (new AdminNguoiDungController())->apiToggleStatus(),
     'admin/capNhatTrangThaiNguoiDung' => (new AdminNguoiDungController())->capNhatTrangThaiNguoiDung(),
     // Lương/thưởng nhân sự → AdminLuongController
     'admin/quanLyLuongThuong' => (new AdminLuongController())->quanLyLuongThuong(),
     'admin/chiTietLuong' => (new AdminLuongController())->chiTietLuong(),
+    'admin/apiChiTietLuong' => (new AdminLuongController())->apiChiTietLuong(),
     'admin/ajaxChiTietLuong' => (new AdminLuongController())->ajaxChiTietLuong(),
     'admin/taoLuongThuong' => (new AdminLuongController())->taoLuongThuong(),
     'admin/capNhatLuongThuong' => (new AdminLuongController())->capNhatLuongThuong(),
@@ -416,11 +424,13 @@ match ($act) {
     // Automation → AdminAutomationController
     'admin/automationDashboard' => (new AdminAutomationController())->automationDashboard(),
     'admin/automationStatus' => (new AdminAutomationController())->automationStatus(),
+    'admin/apiAutomationData' => (new AdminAutomationController())->apiAutomationData(),
     'admin/toggleAutomation' => (new AdminAutomationController())->toggleAutomation(),
     'admin/runAutomationJob' => (new AdminAutomationController())->runAutomationJob(),
     'admin/updateDecisionAssistStatus' => (new AdminAutomationController())->updateDecisionAssistStatus(),
     // Báo cáo tài chính
     'admin/baoCaoTaiChinh' => (new BaoCaoTaiChinhController())->dashboard(),
+    'admin/apiBaoCaoTaiChinh' => (new BaoCaoTaiChinhController())->apiDashboardData(),
     'admin/lichSuGiaoDich' => (new BaoCaoTaiChinhController())->lichSuGiaoDich(),
     'admin/giaoDichTheoTour' => (new BaoCaoTaiChinhController())->giaoDichTheoTour(),
     'admin/chiTietGiaoDich' => (new BaoCaoTaiChinhController())->chiTietGiaoDich(),
@@ -496,6 +506,7 @@ match ($act) {
     'admin/updateCheckIn' => (new AdminController())->updateCheckIn(),
     'admin/phanPhongKhachSan' => (new AdminController())->phanPhongKhachSan(),
     'admin/nhaCungCap' => (new AdminNhaCungCapController())->nhaCungCap(),
+    'admin/apiNhaCungCapData' => (new AdminNhaCungCapController())->apiNhaCungCapData(),
     'admin/updateNhaCungCap' => (new AdminNhaCungCapController())->updateNhaCungCap(),
     'admin/deleteNhaCungCap' => (new AdminNhaCungCapController())->deleteNhaCungCap(),
     'admin/chiTietDichVu' => (new AdminNhaCungCapController())->chiTietDichVu(),
@@ -550,6 +561,7 @@ match ($act) {
 
     // Nhân sự → AdminNhanSuController
     'admin/nhanSu' => (new AdminNhanSuController())->nhanSu(),
+    'admin/apiNhanSuList' => (new AdminNhanSuController())->apiNhanSuList(),
     'admin/nhanSuController' => (new AdminNhanSuController())->nhanSu(),
     'admin/nhanSu_create' => (new AdminNhanSuController())->nhanSuCreate(),
     'admin/nhanSu_update' => (new AdminNhanSuController())->nhanSuUpdate(),
@@ -577,6 +589,7 @@ match ($act) {
     
     // Quản lý đánh giá & phản hồi
     'admin/danhGia' => (new DanhGiaController())->index(),
+    'admin/apiDanhGiaList' => (new DanhGiaController())->apiDanhGiaList(),
     'admin/danhGia/chiTiet' => (new DanhGiaController())->chiTiet(),
     'admin/danhGia/traLoi' => (new DanhGiaController())->traLoi(),
     'admin/danhGia/xoa' => (new DanhGiaController())->xoa(),

@@ -45,6 +45,41 @@ class LichKhoiHanhController {
         $this->dichVuCatalogModel = new DichVuNhaCungCap();
     }
 
+    public function apiLichKhoiHanhList(): void {
+        header('Content-Type: application/json; charset=utf-8');
+        try {
+            $filters = [
+                'search' => trim((string)($_GET['search'] ?? '')),
+                'trang_thai' => trim((string)($_GET['trang_thai'] ?? '')),
+                'tu_ngay' => trim((string)($_GET['tu_ngay'] ?? '')),
+                'den_ngay' => trim((string)($_GET['den_ngay'] ?? '')),
+            ];
+
+            $lichKhoiHanhList = $this->lichKhoiHanhModel->getAllFiltered($filters);
+            $conflictSummary = $this->phanBoNhanSuModel->getScheduleConflictSummary($lichKhoiHanhList);
+
+            foreach ($lichKhoiHanhList as &$lich) {
+                $soLichTrung = (int)($conflictSummary[(int)($lich['id'] ?? 0)] ?? 0);
+                $lich['coTrungLichHDV'] = $soLichTrung > 0;
+                $lich['soLichTrungHDV'] = $soLichTrung;
+            }
+            unset($lich);
+
+            echo json_encode([
+                'success' => true,
+                'data' => [
+                    'schedules' => $lichKhoiHanhList,
+                    'filters' => $filters,
+                    'csrfToken' => csrfToken('lich_khoi_hanh_form'),
+                ]
+            ], JSON_UNESCAPED_UNICODE);
+        } catch (Throwable $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+        }
+        exit;
+    }
+
     // Danh sách lịch khởi hành
     public function index() {
         // Tránh UPDATE trạng thái toàn bảng cho mỗi lần reload trang.
@@ -72,6 +107,12 @@ class LichKhoiHanhController {
         }
         unset($lich);
         
+        $vueScheduleData = [
+            'schedules' => $lichKhoiHanhList,
+            'filters' => $filters,
+            'csrfToken' => csrfToken('lich_khoi_hanh_form'),
+        ];
+
         require 'views/admin/quan_ly_lich_khoi_hanh.php';
     }
 

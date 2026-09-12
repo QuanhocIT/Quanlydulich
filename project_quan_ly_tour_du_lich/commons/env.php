@@ -83,7 +83,19 @@ if (!class_exists('ProfiledPDOStatement', false)) {
 // Base URL
 $envBaseUrl = trim((string)($_ENV['BASE_URL'] ?? ''));
 if ($envBaseUrl === '' || strtoupper($envBaseUrl) === 'AUTO') {
-    $defaultPath = '/quanlydulich-main/project_quan_ly_tour_du_lich/';
+    $scriptName = str_replace('\\', '/', (string)($_SERVER['SCRIPT_NAME'] ?? ''));
+    $scriptDir = trim((string)dirname($scriptName));
+    if ($scriptDir === '' || $scriptDir === '.') {
+        $defaultPath = '/';
+    } else {
+        $defaultPath = rtrim($scriptDir, '/') . '/';
+    }
+
+    // CLI fallback when SCRIPT_NAME is not available.
+    if ($defaultPath === '/') {
+        $defaultPath = '/quanlydulich-main/project_quan_ly_tour_du_lich/';
+    }
+
     if (!empty($_SERVER['HTTP_HOST'])) {
         $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
             || ((int)($_SERVER['SERVER_PORT'] ?? 0) === 443)
@@ -128,7 +140,11 @@ define('REDIS_PREFIX', $_ENV['REDIS_PREFIX'] ?? 'qdl:');      // Prefix để tr
 // Lưu ý: Nếu dùng file .env thì nên thêm vào .env, nếu không thì thêm ở đây
 define('GOOGLE_CLIENT_ID', $_ENV['GOOGLE_CLIENT_ID'] ?? '');
 define('GOOGLE_CLIENT_SECRET', $_ENV['GOOGLE_CLIENT_SECRET'] ?? '');
-define('GOOGLE_REDIRECT_URI', $_ENV['GOOGLE_REDIRECT_URI'] ?? (BASE_URL . 'google_callback.php'));
+$envGoogleRedirectUri = trim((string)($_ENV['GOOGLE_REDIRECT_URI'] ?? ''));
+if ($envGoogleRedirectUri === '' || strtoupper($envGoogleRedirectUri) === 'AUTO') {
+    $envGoogleRedirectUri = BASE_URL . 'google_callback.php';
+}
+define('GOOGLE_REDIRECT_URI', $envGoogleRedirectUri);
 
 // Payment gateway configuration
 define('PAYMENT_MODE', $_ENV['PAYMENT_MODE'] ?? 'manual_qr'); // mock | vnpay | manual_qr

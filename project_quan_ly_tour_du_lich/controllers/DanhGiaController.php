@@ -40,7 +40,42 @@ class DanhGiaController {
         $stats = $this->model->getStatistics();
         error_log("Stats: " . print_r($stats, true));
         
+        $vueDanhGiaData = [
+            'danhGiaList' => $danhGiaList,
+            'stats' => $stats,
+            'filters' => $filters,
+            'csrfToken' => csrfToken('admin_form'),
+            'baseUrl' => BASE_URL
+        ];
+
         require 'views/admin/quan_ly_danh_gia.php';
+    }
+
+    public function apiDanhGiaList(): void {
+        requireRole('Admin');
+        header('Content-Type: application/json; charset=utf-8');
+        header('Cache-Control: no-store');
+
+        $filters = [
+            'loai' => $_GET['loai'] ?? '',
+            'diem_min' => $_GET['diem_min'] ?? '',
+            'diem_max' => $_GET['diem_max'] ?? '',
+            'tu_ngay' => $_GET['tu_ngay'] ?? '',
+            'den_ngay' => $_GET['den_ngay'] ?? '',
+            'search' => $_GET['search'] ?? ''
+        ];
+
+        $danhGiaList = $this->model->filter($filters);
+        $stats = $this->model->getStatistics();
+
+        echo json_encode([
+            'success' => true,
+            'danhGiaList' => $danhGiaList,
+            'stats' => $stats,
+            'filters' => $filters,
+            'csrfToken' => csrfToken('admin_form')
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
     }
     
     // Báo cáo tổng hợp
@@ -94,6 +129,21 @@ class DanhGiaController {
             } else {
                 $_SESSION['error'] = 'Có lỗi xảy ra';
             }
+
+            $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) || (isset($_SERVER['HTTP_ACCEPT']) && str_contains($_SERVER['HTTP_ACCEPT'], 'application/json'));
+            if ($isAjax) {
+                header('Content-Type: application/json; charset=utf-8');
+                $hasErr = isset($_SESSION['error']);
+                $msg = $_SESSION['error'] ?? $_SESSION['success'] ?? 'Hoàn tất';
+                unset($_SESSION['error'], $_SESSION['success']);
+                echo json_encode([
+                    'success' => !$hasErr,
+                    'message' => $msg,
+                    'id' => $id,
+                    'phan_hoi_admin' => $phan_hoi_admin
+                ], JSON_UNESCAPED_UNICODE);
+                exit();
+            }
             
             header('Location: index.php?act=admin/danhGia/chiTiet&id=' . $id);
             exit();
@@ -111,7 +161,14 @@ class DanhGiaController {
 
         if (!verifyCsrfToken($_POST['_csrf_global'] ?? '', 'global_form')
             && !verifyCsrfToken($_POST['_csrf_token'] ?? '', 'admin_form')) {
-            $_SESSION['error'] = 'Yeu cau khong hop le (CSRF).';
+            $err = 'Yeu cau khong hop le (CSRF).';
+            $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) || (isset($_SERVER['HTTP_ACCEPT']) && str_contains($_SERVER['HTTP_ACCEPT'], 'application/json'));
+            if ($isAjax) {
+                header('Content-Type: application/json; charset=utf-8');
+                echo json_encode(['success' => false, 'message' => $err], JSON_UNESCAPED_UNICODE);
+                exit();
+            }
+            $_SESSION['error'] = $err;
             header('Location: index.php?act=admin/danhGia');
             exit();
         }
@@ -122,6 +179,16 @@ class DanhGiaController {
             $_SESSION['success'] = 'Đã xóa đánh giá';
         } else {
             $_SESSION['error'] = 'Không thể xóa đánh giá';
+        }
+
+        $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) || (isset($_SERVER['HTTP_ACCEPT']) && str_contains($_SERVER['HTTP_ACCEPT'], 'application/json'));
+        if ($isAjax) {
+            header('Content-Type: application/json; charset=utf-8');
+            $hasErr = isset($_SESSION['error']);
+            $msg = $_SESSION['error'] ?? $_SESSION['success'] ?? 'Hoàn tất';
+            unset($_SESSION['error'], $_SESSION['success']);
+            echo json_encode(['success' => !$hasErr, 'message' => $msg, 'id' => $id], JSON_UNESCAPED_UNICODE);
+            exit();
         }
         
         header('Location: index.php?act=admin/danhGia');
