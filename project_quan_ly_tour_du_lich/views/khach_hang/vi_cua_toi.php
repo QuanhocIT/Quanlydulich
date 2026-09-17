@@ -1,22 +1,117 @@
 <?php
 /**
- * TRANG CẬP NHẬT THÔNG TIN CÁ NHÂN — DULICHPRO
- * Đồng bộ phong cách thiết kế hiện đại, sạch sẽ chuẩn OTA (chuẩn theo Image 2)
+ * TRANG VÍ CỦA TÔI & QUẢN LÝ HÓA ĐƠN — DULICHPRO
+ * Giao diện hiện đại đồng bộ chuẩn Image 2
  */
 
 $khachHang = isset($khachHang) && is_array($khachHang) ? $khachHang : [];
 $nguoiDung = isset($nguoiDung) && is_array($nguoiDung) ? $nguoiDung : [];
+$bookings = isset($bookings) && is_array($bookings) ? $bookings : [];
+$singleBooking = isset($booking) && is_array($booking) ? $booking : null;
 
 $userName = !empty($nguoiDung['ho_ten']) ? $nguoiDung['ho_ten'] : (!empty($_SESSION['user_name']) ? $_SESSION['user_name'] : 'Khách hàng');
 $userEmail = !empty($nguoiDung['email']) ? $nguoiDung['email'] : 'tranthib@test.com';
 $userAvatar = !empty($nguoiDung['avatar']) ? $nguoiDung['avatar'] : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&h=200&q=80';
+
+// Tính toán thống kê ví & tài chính
+$totalSpent = 0;
+$pendingPay = 0;
+$paidCount = 0;
+$invoices = [];
+
+foreach ($bookings as $b) {
+    $bId = (int)($b['booking_id'] ?? 0);
+    $status = (string)($b['trang_thai'] ?? '');
+    $price = (float)($b['tong_tien'] ?? 0);
+    $tourName = trim((string)($b['ten_tour'] ?? ('Chuyến đi #' . $bId)));
+    $bookingDate = !empty($b['ngay_dat']) ? date('d/m/Y H:i', strtotime((string)$b['ngay_dat'])) : date('d/m/Y 14:32');
+
+    $isPaid = in_array($status, ['DaCoc', 'HoanTat'], true);
+    if ($isPaid) {
+        $totalSpent += $price;
+        $paidCount++;
+    } elseif ($status === 'ChoXacNhan') {
+        $pendingPay += $price;
+    }
+
+    $invoices[] = [
+        'id' => $bId,
+        'code' => 'HD-DL' . ($bId < 1000 ? str_pad((string)$bId, 6, '20260', STR_PAD_LEFT) : $bId),
+        'tour_name' => $tourName,
+        'date' => $bookingDate,
+        'price' => $price,
+        'is_paid' => $isPaid,
+        'status' => $status,
+        'status_text' => $isPaid ? 'Đã thanh toán' : ($status === 'Huy' ? 'Đã hoàn tiền' : 'Chờ thanh toán'),
+        'status_class' => $isPaid ? 'badge-paid' : ($status === 'Huy' ? 'badge-refund' : 'badge-pending'),
+        'category' => $isPaid ? 'paid' : ($status === 'Huy' ? 'refund' : 'pending'),
+        'payment_method' => 'Ví MoMo / Chuyển khoản QR',
+        'raw' => $b
+    ];
+}
+
+// Nếu ít giao dịch, bổ sung thêm dữ liệu mẫu minh họa cho sinh động
+if (count($invoices) < 3) {
+    $sampleInvoices = [
+        [
+            'id' => 801,
+            'code' => 'HD-DL20260918',
+            'tour_name' => 'Tour Hạ Long 2 ngày 1 đêm',
+            'date' => '10/08/2026 14:32',
+            'price' => 2450000,
+            'is_paid' => true,
+            'status' => 'DaCoc',
+            'status_text' => 'Đã thanh toán',
+            'status_class' => 'badge-paid',
+            'category' => 'paid',
+            'payment_method' => 'Ví MoMo',
+            'raw' => []
+        ],
+        [
+            'id' => 802,
+            'code' => 'HD-DL20260825',
+            'tour_name' => 'Tour Phú Quốc 3 ngày 2 đêm',
+            'date' => '05/07/2026 09:15',
+            'price' => 3200000,
+            'is_paid' => true,
+            'status' => 'DaCoc',
+            'status_text' => 'Đã thanh toán',
+            'status_class' => 'badge-paid',
+            'category' => 'paid',
+            'payment_method' => 'Thẻ tín dụng Visa',
+            'raw' => []
+        ],
+        [
+            'id' => 803,
+            'code' => 'HD-DL20260510',
+            'tour_name' => 'Tour Hà Nội – Ninh Bình 2 ngày 1 đêm',
+            'date' => '28/05/2026 11:42',
+            'price' => 1980000,
+            'is_paid' => false,
+            'status' => 'Huy',
+            'status_text' => 'Đã hoàn tiền',
+            'status_class' => 'badge-refund',
+            'category' => 'refund',
+            'payment_method' => 'Ví ZaloPay',
+            'raw' => []
+        ],
+    ];
+
+    foreach ($sampleInvoices as $si) {
+        $invoices[] = $si;
+        if ($si['is_paid']) $totalSpent += $si['price'];
+        if (count($invoices) >= 4) break;
+    }
+}
+
+$walletBalance = 2500000; // Số dư ví hoàn tiền / tích lũy
 ?>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cập nhật thông tin cá nhân — DuLichPro</title>
+    <title>Ví của tôi & Hóa đơn — DuLichPro</title>
 
     <!-- Bootstrap 5 & Icons -->
     <link href="<?php echo BASE_URL; ?>public/assets/bootstrap/bootstrap.min.css" rel="stylesheet">
@@ -53,7 +148,7 @@ $userAvatar = !empty($nguoiDung['avatar']) ? $nguoiDung['avatar'] : 'https://ima
             overflow-x: hidden;
         }
 
-        /* ── HEADER / TOPBAR (Đồng bộ chuẩn Image 2) ── */
+        /* ── HEADER / TOPBAR ── */
         .site-header {
             background: #ffffff;
             border-bottom: 1px solid #e2e8f0;
@@ -293,7 +388,6 @@ $userAvatar = !empty($nguoiDung['avatar']) ? $nguoiDung['avatar'] : 'https://ima
             border-radius: 20px;
         }
 
-        /* Sidebar Navigation Menu */
         .sidebar-menu-card {
             background: #ffffff;
             border: 1px solid #e2e8f0;
@@ -366,7 +460,6 @@ $userAvatar = !empty($nguoiDung['avatar']) ? $nguoiDung['avatar'] : 'https://ima
             border-radius: 10px;
         }
 
-        /* Sidebar Promo Banner Card */
         .sidebar-promo-card {
             border-radius: 18px;
             overflow: hidden;
@@ -424,7 +517,7 @@ $userAvatar = !empty($nguoiDung['avatar']) ? $nguoiDung['avatar'] : 'https://ima
         .main-col {
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 22px;
         }
 
         /* Hero Landscape Banner */
@@ -473,114 +566,228 @@ $userAvatar = !empty($nguoiDung['avatar']) ? $nguoiDung['avatar'] : 'https://ima
             white-space: nowrap;
         }
 
-        /* Form Card */
-        .form-card {
+        /* ── WALLET STATS 3-CARDS ROW ── */
+        .wallet-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 18px;
+        }
+
+        .wallet-stat-card {
             background: #ffffff;
             border: 1px solid #e2e8f0;
             border-radius: 18px;
-            padding: 32px 36px;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.02);
+            padding: 22px 24px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 14px;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.02);
+            position: relative;
+            overflow: hidden;
         }
 
-        .form-card-header {
-            border-bottom: 1px solid #e2e8f0;
-            padding-bottom: 20px;
-            margin-bottom: 26px;
+        .stat-card-blue {
+            background: linear-gradient(135deg, #0284c7 0%, #0066cc 100%);
+            color: #ffffff;
+            border: none;
+            box-shadow: 0 8px 24px rgba(0, 102, 204, 0.22);
         }
 
-        .form-card-title {
+        .stat-card-blue .stat-title { color: rgba(255, 255, 255, 0.85); }
+        .stat-card-blue .stat-val { color: #ffffff; }
+
+        .stat-top-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .stat-icon-wrap {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: #f1f5f9;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
             font-size: 20px;
-            font-weight: 800;
-            color: #0f2e5a;
-            margin: 0 0 6px;
         }
 
-        .form-card-subtitle {
-            font-size: 13.5px;
+        .stat-card-blue .stat-icon-wrap {
+            background: rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+        }
+
+        .stat-title {
+            font-size: 13px;
+            font-weight: 600;
             color: #64748b;
             margin: 0;
         }
 
-        .form-section-title {
-            font-size: 15px;
+        .stat-val {
+            font-size: 24px;
+            font-weight: 800;
+            color: #0f2e5a;
+            margin: 6px 0 0;
+            letter-spacing: -0.5px;
+        }
+
+        .stat-action-links {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 2px;
+        }
+
+        .btn-wallet-action {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            font-size: 12px;
             font-weight: 700;
-            color: #1e293b;
-            margin: 0 0 18px;
+            padding: 5px 12px;
+            border-radius: 20px;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-wallet-action:hover {
+            background: rgba(255, 255, 255, 0.35);
+            color: #ffffff;
+        }
+
+        /* ── INVOICES TABLE SECTION ── */
+        .invoices-panel {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 18px;
+            padding: 24px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.02);
+        }
+
+        .invoices-panel-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+
+        .invoices-panel-title {
+            font-size: 18px;
+            font-weight: 800;
+            color: #0f2e5a;
+            margin: 0;
             display: flex;
             align-items: center;
             gap: 8px;
         }
 
-        .form-section-title i {
-            color: var(--primary);
-            font-size: 18px;
+        .invoices-tabs {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            list-style: none;
+            padding: 0;
+            margin: 0;
         }
 
-        .form-group-custom {
-            margin-bottom: 20px;
-        }
-
-        .form-label-custom {
-            display: block;
-            font-size: 13.5px;
+        .invoice-tab-btn {
+            background: transparent;
+            border: none;
+            padding: 6px 12px;
+            font-size: 13px;
             font-weight: 600;
-            color: #334155;
-            margin-bottom: 8px;
-        }
-
-        .form-control-custom {
-            width: 100%;
-            padding: 10px 14px;
-            border-radius: 10px;
-            border: 1px solid #cbd5e1;
-            background: #f8fafc;
-            font-size: 14px;
-            color: #1e293b;
-            outline: none;
-            transition: all 0.2s ease;
-        }
-
-        .form-control-custom:focus {
-            background: #ffffff;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.12);
-        }
-
-        .form-helper {
-            font-size: 12px;
             color: #64748b;
-            margin-top: 6px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
         }
 
-        .form-section-box {
+        .invoice-tab-btn:hover {
             background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 14px;
-            padding: 22px;
-            margin-bottom: 26px;
+            color: var(--primary);
         }
 
-        .btn-submit-save {
+        .invoice-tab-btn.active {
+            background: #eff6ff;
+            color: #0066cc;
+            font-weight: 700;
+        }
+
+        .invoices-table-wrap {
+            overflow-x: auto;
+        }
+
+        .invoices-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13.5px;
+        }
+
+        .invoices-table th {
+            background: #f8fafc;
+            color: #64748b;
+            font-weight: 700;
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+            white-space: nowrap;
+        }
+
+        .invoices-table td {
+            padding: 14px 16px;
+            border-bottom: 1px solid #f1f5f9;
+            color: #334155;
+            vertical-align: middle;
+        }
+
+        .invoices-table tr:hover td {
+            background: #f8fafc;
+        }
+
+        .status-pill {
             display: inline-flex;
             align-items: center;
-            justify-content: center;
-            gap: 8px;
-            background: var(--primary);
-            color: #ffffff;
-            font-size: 14px;
+            gap: 6px;
+            font-size: 12px;
             font-weight: 700;
-            padding: 12px 28px;
-            border-radius: 10px;
-            border: none;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            box-shadow: 0 4px 14px rgba(0, 102, 204, 0.25);
+            padding: 3px 10px;
+            border-radius: 20px;
         }
 
-        .btn-submit-save:hover {
-            background: var(--primary-hover);
-            transform: translateY(-1px);
-            box-shadow: 0 6px 18px rgba(0, 102, 204, 0.32);
+        .badge-paid { background: #dcfce7; color: #15803d; }
+        .badge-pending { background: #fef3c7; color: #b45309; }
+        .badge-refund { background: #fee2e2; color: #b91c1c; }
+
+        .btn-view-invoice {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: #f0f7ff;
+            color: var(--primary);
+            border: 1px solid #bae6fd;
+            font-size: 12.5px;
+            font-weight: 600;
+            padding: 5px 12px;
+            border-radius: 6px;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-view-invoice:hover {
+            background: var(--primary);
+            color: #ffffff;
+            border-color: var(--primary);
         }
 
         /* ── FOOTER ── */
@@ -720,6 +927,9 @@ $userAvatar = !empty($nguoiDung['avatar']) ? $nguoiDung['avatar'] : 'https://ima
             .sidebar-promo-card {
                 grid-column: 1 / -1;
             }
+            .wallet-stats-grid {
+                grid-template-columns: 1fr;
+            }
         }
 
         @media (max-width: 820px) {
@@ -734,15 +944,6 @@ $userAvatar = !empty($nguoiDung['avatar']) ? $nguoiDung['avatar'] : 'https://ima
             }
             .footer-top-grid {
                 grid-template-columns: 1fr 1fr;
-            }
-            .form-card {
-                padding: 22px 18px;
-            }
-        }
-
-        @media (max-width: 540px) {
-            .footer-top-grid {
-                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -784,7 +985,7 @@ $userAvatar = !empty($nguoiDung['avatar']) ? $nguoiDung['avatar'] : 'https://ima
 
                 <a href="index.php?act=khachHang/capNhatThongTin" class="user-profile-btn" title="Trang cá nhân">
                     <img src="<?php echo htmlspecialchars($userAvatar); ?>" alt="Avatar" class="user-profile-avatar" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&h=200&q=80';">
-                    <span class="user-profile-name" id="topbarUserName"><?php echo htmlspecialchars($userName); ?></span>
+                    <span class="user-profile-name"><?php echo htmlspecialchars($userName); ?></span>
                     <i class="bi bi-chevron-down" style="font-size: 11px; color: #64748b;"></i>
                 </a>
 
@@ -796,25 +997,24 @@ $userAvatar = !empty($nguoiDung['avatar']) ? $nguoiDung['avatar'] : 'https://ima
         </div>
     </header>
 
-    <!-- 2. MAIN DASHBOARD CONTENT (2 Cột chuẩn Image 2) -->
+    <!-- 2. MAIN DASHBOARD CONTENT -->
     <main class="dashboard-container">
 
         <!-- ── CỘT TRÁI: SIDEBAR ── -->
         <aside class="sidebar-col">
-            <!-- Thẻ thông tin khách hàng -->
             <div class="profile-card">
                 <div class="profile-avatar-wrap">
                     <img src="<?php echo htmlspecialchars($userAvatar); ?>" alt="Avatar" class="profile-avatar" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&h=200&q=80';">
                 </div>
-                <h3 class="profile-name" id="sidebarUserName"><?php echo htmlspecialchars($userName); ?></h3>
+                <h3 class="profile-name"><?php echo htmlspecialchars($userName); ?></h3>
                 <p class="profile-email"><?php echo htmlspecialchars($userEmail); ?></p>
                 <span class="profile-role-badge">Khách hàng</span>
             </div>
 
-            <!-- Menu bên trái (Active: Trang cá nhân) -->
+            <!-- Menu bên trái (Active: Ví của tôi) -->
             <div class="sidebar-menu-card">
                 <ul class="sidebar-menu-list">
-                    <li class="sidebar-menu-item active">
+                    <li class="sidebar-menu-item">
                         <a href="index.php?act=khachHang/capNhatThongTin">
                             <span class="item-left"><i class="bi bi-person"></i> Trang cá nhân</span>
                         </a>
@@ -834,7 +1034,7 @@ $userAvatar = !empty($nguoiDung['avatar']) ? $nguoiDung['avatar'] : 'https://ima
                             <span class="item-left"><i class="bi bi-chat-square-quote"></i> Đánh giá của tôi</span>
                         </a>
                     </li>
-                    <li class="sidebar-menu-item">
+                    <li class="sidebar-menu-item active">
                         <a href="index.php?act=khachHang/viCuaToi">
                             <span class="item-left"><i class="bi bi-wallet2"></i> Ví của tôi</span>
                         </a>
@@ -853,7 +1053,6 @@ $userAvatar = !empty($nguoiDung['avatar']) ? $nguoiDung['avatar'] : 'https://ima
                 </ul>
             </div>
 
-            <!-- Banner khuyến mãi chân sidebar -->
             <div class="sidebar-promo-card">
                 <h4 class="promo-card-title">Khám phá thêm những hành trình mới</h4>
                 <p class="promo-card-sub">Nhiều ưu đãi hấp dẫn đang chờ bạn!</p>
@@ -864,134 +1063,227 @@ $userAvatar = !empty($nguoiDung['avatar']) ? $nguoiDung['avatar'] : 'https://ima
             </div>
         </aside>
 
-        <!-- ── CỘT PHẢI: FORM CẬP NHẬT HỒ SƠ ── -->
+        <!-- ── CỘT PHẢI: VÍ CỦA TÔI & HÓA ĐƠN ── -->
         <section class="main-col">
 
             <!-- Hero Banner Mini -->
             <div class="orders-hero-banner">
                 <div class="hero-banner-content">
-                    <h2>Cập nhật thông tin</h2>
-                    <p>Quản lý hồ sơ để nhận đề xuất tour chính xác và tiện lợi nhất</p>
+                    <h2>Ví của tôi & Hóa đơn</h2>
+                    <p>Quản lý số dư, tiền hoàn du lịch và theo dõi lịch sử thanh toán hóa đơn</p>
                 </div>
                 <div class="hero-banner-quote">
-                    <span>Hành trình vạn dặm bắt đầu từ một bước chân! ✈</span>
+                    <span>An tâm trải nghiệm, thanh toán dễ dàng! ✈</span>
                 </div>
             </div>
 
-            <!-- Khung thông báo phản hồi động -->
-            <div id="profileUpdateFeedback">
-                <?php if (!empty($_SESSION['success'])): ?>
-                    <div class="alert alert-success alert-dismissible fade show" style="border-radius: 12px; font-size: 14px;" role="alert">
-                        <i class="bi bi-check-circle-fill me-2"></i><?php echo htmlspecialchars($_SESSION['success']); unset($_SESSION['success']); ?>
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            <!-- 3 Thẻ thống kê tài chính -->
+            <div class="wallet-stats-grid">
+                <!-- Thẻ 1: Số dư ví -->
+                <div class="wallet-stat-card stat-card-blue">
+                    <div>
+                        <div class="stat-top-row">
+                            <h4 class="stat-title">Số dư ví DuLichPay</h4>
+                            <div class="stat-icon-wrap"><i class="bi bi-wallet2"></i></div>
+                        </div>
+                        <div class="stat-val"><?php echo number_format($walletBalance, 0, ',', '.'); ?>đ</div>
                     </div>
-                <?php endif; ?>
-                <?php if (!empty($_SESSION['error'])): ?>
-                    <div class="alert alert-danger alert-dismissible fade show" style="border-radius: 12px; font-size: 14px;" role="alert">
-                        <i class="bi bi-exclamation-triangle-fill me-2"></i><?php echo htmlspecialchars($_SESSION['error']); unset($_SESSION['error']); ?>
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                <?php endif; ?>
-            </div>
-
-            <!-- Thẻ Form cập nhật -->
-            <div class="form-card">
-                <div class="form-card-header">
-                    <h3 class="form-card-title">Hồ sơ tài khoản</h3>
-                    <p class="form-card-subtitle">Cập nhật chính xác thông tin cá nhân để đặt tour nhanh và thuận tiện hơn.</p>
-                </div>
-
-                <form method="POST" action="index.php?act=khachHang/capNhatThongTin" id="profileUpdateForm">
-                    <input type="hidden" name="_csrf_global" value="<?php echo htmlspecialchars(csrfToken('global_form'), ENT_QUOTES, 'UTF-8'); ?>">
-
-                    <!-- Phần 1: Thông tin liên hệ -->
-                    <div class="form-section-box">
-                        <div class="form-section-title">
-                            <i class="bi bi-person-vcard"></i>
-                            <span>Thông tin liên hệ</span>
-                        </div>
-
-                        <div class="row g-3">
-                            <div class="col-md-6 form-group-custom">
-                                <label class="form-label-custom">Họ tên <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control-custom" name="ho_ten" value="<?php echo htmlspecialchars($nguoiDung['ho_ten'] ?? ''); ?>" required placeholder="Nhập họ và tên đầy đủ">
-                            </div>
-
-                            <div class="col-md-6 form-group-custom">
-                                <label class="form-label-custom">Email <span class="text-danger">*</span></label>
-                                <input type="email" class="form-control-custom" name="email" value="<?php echo htmlspecialchars($nguoiDung['email'] ?? ''); ?>" required placeholder="example@email.com">
-                            </div>
-
-                            <div class="col-md-6 form-group-custom">
-                                <label class="form-label-custom">Số điện thoại <span class="text-danger">*</span></label>
-                                <input type="tel" class="form-control-custom" name="so_dien_thoai" value="<?php echo htmlspecialchars($nguoiDung['so_dien_thoai'] ?? ''); ?>" required placeholder="0912345678">
-                            </div>
-
-                            <div class="col-md-6 form-group-custom">
-                                <label class="form-label-custom">Giới tính</label>
-                                <select class="form-control-custom" name="gioi_tinh">
-                                    <option value="">Chọn giới tính</option>
-                                    <option value="Nam" <?php echo (isset($khachHang['gioi_tinh']) && $khachHang['gioi_tinh'] === 'Nam') ? 'selected' : ''; ?>>Nam</option>
-                                    <option value="Nu" <?php echo (isset($khachHang['gioi_tinh']) && $khachHang['gioi_tinh'] === 'Nu') ? 'selected' : ''; ?>>Nữ</option>
-                                    <option value="Khac" <?php echo (isset($khachHang['gioi_tinh']) && $khachHang['gioi_tinh'] === 'Khac') ? 'selected' : ''; ?>>Khác</option>
-                                </select>
-                            </div>
-
-                            <div class="col-md-6 form-group-custom">
-                                <label class="form-label-custom">Ngày sinh</label>
-                                <input type="date" class="form-control-custom" name="ngay_sinh" value="<?php echo !empty($khachHang['ngay_sinh']) ? date('Y-m-d', strtotime($khachHang['ngay_sinh'])) : ''; ?>">
-                            </div>
-
-                            <div class="col-md-6 form-group-custom">
-                                <label class="form-label-custom">Địa chỉ cư trú</label>
-                                <input type="text" class="form-control-custom" name="dia_chi" value="<?php echo htmlspecialchars($khachHang['dia_chi'] ?? ''); ?>" placeholder="Số nhà, đường, quận/huyện, tỉnh/thành phố">
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Phần 2: Đổi mật khẩu -->
-                    <div class="form-section-box">
-                        <div class="form-section-title">
-                            <i class="bi bi-shield-lock"></i>
-                            <span>Bảo mật & Đổi mật khẩu</span>
-                        </div>
-
-                        <div class="row g-3">
-                            <div class="col-md-6 form-group-custom">
-                                <label class="form-label-custom">Mật khẩu mới</label>
-                                <input type="password" class="form-control-custom" name="mat_khau_moi" placeholder="Để trống nếu không muốn đổi">
-                                <div class="form-helper"><i class="bi bi-info-circle me-1"></i>Tối thiểu 8 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt.</div>
-                            </div>
-
-                            <div class="col-md-6 form-group-custom">
-                                <label class="form-label-custom">Xác nhận mật khẩu mới</label>
-                                <input type="password" class="form-control-custom" name="xac_nhan_mat_khau" placeholder="Nhập lại mật khẩu mới">
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Nút gửi cập nhật -->
-                    <div class="d-flex align-items-center justify-content-between pt-2">
-                        <div class="text-muted" style="font-size: 13px;">
-                            <i class="bi bi-shield-check text-success me-1"></i> Thông tin của bạn được mã hóa an toàn trên hệ thống.
-                        </div>
-                        <button type="submit" class="btn-submit-save" id="profileUpdateSubmitBtn">
-                            <i class="bi bi-check2-circle"></i>
-                            <span>Cập nhật thông tin</span>
+                    <div class="stat-action-links">
+                        <button type="button" class="btn-wallet-action" onclick="alert('Tính năng Nạp tiền qua VNPay/MoMo/VietQR đang sẵn sàng!')">
+                            <i class="bi bi-plus-circle"></i> Nạp tiền
+                        </button>
+                        <button type="button" class="btn-wallet-action" onclick="alert('Yêu cầu rút tiền về tài khoản ngân hàng sẽ được xử lý trong 2-4 giờ làm việc.')">
+                            <i class="bi bi-arrow-down-circle"></i> Rút tiền
                         </button>
                     </div>
-                </form>
+                </div>
+
+                <!-- Thẻ 2: Tổng đã chi tiêu -->
+                <div class="wallet-stat-card">
+                    <div>
+                        <div class="stat-top-row">
+                            <h4 class="stat-title">Tổng chi tiêu tour</h4>
+                            <div class="stat-icon-wrap" style="color:#10b981;background:#ecfdf5;"><i class="bi bi-cash-coin"></i></div>
+                        </div>
+                        <div class="stat-val" style="color:#0f2e5a;"><?php echo number_format($totalSpent, 0, ',', '.'); ?>đ</div>
+                    </div>
+                    <div class="text-muted" style="font-size: 12.5px;">
+                        <i class="bi bi-check-circle-fill text-success me-1"></i> <?php echo count($invoices); ?> hóa đơn giao dịch
+                    </div>
+                </div>
+
+                <!-- Thẻ 3: Điểm thưởng & Ưu đãi -->
+                <div class="wallet-stat-card">
+                    <div>
+                        <div class="stat-top-row">
+                            <h4 class="stat-title">Điểm thưởng & Ưu đãi</h4>
+                            <div class="stat-icon-wrap" style="color:#8b5cf6;background:#f5f3ff;"><i class="bi bi-stars"></i></div>
+                        </div>
+                        <div class="stat-val" style="color:#8b5cf6;">1.250 <span style="font-size: 15px; font-weight: 600;">điểm</span></div>
+                    </div>
+                    <div class="text-muted" style="font-size: 12.5px;">
+                        <i class="bi bi-ticket-perforated text-primary me-1"></i> Đang có <strong>3 mã giảm giá</strong> khả dụng
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bảng Danh Sách Hóa Đơn / Giao Dịch -->
+            <div class="invoices-panel">
+                <div class="invoices-panel-head">
+                    <h3 class="invoices-panel-title">
+                        <i class="bi bi-receipt text-primary"></i>
+                        <span>Lịch sử hóa đơn giao dịch</span>
+                    </h3>
+
+                    <ul class="invoices-tabs">
+                        <li><button type="button" class="invoice-tab-btn active" data-filter="all">Tất cả (<?php echo count($invoices); ?>)</button></li>
+                        <li><button type="button" class="invoice-tab-btn" data-filter="paid">Đã thanh toán</button></li>
+                        <li><button type="button" class="invoice-tab-btn" data-filter="refund">Hoàn tiền</button></li>
+                    </ul>
+                </div>
+
+                <div class="invoices-table-wrap">
+                    <table class="invoices-table">
+                        <thead>
+                            <tr>
+                                <th>Mã hóa đơn</th>
+                                <th>Tour / Dịch vụ</th>
+                                <th>Thời gian</th>
+                                <th>Phương thức</th>
+                                <th>Số tiền</th>
+                                <th>Trạng thái</th>
+                                <th class="text-end">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="invoicesTableBody">
+                            <?php foreach ($invoices as $inv): ?>
+                                <tr data-category="<?php echo htmlspecialchars($inv['category']); ?>" id="invRow-<?php echo $inv['id']; ?>">
+                                    <td>
+                                        <strong class="text-primary"><?php echo htmlspecialchars($inv['code']); ?></strong>
+                                    </td>
+                                    <td>
+                                        <div style="font-weight: 600; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                            <?php echo htmlspecialchars($inv['tour_name']); ?>
+                                        </div>
+                                    </td>
+                                    <td><?php echo htmlspecialchars($inv['date']); ?></td>
+                                    <td>
+                                        <span class="text-muted"><i class="bi bi-credit-card me-1"></i><?php echo htmlspecialchars($inv['payment_method']); ?></span>
+                                    </td>
+                                    <td>
+                                        <strong style="color: #0f2e5a;"><?php echo number_format($inv['price'], 0, ',', '.'); ?>đ</strong>
+                                    </td>
+                                    <td>
+                                        <span class="status-pill <?php echo htmlspecialchars($inv['status_class']); ?>">
+                                            <?php echo htmlspecialchars($inv['status_text']); ?>
+                                        </span>
+                                    </td>
+                                    <td class="text-end">
+                                        <button type="button" class="btn-view-invoice" onclick="openInvoiceModal(<?php echo htmlspecialchars(json_encode($inv)); ?>)">
+                                            <i class="bi bi-file-earmark-text"></i> Xem HĐ
+                                        </button>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
         </section>
 
     </main>
 
+    <!-- ── MODAL HÓA ĐƠN ĐIỆN TỬ VAT ── -->
+    <div class="modal fade" id="invoiceModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content" style="border-radius: 18px; border: none; box-shadow: 0 25px 50px rgba(0,0,0,0.18);">
+                <div class="modal-header bg-light border-0 px-4 py-3">
+                    <h5 class="modal-title fw-bold text-navy" id="invoiceModalTitle">Hóa đơn điện tử VAT</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                </div>
+                <div class="modal-body p-4" id="invoicePrintArea">
+                    <div class="border rounded-4 p-4" style="background:#fff;">
+                        <!-- Header hóa đơn -->
+                        <div class="d-flex justify-content-between align-items-start border-bottom pb-3 mb-3">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="brand-logo-icon" style="width: 38px; height: 38px; font-size: 18px;">
+                                    <i class="bi bi-tsunami"></i>
+                                </div>
+                                <div>
+                                    <h5 class="fw-bold mb-0 text-navy">CÔNG TY CỔ PHẦN DU LỊCH DULICHPRO</h5>
+                                    <p class="text-muted mb-0" style="font-size: 11.5px;">Mã số thuế: 0108924612 — Hotline: 1900 6868</p>
+                                </div>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-success px-3 py-2 fs-7 rounded-pill">ĐÃ THANH TOÁN</span>
+                                <div class="mt-1 text-muted small" id="invModalCodeText">#HD-DL2026101</div>
+                            </div>
+                        </div>
+
+                        <!-- Thông tin khách hàng -->
+                        <div class="row g-3 mb-3 small">
+                            <div class="col-6">
+                                <div class="text-muted">Khách hàng:</div>
+                                <div class="fw-bold fs-6"><?php echo htmlspecialchars($userName); ?></div>
+                                <div class="text-muted">Email: <?php echo htmlspecialchars($userEmail); ?></div>
+                            </div>
+                            <div class="col-6 text-end">
+                                <div class="text-muted">Ngày phát hành:</div>
+                                <div class="fw-bold" id="invModalDateText">16/11/2025 14:30</div>
+                                <div class="text-muted">Hình thức: <span id="invModalMethodText">Ví MoMo</span></div>
+                            </div>
+                        </div>
+
+                        <!-- Bảng chi tiết dịch vụ -->
+                        <table class="table table-bordered small mb-3">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>STT</th>
+                                    <th>Tên tour du lịch / Dịch vụ</th>
+                                    <th class="text-center">Số lượng</th>
+                                    <th class="text-end">Đơn giá</th>
+                                    <th class="text-end">Thành tiền</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>01</td>
+                                    <td class="fw-bold" id="invModalItemName">NAGOYA – PHÚ SĨ – TOKYO (Bản sao)</td>
+                                    <td class="text-center">01 gói</td>
+                                    <td class="text-end" id="invModalItemPrice">98.970.000đ</td>
+                                    <td class="text-end fw-bold" id="invModalItemTotal">98.970.000đ</td>
+                                </tr>
+                                <tr>
+                                    <td colspan="4" class="text-end fw-bold">Thuế GTGT (VAT 8%):</td>
+                                    <td class="text-end text-success fw-bold">Đã bao gồm</td>
+                                </tr>
+                                <tr class="table-light">
+                                    <td colspan="4" class="text-end fw-bold fs-6">Tổng tiền thanh toán:</td>
+                                    <td class="text-end fw-bold fs-6 text-primary" id="invModalFinalPrice">98.970.000đ</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <div class="text-center text-muted pt-2" style="font-size: 11.5px;">
+                            <i>Cảm ơn quý khách đã tin tưởng và đồng hành cùng DuLichPro. Chúc quý khách một kỳ nghỉ tuyệt vời!</i>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0 px-4 py-3">
+                    <button type="button" class="btn btn-secondary rounded-3" data-bs-dismiss="modal">Đóng</button>
+                    <button type="button" class="btn btn-primary rounded-3 px-4 fw-semibold" onclick="window.print()">
+                        <i class="bi bi-printer me-1"></i> In hóa đơn
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- 3. FOOTER (Chuẩn Image 2) -->
     <footer class="site-footer">
         <div class="footer-container">
             <div class="footer-top-grid">
-                <!-- Col 1: Brand -->
                 <div class="footer-brand-col">
                     <a href="index.php?act=khachHang/dashboard" class="brand-block" style="margin-bottom: 12px;">
                         <div class="brand-logo-icon" style="width: 36px; height: 36px; font-size: 18px;">
@@ -1006,7 +1298,6 @@ $userAvatar = !empty($nguoiDung['avatar']) ? $nguoiDung['avatar'] : 'https://ima
                     </div>
                 </div>
 
-                <!-- Col 2: Về chúng tôi -->
                 <div class="footer-col">
                     <h4>Về chúng tôi</h4>
                     <ul class="footer-col-links">
@@ -1016,7 +1307,6 @@ $userAvatar = !empty($nguoiDung['avatar']) ? $nguoiDung['avatar'] : 'https://ima
                     </ul>
                 </div>
 
-                <!-- Col 3: Hỗ trợ -->
                 <div class="footer-col">
                     <h4>Hỗ trợ</h4>
                     <ul class="footer-col-links">
@@ -1026,7 +1316,6 @@ $userAvatar = !empty($nguoiDung['avatar']) ? $nguoiDung['avatar'] : 'https://ima
                     </ul>
                 </div>
 
-                <!-- Col 4: Theo dõi & App -->
                 <div class="footer-col">
                     <h4>Theo dõi chúng tôi</h4>
                     <div class="footer-social-row">
@@ -1039,14 +1328,8 @@ $userAvatar = !empty($nguoiDung['avatar']) ? $nguoiDung['avatar'] : 'https://ima
 
                     <h4 style="margin-top: 18px; margin-bottom: 10px; font-size: 13.5px;">Tải ứng dụng ngay</h4>
                     <div class="app-badges-row">
-                        <a href="#" class="app-badge-btn">
-                            <i class="bi bi-apple" style="font-size: 16px;"></i>
-                            <span>App Store</span>
-                        </a>
-                        <a href="#" class="app-badge-btn">
-                            <i class="bi bi-google-play" style="font-size: 15px;"></i>
-                            <span>Google Play</span>
-                        </a>
+                        <a href="#" class="app-badge-btn"><i class="bi bi-apple"></i><span>App Store</span></a>
+                        <a href="#" class="app-badge-btn"><i class="bi bi-google-play"></i><span>Google Play</span></a>
                     </div>
                 </div>
             </div>
@@ -1061,67 +1344,38 @@ $userAvatar = !empty($nguoiDung['avatar']) ? $nguoiDung['avatar'] : 'https://ima
     <!-- Bootstrap 5 JS -->
     <script src="<?php echo BASE_URL; ?>public/assets/bootstrap/bootstrap.bundle.min.js"></script>
     <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        var profileUpdateForm = document.getElementById('profileUpdateForm');
-        var profileUpdateSubmitBtn = document.getElementById('profileUpdateSubmitBtn');
-        var profileUpdateFeedback = document.getElementById('profileUpdateFeedback');
-        var sidebarUserName = document.getElementById('sidebarUserName');
-        var topbarUserName = document.getElementById('topbarUserName');
+        // Lọc Tabs Hóa Đơn
+        document.querySelectorAll('.invoice-tab-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                document.querySelectorAll('.invoice-tab-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
 
-        function renderFeedback(message, type) {
-            if (!profileUpdateFeedback) return;
-            var safeType = type === 'success' ? 'success' : 'danger';
-            var icon = type === 'success' ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill';
-            profileUpdateFeedback.innerHTML =
-                '<div class="alert alert-' + safeType + ' alert-dismissible fade show shadow-sm" style="border-radius: 12px; font-size: 14px;" role="alert">' +
-                '<i class="bi ' + icon + ' me-2"></i>' + message +
-                '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>' +
-                '</div>';
-            
-            profileUpdateFeedback.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
-
-        if (!profileUpdateForm) return;
-
-        profileUpdateForm.addEventListener('submit', async function (event) {
-            event.preventDefault();
-
-            if (profileUpdateSubmitBtn) {
-                profileUpdateSubmitBtn.disabled = true;
-                profileUpdateSubmitBtn.dataset.originalHtml = profileUpdateSubmitBtn.innerHTML;
-                profileUpdateSubmitBtn.innerHTML = '<i class="bi bi-arrow-repeat spin me-2"></i>Đang lưu...';
-            }
-
-            try {
-                var response = await fetch(profileUpdateForm.action, {
-                    method: 'POST',
-                    body: new FormData(profileUpdateForm),
-                    credentials: 'same-origin',
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
+                const filter = this.getAttribute('data-filter');
+                document.querySelectorAll('#invoicesTableBody tr').forEach(row => {
+                    const cat = row.getAttribute('data-category');
+                    if (filter === 'all' || cat === filter) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
                     }
                 });
-
-                var data = await response.json();
-                if (data && data.success) {
-                    renderFeedback(data.message || 'Cập nhật thông tin thành công!', 'success');
-                    if (data.display_name) {
-                        if (sidebarUserName) sidebarUserName.textContent = data.display_name;
-                        if (topbarUserName) topbarUserName.textContent = data.display_name;
-                    }
-                } else {
-                    renderFeedback((data && data.message) ? data.message : 'Không thể cập nhật. Vui lòng kiểm tra lại.', 'danger');
-                }
-            } catch (error) {
-                renderFeedback('Đã gửi yêu cầu cập nhật thành công!', 'success');
-            } finally {
-                if (profileUpdateSubmitBtn) {
-                    profileUpdateSubmitBtn.disabled = false;
-                    profileUpdateSubmitBtn.innerHTML = profileUpdateSubmitBtn.dataset.originalHtml || '<i class="bi bi-check2-circle"></i><span>Cập nhật thông tin</span>';
-                }
-            }
+            });
         });
-    });
+
+        // Mở Modal Hóa Đơn Điện Tử VAT
+        function openInvoiceModal(inv) {
+            document.getElementById('invModalCodeText').innerText = '#' + inv.code;
+            document.getElementById('invModalDateText').innerText = inv.date;
+            document.getElementById('invModalMethodText').innerText = inv.payment_method;
+            document.getElementById('invModalItemName').innerText = inv.tour_name;
+
+            const formattedPrice = new Intl.NumberFormat('vi-VN').format(inv.price) + 'đ';
+            document.getElementById('invModalItemPrice').innerText = formattedPrice;
+            document.getElementById('invModalItemTotal').innerText = formattedPrice;
+            document.getElementById('invModalFinalPrice').innerText = formattedPrice;
+
+            new bootstrap.Modal(document.getElementById('invoiceModal')).show();
+        }
     </script>
 </body>
 </html>

@@ -35,7 +35,9 @@ if ($realtimeWsEnabled && isset($_SESSION['user_id']) && $currentRole !== null) 
     $realtimeWsToken = buildRealtimeAuthToken((int)$_SESSION['user_id'], (string)$currentRole, 'notifications');
 }
 
-
+$currentAdminName = htmlspecialchars((string)($_SESSION['user_name'] ?? 'Quản trị viên'));
+$adminInitial = mb_strtoupper(mb_substr($currentAdminName, 0, 1, 'UTF-8'), 'UTF-8');
+$userRoleLabel = $currentRole ? htmlspecialchars((string)$currentRole) : 'Quản trị viên';
 ?>
 <!DOCTYPE html>
 <html lang="vi">
@@ -109,119 +111,741 @@ if ($realtimeWsEnabled && isset($_SESSION['user_id']) && $currentRole !== null) 
             cursor: not-allowed;
             transform: none;
         }
+
+        /* User Header Dropdown */
+        .header-user-dropdown-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+        .header-user-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 4px 12px 4px 6px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            border-radius: 30px;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .header-user-btn:hover, .header-user-btn.active {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(223, 169, 116, 0.5);
+            box-shadow: 0 0 14px rgba(223, 169, 116, 0.22);
+        }
+        .header-user-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #dfa974, #b27a3c);
+            color: #10141d;
+            font-weight: 700;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .header-user-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            line-height: 1.15;
+            text-align: left;
+        }
+        .header-user-name {
+            font-size: 12px;
+            font-weight: 600;
+            color: #fff;
+            max-width: 120px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .header-user-role {
+            font-size: 9px;
+            color: #dfa974;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .header-user-chevron {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.6);
+            transition: transform 0.2s ease;
+            margin-left: 2px;
+        }
+        .header-user-btn.active .header-user-chevron {
+            transform: rotate(180deg);
+        }
+        .header-user-menu {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: calc(100% + 8px);
+            width: 235px;
+            background: #191e2b;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 12px;
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+            padding: 8px 0;
+            z-index: 1050;
+            backdrop-filter: blur(16px);
+            animation: headerMenuFade 0.2s ease forwards;
+        }
+        .header-user-menu.show {
+            display: block;
+        }
+        @keyframes headerMenuFade {
+            from { opacity: 0; transform: translateY(-6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .header-user-menu-header {
+            padding: 8px 16px 10px;
+        }
+        .h-u-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: #fff;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .h-u-sub {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 2px;
+        }
+        .header-user-menu-divider {
+            height: 1px;
+            background: rgba(255, 255, 255, 0.08);
+            margin: 6px 0;
+        }
+        .header-user-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 16px;
+            color: rgba(255, 255, 255, 0.85);
+            text-decoration: none;
+            font-size: 13px;
+            transition: background 0.15s ease, color 0.15s ease;
+        }
+        .header-user-menu-item:hover {
+            background: rgba(223, 169, 116, 0.12);
+            color: #dfa974;
+        }
+        .header-user-menu-item i {
+            font-size: 15px;
+            width: 18px;
+            text-align: center;
+        }
+        .header-user-menu-item.text-danger:hover {
+            background: rgba(231, 76, 60, 0.15);
+            color: #ff7675 !important;
+        }
+
+        /* ==========================================================================
+           UPGRADED MODERN ADMIN SIDEBAR STYLES (AVENTURA PRO)
+           ========================================================================== */
+        aside.sidebar {
+            width: 280px;
+            background: #0d1322 !important;
+            background: linear-gradient(180deg, #111728 0%, #090e1a 100%) !important;
+            border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+            box-shadow: 6px 0 28px rgba(0, 0, 0, 0.45);
+            padding: 22px 0 35px !important;
+            display: flex;
+            flex-direction: column;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(223, 169, 116, 0.25) transparent;
+        }
+
+        /* Slim sleek scrollbar */
+        aside.sidebar::-webkit-scrollbar {
+            width: 5px;
+        }
+        aside.sidebar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        aside.sidebar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.12);
+            border-radius: 10px;
+        }
+        aside.sidebar::-webkit-scrollbar-thumb:hover {
+            background: rgba(223, 169, 116, 0.4);
+        }
+
+        /* Brand Container */
+        .sidebar-brand-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 13px;
+            padding: 0 20px 18px;
+            margin-bottom: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+            text-decoration: none;
+            transition: opacity 0.2s;
+        }
+
+        .sidebar-brand-wrapper:hover {
+            opacity: 0.95;
+        }
+
+        .brand-emblem {
+            width: 44px;
+            height: 44px;
+            min-width: 44px;
+            border-radius: 13px;
+            background: linear-gradient(135deg, rgba(223, 169, 116, 0.28) 0%, rgba(212, 175, 55, 0.08) 100%);
+            border: 1px solid rgba(223, 169, 116, 0.45);
+            box-shadow: 0 0 20px rgba(223, 169, 116, 0.22);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #dfa974;
+            font-size: 22px;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-brand-wrapper:hover .brand-emblem {
+            transform: rotate(12deg) scale(1.05);
+            box-shadow: 0 0 25px rgba(223, 169, 116, 0.45);
+            border-color: #dfa974;
+        }
+
+        .brand-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .brand-title {
+            font-size: 20px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            line-height: 1.15;
+            background: linear-gradient(135deg, #ffffff 30%, #dfa974 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .brand-tagline {
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            color: rgba(255, 255, 255, 0.45);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .brand-version-badge {
+            font-size: 8.5px;
+            font-weight: 700;
+            padding: 1px 5px;
+            border-radius: 4px;
+            background: rgba(223, 169, 116, 0.15);
+            border: 1px solid rgba(223, 169, 116, 0.3);
+            color: #dfa974;
+            letter-spacing: 0.5px;
+        }
+
+        /* Realtime status pill */
+        .realtime-status-pill {
+            margin: 4px 16px 14px;
+            padding: 7px 12px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.65);
+            transition: all 0.25s ease;
+        }
+
+        .realtime-status-pill:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.12);
+        }
+
+        .status-pulse-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #eab308;
+            box-shadow: 0 0 0 3px rgba(234, 179, 8, 0.2);
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .realtime-status.is-connected .status-pulse-dot,
+        .realtime-status-pill.is-connected .status-pulse-dot {
+            background: #10b981;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25);
+        }
+
+        .realtime-status.is-reconnecting .status-pulse-dot,
+        .realtime-status-pill.is-reconnecting .status-pulse-dot {
+            background: #ef4444;
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.25);
+        }
+
+        .status-text {
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-weight: 500;
+        }
+
+        .status-chip {
+            font-size: 8.5px;
+            font-weight: 700;
+            padding: 2px 5px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.07);
+            color: rgba(255, 255, 255, 0.7);
+            letter-spacing: 0.5px;
+        }
+
+        /* Nav List */
+        .sidebar .nav {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .sidebar .nav-group-label {
+            font-size: 10px;
+            font-weight: 700;
+            color: rgba(255, 255, 255, 0.38);
+            letter-spacing: 1.4px;
+            text-transform: uppercase;
+            padding: 16px 20px 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .sidebar .nav-group-label::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, rgba(255, 255, 255, 0.08) 0%, transparent 100%);
+        }
+
+        /* Nav Items / Links */
+        .sidebar .nav li {
+            margin: 0;
+            position: relative;
+        }
+
+        .sidebar .nav a,
+        .sidebar .nav .nav-toggle {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 9px 14px;
+            margin: 2px 12px;
+            border-radius: 12px;
+            color: rgba(255, 255, 255, 0.72);
+            text-decoration: none;
+            font-size: 13.5px;
+            font-weight: 500;
+            transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            background: transparent;
+            border-left: 3.5px solid transparent;
+            min-height: 44px;
+            cursor: pointer;
+        }
+
+        .sidebar .nav a:hover,
+        .sidebar .nav .nav-toggle:hover {
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.06);
+            transform: translateX(4px);
+        }
+
+        .sidebar .nav a.active,
+        .sidebar .nav .nav-toggle.active {
+            color: #ffffff !important;
+            font-weight: 600 !important;
+            background: linear-gradient(90deg, rgba(223, 169, 116, 0.2) 0%, rgba(223, 169, 116, 0.05) 100%) !important;
+            border-left: 3.5px solid #dfa974 !important;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+        }
+
+        /* Nav Icon Container */
+        .sidebar .nav-icon-bg {
+            width: 32px;
+            min-width: 32px;
+            height: 32px;
+            border-radius: 9px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.05);
+            color: rgba(255, 255, 255, 0.75);
+            font-size: 15px;
+            transition: all 0.22s ease;
+        }
+
+        .sidebar .nav a:hover .nav-icon-bg,
+        .sidebar .nav .nav-toggle:hover .nav-icon-bg {
+            background: rgba(223, 169, 116, 0.2);
+            color: #dfa974;
+            transform: scale(1.06);
+        }
+
+        .sidebar .nav a.active .nav-icon-bg,
+        .sidebar .nav .nav-toggle.active .nav-icon-bg {
+            background: linear-gradient(135deg, #dfa974 0%, #b8860b 100%);
+            color: #0b0f19;
+            box-shadow: 0 0 12px rgba(223, 169, 116, 0.45);
+        }
+
+        /* Nav Badges */
+        .sidebar .nav-badge {
+            margin-left: auto;
+            min-width: 22px;
+            height: 20px;
+            border-radius: 10px;
+            padding: 0 7px;
+            font-size: 11px;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            box-shadow: 0 2px 8px rgba(245, 158, 11, 0.4);
+        }
+
+        #paymentNavBadge {
+            background: linear-gradient(135deg, #10b981, #059669);
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+        }
+
+        #reviewNavBadge {
+            background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+            box-shadow: 0 2px 8px rgba(139, 92, 246, 0.4);
+        }
+
+        /* Expand Chevron */
+        .sidebar .expand-icon {
+            margin-left: auto;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.45);
+            transition: transform 0.25s ease;
+        }
+
+        .nav-parent.expanded > .nav-toggle .expand-icon {
+            transform: rotate(180deg);
+            color: #dfa974;
+        }
+
+        /* Submenus (Nested Tree) */
+        .nav-child-menu {
+            margin: 4px 12px 8px 28px;
+            padding: 4px 0 4px 12px;
+            border-left: 1.5px solid rgba(223, 169, 116, 0.3);
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .nav-child-menu[hidden] {
+            display: none !important;
+        }
+
+        .nav-child-menu a {
+            padding: 7px 12px !important;
+            margin: 0 !important;
+            font-size: 13px !important;
+            border-radius: 8px !important;
+            color: rgba(255, 255, 255, 0.65) !important;
+            border-left: none !important;
+            min-height: 34px !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 8px !important;
+            background: transparent !important;
+        }
+
+        .nav-child-menu a:hover {
+            color: #dfa974 !important;
+            background: rgba(223, 169, 116, 0.08) !important;
+            transform: translateX(4px) !important;
+        }
+
+        .child-dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            display: inline-block;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .nav-child-menu a:hover .child-dot {
+            background: #dfa974;
+            box-shadow: 0 0 6px #dfa974;
+            transform: scale(1.3);
+        }
+
+        /* Sidebar Bottom Profile Card */
+        .sidebar-user-card {
+            margin: 22px 12px 10px;
+            padding: 12px;
+            border-radius: 14px;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+        }
+
+        .sidebar-user-avatar-wrap {
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .sidebar-user-avatar-text {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #dfa974, #b8860b);
+            color: #0b0f19;
+            font-weight: 800;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1.5px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 2px 10px rgba(223, 169, 116, 0.3);
+        }
+
+        .sidebar-user-online {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: #10b981;
+            border: 2px solid #0d1322;
+        }
+
+        .sidebar-user-meta {
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .sidebar-user-name {
+            font-size: 12.5px;
+            font-weight: 700;
+            color: #ffffff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            line-height: 1.2;
+        }
+
+        .sidebar-user-role {
+            font-size: 9.5px;
+            font-weight: 600;
+            color: #dfa974;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 2px;
+        }
+
+        .sidebar-user-actions {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .sidebar-action-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 12px;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .sidebar-action-btn:hover {
+            background: rgba(223, 169, 116, 0.18);
+            color: #dfa974;
+            border-color: #dfa974;
+        }
+
+        .sidebar-action-btn.logout-btn:hover {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border-color: #ef4444;
+        }
+
+        /* Sidebar Footer Note */
+        .sidebar-footer-note {
+            padding: 4px 16px 0;
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.35);
+            text-align: center;
+            line-height: 1.4;
+        }
     </style>
 </head>
 <body class="<?php echo htmlspecialchars(trim(implode(' ', array_filter($bodyClasses))), ENT_QUOTES, 'UTF-8'); ?>">
     <div class="container">
-        <!-- Sidebar -->
+        <!-- Sidebar (Nâng cấp hiện đại AVENTURA PRO) -->
         <aside class="sidebar" id="sidebar">
-            <div class="logo">AVENTURA</div>
-            <div class="logo-subtitle">LIFE'S A JOURNEY</div>
+            <a href="index.php?act=admin/dashboard" class="sidebar-brand-wrapper" title="AVENTURA Admin Dashboard">
+                <div class="brand-emblem">
+                    <i class="bi bi-compass-fill"></i>
+                </div>
+                <div class="brand-info">
+                    <div class="brand-title">AVENTURA</div>
+                    <div class="brand-tagline">LUXURY TRAVEL <span class="brand-version-badge">v3.5 PRO</span></div>
+                </div>
+            </a>
+
             <button type="button" class="mobile-sidebar-close" id="mobileSidebarClose" aria-label="Đóng menu điều hướng">
                 <i class="bi bi-x-lg"></i>
             </button>
+
             <?php if ($isAdminRole): ?>
-                <div id="realtimeStatus" class="realtime-status is-connecting" title="Trạng thái kết nối thông báo realtime">
-                    <span id="realtimeStatusDot" class="realtime-status-dot"></span>
-                    <span id="realtimeStatusText">Đang kết nối realtime...</span>
+                <div id="realtimeStatus" class="realtime-status realtime-status-pill is-connecting" title="Trạng thái kết nối thông báo realtime">
+                    <span id="realtimeStatusDot" class="realtime-status-dot status-pulse-dot"></span>
+                    <span id="realtimeStatusText" class="status-text">Đang kết nối realtime...</span>
+                    <span class="status-chip">LIVE</span>
                 </div>
             <?php endif; ?>
+
             <ul class="nav">
-                <li class="nav-group-label">NAVIGATION</li>
+                <li class="nav-group-label"><i class="bi bi-grid-fill"></i> NAVIGATION</li>
                 <?php if ($currentRole !== null): ?>
                     <?php if ($isAdminRole): ?>
                         <li>
-                            <a href="index.php?act=admin/dashboard" class="<?php echo (isset($currentPage) && $currentPage === 'dashboard') ? 'active' : ''; ?>" title="Trang chủ">
-                                <span class="nav-icon-bg"><i class="bi bi-house-door"></i></span> <span class="nav-text">Dashboard</span>
+                            <a href="index.php?act=admin/dashboard" class="<?php echo (isset($currentPage) && $currentPage === 'dashboard') ? 'active' : ''; ?>" title="Dashboard">
+                                <span class="nav-icon-bg"><i class="bi bi-speedometer2"></i></span> <span class="nav-text">Dashboard</span>
                                 <span id="dashboardNavBadge" class="nav-badge" title="Có <?php echo $dashboardNotificationCount; ?> thông báo mới"<?php if ($dashboardNotificationCount <= 0): ?> style="display:none"<?php endif; ?>><?php echo $dashboardNotificationCount; ?></span>
                             </a>
                         </li>
                         <li>
                             <a href="index.php?act=admin/quanLyLuongThuong" class="<?php echo (isset($currentPage) && $currentPage === 'luongThuong') ? 'active' : ''; ?>" title="Lương thưởng">
-                                <span class="nav-icon-bg"><i class="bi bi-cash-coin"></i></span> <span class="nav-text">Lương thưởng</span>
+                                <span class="nav-icon-bg"><i class="bi bi-cash-stack"></i></span> <span class="nav-text">Lương thưởng</span>
                             </a>
                         </li>
-                        <li class="nav-parent">
-                            <a href="#" class="nav-toggle" title="Quản lý tour"><span class="nav-icon-bg"><i class="bi bi-geo-alt"></i></span> <span class="nav-text">Quản lý tour</span> <span class="expand-icon">&#9662;</span></a>
-                            <div class="nav-child-menu" hidden>
-                                <a href="index.php?act=admin/quanLyTour" title="Danh sách tour"><span class="nav-child-bar"></span>- Danh sách tour</a>
-                                <a href="index.php?act=tour/create" title="Tạo tour mới"><span class="nav-child-bar"></span>- Tạo tour mới</a>
-                                <a href="index.php?act=lichKhoiHanh/index" title="Lịch khởi hành"><span class="nav-child-bar"></span>- Lịch khởi hành</a>
+                        <li class="nav-parent<?php echo (isset($currentPage) && in_array($currentPage, ['tour', 'tourCreate', 'lichKhoiHanh'], true)) ? ' expanded' : ''; ?>">
+                            <a href="#" class="nav-toggle" title="Quản lý tour"><span class="nav-icon-bg"><i class="bi bi-geo-alt-fill"></i></span> <span class="nav-text">Quản lý tour</span> <i class="bi bi-chevron-down expand-icon"></i></a>
+                            <div class="nav-child-menu"<?php echo (isset($currentPage) && in_array($currentPage, ['tour', 'tourCreate', 'lichKhoiHanh'], true)) ? '' : ' hidden'; ?>>
+                                <a href="index.php?act=admin/quanLyTour" title="Danh sách tour"><span class="child-dot"></span>Danh sách tour</a>
+                                <a href="index.php?act=tour/create" title="Tạo tour mới"><span class="child-dot"></span>Tạo tour mới</a>
+                                <a href="index.php?act=lichKhoiHanh/index" title="Lịch khởi hành"><span class="child-dot"></span>Lịch khởi hành</a>
                             </div>
                         </li>
-                        <li class="nav-parent">
-                            <a href="#" class="nav-toggle <?php echo (isset($currentPage) && $currentPage === 'booking') ? 'active' : ''; ?>" title="Quản lý Booking"><span class="nav-icon-bg"><i class="bi bi-journal-bookmark"></i></span> <span class="nav-text">Quản lý Booking</span> <span class="expand-icon">&#9662;</span></a>
-                            <div class="nav-child-menu" hidden>
-                                <a href="index.php?act=admin/quanLyBooking" title="Danh sách booking"><span class="nav-child-bar"></span>- Danh sách booking</a>
-                                <a href="index.php?act=admin/bookingDaHoanThanh" title="Booking đã hoàn thành"><span class="nav-child-bar"></span>- Booking đã hoàn thành</a>
-                                <a href="index.php?act=admin/quanLyYeuCauTour" title="Yêu cầu đặt tour"><span class="nav-child-bar"></span>- Yêu cầu đặt tour</a>
-                                <a href="index.php?act=booking/datTourChoKhach" title="Đặt tour cho khách"><span class="nav-child-bar"></span>- Đặt tour cho khách</a>
-                                <a href="index.php?act=admin/lichSuXoaBooking" title="Lịch sử xóa booking"><span class="nav-child-bar"></span>- Lịch sử xóa booking</a>
+                        <li class="nav-parent<?php echo (isset($currentPage) && in_array($currentPage, ['booking', 'bookingHoanThanh', 'yeuCauTour', 'datTourChoKhach', 'lichSuXoaBooking'], true)) ? ' expanded' : ''; ?>">
+                            <a href="#" class="nav-toggle <?php echo (isset($currentPage) && $currentPage === 'booking') ? 'active' : ''; ?>" title="Quản lý Booking"><span class="nav-icon-bg"><i class="bi bi-journal-bookmark-fill"></i></span> <span class="nav-text">Quản lý Booking</span> <i class="bi bi-chevron-down expand-icon"></i></a>
+                            <div class="nav-child-menu"<?php echo (isset($currentPage) && in_array($currentPage, ['booking', 'bookingHoanThanh', 'yeuCauTour', 'datTourChoKhach', 'lichSuXoaBooking'], true)) ? '' : ' hidden'; ?>>
+                                <a href="index.php?act=admin/quanLyBooking" title="Danh sách booking"><span class="child-dot"></span>Danh sách booking</a>
+                                <a href="index.php?act=admin/bookingDaHoanThanh" title="Booking đã hoàn thành"><span class="child-dot"></span>Booking hoàn thành</a>
+                                <a href="index.php?act=admin/quanLyYeuCauTour" title="Yêu cầu đặt tour"><span class="child-dot"></span>Yêu cầu đặt tour</a>
+                                <a href="index.php?act=booking/datTourChoKhach" title="Đặt tour cho khách"><span class="child-dot"></span>Đặt tour cho khách</a>
+                                <a href="index.php?act=admin/lichSuXoaBooking" title="Lịch sử xóa booking"><span class="child-dot"></span>Lịch sử xóa booking</a>
                             </div>
                         </li>
                         <li><a href="index.php?act=lichKhoiHanh/index" class="<?php echo (isset($currentPage) && $currentPage === 'lichKhoiHanh') ? 'active' : ''; ?>" title="Quản lý lịch khởi hành"><span class="nav-icon-bg"><i class="bi bi-calendar3"></i></span> <span class="nav-text">Quản lý lịch khởi hành</span></a></li>
-                        <li><a href="index.php?act=admin/nhanSu" class="<?php echo (isset($currentPage) && $currentPage === 'nhanSu') ? 'active' : ''; ?>" title="Quản lý nhân sự"><span class="nav-icon-bg"><i class="bi bi-people"></i></span> <span class="nav-text">Quản lý nhân sự</span></a></li>
-                        <li><a href="index.php?act=admin/quanLyNguoiDung" class="<?php echo (isset($currentPage) && $currentPage === 'nguoiDung') ? 'active' : ''; ?>" title="Quản lý người dùng"><span class="nav-icon-bg"><i class="bi bi-person-lines-fill"></i></span> <span class="nav-text">Quản lý người dùng</span></a></li>
-                        <li><a href="index.php?act=admin/nhaCungCap" class="<?php echo (isset($currentPage) && $currentPage === 'nhaCungCap') ? 'active' : ''; ?>" title="Nhà cung cấp"><span class="nav-icon-bg"><i class="bi bi-truck"></i></span> <span class="nav-text">Nhà cung cấp</span></a></li>
-                        <li class="nav-group-label">ADMIN PANEL</li>
-                           <li><a href="index.php?act=admin/invoices" class="<?php echo (isset($currentPage) && $currentPage === 'invoices') ? 'active' : ''; ?>" title="Quản lý hóa đơn"><span class="nav-icon-bg"><i class="bi bi-receipt"></i></span> <span class="nav-text">Quản lý hóa đơn</span></a></li>
-                           <li><a href="index.php?act=admin/payments" class="<?php echo (isset($currentPage) && $currentPage === 'payments') ? 'active' : ''; ?>" title="Quản lý thanh toán"><span class="nav-icon-bg"><i class="bi bi-credit-card"></i></span> <span class="nav-text">Quản lý thanh toán</span><span id="paymentNavBadge" class="nav-badge" title="Có <?php echo $paymentNotificationCount; ?> thanh toán mới"<?php if ($paymentNotificationCount <= 0): ?> style="display:none"<?php endif; ?>><?php echo $paymentNotificationCount; ?></span></a></li>
-                        <li class="nav-parent">
-                            <a href="#" class="nav-toggle <?php echo (isset($currentPage) && $currentPage === 'baoCaoTaiChinh') ? 'active' : ''; ?>" title="Báo cáo tài chính"><span class="nav-icon-bg"><i class="bi bi-bar-chart"></i></span> <span class="nav-text">Báo cáo tài chính</span> <span class="expand-icon">&#9662;</span></a>
-                            <div class="nav-child-menu" hidden>
-                                <a href="index.php?act=admin/lichSuGiaoDich" title="Lịch sử giao dịch"><span class="nav-child-bar"></span>- Lịch sử giao dịch</a>
-                                <a href="index.php?act=admin/thuChiTour" title="Thu chi từng tour"><span class="nav-child-bar"></span>- Thu chi từng tour</a>
-                                <a href="index.php?act=admin/congNo" title="Công nợ"><span class="nav-child-bar"></span>- Công nợ</a>
-                                <a href="index.php?act=admin/laiLoTour" title="Lãi lỗ từng tour"><span class="nav-child-bar"></span>- Lãi lỗ từng tour</a>
-                                <a href="index.php?act=admin/duToanTour" title="Dự toán tour"><span class="nav-child-bar"></span>- Dự toán tour</a>
-                                <a href="index.php?act=admin/soSanhDuToan" title="So sánh dự toán"><span class="nav-child-bar"></span>- So sánh dự toán</a>
+                        <li><a href="index.php?act=admin/nhanSu" class="<?php echo (isset($currentPage) && $currentPage === 'nhanSu') ? 'active' : ''; ?>" title="Quản lý nhân sự"><span class="nav-icon-bg"><i class="bi bi-person-badge-fill"></i></span> <span class="nav-text">Quản lý nhân sự</span></a></li>
+                        <li><a href="index.php?act=admin/quanLyNguoiDung" class="<?php echo (isset($currentPage) && $currentPage === 'nguoiDung') ? 'active' : ''; ?>" title="Quản lý người dùng"><span class="nav-icon-bg"><i class="bi bi-people-fill"></i></span> <span class="nav-text">Quản lý người dùng</span></a></li>
+                        <li><a href="index.php?act=admin/nhaCungCap" class="<?php echo (isset($currentPage) && $currentPage === 'nhaCungCap') ? 'active' : ''; ?>" title="Nhà cung cấp"><span class="nav-icon-bg"><i class="bi bi-building"></i></span> <span class="nav-text">Nhà cung cấp</span></a></li>
+                        
+                        <li class="nav-group-label"><i class="bi bi-shield-check"></i> ADMIN & TÀI CHÍNH</li>
+                        <li><a href="index.php?act=admin/invoices" class="<?php echo (isset($currentPage) && $currentPage === 'invoices') ? 'active' : ''; ?>" title="Quản lý hóa đơn"><span class="nav-icon-bg"><i class="bi bi-receipt-cutoff"></i></span> <span class="nav-text">Quản lý hóa đơn</span></a></li>
+                        <li><a href="index.php?act=admin/payments" class="<?php echo (isset($currentPage) && $currentPage === 'payments') ? 'active' : ''; ?>" title="Quản lý thanh toán"><span class="nav-icon-bg"><i class="bi bi-credit-card-2-front-fill"></i></span> <span class="nav-text">Quản lý thanh toán</span><span id="paymentNavBadge" class="nav-badge" title="Có <?php echo $paymentNotificationCount; ?> thanh toán mới"<?php if ($paymentNotificationCount <= 0): ?> style="display:none"<?php endif; ?>><?php echo $paymentNotificationCount; ?></span></a></li>
+                        <li class="nav-parent<?php echo (isset($currentPage) && in_array($currentPage, ['baoCaoTaiChinh', 'lichSuGiaoDich', 'thuChiTour', 'congNo', 'laiLoTour', 'duToanTour', 'soSanhDuToan'], true)) ? ' expanded' : ''; ?>">
+                            <a href="#" class="nav-toggle <?php echo (isset($currentPage) && $currentPage === 'baoCaoTaiChinh') ? 'active' : ''; ?>" title="Báo cáo tài chính"><span class="nav-icon-bg"><i class="bi bi-bar-chart-line-fill"></i></span> <span class="nav-text">Báo cáo tài chính</span> <i class="bi bi-chevron-down expand-icon"></i></a>
+                            <div class="nav-child-menu"<?php echo (isset($currentPage) && in_array($currentPage, ['baoCaoTaiChinh', 'lichSuGiaoDich', 'thuChiTour', 'congNo', 'laiLoTour', 'duToanTour', 'soSanhDuToan'], true)) ? '' : ' hidden'; ?>>
+                                <a href="index.php?act=admin/lichSuGiaoDich" title="Lịch sử giao dịch"><span class="child-dot"></span>Lịch sử giao dịch</a>
+                                <a href="index.php?act=admin/thuChiTour" title="Thu chi từng tour"><span class="child-dot"></span>Thu chi từng tour</a>
+                                <a href="index.php?act=admin/congNo" title="Công nợ"><span class="child-dot"></span>Công nợ</a>
+                                <a href="index.php?act=admin/laiLoTour" title="Lãi lỗ từng tour"><span class="child-dot"></span>Lãi lỗ từng tour</a>
+                                <a href="index.php?act=admin/duToanTour" title="Dự toán tour"><span class="child-dot"></span>Dự toán tour</a>
+                                <a href="index.php?act=admin/soSanhDuToan" title="So sánh dự toán"><span class="child-dot"></span>So sánh dự toán</a>
                             </div>
                         </li>
-                        <li><a href="index.php?act=admin/danhGia" class="<?php echo (isset($currentPage) && ($currentPage === 'danhGia' || $currentPage === 'danh_gia')) ? 'active' : ''; ?>" title="Đánh giá & Phản hồi"><span class="nav-icon-bg"><i class="bi bi-chat-dots"></i></span> <span class="nav-text">Đánh giá & Phản hồi</span><span id="reviewNavBadge" class="nav-badge" title="Có <?php echo $reviewNotificationCount; ?> đánh giá mới"<?php if ($reviewNotificationCount <= 0): ?> style="display:none"<?php endif; ?>><?php echo $reviewNotificationCount; ?></span></a></li>
-                        <li><a href="index.php?act=admin/automationDashboard" class="<?php echo (isset($currentPage) && $currentPage === 'automation') ? 'active' : ''; ?>" title="Trung tâm tự động hóa"><span class="nav-icon-bg"><i class="bi bi-cpu"></i></span> <span class="nav-text">Tự động hóa Admin</span></a></li>
-                        <li><a href="index.php?act=admin/notificationSettings" class="<?php echo (isset($currentPage) && $currentPage === 'notificationSettings') ? 'active' : ''; ?>" title="Cài đặt thông báo"><span class="nav-icon-bg"><i class="bi bi-bell"></i></span> <span class="nav-text">Cài đặt thông báo</span></a></li>
+                        <li><a href="index.php?act=admin/danhGia" class="<?php echo (isset($currentPage) && ($currentPage === 'danhGia' || $currentPage === 'danh_gia')) ? 'active' : ''; ?>" title="Đánh giá & Phản hồi"><span class="nav-icon-bg"><i class="bi bi-chat-square-quote-fill"></i></span> <span class="nav-text">Đánh giá & Phản hồi</span><span id="reviewNavBadge" class="nav-badge" title="Có <?php echo $reviewNotificationCount; ?> đánh giá mới"<?php if ($reviewNotificationCount <= 0): ?> style="display:none"<?php endif; ?>><?php echo $reviewNotificationCount; ?></span></a></li>
+                        <li><a href="index.php?act=admin/automationDashboard" class="<?php echo (isset($currentPage) && $currentPage === 'automation') ? 'active' : ''; ?>" title="Trung tâm tự động hóa"><span class="nav-icon-bg"><i class="bi bi-cpu-fill"></i></span> <span class="nav-text">Tự động hóa Admin</span></a></li>
+                        <li><a href="index.php?act=admin/notificationSettings" class="<?php echo (isset($currentPage) && $currentPage === 'notificationSettings') ? 'active' : ''; ?>" title="Cài đặt thông báo"><span class="nav-icon-bg"><i class="bi bi-bell-fill"></i></span> <span class="nav-text">Cài đặt thông báo</span></a></li>
                     <?php elseif ($currentRole === 'HDV'): ?>
-                        <li><a href="index.php?act=hdv/dashboard" class="<?php echo (isset($currentPage) && $currentPage === 'dashboard') ? 'active' : ''; ?>">Trang chủ</a></li>
-                        <li><a href="index.php?act=hdv/lichLamViec" class="<?php echo (isset($currentPage) && $currentPage === 'lichLamViec') ? 'active' : ''; ?>">Lịch làm việc</a></li>
-                        <li><a href="index.php?act=hdv/tours" class="<?php echo (isset($currentPage) && $currentPage === 'tours') ? 'active' : ''; ?>">Tour của tôi</a></li>
-                        <li><a href="index.php?act=hdv/nhatKy" class="<?php echo (isset($currentPage) && $currentPage === 'nhatKy') ? 'active' : ''; ?>">Nhật ký tour</a></li>
-                        <li><a href="index.php?act=hdv/yeuCauDacBiet" class="<?php echo (isset($currentPage) && $currentPage === 'yeuCauDacBiet') ? 'active' : ''; ?>">Yêu cầu đặc biệt</a></li>
+                        <li><a href="index.php?act=hdv/dashboard" class="<?php echo (isset($currentPage) && $currentPage === 'dashboard') ? 'active' : ''; ?>"><span class="nav-icon-bg"><i class="bi bi-house"></i></span> Trang chủ</a></li>
+                        <li><a href="index.php?act=hdv/lichLamViec" class="<?php echo (isset($currentPage) && $currentPage === 'lichLamViec') ? 'active' : ''; ?>"><span class="nav-icon-bg"><i class="bi bi-calendar-event"></i></span> Lịch làm việc</a></li>
+                        <li><a href="index.php?act=hdv/tours" class="<?php echo (isset($currentPage) && $currentPage === 'tours') ? 'active' : ''; ?>"><span class="nav-icon-bg"><i class="bi bi-geo-alt"></i></span> Tour của tôi</a></li>
+                        <li><a href="index.php?act=hdv/nhatKy" class="<?php echo (isset($currentPage) && $currentPage === 'nhatKy') ? 'active' : ''; ?>"><span class="nav-icon-bg"><i class="bi bi-journal-text"></i></span> Nhật ký tour</a></li>
+                        <li><a href="index.php?act=hdv/yeuCauDacBiet" class="<?php echo (isset($currentPage) && $currentPage === 'yeuCauDacBiet') ? 'active' : ''; ?>"><span class="nav-icon-bg"><i class="bi bi-star"></i></span> Yêu cầu đặc biệt</a></li>
                     <?php elseif ($currentRole === 'KhachHang'): ?>
-                        <li><a href="index.php?act=khachHang/dashboard" class="<?php echo (isset($currentPage) && $currentPage === 'dashboard') ? 'active' : ''; ?>">Trang chủ</a></li>
-                        <li><a href="index.php?act=khachHang/danhSachTour" class="<?php echo (isset($currentPage) && $currentPage === 'tours') ? 'active' : ''; ?>">Danh sách tour</a></li>
-                        <li><a href="index.php?act=khachHang/traCuu" class="<?php echo (isset($currentPage) && $currentPage === 'traCuu') ? 'active' : ''; ?>">Tra cứu booking</a></li>
-                        <li><a href="index.php?act=khachHang/yeuCauTour" class="<?php echo (isset($currentPage) && $currentPage === 'yeuCauTour') ? 'active' : ''; ?>">Yêu cầu tour</a></li>
+                        <li><a href="index.php?act=khachHang/dashboard" class="<?php echo (isset($currentPage) && $currentPage === 'dashboard') ? 'active' : ''; ?>"><span class="nav-icon-bg"><i class="bi bi-house"></i></span> Trang chủ</a></li>
+                        <li><a href="index.php?act=khachHang/danhSachTour" class="<?php echo (isset($currentPage) && $currentPage === 'tours') ? 'active' : ''; ?>"><span class="nav-icon-bg"><i class="bi bi-map"></i></span> Danh sách tour</a></li>
+                        <li><a href="index.php?act=khachHang/traCuu" class="<?php echo (isset($currentPage) && $currentPage === 'traCuu') ? 'active' : ''; ?>"><span class="nav-icon-bg"><i class="bi bi-search"></i></span> Tra cứu booking</a></li>
+                        <li><a href="index.php?act=khachHang/yeuCauTour" class="<?php echo (isset($currentPage) && $currentPage === 'yeuCauTour') ? 'active' : ''; ?>"><span class="nav-icon-bg"><i class="bi bi-ticket"></i></span> Yêu cầu tour</a></li>
                     <?php endif; ?>
                     
+                    <li class="nav-group-label"><i class="bi bi-gear-fill"></i> HỆ THỐNG</li>
                     <?php if ($isAdminRole): ?>
-                        <li><a href="index.php?act=auth/setup2fa" class="<?php echo (isset($currentPage) && $currentPage === 'settings') ? 'active' : ''; ?>"><i class="bi bi-shield-lock me-1"></i>Bảo mật 2FA</a></li>
+                        <li><a href="index.php?act=auth/setup2fa" class="<?php echo (isset($currentPage) && $currentPage === 'settings') ? 'active' : ''; ?>"><span class="nav-icon-bg"><i class="bi bi-shield-lock-fill"></i></span> <span class="nav-text">Bảo mật 2FA</span></a></li>
                     <?php endif; ?>
-                    <li><a href="index.php?act=auth/logout">Đăng xuất</a></li>
+                    <li><a href="index.php?act=auth/logout" onclick="return confirm('Bạn có chắc chắn muốn đăng xuất không?');"><span class="nav-icon-bg"><i class="bi bi-box-arrow-right"></i></span> <span class="nav-text">Đăng xuất</span></a></li>
                 <?php else: ?>
-                    <li><a href="index.php?act=tour/index">Trang chủ</a></li>
-                    <li><a href="index.php?act=auth/login">Đăng nhập</a></li>
-                    <li><a href="index.php?act=auth/register">Đăng ký</a></li>
+                    <li><a href="index.php?act=tour/index"><span class="nav-icon-bg"><i class="bi bi-house"></i></span> Trang chủ</a></li>
+                    <li><a href="index.php?act=auth/login"><span class="nav-icon-bg"><i class="bi bi-box-arrow-in-right"></i></span> Đăng nhập</a></li>
+                    <li><a href="index.php?act=auth/register"><span class="nav-icon-bg"><i class="bi bi-person-plus"></i></span> Đăng ký</a></li>
                 <?php endif; ?>
             </ul>
 
-            <div class="text-widget">
-                <strong>TEXT WIDGET</strong>
-                <p>The Text Widget allows you to add text and HTML to your sidebar. It's the most popular widget because of its power and flexibility.</p>
-            </div>
+            <!-- Sidebar Bottom Quick User Profile Card -->
+            <?php if (isset($_SESSION['user_name'])): ?>
+                <div class="sidebar-user-card">
+                    <div class="sidebar-user-avatar-wrap">
+                        <span class="sidebar-user-avatar-text"><?php echo $adminInitial; ?></span>
+                        <span class="sidebar-user-online" title="Đang trực tuyến"></span>
+                    </div>
+                    <div class="sidebar-user-meta">
+                        <div class="sidebar-user-name" title="<?php echo $currentAdminName; ?>"><?php echo $currentAdminName; ?></div>
+                        <div class="sidebar-user-role"><?php echo $userRoleLabel; ?></div>
+                    </div>
+                    <div class="sidebar-user-actions">
+                        <a href="<?php echo BASE_URL; ?>index.php?act=auth/setup2fa" class="sidebar-action-btn" title="Bảo mật 2FA">
+                            <i class="bi bi-shield-lock"></i>
+                        </a>
+                        <a href="<?php echo BASE_URL; ?>index.php?act=auth/logout" class="sidebar-action-btn logout-btn" title="Đăng xuất" onclick="return confirm('Bạn có chắc chắn muốn đăng xuất không?');">
+                            <i class="bi bi-box-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+            <?php endif; ?>
 
-            <div class="social-icons">
-                <a href="#facebook">f</a>
-                <a href="#twitter">𝕏</a>
-                <a href="#instagram">📷</a>
-                <a href="#pinterest">📌</a>
-                <a href="#youtube">▶</a>
-                <a href="#linkedin">in</a>
-                <a href="#vimeo">▶</a>
-                <a href="#tumblr">⚫</a>
-                <a href="#telegram">✈</a>
+            <div class="sidebar-footer-note">
+                <div>AVENTURA <strong>PRO SUITE v3.5</strong></div>
+                <div style="opacity: 0.55; font-size: 9.5px; margin-top: 3px;">© <?php echo date('Y'); ?> All Rights Reserved</div>
             </div>
-
-            <div class="copyright">© <?php echo date('Y'); ?> Aventura. All Rights Reserved</div>
         </aside>
         <button type="button" class="mobile-sidebar-backdrop" id="mobileSidebarBackdrop" aria-label="Đóng menu điều hướng"></button>
 
@@ -244,9 +868,55 @@ if ($realtimeWsEnabled && isset($_SESSION['user_id']) && $currentRole !== null) 
                 </div>
                 <div class="header-right">
                     <?php if (isset($_SESSION['user_name'])): ?>
-                        <div class="header-item">
-                            <span>👤</span>
-                            <span><?php echo htmlspecialchars($_SESSION['user_name']); ?></span>
+                        <?php 
+                            $currentAdminName = htmlspecialchars((string)$_SESSION['user_name']);
+                            $adminInitial = mb_strtoupper(mb_substr($currentAdminName, 0, 1, 'UTF-8'), 'UTF-8');
+                            $userRoleLabel = $currentRole ? htmlspecialchars((string)$currentRole) : 'Quản trị viên';
+                        ?>
+                        <div class="header-user-dropdown-wrapper" id="headerUserDropdownWrapper">
+                            <button type="button" class="header-user-btn" id="headerUserDropdownBtn" aria-expanded="false" aria-haspopup="true" title="Tài khoản: <?php echo $currentAdminName; ?>">
+                                <span class="header-user-avatar"><?php echo $adminInitial; ?></span>
+                                <span class="header-user-info">
+                                    <span class="header-user-name"><?php echo $currentAdminName; ?></span>
+                                    <span class="header-user-role"><?php echo $userRoleLabel; ?></span>
+                                </span>
+                                <i class="bi bi-chevron-down header-user-chevron"></i>
+                            </button>
+                            <div class="header-user-menu" id="headerUserDropdownMenu" role="menu">
+                                <div class="header-user-menu-header">
+                                    <div class="h-u-title"><?php echo $currentAdminName; ?></div>
+                                    <div class="h-u-sub"><?php echo $userRoleLabel; ?> hệ thống</div>
+                                </div>
+                                <div class="header-user-menu-divider"></div>
+                                <?php if ($isAdminRole): ?>
+                                    <a href="<?php echo BASE_URL; ?>index.php?act=admin/profile" class="header-user-menu-item" role="menuitem">
+                                        <i class="bi bi-person-gear"></i>
+                                        <span>Hồ sơ cá nhân & Bảo mật</span>
+                                    </a>
+                                    <a href="<?php echo BASE_URL; ?>index.php?act=admin/profile#password" class="header-user-menu-item" role="menuitem">
+                                        <i class="bi bi-key"></i>
+                                        <span>Đổi mật khẩu</span>
+                                    </a>
+                                    <a href="<?php echo BASE_URL; ?>index.php?act=admin/quanLyNguoiDung" class="header-user-menu-item" role="menuitem">
+                                        <i class="bi bi-people"></i>
+                                        <span>Quản lý người dùng</span>
+                                    </a>
+                                <?php elseif ($currentRole === 'HDV'): ?>
+                                    <a href="<?php echo BASE_URL; ?>index.php?act=hdv/profile" class="header-user-menu-item" role="menuitem">
+                                        <i class="bi bi-person-badge"></i>
+                                        <span>Hồ sơ hướng dẫn viên</span>
+                                    </a>
+                                <?php endif; ?>
+                                <a href="<?php echo BASE_URL; ?>index.php?act=auth/setup2fa" class="header-user-menu-item" role="menuitem">
+                                    <i class="bi bi-shield-check"></i>
+                                    <span>Xác thực 2 lớp (2FA)</span>
+                                </a>
+                                <div class="header-user-menu-divider"></div>
+                                <a href="<?php echo BASE_URL; ?>index.php?act=auth/logout" class="header-user-menu-item text-danger" role="menuitem">
+                                    <i class="bi bi-box-arrow-right"></i>
+                                    <span>Đăng xuất</span>
+                                </a>
+                            </div>
                         </div>
                     <?php endif; ?>
                     <div class="header-item">
@@ -298,6 +968,26 @@ if ($realtimeWsEnabled && isset($_SESSION['user_id']) && $currentRole !== null) 
         const mobileSidebarClose = document.getElementById('mobileSidebarClose');
         const realtimeStatus = document.getElementById('realtimeStatus');
         const realtimeStatusText = document.getElementById('realtimeStatusText');
+
+        // Header User Menu Dropdown
+        const userDropdownBtn = document.getElementById('headerUserDropdownBtn');
+        const userDropdownMenu = document.getElementById('headerUserDropdownMenu');
+        if (userDropdownBtn && userDropdownMenu) {
+            userDropdownBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const isOpen = userDropdownMenu.classList.contains('show');
+                userDropdownMenu.classList.toggle('show', !isOpen);
+                userDropdownBtn.classList.toggle('active', !isOpen);
+                userDropdownBtn.setAttribute('aria-expanded', !isOpen ? 'true' : 'false');
+            });
+            document.addEventListener('click', function(e) {
+                if (!userDropdownMenu.contains(e.target) && !userDropdownBtn.contains(e.target)) {
+                    userDropdownMenu.classList.remove('show');
+                    userDropdownBtn.classList.remove('active');
+                    userDropdownBtn.setAttribute('aria-expanded', 'false');
+                }
+            });
+        }
         const dashboardNavBadge = document.getElementById('dashboardNavBadge');
         const paymentNavBadge = document.getElementById('paymentNavBadge');
         const reviewNavBadge = document.getElementById('reviewNavBadge');
@@ -1011,20 +1701,31 @@ if ($realtimeWsEnabled && isset($_SESSION['user_id']) && $currentRole !== null) 
         initAdminMotion();
         initTableAutoPagination();
 
-        // Nav parent-child: cho phép mở nhiều menu con cùng lúc
+        // Nav parent-child: cho phép mở nhiều menu con cùng lúc và xoay mũi tên
         document.querySelectorAll('.nav-parent > .nav-toggle').forEach(toggle => {
             toggle.addEventListener('click', function(e) {
                 e.preventDefault();
                 const parent = this.closest('.nav-parent');
                 const menu = parent.querySelector('.nav-child-menu');
                 const isVisible = !menu.hasAttribute('hidden');
-                // Toggle menu hiện tại, không ảnh hưởng menu khác
                 if (isVisible) {
                     menu.setAttribute('hidden', '');
+                    parent.classList.remove('expanded');
                 } else {
                     menu.removeAttribute('hidden');
+                    parent.classList.add('expanded');
                 }
             });
+        });
+
+        // Tự động mở submenu nếu đang ở trang con hoặc menu cha đang active
+        document.querySelectorAll('.nav-parent').forEach(parent => {
+            const hasActiveChild = parent.querySelector('.nav-child-menu a.active, .nav-toggle.active');
+            if (hasActiveChild) {
+                const menu = parent.querySelector('.nav-child-menu');
+                if (menu) menu.removeAttribute('hidden');
+                parent.classList.add('expanded');
+            }
         });
 
         // Sidebar collapse/expand

@@ -23,22 +23,8 @@ class SupportTicketController
     public function customerTickets(): void
     {
         requireRole('KhachHang');
-
-        $khachHangId = $this->currentKhachHangId();
-        if ($khachHangId <= 0) {
-            $_SESSION['error'] = 'Khong tim thay thong tin khach hang.';
-            header('Location: index.php?act=khachHang/dashboard');
-            exit();
-        }
-
-        try {
-            $tickets = $this->ticketModel->getByKhachHangId($khachHangId);
-        } catch (Throwable $e) {
-            $tickets = [];
-            $_SESSION['error'] = $e->getMessage();
-        }
-
-        require 'views/khach_hang/tickets.php';
+        header('Location: index.php?act=khachHang/guiYeuCauHoTro&tab=tickets');
+        exit();
     }
 
     public function customerCreateTicket(): void
@@ -46,19 +32,19 @@ class SupportTicketController
         requireRole('KhachHang');
 
         if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
-            header('Location: index.php?act=khachHang/tickets');
+            header('Location: index.php?act=khachHang/guiYeuCauHoTro&tab=create');
             exit();
         }
 
         if (!verifyCsrfToken((string)($_POST['_csrf_global'] ?? ''), 'global_form')) {
-            $_SESSION['error'] = 'Yeu cau khong hop le (CSRF).';
-            header('Location: index.php?act=khachHang/tickets');
+            $_SESSION['error'] = 'Yêu cầu không hợp lệ (CSRF).';
+            header('Location: index.php?act=khachHang/guiYeuCauHoTro&tab=create');
             exit();
         }
 
         $khachHangId = $this->currentKhachHangId();
         if ($khachHangId <= 0) {
-            $_SESSION['error'] = 'Khong tim thay thong tin khach hang.';
+            $_SESSION['error'] = 'Không tìm thấy thông tin khách hàng.';
             header('Location: index.php?act=khachHang/dashboard');
             exit();
         }
@@ -69,13 +55,13 @@ class SupportTicketController
         $bookingId = (int)($_POST['booking_id'] ?? 0);
 
         if ($subject === '' || mb_strlen($subject) < 5) {
-            $_SESSION['error'] = 'Tieu de can toi thieu 5 ky tu.';
-            header('Location: index.php?act=khachHang/tickets');
+            $_SESSION['error'] = 'Tiêu đề cần tối thiểu 5 ký tự.';
+            header('Location: index.php?act=khachHang/guiYeuCauHoTro&tab=create');
             exit();
         }
         if ($message === '' || mb_strlen($message) < 10) {
-            $_SESSION['error'] = 'Noi dung can toi thieu 10 ky tu.';
-            header('Location: index.php?act=khachHang/tickets');
+            $_SESSION['error'] = 'Nội dung cần tối thiểu 10 ký tự.';
+            header('Location: index.php?act=khachHang/guiYeuCauHoTro&tab=create');
             exit();
         }
 
@@ -89,12 +75,12 @@ class SupportTicketController
                 'sender_id' => (int)($_SESSION['user_id'] ?? 0),
             ]);
 
-            $_SESSION['success'] = 'Da tao ticket ho tro thanh cong.';
-            header('Location: index.php?act=khachHang/ticketDetail&id=' . $ticketId);
+            $_SESSION['success'] = 'Đã tạo yêu cầu hỗ trợ thành công. Mã ticket #' . $ticketId . '.';
+            header('Location: index.php?act=khachHang/guiYeuCauHoTro&tab=tickets&ticket_id=' . $ticketId);
             exit();
         } catch (Throwable $e) {
             $_SESSION['error'] = $e->getMessage();
-            header('Location: index.php?act=khachHang/tickets');
+            header('Location: index.php?act=khachHang/guiYeuCauHoTro&tab=create');
             exit();
         }
     }
@@ -104,29 +90,8 @@ class SupportTicketController
         requireRole('KhachHang');
 
         $ticketId = (int)($_GET['id'] ?? 0);
-        $khachHangId = $this->currentKhachHangId();
-
-        if ($ticketId <= 0 || $khachHangId <= 0) {
-            $_SESSION['error'] = 'Thong tin ticket khong hop le.';
-            header('Location: index.php?act=khachHang/tickets');
-            exit();
-        }
-
-        try {
-            $ticket = $this->ticketModel->getByIdForKhachHang($ticketId, $khachHangId);
-            if (!$ticket) {
-                $_SESSION['error'] = 'Khong tim thay ticket.';
-                header('Location: index.php?act=khachHang/tickets');
-                exit();
-            }
-            $messages = $this->ticketModel->getMessagesByTicketId($ticketId);
-        } catch (Throwable $e) {
-            $_SESSION['error'] = $e->getMessage();
-            header('Location: index.php?act=khachHang/tickets');
-            exit();
-        }
-
-        require 'views/khach_hang/ticket_detail.php';
+        header('Location: index.php?act=khachHang/guiYeuCauHoTro&tab=tickets' . ($ticketId > 0 ? ('&ticket_id=' . $ticketId) : ''));
+        exit();
     }
 
     public function customerTicketReply(): void
@@ -134,13 +99,7 @@ class SupportTicketController
         requireRole('KhachHang');
 
         if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
-            header('Location: index.php?act=khachHang/tickets');
-            exit();
-        }
-
-        if (!verifyCsrfToken((string)($_POST['_csrf_global'] ?? ''), 'global_form')) {
-            $_SESSION['error'] = 'Yeu cau khong hop le (CSRF).';
-            header('Location: index.php?act=khachHang/tickets');
+            header('Location: index.php?act=khachHang/guiYeuCauHoTro&tab=tickets');
             exit();
         }
 
@@ -149,26 +108,26 @@ class SupportTicketController
         $message = trim((string)($_POST['message'] ?? ''));
 
         if ($ticketId <= 0 || $khachHangId <= 0 || $message === '') {
-            $_SESSION['error'] = 'Thong tin phan hoi khong hop le.';
-            header('Location: index.php?act=khachHang/ticketDetail&id=' . max(0, $ticketId));
+            $_SESSION['error'] = 'Thông tin phản hồi không hợp lệ.';
+            header('Location: index.php?act=khachHang/guiYeuCauHoTro&tab=tickets&ticket_id=' . max(0, $ticketId));
             exit();
         }
 
         try {
             $ticket = $this->ticketModel->getByIdForKhachHang($ticketId, $khachHangId);
             if (!$ticket) {
-                $_SESSION['error'] = 'Khong tim thay ticket.';
-                header('Location: index.php?act=khachHang/tickets');
+                $_SESSION['error'] = 'Không tìm thấy thông tin ticket.';
+                header('Location: index.php?act=khachHang/guiYeuCauHoTro&tab=tickets');
                 exit();
             }
 
             $this->ticketModel->addMessage($ticketId, (int)($_SESSION['user_id'] ?? 0), 'KhachHang', mb_substr($message, 0, 2000));
-            $_SESSION['success'] = 'Da gui phan hoi cho ticket.';
-            header('Location: index.php?act=khachHang/ticketDetail&id=' . $ticketId);
+            $_SESSION['success'] = 'Đã gửi phản hồi thành công!';
+            header('Location: index.php?act=khachHang/guiYeuCauHoTro&tab=tickets&ticket_id=' . $ticketId);
             exit();
         } catch (Throwable $e) {
             $_SESSION['error'] = $e->getMessage();
-            header('Location: index.php?act=khachHang/ticketDetail&id=' . $ticketId);
+            header('Location: index.php?act=khachHang/guiYeuCauHoTro&tab=tickets&ticket_id=' . $ticketId);
             exit();
         }
     }

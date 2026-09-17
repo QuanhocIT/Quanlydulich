@@ -149,7 +149,13 @@ class SupportTicket
     {
         $this->ensureTables();
 
-        $stmt = $this->conn->prepare('SELECT * FROM support_tickets WHERE khach_hang_id = ? ORDER BY id DESC');
+        $sql = 'SELECT st.*, b.tour_id, t.ten_tour
+                FROM support_tickets st
+                LEFT JOIN booking b ON b.booking_id = st.booking_id
+                LEFT JOIN tour t ON t.tour_id = b.tour_id
+                WHERE st.khach_hang_id = ?
+                ORDER BY st.id DESC';
+        $stmt = $this->conn->prepare($sql);
         $stmt->execute([$khachHangId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
@@ -158,7 +164,13 @@ class SupportTicket
     {
         $this->ensureTables();
 
-        $stmt = $this->conn->prepare('SELECT * FROM support_tickets WHERE id = ? AND khach_hang_id = ? LIMIT 1');
+        $sql = 'SELECT st.*, b.tour_id, t.ten_tour
+                FROM support_tickets st
+                LEFT JOIN booking b ON b.booking_id = st.booking_id
+                LEFT JOIN tour t ON t.tour_id = b.tour_id
+                WHERE st.id = ? AND st.khach_hang_id = ?
+                LIMIT 1';
+        $stmt = $this->conn->prepare($sql);
         $stmt->execute([$ticketId, $khachHangId]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
 

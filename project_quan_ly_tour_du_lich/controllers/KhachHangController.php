@@ -492,10 +492,35 @@ class KhachHangController {
             $loaiTour = '';
         }
 
-        $tours = $tourModel->getPublicTours([
+        $minPrice = null;
+        $maxPrice = null;
+        if ($priceRange === 'under5') {
+            $maxPrice = 5000000;
+        } elseif ($priceRange === '5to10') {
+            $minPrice = 5000000;
+            $maxPrice = 10000000;
+        } elseif ($priceRange === '10to20') {
+            $minPrice = 10000000;
+            $maxPrice = 20000000;
+        } elseif ($priceRange === 'over20') {
+            $minPrice = 20000000;
+        }
+
+        $queryFilters = [
             'search' => $search,
             'loai_tour' => $loaiTour,
-        ], 80, 0);
+        ];
+        if ($minPrice !== null) {
+            $queryFilters['min_price'] = $minPrice;
+        }
+        if ($maxPrice !== null) {
+            $queryFilters['max_price'] = $maxPrice;
+        }
+        if (in_array($sort, ['price_asc', 'price_desc'], true)) {
+            $queryFilters['sort'] = $sort;
+        }
+
+        $tours = $tourModel->getPublicTours($queryFilters, 80, 0);
 
         $tourIds = array_column($tours, 'tour_id');
         $tourRatingMap = $danhGiaModel->getTourRatingMapByTourIds($tourIds);
@@ -530,25 +555,11 @@ class KhachHangController {
         }
         unset($tour);
 
-        $tours = array_values(array_filter($tours, static function ($tour) use ($priceRange) {
-            $price = (float)($tour['gia_co_ban'] ?? 0);
-            return match ($priceRange) {
-                'under5' => $price < 5000000,
-                '5to10' => $price >= 5000000 && $price < 10000000,
-                '10to20' => $price >= 10000000 && $price < 20000000,
-                'over20' => $price >= 20000000,
-                default => true,
-            };
-        }));
-
-        usort($tours, static function ($a, $b) use ($sort) {
-            return match ($sort) {
-                'price_asc' => ((float)($a['gia_co_ban'] ?? 0)) <=> ((float)($b['gia_co_ban'] ?? 0)),
-                'price_desc' => ((float)($b['gia_co_ban'] ?? 0)) <=> ((float)($a['gia_co_ban'] ?? 0)),
-                'upcoming' => strtotime((string)($a['ngay_khoi_hanh_gan_nhat'] ?? '2999-12-31')) <=> strtotime((string)($b['ngay_khoi_hanh_gan_nhat'] ?? '2999-12-31')),
-                default => ((int)($b['tour_id'] ?? 0)) <=> ((int)($a['tour_id'] ?? 0)),
-            };
-        });
+        if ($sort === 'upcoming') {
+            usort($tours, static function ($a, $b) {
+                return strtotime((string)($a['ngay_khoi_hanh_gan_nhat'] ?? '2999-12-31')) <=> strtotime((string)($b['ngay_khoi_hanh_gan_nhat'] ?? '2999-12-31'));
+            });
+        }
 
         $filters = [
             'q' => $search,
@@ -621,6 +632,43 @@ class KhachHangController {
             ], JSON_UNESCAPED_UNICODE);
             exit();
         }
+    }
+
+    // Trang Tour yêu thích
+    public function tourYeuThich() {
+        require_once 'models/TourYeuThich.php';
+        require_once 'models/KhachHang.php';
+        require_once 'models/Tour.php';
+        require_once 'models/NguoiDung.php';
+
+        $userId = (int)($_SESSION['user_id'] ?? 0);
+        $khachHangModel = new KhachHang();
+        $tourModel = new Tour();
+        $tourYeuThichModel = new TourYeuThich();
+        $nguoiDungModel = new NguoiDung();
+
+        $khachHang = $khachHangModel->findByUserId($userId);
+        $nguoiDung = $nguoiDungModel->findById($userId);
+
+        $khachHangId = (int)($khachHang['khach_hang_id'] ?? 0);
+        $favoriteTours = [];
+        $favoriteTourIds = [];
+
+        if ($khachHangId > 0) {
+            $favoriteTourIds = $tourYeuThichModel->getFavoriteTourIdsByKhachHangId($khachHangId);
+            $favoriteTours = $tourYeuThichModel->getFavoriteToursByKhachHangId($khachHangId, 50);
+
+            if (!empty($favoriteTours)) {
+                $thumbMap = $tourModel->getThumbnailMapByTourIds(array_column($favoriteTours, 'tour_id'));
+                foreach ($favoriteTours as &$favTour) {
+                    $tId = (int)($favTour['tour_id'] ?? 0);
+                    $favTour['hinh_anh'] = $thumbMap[$tId] ?? null;
+                }
+                unset($favTour);
+            }
+        }
+
+        require 'views/khach_hang/tour_yeu_thich.php';
     }
     
     public function chiTietTour() {
@@ -790,6 +838,9 @@ class KhachHangController {
             exit();
         }
 
+        $bookingModel = new Booking();
+        $bookings = $bookingModel->getByKhachHangId((int)$khachHang['khach_hang_id']);
+
         if ($loaiDanhGia === 'Tour') {
             if ($tourId <= 0) {
                 $_SESSION['error'] = 'Thiếu thông tin tour cần đánh giá.';
@@ -797,8 +848,6 @@ class KhachHangController {
                 exit();
             }
 
-            $bookingModel = new Booking();
-            $bookings = $bookingModel->getByKhachHangId((int)$khachHang['khach_hang_id']);
             $eligibility = $this->evaluateTourReviewEligibility($bookings, $tourId);
 
             if (empty($eligibility['booked'])) {
@@ -809,6 +858,47 @@ class KhachHangController {
 
             if (empty($eligibility['experienced'])) {
                 $_SESSION['error'] = 'Bạn chỉ có thể đánh giá sau khi đã trải nghiệm xong tour.';
+                header('Location: ' . $redirectUrl);
+                exit();
+            }
+        } elseif ($loaiDanhGia === 'NhanSu') {
+            $nhanSuId = !empty($_POST['nhan_su_id']) ? (int)$_POST['nhan_su_id'] : 0;
+            if ($nhanSuId <= 0) {
+                $_SESSION['error'] = 'Vui lòng chọn hướng dẫn viên cần đánh giá.';
+                header('Location: ' . $redirectUrl);
+                exit();
+            }
+
+            // Kiểm tra khách hàng đã hoàn thành ít nhất một tour thực tế
+            $hasCompletedTour = false;
+            foreach ($bookings as $b) {
+                if (($b['trang_thai'] ?? '') === 'HoanTat' || (!empty($b['ngay_khoi_hanh']) && strtotime($b['ngay_khoi_hanh']) <= time() && ($b['trang_thai'] ?? '') === 'DaXacNhan')) {
+                    $hasCompletedTour = true;
+                    break;
+                }
+            }
+            if (!$hasCompletedTour) {
+                $_SESSION['error'] = 'Bạn cần hoàn thành ít nhất một tour trước khi gửi đánh giá hướng dẫn viên.';
+                header('Location: ' . $redirectUrl);
+                exit();
+            }
+        } elseif ($loaiDanhGia === 'NhaCungCap') {
+            $nccId = !empty($_POST['nha_cung_cap_id']) ? (int)$_POST['nha_cung_cap_id'] : 0;
+            if ($nccId <= 0) {
+                $_SESSION['error'] = 'Vui lòng chọn nhà cung cấp dịch vụ cần đánh giá.';
+                header('Location: ' . $redirectUrl);
+                exit();
+            }
+
+            $hasCompletedTour = false;
+            foreach ($bookings as $b) {
+                if (($b['trang_thai'] ?? '') === 'HoanTat' || (!empty($b['ngay_khoi_hanh']) && strtotime($b['ngay_khoi_hanh']) <= time() && ($b['trang_thai'] ?? '') === 'DaXacNhan')) {
+                    $hasCompletedTour = true;
+                    break;
+                }
+            }
+            if (!$hasCompletedTour) {
+                $_SESSION['error'] = 'Bạn cần hoàn thành tour để đánh giá chất lượng dịch vụ của nhà cung cấp.';
                 header('Location: ' . $redirectUrl);
                 exit();
             }
@@ -887,6 +977,11 @@ class KhachHangController {
         ];
     }
 
+    // Xem ví của tôi và quản lý hóa đơn
+    public function viCuaToi() {
+        return $this->hoaDon();
+    }
+
     // Xem hóa đơn và trạng thái thanh toán
     public function hoaDon() {
         require_once 'models/Booking.php';
@@ -894,17 +989,22 @@ class KhachHangController {
         require_once 'models/GiaoDich.php';
         require_once 'models/BookingChangeRequest.php';
         require_once 'models/Tour.php';
+        require_once 'models/NguoiDung.php';
         
         $bookingModel = new Booking();
         $khachHangModel = new KhachHang();
         $giaoDichModel = new GiaoDich();
         $bookingChangeRequestModel = new BookingChangeRequest();
         $tourModel = new Tour();
+        $nguoiDungModel = new NguoiDung();
 
         // Tu dong dong giao dich treo qua lau truoc khi hien thi hoa don.
         $this->expireStalePendingPayments($bookingModel->conn);
         
-        $khachHang = $khachHangModel->findByUserId($_SESSION['user_id']);
+        $userId = (int)($_SESSION['user_id'] ?? 0);
+        $khachHang = $khachHangModel->findByUserId($userId);
+        $nguoiDung = $nguoiDungModel->findById($userId);
+
         if (!$khachHang) {
             $_SESSION['error'] = 'Không tìm thấy thông tin khách hàng';
             header('Location: index.php?act=khachHang/dashboard');
@@ -918,6 +1018,7 @@ class KhachHangController {
         $latestPayment = null;
         $changeRequests = [];
         $doiLichOptions = [];
+        $bookings = $bookingModel->getByKhachHangId($khachHang['khach_hang_id']);
         
         if ($bookingId > 0) {
             $booking = $bookingModel->getBookingWithDetails($bookingId);
@@ -943,17 +1044,10 @@ class KhachHangController {
                     }
                     $doiLichOptions[] = $lich;
                 }
-            } else {
-                $_SESSION['error'] = 'Không tìm thấy hóa đơn';
-                header('Location: index.php?act=khachHang/dashboard');
-                exit();
             }
-        } else {
-            // Lấy tất cả booking của khách hàng
-            $bookings = $bookingModel->getByKhachHangId($khachHang['khach_hang_id']);
         }
         
-        require 'views/khach_hang/hoa_don.php';
+        require 'views/khach_hang/vi_cua_toi.php';
     }
 
     public function guiYeuCauThayDoiBooking() {
@@ -1278,10 +1372,17 @@ class KhachHangController {
     // Thông báo
     public function thongBao() {
         require_once 'models/ThongBao.php';
+        require_once 'models/KhachHang.php';
+        require_once 'models/NguoiDung.php';
         $isAjaxRequest = strtolower((string)($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '')) === 'xmlhttprequest';
         
         $thongBaoModel = new ThongBao();
+        $khachHangModel = new KhachHang();
+        $nguoiDungModel = new NguoiDung();
+
         $userId = (int)($_SESSION['user_id'] ?? 0);
+        $khachHang = $khachHangModel->findByUserId($userId);
+        $nguoiDung = $nguoiDungModel->findById($userId);
         
         // Đánh dấu đã đọc nếu có tham số
         if (isset($_GET['mark_read']) && $_GET['mark_read'] > 0) {
@@ -1515,42 +1616,124 @@ class KhachHangController {
         require_once 'models/ThongBao.php';
         require_once 'models/SupportTicket.php';
         require_once 'models/KhachHang.php';
+        require_once 'models/NguoiDung.php';
+        require_once 'models/Booking.php';
         
         $thongBaoModel = new ThongBao();
         $supportTicketModel = new SupportTicket();
         $khachHangModel = new KhachHang();
+        $nguoiDungModel = new NguoiDung();
+        $bookingModel = new Booking();
         
-        $khachHang = $khachHangModel->findByUserId($_SESSION['user_id']);
+        $userId = (int)($_SESSION['user_id'] ?? 0);
+        $nguoiDung = $userId > 0 ? $nguoiDungModel->findById($userId) : null;
+        $khachHang = $userId > 0 ? $khachHangModel->findByUserId($userId) : null;
+        if (!$khachHang && $userId > 0) {
+            $khachHang = $khachHangModel->findOrCreateByNguoiDungInfo($userId);
+        }
+        $khachHangId = (int)($khachHang['khach_hang_id'] ?? 0);
+
+        // Xử lý AJAX lấy hội thoại của một ticket
+        if (isset($_GET['ajax']) && $_GET['ajax'] === 'get_ticket_messages') {
+            header('Content-Type: application/json; charset=utf-8');
+            $ticketId = (int)($_GET['ticket_id'] ?? 0);
+            if ($ticketId <= 0) {
+                echo json_encode(['success' => false, 'message' => 'Mã ticket không hợp lệ.']);
+                exit();
+            }
+            try {
+                $ticket = $khachHangId > 0 ? $supportTicketModel->getByIdForKhachHang($ticketId, $khachHangId) : null;
+                if (!$ticket) {
+                    echo json_encode(['success' => false, 'message' => 'Không tìm thấy thông tin ticket hoặc bạn không có quyền truy cập.']);
+                    exit();
+                }
+                $messages = $supportTicketModel->getMessagesByTicketId($ticketId);
+                echo json_encode([
+                    'success' => true,
+                    'ticket' => $ticket,
+                    'messages' => $messages
+                ], JSON_UNESCAPED_UNICODE);
+            } catch (Throwable $e) {
+                echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            }
+            exit();
+        }
         
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $action = trim((string)($_POST['action'] ?? 'create_ticket'));
+
+            // 1. Phản hồi cho ticket đã có
+            if ($action === 'reply_ticket') {
+                $ticketId = (int)($_POST['ticket_id'] ?? 0);
+                $replyMessage = trim((string)($_POST['message'] ?? ''));
+
+                if ($ticketId <= 0 || $replyMessage === '') {
+                    $_SESSION['error'] = 'Vui lòng nhập nội dung phản hồi hợp lệ (không để trống).';
+                    header('Location: index.php?act=khachHang/guiYeuCauHoTro&tab=tickets&ticket_id=' . $ticketId);
+                    exit();
+                }
+
+                if ($khachHangId > 0) {
+                    $ticket = $supportTicketModel->getByIdForKhachHang($ticketId, $khachHangId);
+                    if ($ticket) {
+                        $supportTicketModel->addMessage($ticketId, $userId, 'KhachHang', $replyMessage);
+                        $_SESSION['success'] = 'Gửi phản hồi thành công! Đội ngũ hỗ trợ đã nhận được tin nhắn của bạn.';
+                        header('Location: index.php?act=khachHang/guiYeuCauHoTro&tab=tickets&ticket_id=' . $ticketId);
+                        exit();
+                    }
+                }
+
+                $_SESSION['error'] = 'Không tìm thấy phiếu hỗ trợ cần phản hồi.';
+                header('Location: index.php?act=khachHang/guiYeuCauHoTro&tab=tickets');
+                exit();
+            }
+
+            // 2. Tạo phiếu hỗ trợ mới
             $subject = trim((string)($_POST['tieu_de'] ?? 'Yêu cầu hỗ trợ'));
             $content = trim((string)($_POST['noi_dung'] ?? ''));
             $priority = trim((string)($_POST['muc_do_uu_tien'] ?? 'TrungBinh'));
+            $bookingId = (int)($_POST['booking_id'] ?? 0);
+            $category = trim((string)($_POST['category'] ?? 'General'));
 
-            if ($content !== '' && $khachHang && !empty($khachHang['khach_hang_id'])) {
+            if ($content !== '' && $khachHangId > 0) {
                 try {
                     $ticketId = $supportTicketModel->createTicket([
-                        'khach_hang_id' => (int)$khachHang['khach_hang_id'],
+                        'khach_hang_id' => $khachHangId,
+                        'booking_id' => $bookingId > 0 ? $bookingId : null,
                         'subject' => mb_substr($subject, 0, 255),
                         'message' => mb_substr($content, 0, 2000),
                         'priority' => $priority,
-                        'sender_id' => (int)($_SESSION['user_id'] ?? 0),
+                        'sender_id' => $userId,
                     ]);
 
-                    $_SESSION['success'] = 'Đã tạo ticket hỗ trợ thành công. Mã ticket #' . $ticketId . '.';
-                    header('Location: index.php?act=khachHang/ticketDetail&id=' . $ticketId);
+                    // Thông báo tới hệ thống quản trị
+                    try {
+                        $thongBaoModel->insert([
+                            'tieu_de' => 'Khách hàng gửi ticket hỗ trợ mới: ' . $subject,
+                            'noi_dung' => $content,
+                            'loai_thong_bao' => 'KhachHang',
+                            'muc_do_uu_tien' => $priority,
+                            'nguoi_gui_id' => $userId,
+                            'vai_tro_nhan' => 'Admin',
+                            'trang_thai' => 'DaGui'
+                        ]);
+                    } catch (Throwable $e) {}
+
+                    $_SESSION['success'] = 'Đã tạo yêu cầu hỗ trợ thành công! Mã phiếu: #' . $ticketId . '. Chúng tôi sẽ xử lý sớm nhất có thể.';
+                    header('Location: index.php?act=khachHang/guiYeuCauHoTro&tab=tickets&ticket_id=' . $ticketId);
                     exit();
                 } catch (Throwable $e) {
-                    // fallback to legacy thong_bao flow when support_tickets table is unavailable.
+                    // Fallback to legacy thong_bao flow
                 }
             }
 
+            // Fallback lưu thông báo nếu không nạp được support_tickets
             $data = [
                 'tieu_de' => $_POST['tieu_de'] ?? 'Yêu cầu hỗ trợ',
                 'noi_dung' => $_POST['noi_dung'] ?? '',
                 'loai_thong_bao' => 'KhachHang',
                 'muc_do_uu_tien' => $_POST['muc_do_uu_tien'] ?? 'TrungBinh',
-                'nguoi_gui_id' => $_SESSION['user_id'],
+                'nguoi_gui_id' => $userId,
                 'vai_tro_nhan' => 'Admin',
                 'trang_thai' => 'DaGui'
             ];
@@ -1561,8 +1744,22 @@ class KhachHangController {
                 $_SESSION['error'] = 'Có lỗi xảy ra. Vui lòng thử lại sau.';
             }
             
-            header('Location: index.php?act=khachHang/guiYeuCauHoTro');
+            header('Location: index.php?act=khachHang/guiYeuCauHoTro&tab=tickets');
             exit();
+        }
+        
+        $bookings = $khachHangId > 0 ? $bookingModel->getByKhachHangId($khachHangId) : [];
+        $recentTickets = $khachHangId > 0 ? $supportTicketModel->getByKhachHangId($khachHangId) : [];
+        
+        // Nếu có ticket_id chỉ định trên URL
+        $selectedTicketId = (int)($_GET['ticket_id'] ?? 0);
+        $selectedTicket = null;
+        $selectedMessages = [];
+        if ($selectedTicketId > 0 && $khachHangId > 0) {
+            $selectedTicket = $supportTicketModel->getByIdForKhachHang($selectedTicketId, $khachHangId);
+            if ($selectedTicket) {
+                $selectedMessages = $supportTicketModel->getMessagesByTicketId($selectedTicketId);
+            }
         }
         
         require 'views/khach_hang/gui_yeu_cau_ho_tro.php';

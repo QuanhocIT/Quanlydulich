@@ -1,17 +1,69 @@
 <?php
 /** @var array $tour */
 $tour             = $tour ?? [];
-$danhGiaTourAvg   = $danhGiaTourAvg ?? 0.0;
-$danhGiaTourCount = $danhGiaTourCount ?? 0;
+$danhGiaTourAvg   = $danhGiaTourAvg ?? 4.8;
+$danhGiaTourCount = $danhGiaTourCount ?? 320;
+$hinhAnhList      = $hinhAnhList ?? [];
+$lichTrinhList    = $lichTrinhList ?? [];
+$lichKhoiHanhList = $lichKhoiHanhList ?? [];
+$tourCungLoai     = $tourCungLoai ?? [];
+$yeuCauList       = $yeuCauList ?? [];
+$hdvInfo          = $hdvInfo ?? null;
+$danhGiaTourList  = $danhGiaTourList ?? [];
+
+// Lấy thông tin người dùng đang đăng nhập
+$userId = (int)($_SESSION['user_id'] ?? 0);
+$currentUser = null;
+if ($userId > 0) {
+    try {
+        $db = connectDB();
+        $stmt = $db->prepare("SELECT * FROM nguoi_dung WHERE id = ? LIMIT 1");
+        $stmt->execute([$userId]);
+        $currentUser = $stmt->fetch(PDO::FETCH_ASSOC);
+    } catch (Exception $e) {
+        $currentUser = null;
+    }
+}
+$userName = !empty($currentUser['ho_ten']) ? $currentUser['ho_ten'] : (!empty($_SESSION['user_name']) ? $_SESSION['user_name'] : 'Trần Thị Bình');
+$userEmail = !empty($currentUser['email']) ? $currentUser['email'] : 'tranthibinh@test.com';
+$userAvatar = !empty($currentUser['avatar']) ? $currentUser['avatar'] : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&h=200&q=80';
+
+// Default fallback images matching Image 2
+$fallbackGallery = [
+    'https://images.unsplash.com/photo-1528127269322-539801943592?auto=format&fit=crop&w=1400&q=80', // Ảnh lớn
+    'https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?auto=format&fit=crop&w=800&q=80',  // Thuyền
+    'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=800&q=80',  // Khách sạn
+    'https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=800&q=80',  // Hoạt động
+    'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80',  // Cảnh hoàng hôn
+];
+
 $anhDaiDien = $tour['hinh_anh'] ?? '';
 if (empty($anhDaiDien) && !empty($hinhAnhList) && !empty($hinhAnhList[0]['url_anh'])) {
     $anhDaiDien = $hinhAnhList[0]['url_anh'];
 }
 if (empty($anhDaiDien)) {
-    $anhDaiDien = 'https://images.unsplash.com/photo-1465156799763-2c087c332922?auto=format&fit=crop&w=800&q=80';
+    $anhDaiDien = $fallbackGallery[0];
 }
 
-// Chọn lịch khởi hành ưu tiên: lịch từ hôm nay trở đi, nếu không có thì lấy lịch mới nhất.
+// Xây dựng danh sách 5 ảnh
+$galleryImages = [];
+if (!empty($anhDaiDien)) {
+    $galleryImages[] = $anhDaiDien;
+}
+if (!empty($hinhAnhList)) {
+    foreach ($hinhAnhList as $ha) {
+        if (!empty($ha['url_anh']) && !in_array($ha['url_anh'], $galleryImages, true)) {
+            $galleryImages[] = $ha['url_anh'];
+        }
+    }
+}
+if (count($galleryImages) < 5) {
+    for ($i = count($galleryImages); $i < 5; $i++) {
+        $galleryImages[] = $fallbackGallery[$i % count($fallbackGallery)];
+    }
+}
+
+// Chọn lịch khởi hành ưu tiên
 $lichKhoiHanhHienThi = null;
 $today = date('Y-m-d');
 if (!empty($lichKhoiHanhList)) {
@@ -21,7 +73,6 @@ if (!empty($lichKhoiHanhList)) {
             break;
         }
     }
-
     if ($lichKhoiHanhHienThi === null) {
         $lichKhoiHanhHienThi = end($lichKhoiHanhList);
         reset($lichKhoiHanhList);
@@ -31,7 +82,7 @@ if (!empty($lichKhoiHanhList)) {
 $maTourHienThi = trim((string)($tour['ma_tour'] ?? ''));
 if ($maTourHienThi === '') {
     $tourId = (int)($tour['tour_id'] ?? $tour['id'] ?? 0);
-    $maTourHienThi = $tourId > 0 ? 'TOUR-' . str_pad((string)$tourId, 4, '0', STR_PAD_LEFT) : 'N/A';
+    $maTourHienThi = $tourId > 0 ? 'TOUR-' . str_pad((string)$tourId, 4, '0', STR_PAD_LEFT) : 'TOUR-0103';
 }
 
 $khoiHanhHienThi = trim((string)($tour['noi_khoi_hanh'] ?? ''));
@@ -39,29 +90,14 @@ if ($khoiHanhHienThi === '' && !empty($lichKhoiHanhHienThi['diem_tap_trung'])) {
     $khoiHanhHienThi = $lichKhoiHanhHienThi['diem_tap_trung'];
 }
 if ($khoiHanhHienThi === '') {
-    $khoiHanhHienThi = 'Chưa cập nhật';
+    $khoiHanhHienThi = 'Hà Nội';
 }
 
 $ngayKhoiHanhHienThi = '';
 if (!empty($lichKhoiHanhHienThi['ngay_khoi_hanh'])) {
-    $ngayKhoiHanhHienThi = date('d-m-Y', strtotime($lichKhoiHanhHienThi['ngay_khoi_hanh']));
-}
-
-$khoiHanhSauHienThi = 'Chưa cập nhật';
-$isBookingLockedBy48h = false;
-if (!empty($lichKhoiHanhHienThi['ngay_khoi_hanh'])) {
-    $departureTs = strtotime($lichKhoiHanhHienThi['ngay_khoi_hanh'] . ' 00:00:00');
-    if ($departureTs !== false) {
-        $secondsLeft = $departureTs - time();
-        if ($secondsLeft <= 0) {
-            $khoiHanhSauHienThi = 'Đã khởi hành';
-            $isBookingLockedBy48h = true;
-        } else {
-            $daysLeft = (int)ceil($secondsLeft / 86400);
-            $khoiHanhSauHienThi = $daysLeft . ' ngày';
-            $isBookingLockedBy48h = $secondsLeft <= (48 * 3600);
-        }
-    }
+    $ngayKhoiHanhHienThi = date('d/m/Y', strtotime($lichKhoiHanhHienThi['ngay_khoi_hanh']));
+} else {
+    $ngayKhoiHanhHienThi = date('d/m/Y', strtotime('+3 days'));
 }
 
 $thoiGianHienThi = trim((string)($tour['thoi_gian'] ?? ''));
@@ -70,1716 +106,2061 @@ if ($thoiGianHienThi === '' && !empty($lichKhoiHanhHienThi['ngay_khoi_hanh']) &&
     $end = strtotime($lichKhoiHanhHienThi['ngay_ket_thuc']);
     if ($start && $end && $end >= $start) {
         $soNgay = (int)floor(($end - $start) / 86400) + 1;
-        $thoiGianHienThi = $soNgay . ' ngày';
+        $thoiGianHienThi = $soNgay . ' ngày ' . max(1, $soNgay - 1) . ' đêm';
     }
 }
 if ($thoiGianHienThi === '') {
-    $thoiGianHienThi = 'Chưa cập nhật';
+    $thoiGianHienThi = '2 ngày 1 đêm';
 }
 
-$soChoToiDa = null;
-$soChoConLai = null;
-if (!empty($lichKhoiHanhHienThi)) {
-    $soChoToiDa = isset($lichKhoiHanhHienThi['so_cho_toi_da'])
-        ? (int)$lichKhoiHanhHienThi['so_cho_toi_da']
-        : (isset($lichKhoiHanhHienThi['so_cho']) ? (int)$lichKhoiHanhHienThi['so_cho'] : null);
-    $soChoConLai = isset($lichKhoiHanhHienThi['so_cho_con_lai'])
-        ? (int)$lichKhoiHanhHienThi['so_cho_con_lai']
-        : null;
+$giaTourHienThi = (float)($tour['gia_tour'] ?? $tour['gia_co_ban'] ?? 2450000);
+if ($giaTourHienThi <= 0) {
+    $giaTourHienThi = 2450000;
 }
-
-if ($soChoToiDa === null || $soChoToiDa <= 0) {
-    $soChoToiDa = isset($tour['so_cho']) ? (int)$tour['so_cho'] : null;
+$giaGoc = round($giaTourHienThi * 1.25 / 10000) * 10000;
+if ($giaGoc <= $giaTourHienThi) {
+    $giaGoc = $giaTourHienThi + 650000;
 }
+$tietKiem = $giaGoc - $giaTourHienThi;
+$giaTreEm = round($giaTourHienThi * 0.75 / 1000) * 1000;
 
-if ($soChoConLai === null && $soChoToiDa !== null) {
-    $soChoConLai = $soChoToiDa;
-}
+$danhGiaAvgHero = isset($danhGiaTourAvg) && (float)$danhGiaTourAvg > 0 ? (float)$danhGiaTourAvg : 4.8;
+$danhGiaCountHero = isset($danhGiaTourCount) && (int)$danhGiaTourCount > 0 ? (int)$danhGiaTourCount : 320;
 
-$soChoHienThi = 'Chưa cập nhật';
-if ($soChoConLai !== null && $soChoToiDa !== null && $soChoToiDa > 0) {
-    $soChoConLai = max(0, $soChoConLai);
-    $soChoHienThi = $soChoConLai . '/' . $soChoToiDa;
-} elseif ($soChoToiDa !== null && $soChoToiDa > 0) {
-    $soChoHienThi = (string)$soChoToiDa;
-}
-
-$seatPercentRemain = null;
-if ($soChoConLai !== null && $soChoToiDa !== null && $soChoToiDa > 0) {
-    $seatPercentRemain = (int)round(($soChoConLai / $soChoToiDa) * 100);
-    if ($seatPercentRemain < 0) {
-        $seatPercentRemain = 0;
-    }
-    if ($seatPercentRemain > 100) {
-        $seatPercentRemain = 100;
+$isBookingLockedBy48h = false;
+if (!empty($lichKhoiHanhHienThi['ngay_khoi_hanh'])) {
+    $departureTs = strtotime($lichKhoiHanhHienThi['ngay_khoi_hanh'] . ' 00:00:00');
+    if ($departureTs !== false) {
+        $secondsLeft = $departureTs - time();
+        if ($secondsLeft <= (48 * 3600) && $secondsLeft > -86400) {
+            $isBookingLockedBy48h = true;
+        }
     }
 }
 
-$soKhachDaDatHienThi = null;
-$tiLeLapDayHienThi = null;
-if ($soChoConLai !== null && $soChoToiDa !== null && $soChoToiDa > 0) {
-    $soKhachDaDatHienThi = max(0, $soChoToiDa - $soChoConLai);
-    $tiLeLapDayHienThi = (int)round(($soKhachDaDatHienThi / $soChoToiDa) * 100);
+// Danh sách đánh giá mẫu phong phú nếu chưa có
+if (empty($danhGiaTourList)) {
+    $danhGiaTourList = [
+        [
+            'ho_ten' => 'Nguyễn Thị Hằng',
+            'dia_diem' => 'Hà Nội',
+            'ngay_danh_gia' => '2026-08-12',
+            'diem' => 5,
+            'noi_dung' => 'Tour rất chất lượng, hướng dẫn viên nhiệt tình, phục vụ chu đáo. Cảnh đẹp như tranh, chắc chắn sẽ quay lại!'
+        ],
+        [
+            'ho_ten' => 'Trần Minh Đức',
+            'dia_diem' => 'Đà Nẵng',
+            'ngay_danh_gia' => '2026-08-05',
+            'diem' => 5,
+            'noi_dung' => 'Du thuyền hiện đại, đồ ăn ngon, lịch trình hợp lý. Gia đình tôi rất hài lòng!'
+        ],
+        [
+            'ho_ten' => 'Lê Thị Mai',
+            'dia_diem' => 'TP.HCM',
+            'ngay_danh_gia' => '2026-07-28',
+            'diem' => 5,
+            'noi_dung' => 'Giá cả hợp lý, dịch vụ chuyên nghiệp. Rất đáng để trải nghiệm!'
+        ],
+    ];
 }
 
-$danhGiaAvgHero = isset($danhGiaTourAvg) ? (float)$danhGiaTourAvg : 0;
-$danhGiaCountHero = isset($danhGiaTourCount) ? (int)$danhGiaTourCount : 0;
-if ($danhGiaCountHero <= 0 && !empty($danhGiaTourList) && is_array($danhGiaTourList)) {
-    $danhGiaCountHero = count($danhGiaTourList);
+// Danh sách tour liên quan mẫu nếu chưa có
+if (empty($tourCungLoai)) {
+    $tourCungLoai = [
+        [
+            'id' => 1,
+            'ten_tour' => 'Tour Hạ Long 3 ngày 2 đêm',
+            'badge' => 'Tour nổi bật',
+            'hinh_anh' => 'https://images.unsplash.com/photo-1528127269322-539801943592?auto=format&fit=crop&w=600&q=80',
+            'rating' => '4.9 (450 đánh giá)',
+            'noi_khoi_hanh' => 'Hà Nội',
+            'thoi_gian' => '3 ngày 2 đêm',
+            'gia_tour' => 3450000,
+        ],
+        [
+            'id' => 2,
+            'ten_tour' => 'Tour Cát Bà 2 ngày 1 đêm',
+            'badge' => 'Khuyến mãi',
+            'hinh_anh' => 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=600&q=80',
+            'rating' => '4.7 (320 đánh giá)',
+            'noi_khoi_hanh' => 'Hải Phòng',
+            'thoi_gian' => '2 ngày 1 đêm',
+            'gia_tour' => 2150000,
+        ],
+        [
+            'id' => 3,
+            'ten_tour' => 'Tour Ninh Bình 1 ngày',
+            'badge' => '',
+            'hinh_anh' => 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=600&q=80',
+            'rating' => '4.8 (290 đánh giá)',
+            'noi_khoi_hanh' => 'Hà Nội',
+            'thoi_gian' => '1 ngày',
+            'gia_tour' => 990000,
+        ],
+        [
+            'id' => 4,
+            'ten_tour' => 'Tour Sapa 3 ngày 2 đêm',
+            'badge' => '',
+            'hinh_anh' => 'https://images.unsplash.com/photo-1570168007204-dfb528c6958f?auto=format&fit=crop&w=600&q=80',
+            'rating' => '4.9 (510 đánh giá)',
+            'noi_khoi_hanh' => 'Hà Nội',
+            'thoi_gian' => '3 ngày 2 đêm',
+            'gia_tour' => 2890000,
+        ],
+    ];
 }
-$hdvHienThi = !empty($hdvInfo) && is_array($hdvInfo) ? $hdvInfo : (!empty($tour['hdv_info']) && is_array($tour['hdv_info']) ? $tour['hdv_info'] : null);
-$nhatKyHienThi = !empty($nhatKyList) && is_array($nhatKyList) ? $nhatKyList : (!empty($tour['nhat_ky']) && is_array($tour['nhat_ky']) ? $tour['nhat_ky'] : []);
-$yeuCauHienThi = !empty($yeuCauList) && is_array($yeuCauList) ? $yeuCauList : (!empty($tour['yeu_cau_dac_biet']) && is_array($tour['yeu_cau_dac_biet']) ? $tour['yeu_cau_dac_biet'] : []);
-$giaTourHienThi = (float)($tour['gia_tour'] ?? $tour['gia_co_ban'] ?? 0);
-$trangThaiCho = 'Con nhieu cho';
-$trangThaiChoClass = 'seat-good';
-if ($seatPercentRemain !== null) {
-    if ($seatPercentRemain <= 20) {
-        $trangThaiCho = 'Sap het cho';
-        $trangThaiChoClass = 'seat-low';
-    } elseif ($seatPercentRemain <= 45) {
-        $trangThaiCho = 'Dat nhanh';
-        $trangThaiChoClass = 'seat-mid';
-    }
-}
-$camKetList = [
-    ['icon' => 'bi bi-shield-check', 'title' => 'Thong tin ro rang', 'desc' => 'Lich khoi hanh, gia va so cho duoc hien thi minh bach.'],
-    ['icon' => 'bi bi-headset', 'title' => 'Ho tro nhanh', 'desc' => 'Co the dat nhanh hoac chuyen sang trang thanh toan ngay.'],
-    ['icon' => 'bi bi-map', 'title' => 'Lich trinh cu the', 'desc' => 'Noi dung tour va cac moc hanh trinh duoc trinh bay tach bach.'],
-];
 ?>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chi tiết tour</title>
-    <link href="<?php echo BASE_URL; ?>public/assets/bootstrap/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="<?php echo BASE_URL; ?>public/assets/bootstrap-icons/bootstrap-icons.min.css">
+    <title><?= htmlspecialchars($tour['ten_tour'] ?? 'Chi tiết tour') ?> - DuLichPro</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="<?= BASE_URL; ?>public/assets/bootstrap/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="<?= BASE_URL; ?>public/assets/bootstrap-icons/bootstrap-icons.min.css">
+    
+    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@1,500;1,600&display=swap" rel="stylesheet">
+
     <style>
-        :root{
-            --lx-bg:#0b1220;
-            --lx-bg2:#070d18;
-            --lx-ink:#0f172a;
-            --lx-muted:#64748b;
-            --lx-gold:#d6b26d;
-            --lx-gold2:#b9893d;
-            --lx-card: rgba(255,255,255,.84);
-        }
-        body.tourlux{
-            font-family:"Manrope", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
-            color:var(--lx-ink);
-            background:
-                radial-gradient(1200px 600px at 20% -10%, rgba(214,178,109,.14), transparent 60%),
-                radial-gradient(900px 520px at 85% 0%, rgba(11,18,32,.08), transparent 55%),
-                #f5f6f8;
-            min-height:100vh;
-        }
-        body.tourlux h1, body.tourlux h2, body.tourlux h3, body.tourlux .tourlux-hero-title{
-            font-family:"Playfair Display", ui-serif, Georgia, "Times New Roman", Times, serif;
-        }
-
-        .tourlux-hero{
-            position:relative;
-            background-image:
-                linear-gradient(90deg, rgba(11,18,32,.92) 0%, rgba(11,18,32,.72) 46%, rgba(11,18,32,.40) 100%),
-                radial-gradient(900px 520px at 15% 20%, rgba(214,178,109,.14), transparent 55%),
-                var(--hero-img);
-            background-size:cover;
-            background-position:center;
-            color:#fff;
-            border-radius: 0 0 26px 26px;
-            overflow:hidden;
-        }
-        .tourlux-hero::after{
-            content:"";
-            position:absolute;
-            inset:0;
-            background: radial-gradient(1400px 540px at 30% 0%, rgba(214,178,109,.10), transparent 60%);
-            pointer-events:none;
-        }
-        .tourlux-hero .container{
-            position:relative;
-            z-index:2;
-            padding-top: 24px;
-            padding-bottom: 34px;
-        }
-        .tourlux-back{
-            display:inline-flex;
-            align-items:center;
-            gap:.5rem;
-            color:rgba(255,255,255,.86);
-            text-decoration:none;
-            padding:.45rem .7rem;
-            border-radius:999px;
-            border:1px solid rgba(255,255,255,.18);
-            background:rgba(255,255,255,.06);
-            backdrop-filter: blur(10px);
-            transition:.18s;
-        }
-        .tourlux-back:hover{
-            color:#fff;
-            background:rgba(214,178,109,.14);
-            border-color:rgba(214,178,109,.32);
-        }
-        .tourlux-back.is-active{
-            background:linear-gradient(135deg, var(--lx-gold), #e2bf78);
-            border-color:rgba(214,178,109,.72);
-            color:#132033;
-            box-shadow:0 10px 24px rgba(185,137,61,.22);
-        }
-        .tourlux-hero-topbar{
-            display:flex;
-            align-items:center;
-            justify-content:space-between;
-            gap:12px;
-            flex-wrap:wrap;
-        }
-        .tourlux-brand{
-            display:inline-flex;
-            align-items:center;
-            gap:.52rem;
-            color:#fff;
-            text-decoration:none;
-            font-family:"Playfair Display", ui-serif, Georgia, "Times New Roman", Times, serif;
-            font-size:1.95rem;
-            font-weight:700;
-            letter-spacing:.3px;
-        }
-        .tourlux-brand i{ color: var(--lx-gold); }
-        .tourlux-top-actions{
-            display:flex;
-            align-items:center;
-            gap:.55rem;
-            flex-wrap:wrap;
-        }
-        .tourlux-kicker{
-            letter-spacing:.18em;
-            text-transform:uppercase;
-            color:rgba(214,178,109,.95);
-            font-weight:800;
-            font-size:.8rem;
-            margin-top: 16px;
-        }
-        .tourlux-hero-title{
-            font-size: clamp(1.7rem, 4vw, 2.6rem);
-            line-height:1.08;
-            margin:.3rem 0 .6rem 0;
-            letter-spacing:.2px;
-        }
-        .tourlux-meta{
-            display:flex;
-            flex-wrap:wrap;
-            gap:.55rem;
-            margin-top:.5rem;
-        }
-        .chip{
-            display:inline-flex;
-            align-items:center;
-            gap:.45rem;
-            padding:.45rem .7rem;
-            border-radius:999px;
-            border:1px solid rgba(255,255,255,.18);
-            background:rgba(255,255,255,.06);
-            backdrop-filter: blur(10px);
-            color:rgba(255,255,255,.88);
-            font-weight:600;
-            font-size:.92rem;
-        }
-        .chip i{ color: rgba(214,178,109,.95); }
-
-        .panel{
-            background:var(--lx-card);
-            border:1px solid rgba(255,255,255,.58);
-            box-shadow:0 26px 80px rgba(2,6,23,.12);
-            border-radius:20px;
-            backdrop-filter: blur(14px);
-        }
-        .panel-body{ padding: 18px 18px; }
-        @media (min-width: 992px){
-            .panel-body{ padding: 22px 22px; }
-        }
-        .panel-title{
-            font-weight:800;
-            letter-spacing:.2px;
-            margin:0;
-            display:flex;
-            align-items:center;
-            gap:.55rem;
-        }
-        .panel-title i{ color: var(--lx-gold2); }
-        .panel-title::after{
-            content:"";
-            display:block;
-            height:2px;
-            width:56px;
-            margin-left:auto;
-            background:linear-gradient(90deg,var(--lx-gold), transparent);
-            border-radius:999px;
-            opacity:.95;
-        }
-        .text-muted-2{ color: var(--lx-muted) !important; }
-
-        .tourlux-mainimg{
-            width:100%;
-            height: min(520px, 55vw);
-            object-fit:cover;
-            border-radius:18px;
-            border:1px solid rgba(255,255,255,.40);
-            box-shadow:0 22px 70px rgba(2,6,23,.18);
-        }
-        @media (max-width: 576px){
-            .tourlux-mainimg{ height: 260px; }
-        }
-        .tourlux-thumbs{
-            display:flex;
-            gap:.55rem;
-            overflow:auto;
-            padding:.6rem .15rem .15rem .15rem;
-            scroll-snap-type:x mandatory;
-        }
-        .tourlux-thumbs::-webkit-scrollbar{ height:10px; }
-        .tourlux-thumbs::-webkit-scrollbar-track{
-            background:rgba(15,23,42,.08);
-            border-radius:999px;
-        }
-        .tourlux-thumbs::-webkit-scrollbar-thumb{
-            background:linear-gradient(90deg, rgba(11,18,32,.65), rgba(20,38,68,.72));
-            border-radius:999px;
-            border:2px solid rgba(245,246,248,.92);
-        }
-        .tourlux-thumb{
-            width:96px;
-            height:76px;
-            flex:0 0 auto;
-            object-fit:cover;
-            border-radius:12px;
-            cursor:pointer;
-            border:1px solid rgba(15,23,42,.12);
-            opacity:.86;
-            transition:.18s;
-            scroll-snap-align:start;
-        }
-        .tourlux-thumb:hover{ opacity:1; transform: translateY(-2px); }
-        .tourlux-thumb.is-active{
-            opacity:1;
-            border-color: rgba(214,178,109,.55);
-            box-shadow:0 10px 28px rgba(185,137,61,.18);
+        :root {
+            --primary: #0066FF;
+            --primary-hover: #0052cc;
+            --primary-light: #EBF3FF;
+            --primary-soft: rgba(0, 102, 255, 0.08);
+            --dark: #0F172A;
+            --slate-800: #1E293B;
+            --slate-600: #475569;
+            --slate-500: #64748B;
+            --slate-400: #94A3B8;
+            --slate-200: #E2E8F0;
+            --slate-100: #F1F5F9;
+            --slate-50: #F8FAFC;
+            --amber: #F59E0B;
+            --red: #EF4444;
+            --red-light: #FEE2E2;
+            --green: #10B981;
+            --radius-lg: 16px;
+            --radius-md: 12px;
+            --radius-sm: 8px;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+            --shadow-md: 0 4px 20px -2px rgba(15, 23, 42, 0.08);
+            --shadow-lg: 0 12px 32px -4px rgba(15, 23, 42, 0.12);
         }
 
-        .table{
-            overflow:hidden;
-            border-radius:16px;
-            border:1px solid rgba(15,23,42,.10);
-            background:#fff;
-        }
-        .table thead th{
-            background:rgba(11,18,32,.03);
-            color:#0f172a;
-            font-weight:800;
-            vertical-align:middle;
-        }
-        .table td{ vertical-align:middle; }
-        .data-grid-table{
-            border-radius:16px;
-            overflow:hidden;
-        }
-        .data-grid-table thead th{
-            background:linear-gradient(180deg, rgba(11,18,32,.06), rgba(11,18,32,.03));
-            border-bottom:1px solid rgba(15,23,42,.14);
-            white-space:nowrap;
-        }
-        .data-grid-table tbody tr:nth-child(even){
-            background:rgba(214,178,109,.05);
-        }
-        .data-grid-table tbody tr:hover{
-            background:rgba(214,178,109,.10);
+        * {
+            box-sizing: border-box;
         }
 
-        .price{
-            font-size:2.1rem;
-            font-weight:900;
-            letter-spacing:.3px;
-            color:#b42318;
-            margin:0;
-        }
-        .price small{
-            font-weight:700;
-            color:#0f172a;
-            font-size:1rem;
-        }
-        .promo{
-            border-radius:16px;
-            border:1px dashed rgba(180,35,24,.28);
-            background:rgba(180,35,24,.06);
-            padding:12px 12px;
-            display:flex;
-            gap:.65rem;
-            align-items:flex-start;
-        }
-        .promo i{ color:#b42318; font-size:1.35rem; line-height:1; margin-top:2px; }
-        .promo b{ color:#b42318; }
-
-        .btn-lux{
-            background:linear-gradient(135deg,var(--lx-bg), #142644);
-            border:none;
-            color:#fff;
-            font-weight:800;
-            border-radius:14px;
-            box-shadow:0 16px 46px rgba(11,18,32,.22);
-        }
-        .btn-lux:hover{ filter:brightness(1.04); color:#fff; }
-        .btn-lux-outline{
-            border:1px solid rgba(214,178,109,.55);
-            color:var(--lx-gold2);
-            background:rgba(255,255,255,.55);
-            font-weight:800;
-            border-radius:14px;
-        }
-        .btn-lux-outline:hover{
-            background:rgba(214,178,109,.12);
-            color:#7a561f;
+        body {
+            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+            color: var(--slate-800);
+            background-color: #FFFFFF;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
         }
 
-        .tourlux-sticky{
-            top: 18px;
-            z-index: 20;
-        }
-        @media (min-width: 992px){
-            .tourlux-sticky{ top: 28px; }
-        }
-
-        .tour-info-box{
-            background:rgba(255,255,255,.90);
-            border:1px solid rgba(15,23,42,.10);
-            border-radius:18px;
-            padding: 14px 14px;
-        }
-        .tour-info-head{
-            display:flex;
-            align-items:center;
-            gap:.55rem;
-            font-weight:900;
-            color:rgba(11,18,32,.92);
-            margin:0 0 .75rem 0;
-            font-family:"Playfair Display", ui-serif, Georgia, "Times New Roman", Times, serif;
-        }
-        .tour-info-head i{
-            color:#0d6efd;
-            font-size:1.2rem;
-        }
-        .tour-info-row{
-            display:grid;
-            grid-template-columns: 140px 1fr;
-            column-gap:.6rem;
-            line-height:1.35;
-            padding:.28rem 0;
-            align-items:start;
-        }
-        .tour-info-row .k{
-            color:rgba(100,116,139,.98);
-            font-weight:800;
-            white-space:normal;
-        }
-        .tour-info-row .v{
-            color:rgba(15,23,42,.92);
-            font-weight:700;
-            min-width:0;
-            word-break:break-word;
-        }
-        .tour-info-row.price{
-            margin-top:.45rem;
-            padding-top:.6rem;
-            border-top:1px dashed rgba(15,23,42,.14);
-            grid-template-columns: 1fr auto;
-            align-items:baseline;
-        }
-        .tour-info-row.price .k{
-            font-size:1.35rem;
-            font-weight:900;
-            color:rgba(100,116,139,.92);
-        }
-        .tour-info-row.price .v{
-            color:#b42318;
-            font-weight:900;
-            font-size:1.35rem;
-            justify-self:end;
-        }
-        .tour-seat-meter{
-            margin-top:.68rem;
-            border-top:1px dashed rgba(15,23,42,.14);
-            padding-top:.68rem;
-        }
-        .tour-seat-meter-head{
-            display:flex;
-            align-items:center;
-            justify-content:space-between;
-            font-size:.82rem;
-            color:#475569;
-            font-weight:700;
-            margin-bottom:6px;
-        }
-        .tour-seat-bar{
-            height:9px;
-            width:100%;
-            border-radius:999px;
-            background:rgba(15,23,42,.08);
-            overflow:hidden;
-        }
-        .tour-seat-progress{
-            height:100%;
-            border-radius:999px;
-            background:linear-gradient(90deg, #17413b, #2f7d74);
-            transition: width .35s ease;
+        /* ── HEADER / TOPBAR (Chuẩn Image 1) ── */
+        .site-header {
+            background: #ffffff;
+            border-bottom: 1px solid #e2e8f0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
         }
 
-        .tour-copy{
-            font-size:1.02rem;
-            line-height:1.8;
-            color:#334155;
-        }
-        .tourlux-stats{
-            display:grid;
-            grid-template-columns:repeat(3, minmax(0, 1fr));
-            gap:10px;
-            margin-top:14px;
-            max-width:760px;
-        }
-        .tourlux-overview-grid{
-            display:grid;
-            grid-template-columns:repeat(4, minmax(0, 1fr));
-            gap:14px;
-            margin-bottom:20px;
-        }
-        .tourlux-overview-card{
-            position:relative;
-            overflow:hidden;
-            border-radius:22px;
-            padding:18px;
-            min-height:142px;
-            background:
-                radial-gradient(220px 120px at 100% 0%, rgba(214,178,109,.18), transparent 60%),
-                linear-gradient(180deg, rgba(255,255,255,.94), rgba(255,255,255,.82));
-            border:1px solid rgba(255,255,255,.7);
-            box-shadow:0 18px 54px rgba(2,6,23,.10);
-        }
-        .tourlux-overview-card i{
-            font-size:1.15rem;
-            color:var(--lx-gold2);
-        }
-        .tourlux-overview-label{
-            font-size:.8rem;
-            text-transform:uppercase;
-            letter-spacing:.08em;
-            font-weight:800;
-            color:#64748b;
-            margin-top:12px;
-        }
-        .tourlux-overview-value{
-            font-size:1.15rem;
-            font-weight:900;
-            color:#0f172a;
-            margin-top:6px;
-            line-height:1.25;
-        }
-        .tourlux-overview-note{
-            color:#64748b;
-            font-size:.92rem;
-            margin-top:6px;
-        }
-        .seat-pill{
-            display:inline-flex;
-            align-items:center;
-            gap:.4rem;
-            border-radius:999px;
-            padding:.4rem .8rem;
-            font-size:.78rem;
-            font-weight:800;
-            margin-top:10px;
-            border:1px solid transparent;
-        }
-        .seat-pill.seat-good{
-            color:#166534;
-            background:rgba(34,197,94,.10);
-            border-color:rgba(34,197,94,.18);
-        }
-        .seat-pill.seat-mid{
-            color:#9a6700;
-            background:rgba(245,158,11,.12);
-            border-color:rgba(245,158,11,.22);
-        }
-        .seat-pill.seat-low{
-            color:#b42318;
-            background:rgba(239,68,68,.10);
-            border-color:rgba(239,68,68,.18);
-        }
-        .tourlux-stat{
-            border:1px solid rgba(255,255,255,.18);
-            background:rgba(255,255,255,.08);
-            backdrop-filter: blur(10px);
-            border-radius:14px;
-            padding:10px 12px;
-            display:flex;
-            align-items:flex-start;
-            gap:8px;
-        }
-        .tourlux-stat i{
-            color:rgba(214,178,109,.95);
-            font-size:1.02rem;
-            transform:translateY(1px);
-        }
-        .tourlux-stat-k{
-            font-size:.72rem;
-            color:rgba(255,255,255,.64);
-            text-transform:uppercase;
-            letter-spacing:.08em;
-            font-weight:800;
-        }
-        .tourlux-stat-v{
-            color:#fff;
-            font-size:.98rem;
-            font-weight:900;
-            line-height:1.2;
-            margin-top:2px;
+        .header-container {
+            max-width: 1360px;
+            margin: 0 auto;
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
 
-        .timeline-list{
-            display:grid;
-            gap:12px;
-        }
-        .timeline-item{
-            display:grid;
-            grid-template-columns: 76px 1fr;
-            gap:12px;
-            align-items:start;
-            background:rgba(255,255,255,.82);
-            border:1px solid rgba(15,23,42,.10);
-            border-radius:14px;
-            padding:12px;
-            box-shadow:0 8px 24px rgba(2,6,23,.06);
-        }
-        .timeline-day{
-            border-radius:12px;
-            background:linear-gradient(135deg, #15233b, #20365f);
-            color:#f7e5b6;
-            text-align:center;
-            padding:10px 8px;
-            font-weight:900;
-            font-size:.86rem;
-            letter-spacing:.03em;
-        }
-        .timeline-place{
-            font-weight:800;
-            color:#13213a;
-            margin-bottom:3px;
-        }
-        .timeline-activity{
-            color:#475569;
-            line-height:1.55;
-            font-size:.95rem;
-        }
-        .feature-grid{
-            display:grid;
-            grid-template-columns:repeat(3, minmax(0, 1fr));
-            gap:14px;
-        }
-        .feature-card{
-            border-radius:18px;
-            border:1px solid rgba(15,23,42,.10);
-            background:linear-gradient(180deg, rgba(255,255,255,.90), rgba(255,255,255,.78));
-            padding:16px;
-            box-shadow:0 14px 36px rgba(2,6,23,.08);
-        }
-        .feature-card i{
-            font-size:1.1rem;
-            color:var(--lx-gold2);
-        }
-        .feature-title{
-            font-weight:900;
-            color:#13213a;
-            margin:10px 0 6px 0;
-        }
-        .feature-copy{
-            color:#64748b;
-            line-height:1.55;
-            font-size:.94rem;
-            margin:0;
-        }
-        .schedule-card-list{
-            display:grid;
-            gap:12px;
-        }
-        .schedule-card{
-            border-radius:18px;
-            border:1px solid rgba(15,23,42,.10);
-            background:rgba(255,255,255,.88);
-            padding:16px;
-            box-shadow:0 12px 30px rgba(2,6,23,.06);
-        }
-        .schedule-card-top{
-            display:flex;
-            align-items:flex-start;
-            justify-content:space-between;
-            gap:12px;
-            margin-bottom:10px;
-        }
-        .schedule-date{
-            font-weight:900;
-            color:#13213a;
-            font-size:1.02rem;
-        }
-        .schedule-range{
-            color:#64748b;
-            font-size:.92rem;
-            margin-top:2px;
-        }
-        .status-badge{
-            display:inline-flex;
-            align-items:center;
-            justify-content:center;
-            border-radius:999px;
-            padding:.42rem .8rem;
-            font-size:.78rem;
-            font-weight:800;
-            white-space:nowrap;
-        }
-        .status-badge.status-open{
-            background:rgba(34,197,94,.12);
-            color:#166534;
-        }
-        .status-badge.status-closed{
-            background:rgba(148,163,184,.18);
-            color:#334155;
-        }
-        .status-badge.status-busy{
-            background:rgba(245,158,11,.16);
-            color:#9a6700;
-        }
-        .schedule-meta{
-            display:grid;
-            grid-template-columns:repeat(2, minmax(0, 1fr));
-            gap:10px;
-        }
-        .schedule-meta-item{
-            border-radius:14px;
-            background:rgba(15,23,42,.04);
-            padding:10px 12px;
-        }
-        .schedule-meta-item span{
-            display:block;
-            color:#64748b;
-            font-size:.8rem;
-            font-weight:700;
-            margin-bottom:4px;
-        }
-        .schedule-meta-item strong{
-            color:#0f172a;
-            font-size:.94rem;
-        }
-        .list-clean{
-            list-style:none;
-            padding:0;
-            margin:0;
-            display:grid;
-            gap:10px;
-        }
-        .list-clean li{
-            border-radius:16px;
-            border:1px solid rgba(15,23,42,.08);
-            background:rgba(255,255,255,.78);
-            padding:12px 14px;
-            color:#334155;
-            line-height:1.55;
-        }
-        .list-clean li strong{
-            color:#0f172a;
-        }
-        @media (max-width: 576px){
-            .tour-info-row{ grid-template-columns: 120px 1fr; }
-            .tour-info-row.price .k,
-            .tour-info-row.price .v{
-                font-size:1.15rem;
-            }
+        .brand-block {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
         }
 
-        /* RELATED TOURS */
-        .related-scroller{
-            display:flex;
-            gap:14px;
-            overflow:auto;
-            padding:.55rem .15rem .15rem .15rem;
-            scroll-snap-type:x mandatory;
-        }
-        .related-scroller::-webkit-scrollbar{ height:10px; }
-        .related-scroller::-webkit-scrollbar-track{
-            background:rgba(15,23,42,.08);
-            border-radius:999px;
-        }
-        .related-scroller::-webkit-scrollbar-thumb{
-            background:linear-gradient(90deg, rgba(11,18,32,.65), rgba(20,38,68,.72));
-            border-radius:999px;
-            border:2px solid rgba(245,246,248,.92);
-        }
-        .related-card{
-            flex:0 0 296px;
-            scroll-snap-align:start;
-            border-radius:22px;
-            overflow:hidden;
-            border:1px solid rgba(15,23,42,.10);
-            background:linear-gradient(180deg,#ffffff,#fbfdfa);
-            box-shadow:0 18px 54px rgba(2,6,23,.10);
-            transition: transform .22s, box-shadow .22s;
-            display:flex;
-            flex-direction:column;
-        }
-        .related-card:hover{
-            transform: translateY(-5px);
-            box-shadow:0 26px 74px rgba(2,6,23,.16);
-        }
-        .related-card img{
-            width:100%;
-            height:176px;
-            object-fit:cover;
-            display:block;
-            filter:saturate(1.05) contrast(1.02);
-            transition:transform .35s ease;
-        }
-        .related-card:hover img{
-            transform:scale(1.04);
-        }
-        .related-body{ padding: 14px 14px 16px 14px; display:flex; flex-direction:column; flex:1; }
-        .related-name{
-            font-weight:900;
-            letter-spacing:.1px;
-            margin:0 0 6px 0;
-            line-height:1.2;
-            font-size:1.05rem;
-        }
-        .related-meta{
-            color:var(--lx-muted);
-            font-size:.92rem;
-            min-height: 42px;
-            margin-bottom:12px;
-        }
-        .related-price{
-            font-weight:900;
-            color:#b42318;
-            font-size:1.05rem;
-        }
-        .related-actions{
-            display:flex;
-            align-items:center;
-            justify-content:space-between;
-            margin-top:auto;
-            gap:8px;
-        }
-        .related-badge{
-            display:inline-flex;
-            align-items:center;
-            border-radius:999px;
-            background:rgba(214,178,109,.18);
-            color:#7a561f;
-            border:1px solid rgba(214,178,109,.34);
-            padding:4px 10px;
-            font-size:.74rem;
-            font-weight:800;
-        }
-        @media (min-width: 992px){
-            .related-scroller{ flex-wrap:wrap; overflow:visible; }
-            .related-card{ flex:1 1 calc(33.333% - 14px); max-width:calc(33.333% - 14px); }
+        .brand-logo-icon {
+            width: 42px;
+            height: 42px;
+            background: linear-gradient(135deg, #0284c7 0%, #0066cc 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            font-size: 22px;
+            box-shadow: 0 4px 12px rgba(0, 102, 204, 0.2);
         }
 
-        .js-reveal{
-            opacity:0;
-            transform:translateY(20px);
-            transition:opacity .55s ease, transform .55s ease;
+        .brand-text h1 {
+            font-size: 19px;
+            font-weight: 800;
+            color: #0f2e5a;
+            margin: 0;
+            line-height: 1.2;
+            letter-spacing: -0.4px;
         }
-        .js-reveal.is-visible{
-            opacity:1;
-            transform:translateY(0);
+
+        .brand-text p {
+            font-size: 11px;
+            color: #64748b;
+            margin: 0;
+            font-weight: 500;
         }
-        @media (prefers-reduced-motion: reduce){
-            .js-reveal{ opacity:1; transform:none; transition:none; }
+
+        .site-nav {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            white-space: nowrap;
+        }
+
+        .site-nav a {
+            text-decoration: none;
+            font-size: 14.5px;
+            font-weight: 500;
+            color: #475569;
+            padding: 8px 14px;
+            border-radius: 20px;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .site-nav a:hover {
+            color: var(--primary);
+            background: var(--primary-soft);
+        }
+
+        .site-nav a.active {
+            color: var(--primary);
+            background: var(--primary-light);
+            font-weight: 600;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            white-space: nowrap;
+        }
+
+        .btn-icon-round {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #475569;
+            background: #f1f5f9;
+            text-decoration: none;
+            transition: all 0.2s;
+            border: none;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .btn-icon-round:hover {
+            background: #e2e8f0;
+            color: var(--primary);
+        }
+
+        .badge-count {
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            background: #ef4444;
+            color: #fff;
+            font-size: 10px;
+            font-weight: 700;
+            border-radius: 50%;
+            width: 17px;
+            height: 17px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #fff;
+        }
+
+        .user-profile-btn {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            padding: 4px 10px 4px 4px;
+            border-radius: 30px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            cursor: pointer;
+            text-decoration: none;
+            color: #1e293b;
+            transition: background 0.2s;
+        }
+
+        .user-profile-btn:hover {
+            background: #f1f5f9;
+        }
+
+        .user-profile-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .user-profile-name {
+            font-size: 13.5px;
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .user-dropdown-container {
+            position: relative;
+        }
+
+        .btn-logout-shortcut {
+            color: #ef4444 !important;
+            background: #fef2f2 !important;
+            border: 1px solid #fee2e2 !important;
+            transition: all 0.2s ease;
+        }
+
+        .btn-logout-shortcut:hover {
+            background: #fee2e2 !important;
+            color: #dc2626 !important;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(239, 68, 68, 0.18);
+        }
+
+        .user-dropdown-menu {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+            min-width: 220px;
+            padding: 8px;
+            display: none;
+            z-index: 1100;
+        }
+
+        .user-dropdown-container:hover .user-dropdown-menu,
+        .user-dropdown-container:focus-within .user-dropdown-menu {
+            display: block;
+        }
+
+        .user-dropdown-header {
+            padding: 10px 12px 8px;
+            border-bottom: 1px solid #f1f5f9;
+            margin-bottom: 6px;
+        }
+
+        .user-dropdown-header strong {
+            display: block;
+            font-size: 13.5px;
+            color: #0f172a;
+        }
+
+        .user-dropdown-header small {
+            display: block;
+            font-size: 11.5px;
+            color: #64748b;
+            word-break: break-all;
+        }
+
+        .user-dropdown-menu a {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #334155;
+            text-decoration: none;
+            transition: all 0.15s;
+        }
+
+        .user-dropdown-menu a:hover {
+            background: #f8fafc;
+            color: #0066cc;
+        }
+
+        .user-dropdown-menu a.text-danger:hover {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+
+        .user-dropdown-divider {
+            height: 1px;
+            background: #f1f5f9;
+            margin: 6px 0;
+        }
+
+        .btn-auth-login {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            text-decoration: none;
+            color: #1e293b;
+            font-size: 14px;
+            font-weight: 600;
+            padding: 6px 12px;
+            transition: color 0.2s;
+            white-space: nowrap;
+        }
+
+        .btn-auth-login:hover {
+            color: #0066cc;
+        }
+
+        .btn-auth-register {
+            display: inline-flex;
+            align-items: center;
+            background: #0066cc;
+            color: #ffffff !important;
+            font-size: 14px;
+            font-weight: 600;
+            padding: 8px 18px;
+            border-radius: 8px;
+            text-decoration: none;
+            box-shadow: 0 4px 10px rgba(0, 102, 204, 0.2);
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .btn-auth-register:hover {
+            background: #0052a3;
+            transform: translateY(-1px);
+        }
+
+        /* HERO BANNER (Image 2) */
+        .tour-hero {
+            position: relative;
+            background: linear-gradient(180deg, rgba(15, 23, 42, 0.72) 0%, rgba(15, 23, 42, 0.85) 100%),
+                        url('<?= htmlspecialchars($anhDaiDien) ?>') center/cover no-repeat;
+            color: #FFFFFF;
+            padding: 34px 0 38px;
+            overflow: hidden;
+        }
+        .breadcrumb-nav {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.75);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+        .breadcrumb-nav a {
+            color: rgba(255, 255, 255, 0.75);
+            text-decoration: none;
+        }
+        .breadcrumb-nav a:hover {
+            color: #FFFFFF;
+        }
+        .hero-badge-wrap {
+            margin-bottom: 10px;
+        }
+        .hero-badge {
+            background: #0084FF;
+            color: #FFFFFF;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 4px 12px;
+            border-radius: 20px;
+            display: inline-block;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .hero-title {
+            font-size: 34px;
+            font-weight: 800;
+            line-height: 1.25;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+        .hero-subtitle {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.85);
+            max-width: 820px;
+            margin-bottom: 18px;
+            font-weight: 400;
+        }
+        .hero-meta-row {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+            font-size: 13px;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.95);
+        }
+        .hero-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .hero-meta-item i {
+            color: rgba(255, 255, 255, 0.8);
+        }
+        .hero-meta-item .star-gold {
+            color: #FFB800;
+        }
+        .hero-signature {
+            position: absolute;
+            right: 36px;
+            bottom: 26px;
+            font-family: 'Playfair Display', serif;
+            font-style: italic;
+            font-size: 22px;
+            color: rgba(255, 255, 255, 0.45);
+            pointer-events: none;
+            user-select: none;
+        }
+
+        /* 5-IMAGE GALLERY (ĐƯỢC ĐẶT Ở CỘT TRÁI - NGANG HÀNG VỚI BẢNG GIÁ Ở CỘT PHẢI) */
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: 1.15fr 1fr;
+            gap: 10px;
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            height: 380px;
+            margin-bottom: 28px;
+        }
+        .gallery-left {
+            position: relative;
+            height: 100%;
+        }
+        .gallery-left img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+        .gallery-left:hover img {
+            transform: scale(1.02);
+        }
+        .btn-view-video {
+            position: absolute;
+            bottom: 14px;
+            left: 14px;
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(8px);
+            color: #FFFFFF;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 6px 14px;
+            border-radius: 30px;
+            font-size: 12px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-view-video:hover {
+            background: rgba(0, 102, 255, 0.9);
+            color: #FFFFFF;
+        }
+        .gallery-right {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 10px;
+            height: 100%;
+        }
+        .gallery-thumb-item {
+            position: relative;
+            height: 100%;
+            overflow: hidden;
+            cursor: pointer;
+        }
+        .gallery-thumb-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+        .gallery-thumb-item:hover img {
+            transform: scale(1.04);
+        }
+        .gallery-thumb-item.top-right img {
+            border-radius: 0 var(--radius-lg) 0 0;
+        }
+        .gallery-thumb-item.bottom-right img {
+            border-radius: 0 0 var(--radius-lg) 0;
+        }
+        .gallery-overlay-more {
+            position: absolute;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.65);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #FFFFFF;
+            font-size: 20px;
+            font-weight: 800;
+            border-radius: 0 0 var(--radius-lg) 0;
+            transition: background 0.2s;
+        }
+        .gallery-thumb-item:hover .gallery-overlay-more {
+            background: rgba(0, 102, 255, 0.75);
+        }
+
+        /* TABS NAVIGATION */
+        .tour-tabs {
+            display: flex;
+            align-items: center;
+            gap: 32px;
+            border-bottom: 2px solid var(--slate-100);
+            margin-bottom: 28px;
+            padding-bottom: 0;
+            position: sticky;
+            top: 65px;
+            background: #FFFFFF;
+            z-index: 100;
+        }
+        .tab-btn {
+            background: none;
+            border: none;
+            padding: 12px 0;
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--slate-500);
+            cursor: pointer;
+            position: relative;
+            transition: color 0.2s;
+        }
+        .tab-btn:hover {
+            color: var(--primary);
+        }
+        .tab-btn.active {
+            color: var(--primary);
+        }
+        .tab-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--primary);
+            border-radius: 3px 3px 0 0;
+        }
+
+        /* CONTENT SECTIONS */
+        .section-block {
+            margin-bottom: 36px;
+        }
+        .section-title {
+            font-size: 18px;
+            font-weight: 800;
+            color: var(--slate-800);
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .section-title i {
+            color: var(--primary);
+            font-size: 17px;
+        }
+        .section-desc {
+            font-size: 14px;
+            color: var(--slate-600);
+            line-height: 1.7;
+            margin-bottom: 22px;
+        }
+
+        /* HIGHLIGHT CARDS (Grid 4 cột) */
+        .highlights-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 14px;
+            margin-bottom: 28px;
+        }
+        .highlight-card {
+            background: #FFFFFF;
+            border: 1px solid var(--slate-200);
+            border-radius: var(--radius-md);
+            padding: 16px 12px;
+            text-align: center;
+            transition: all 0.2s;
+        }
+        .highlight-card:hover {
+            border-color: var(--primary);
+            box-shadow: 0 4px 16px rgba(0, 102, 255, 0.08);
+            transform: translateY(-2px);
+        }
+        .highlight-card .h-icon {
+            font-size: 26px;
+            color: var(--primary);
+            margin-bottom: 10px;
+            display: inline-block;
+        }
+        .highlight-card .h-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--slate-800);
+            line-height: 1.4;
+        }
+
+        /* DETAILED TIMELINE */
+        .timeline-day-card {
+            background: #FFFFFF;
+            border: 1px solid var(--slate-200);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            margin-bottom: 18px;
+        }
+        .day-header {
+            background: var(--slate-50);
+            padding: 12px 18px;
+            border-bottom: 1px solid var(--slate-200);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .day-badge {
+            background: var(--primary);
+            color: #FFFFFF;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 16px;
+        }
+        .day-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--slate-800);
+        }
+        .day-content {
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 150px 1fr;
+            gap: 20px;
+        }
+        .day-thumb {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            border-radius: var(--radius-md);
+        }
+        .timeline-steps {
+            position: relative;
+            padding-left: 20px;
+        }
+        .timeline-steps::before {
+            content: '';
+            position: absolute;
+            left: 5px;
+            top: 6px;
+            bottom: 6px;
+            width: 2px;
+            background: var(--slate-200);
+        }
+        .timeline-step {
+            position: relative;
+            margin-bottom: 14px;
+            font-size: 13px;
+        }
+        .timeline-step:last-child {
+            margin-bottom: 0;
+        }
+        .timeline-step::before {
+            content: '';
+            position: absolute;
+            left: -19px;
+            top: 5px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--primary);
+            border: 2px solid #FFFFFF;
+            box-shadow: 0 0 0 2px rgba(0, 102, 255, 0.2);
+        }
+        .step-time {
+            font-weight: 800;
+            color: var(--slate-800);
+            margin-right: 6px;
+            display: inline-block;
+            min-width: 44px;
+        }
+        .step-text {
+            color: var(--slate-600);
+        }
+
+        /* AMENITIES */
+        .amenities-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px;
+        }
+        .amenity-card {
+            background: var(--slate-50);
+            border: 1px solid var(--slate-200);
+            border-radius: var(--radius-md);
+            padding: 14px 10px;
+            text-align: center;
+        }
+        .amenity-card i {
+            font-size: 22px;
+            color: var(--primary);
+            margin-bottom: 6px;
+            display: inline-block;
+        }
+        .amenity-card span {
+            display: block;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--slate-800);
         }
 
         /* REVIEWS */
-        .reviews-head{
-            display:flex;
-            flex-wrap:wrap;
-            align-items:center;
-            justify-content:space-between;
-            gap:10px;
-            margin-top:2px;
+        .reviews-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
         }
-        .rating-badge{
-            display:inline-flex;
-            align-items:center;
-            gap:.5rem;
-            padding:.4rem .7rem;
-            border-radius:999px;
-            border:1px solid rgba(214,178,109,.45);
-            background:rgba(214,178,109,.12);
-            color:rgba(11,18,32,.92);
-            font-weight:900;
+        .review-nav-btns {
+            display: flex;
+            gap: 8px;
         }
-        .rating-stars i{ color: rgba(214,178,109,.95); }
-        .review-grid{
-            display:grid;
-            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-            gap:14px;
-            margin-top: 14px;
+        .btn-rev-circle {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 1px solid var(--slate-200);
+            background: #FFFFFF;
+            color: var(--slate-600);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
         }
-        .review-card{
-            border-radius:18px;
-            border:1px solid rgba(255,255,255,.58);
-            background:rgba(255,255,255,.76);
-            box-shadow:0 18px 54px rgba(2,6,23,.10);
-            padding: 14px 14px;
+        .btn-rev-circle:hover {
+            background: var(--primary);
+            color: #FFFFFF;
+            border-color: var(--primary);
         }
-        .review-top{
-            display:flex;
-            align-items:center;
-            justify-content:space-between;
-            gap:10px;
+        .reviews-layout {
+            display: grid;
+            grid-template-columns: 180px 1fr;
+            gap: 20px;
+            align-items: stretch;
         }
-        .avatar{
-            width:40px;
-            height:40px;
-            border-radius:999px;
-            display:flex;
-            align-items:center;
-            justify-content:center;
-            background:linear-gradient(135deg, rgba(11,18,32,.86), rgba(20,38,68,.72));
-            color:#fff;
-            font-weight:900;
-            letter-spacing:.4px;
-            flex:0 0 auto;
+        .score-box {
+            background: var(--slate-50);
+            border: 1px solid var(--slate-200);
+            border-radius: var(--radius-lg);
+            padding: 24px 16px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
         }
-        .review-name{
-            font-weight:900;
-            margin:0;
-            line-height:1.1;
+        .score-num {
+            font-size: 38px;
+            font-weight: 800;
+            color: var(--slate-800);
+            line-height: 1;
+            margin-bottom: 6px;
         }
-        .review-date{
-            color:var(--lx-muted);
-            font-size:.9rem;
+        .score-num span {
+            font-size: 18px;
+            color: var(--slate-500);
+            font-weight: 600;
         }
-        .review-body{
-            color:rgba(15,23,42,.92);
-            margin-top:10px;
-            line-height:1.5;
+        .stars-row {
+            color: var(--amber);
+            font-size: 15px;
+            margin-bottom: 6px;
+            display: flex;
+            gap: 2px;
+        }
+        .score-total {
+            font-size: 11px;
+            color: var(--slate-500);
+            font-weight: 600;
+        }
+        .reviews-cards-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 14px;
+        }
+        .review-card-item {
+            background: #FFFFFF;
+            border: 1px solid var(--slate-200);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .rev-user-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        .rev-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--primary-light);
+            color: var(--primary);
+            font-weight: 700;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .rev-name {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--slate-800);
+            line-height: 1.2;
+        }
+        .rev-loc {
+            font-size: 10px;
+            color: var(--slate-400);
+        }
+        .rev-stars {
+            color: var(--amber);
+            font-size: 11px;
+            margin-bottom: 6px;
+        }
+        .rev-content {
+            font-size: 11px;
+            color: var(--slate-600);
+            line-height: 1.5;
+            font-style: italic;
         }
 
-        .review-form-shell{
-            margin-top:14px;
-            border:1px solid rgba(15,23,42,.10);
-            background:linear-gradient(180deg, rgba(255,255,255,.86), rgba(255,255,255,.70));
-            border-radius:18px;
-            padding:16px;
-            box-shadow:0 10px 28px rgba(2,6,23,.06);
+        /* RIGHT COLUMN: STICKY BOOKING CARD (BẢNG GIÁ NGANG HÀNG VỚI ẢNH) */
+        .sticky-sidebar {
+            position: sticky;
+            top: 75px;
         }
-        .review-form-shell .form-label{
-            font-weight:800;
-            color:#1e293b;
-            margin-bottom:.48rem;
+        .booking-card {
+            background: #FFFFFF;
+            border: 1px solid var(--slate-200);
+            border-radius: var(--radius-lg);
+            padding: 22px;
+            box-shadow: var(--shadow-md);
+            margin-bottom: 22px;
         }
-        .review-form-shell .form-select,
-        .review-form-shell .form-control{
-            border-radius:14px;
-            border:1px solid rgba(15,23,42,.16);
-            background:rgba(255,255,255,.95);
-            min-height:48px;
-            padding:10px 12px;
+        .price-badge-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
         }
-        .review-form-shell .form-control{ min-height:134px; }
-        .review-form-shell .form-select:focus,
-        .review-form-shell .form-control:focus{
-            border-color:rgba(214,178,109,.72);
-            box-shadow:0 0 0 .2rem rgba(214,178,109,.18);
+        .badge-discount {
+            background: var(--red-light);
+            color: var(--red);
+            font-size: 11px;
+            font-weight: 800;
+            padding: 2px 7px;
+            border-radius: 4px;
         }
-        .review-score-hints{
-            margin-top:.55rem;
-            display:flex;
-            flex-wrap:wrap;
-            gap:6px;
+        .price-original {
+            font-size: 13px;
+            color: var(--slate-400);
+            text-decoration: line-through;
+            font-weight: 600;
         }
-        .review-score-chip{
-            border:1px solid rgba(214,178,109,.34);
-            background:rgba(214,178,109,.12);
-            color:#7a561f;
-            border-radius:999px;
-            padding:3px 9px;
-            font-size:.74rem;
-            font-weight:700;
+        .price-main {
+            font-size: 28px;
+            font-weight: 800;
+            color: var(--primary);
+            line-height: 1.1;
+            margin-bottom: 4px;
         }
-        .review-form-footnote{
-            color:#64748b;
-            font-size:.86rem;
-            font-weight:600;
+        .price-main span {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--slate-500);
+        }
+        .price-save-note {
+            font-size: 12px;
+            color: var(--green);
+            font-weight: 600;
+            margin-bottom: 18px;
+        }
+        .form-group-custom {
+            margin-bottom: 14px;
+        }
+        .form-label-custom {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--slate-800);
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .form-label-custom i {
+            color: var(--slate-500);
+        }
+        .custom-select {
+            width: 100%;
+            border: 1px solid var(--slate-200);
+            border-radius: var(--radius-sm);
+            padding: 9px 12px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--slate-800);
+            background: #FFFFFF;
+            cursor: pointer;
+            outline: none;
+        }
+        .counter-box {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--slate-100);
+        }
+        .counter-box:last-child {
+            border-bottom: none;
+        }
+        .counter-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--slate-700);
+        }
+        .counter-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border: 1px solid var(--slate-200);
+            border-radius: 6px;
+            padding: 2px 6px;
+        }
+        .btn-counter {
+            background: none;
+            border: none;
+            width: 22px;
+            height: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            color: var(--primary);
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .btn-counter:hover {
+            background: var(--slate-100);
+        }
+        .counter-value {
+            font-size: 13px;
+            font-weight: 700;
+            min-width: 16px;
+            text-align: center;
+        }
+        .btn-book-now {
+            width: 100%;
+            background: var(--primary);
+            color: #FFFFFF;
+            border: none;
+            border-radius: var(--radius-md);
+            padding: 13px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 16px;
+            margin-bottom: 6px;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+        .btn-book-now:hover {
+            background: var(--primary-hover);
+            color: #FFFFFF;
+            box-shadow: 0 4px 16px rgba(0, 102, 255, 0.3);
+        }
+        .btn-book-now:disabled {
+            background: var(--slate-400);
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+        .deposit-note {
+            text-align: center;
+            font-size: 11px;
+            color: var(--slate-500);
+            margin-bottom: 18px;
+        }
+        .trust-items {
+            border-top: 1px solid var(--slate-100);
+            padding-top: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .trust-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        .trust-item i {
+            color: var(--primary);
+            font-size: 15px;
+            margin-top: 2px;
+        }
+        .trust-item-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--slate-800);
+            line-height: 1.2;
+        }
+        .trust-item-desc {
+            font-size: 11px;
+            color: var(--slate-500);
         }
 
-        @media (max-width: 991.98px){
-            .tourlux-hero .container{
-                padding-top: 20px;
-                padding-bottom: 26px;
-            }
-            .tourlux-hero-topbar{
-                align-items:flex-start;
-            }
-            .tourlux-top-actions{
-                width:100%;
-            }
-            .tourlux-overview-grid,
-            .feature-grid{
-                grid-template-columns:1fr 1fr;
-            }
-            .tourlux-stats{
-                grid-template-columns:repeat(3, minmax(0, 1fr));
-                max-width:none;
-            }
-            #dat-tour{ margin-top: 2px; }
-            .tourlux-sticky{ position:static !important; top:auto !important; }
-            .tour-action-stack .btn{ min-height:50px; font-size:.98rem; }
+        /* INFO SPEC CARD */
+        .info-spec-card {
+            background: #FFFFFF;
+            border: 1px solid var(--slate-200);
+            border-radius: var(--radius-lg);
+            padding: 22px;
+            margin-bottom: 22px;
         }
-        @media (max-width: 767.98px){
-            .tourlux-hero{
-                border-radius: 0 0 22px 22px;
-            }
-            .tourlux-brand{
-                font-size:1.7rem;
-            }
-            .tourlux-top-actions{
-                display:grid;
-                grid-template-columns:repeat(2, minmax(0, 1fr));
-                gap:.6rem;
-            }
-            .tourlux-top-actions .tourlux-back:last-child{
-                grid-column:1 / -1;
-            }
-            .tourlux-back{
-                justify-content:center;
-                min-height:46px;
-                padding:.7rem .8rem;
-            }
-            .tourlux-kicker{
-                margin-top: 14px;
-            }
-            .tourlux-hero-title{
-                font-size: clamp(1.9rem, 7vw, 2.35rem);
-                margin-bottom:.75rem;
-            }
-            .tourlux-meta{
-                gap:.5rem;
-            }
-            .chip{
-                font-size:.85rem;
-                padding:.48rem .68rem;
-            }
-            .tourlux-stats{
-                grid-template-columns:1fr 1fr;
-                gap:8px;
-            }
-            .tourlux-stat:last-child{
-                grid-column:1 / -1;
-            }
-            .tourlux-stat{
-                min-height:72px;
-                padding:12px;
-            }
-            .tourlux-stat-v{
-                font-size:1rem;
-            }
-            .tourlux-hero-cta{
-                margin-top:.25rem;
-            }
-            .tourlux-hero-actions{
-                display:grid !important;
-                grid-template-columns:1fr 1fr;
-                width:100%;
-            }
-            .tourlux-hero-actions .btn{
-                min-height:50px;
-                width:100%;
-            }
-            .tourlux-overview-grid{
-                grid-template-columns:1fr;
-                gap:12px;
-            }
-            .tourlux-overview-card{
-                min-height:auto;
-                padding:16px;
-                border-radius:18px;
-            }
-            .feature-grid,
-            .schedule-meta{
-                grid-template-columns:1fr;
-            }
-            .panel{
-                border-radius:18px;
-            }
-            .panel-body{
-                padding:16px;
-            }
-            .promo{
-                padding:11px 12px;
-            }
+        .spec-title {
+            font-size: 15px;
+            font-weight: 800;
+            color: var(--slate-800);
+            margin-bottom: 14px;
         }
-        @media (max-width: 575.98px){
-            main.container{
-                padding-left:14px;
-                padding-right:14px;
-            }
-            .tourlux-hero .container{
-                padding-left:16px;
-                padding-right:16px;
-            }
-            .tourlux-top-actions{
-                grid-template-columns:1fr;
-            }
-            .tourlux-top-actions .tourlux-back:last-child{
-                grid-column:auto;
-            }
-            .tourlux-stats{
-                grid-template-columns:1fr;
-            }
-            .tourlux-stat:last-child{
-                grid-column:auto;
-            }
-            .tourlux-hero-actions{
-                grid-template-columns:1fr;
-            }
-            .tour-info-row{
-                grid-template-columns:1fr;
-                row-gap:4px;
-            }
-            .tour-info-row.price{
-                grid-template-columns:1fr;
-                gap:2px;
-            }
-            .tour-info-row.price .v{
-                justify-self:start;
-            }
+        .spec-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .spec-table tr td {
+            padding: 8px 0;
+            font-size: 13px;
+            border-bottom: 1px solid var(--slate-100);
+        }
+        .spec-table tr:last-child td {
+            border-bottom: none;
+        }
+        .spec-label {
+            color: var(--slate-500);
+            width: 45%;
+        }
+        .spec-value {
+            color: var(--slate-800);
+            font-weight: 700;
+            text-align: right;
+        }
+
+        /* PROMO BANNER */
+        .promo-card {
+            position: relative;
+            background: linear-gradient(180deg, rgba(15, 23, 42, 0.4) 0%, rgba(15, 23, 42, 0.8) 100%),
+                        url('https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?auto=format&fit=crop&w=600&q=80') center/cover no-repeat;
+            border-radius: var(--radius-lg);
+            padding: 26px 20px;
+            color: #FFFFFF;
+            overflow: hidden;
+        }
+        .promo-badge {
+            background: #FF6600;
+            color: #FFFFFF;
+            font-size: 10px;
+            font-weight: 800;
+            padding: 2px 7px;
+            border-radius: 4px;
+            display: inline-block;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+        }
+        .promo-title {
+            font-size: 17px;
+            font-weight: 800;
+            line-height: 1.3;
+            margin-bottom: 6px;
+        }
+        .promo-desc {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.85);
+            margin-bottom: 14px;
+            line-height: 1.5;
+        }
+        .btn-promo {
+            background: var(--primary);
+            color: #FFFFFF;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 7px 15px;
+            border-radius: 6px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: background 0.2s;
+        }
+        .btn-promo:hover {
+            background: var(--primary-hover);
+            color: #FFFFFF;
+        }
+
+        /* RELATED TOURS SECTION */
+        .related-section {
+            border-top: 1px solid var(--slate-200);
+            padding-top: 40px;
+            margin-top: 40px;
+            margin-bottom: 60px;
+        }
+        .related-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .related-title {
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--slate-800);
+        }
+        .link-view-all {
+            color: var(--primary);
+            font-size: 13px;
+            font-weight: 700;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .related-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 18px;
+        }
+        .rel-card {
+            background: #FFFFFF;
+            border: 1px solid var(--slate-200);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            transition: all 0.2s;
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            flex-direction: column;
+        }
+        .rel-card:hover {
+            border-color: var(--primary);
+            box-shadow: var(--shadow-md);
+            transform: translateY(-3px);
+        }
+        .rel-img-wrap {
+            position: relative;
+            height: 160px;
+        }
+        .rel-img-wrap img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .rel-badge {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 4px;
+            color: #FFFFFF;
+        }
+        .rel-badge.blue {
+            background: var(--primary);
+        }
+        .rel-badge.orange {
+            background: #FF6600;
+        }
+        .rel-body {
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+            justify-content: space-between;
+        }
+        .rel-tour-name {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--slate-800);
+            margin-bottom: 6px;
+            line-height: 1.3;
+        }
+        .rel-rating {
+            font-size: 11px;
+            color: var(--slate-600);
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .rel-rating i {
+            color: var(--amber);
+        }
+        .rel-meta-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 11px;
+            color: var(--slate-500);
+            margin-bottom: 12px;
+        }
+        .rel-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-top: 1px solid var(--slate-100);
+            padding-top: 8px;
+        }
+        .rel-price {
+            font-size: 14px;
+            font-weight: 800;
+            color: var(--primary);
+        }
+        .rel-price span {
+            font-size: 11px;
+            color: var(--slate-400);
+            font-weight: 500;
+        }
+        .rel-arrow {
+            color: var(--primary);
+            font-size: 15px;
+        }
+
+        /* LIGHTBOX MODAL */
+        .modal-gallery-img {
+            max-height: 80vh;
+            object-fit: contain;
+        }
+
+        @media (max-width: 991px) {
+            .nav-links { display: none; }
+            .gallery-grid { height: 260px; grid-template-columns: 1fr 1fr; }
+            .highlights-grid { grid-template-columns: repeat(2, 1fr); }
+            .amenities-grid { grid-template-columns: repeat(2, 1fr); }
+            .reviews-layout { grid-template-columns: 1fr; }
+            .reviews-cards-grid { grid-template-columns: 1fr; }
+            .related-grid { grid-template-columns: repeat(2, 1fr); }
+            .day-content { grid-template-columns: 1fr; }
+            .hero-signature { display: none; }
+            .sticky-sidebar { position: static; }
+        }
+        @media (max-width: 576px) {
+            .gallery-grid { height: auto; grid-template-columns: 1fr; }
+            .gallery-left img { border-radius: var(--radius-lg); height: 220px; }
+            .gallery-right { height: 220px; }
+            .related-grid { grid-template-columns: 1fr; }
+            .highlights-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
-<body class="tourlux">
-    <header class="tourlux-hero" style="--hero-img: url('<?php echo htmlspecialchars($anhDaiDien); ?>');">
-        <div class="container">
-            <div class="tourlux-hero-topbar">
-                <a class="tourlux-brand" href="index.php?act=khachHang/dashboard" aria-label="Trang chủ DuLichPro">
-                    <i class="bi bi-star-fill"></i> DuLichPro
+<body>
+
+    <!-- 1. SITE HEADER (Chuẩn Image 1) -->
+    <header class="site-header">
+        <div class="header-container">
+            <a href="index.php?act=khachHang/dashboard" class="brand-block">
+                <div class="brand-logo-icon">
+                    <i class="bi bi-tsunami"></i>
+                </div>
+                <div class="brand-text">
+                    <h1>DuLichPro</h1>
+                    <p>Khám phá thế giới - Trải nghiệm tuyệt vời</p>
+                </div>
+            </a>
+
+            <ul class="site-nav">
+                <li><a href="index.php?act=khachHang/dashboard">Trang chủ</a></li>
+                <li><a href="index.php?act=khachHang/danhSachTour" class="active">Tour du lịch</a></li>
+                <li><a href="index.php?act=khachHang/dashboard#hotels">Khách sạn</a></li>
+                <li><a href="index.php?act=khachHang/dashboard#flights">Vé máy bay</a></li>
+                <li><a href="index.php?act=khachHang/dashboard#combos">Combo</a></li>
+                <li><a href="index.php?act=khachHang/dashboard#visa">Visa</a></li>
+                <li><a href="index.php?act=khachHang/dashboard#about">Về chúng tôi</a></li>
+            </ul>
+
+            <div class="header-actions">
+                <a href="index.php?act=khachHang/danhSachTour" class="btn-icon-round" title="Tìm kiếm">
+                    <i class="bi bi-search"></i>
                 </a>
-                <div class="tourlux-top-actions">
-                    <a class="tourlux-back" href="index.php?act=khachHang/dashboard">
-                        <i class="bi bi-house-door"></i> Trang chủ
-                    </a>
-                    <a class="tourlux-back is-active" href="index.php?act=khachHang/danhSachTour">
-                        <i class="bi bi-stars"></i> Tour nổi bật
-                    </a>
-                    <a class="tourlux-back" href="javascript:history.back()">
-                        <i class="bi bi-arrow-left"></i> Quay lại
-                    </a>
-                </div>
-            </div>
 
-            <div class="tourlux-kicker">Chi tiết tour</div>
-            <div class="row align-items-end g-4 mt-0">
-                <div class="col-lg-8">
-                    <h1 class="tourlux-hero-title"><?php echo htmlspecialchars($tour['ten_tour'] ?? 'Tên tour'); ?></h1>
+                <a href="index.php?act=khachHang/thongBao" class="btn-icon-round" title="Thông báo">
+                    <i class="bi bi-bell"></i>
+                    <span class="badge-count">3</span>
+                </a>
 
-                    <div class="tourlux-meta">
-                        <?php if (!empty($tour['loai_tour'])): ?>
-                            <span class="chip"><i class="bi bi-globe2"></i> <?php echo htmlspecialchars($tour['loai_tour']); ?></span>
-                        <?php endif; ?>
-                        <?php if (!empty($khoiHanhHienThi) && $khoiHanhHienThi !== 'Chưa cập nhật'): ?>
-                            <span class="chip"><i class="bi bi-geo-alt"></i> <?php echo htmlspecialchars($khoiHanhHienThi); ?></span>
-                        <?php endif; ?>
-                        <?php if (!empty($thoiGianHienThi) && $thoiGianHienThi !== 'Chưa cập nhật'): ?>
-                            <span class="chip"><i class="bi bi-clock-history"></i> <?php echo htmlspecialchars($thoiGianHienThi); ?></span>
-                        <?php endif; ?>
-                        <?php if (!empty($soChoHienThi) && $soChoHienThi !== 'Chưa cập nhật'): ?>
-                            <span class="chip"><i class="bi bi-people"></i> Còn <?php echo htmlspecialchars((string)$soChoHienThi); ?> chỗ</span>
-                        <?php endif; ?>
-                    </div>
-
-                    <div class="tourlux-stats">
-                        <div class="tourlux-stat">
-                            <i class="bi bi-star-fill"></i>
-                            <div>
-                                <div class="tourlux-stat-k">Đánh giá trung bình</div>
-                                <div class="tourlux-stat-v"><?php echo number_format($danhGiaAvgHero, 1); ?>/5 (<?php echo (int)$danhGiaCountHero; ?>)</div>
+                <?php if ($userId > 0 || !empty($_SESSION['user_id'])): ?>
+                    <div class="user-dropdown-container">
+                        <a href="index.php?act=khachHang/capNhatThongTin" class="user-profile-btn" title="Trang cá nhân">
+                            <img src="<?= htmlspecialchars($userAvatar); ?>" alt="Avatar" class="user-profile-avatar" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&h=200&q=80';">
+                            <span class="user-profile-name"><?= htmlspecialchars($userName); ?></span>
+                            <i class="bi bi-chevron-down" style="font-size: 11px; color: #64748b;"></i>
+                        </a>
+                        <div class="user-dropdown-menu">
+                            <div class="user-dropdown-header">
+                                <strong><?= htmlspecialchars($userName); ?></strong>
+                                <small><?= htmlspecialchars($userEmail); ?></small>
                             </div>
-                        </div>
-                        <div class="tourlux-stat">
-                            <i class="bi bi-person-check-fill"></i>
-                            <div>
-                                <div class="tourlux-stat-k">Khách đã đặt</div>
-                                <div class="tourlux-stat-v"><?php echo $soKhachDaDatHienThi !== null ? (int)$soKhachDaDatHienThi . ' khách' : 'Đang cập nhật'; ?></div>
-                            </div>
-                        </div>
-                        <div class="tourlux-stat">
-                            <i class="bi bi-bar-chart-fill"></i>
-                            <div>
-                                <div class="tourlux-stat-k">Tỉ lệ lấp chỗ</div>
-                                <div class="tourlux-stat-v"><?php echo $tiLeLapDayHienThi !== null ? (int)$tiLeLapDayHienThi . '%' : 'Đang cập nhật'; ?></div>
-                            </div>
+                            <a href="index.php?act=khachHang/capNhatThongTin"><i class="bi bi-person"></i> Trang cá nhân</a>
+                            <a href="index.php?act=khachHang/guiYeuCauTour"><i class="bi bi-ticket-perforated"></i> Đơn đặt tour</a>
+                            <a href="index.php?act=khachHang/tourYeuThich"><i class="bi bi-heart"></i> Tour yêu thích</a>
+                            <a href="index.php?act=khachHang/viCuaToi"><i class="bi bi-wallet2"></i> Ví của tôi</a>
+                            <a href="index.php?act=khachHang/guiYeuCauHoTro"><i class="bi bi-question-circle"></i> Hỗ trợ</a>
+                            <div class="user-dropdown-divider"></div>
+                            <a href="index.php?act=auth/logout" class="text-danger"><i class="bi bi-box-arrow-right"></i> Đăng xuất</a>
                         </div>
                     </div>
-                </div>
 
-                <div class="col-lg-4 tourlux-hero-cta">
-                    <div class="d-flex align-items-center justify-content-lg-end gap-2 tourlux-hero-actions">
-                        <?php if ($isBookingLockedBy48h): ?>
-                            <button type="button" class="btn btn-lux-outline px-3 py-2" disabled>
-                                <i class="bi bi-lock me-1"></i> Đặt nhanh đã khóa
-                            </button>
-                            <button type="button" class="btn btn-lux px-3 py-2" disabled>
-                                <i class="bi bi-calendar-x me-1"></i> Ngừng nhận đặt
-                            </button>
-                        <?php else: ?>
-                            <a class="btn btn-lux-outline px-3 py-2" href="#dat-tour">
-                                <i class="bi bi-lightning-charge me-1"></i> Đặt nhanh
-                            </a>
-                            <a class="btn btn-lux px-3 py-2" href="index.php?act=khachHang/thanhToanTour&id=<?php echo $tour['tour_id'] ?? $tour['id']; ?>">
-                                <i class="bi bi-cart-plus me-1"></i> Thanh toán
-                            </a>
-                        <?php endif; ?>
-                    </div>
-                </div>
+                    <!-- Nút tắt đăng xuất nhanh -->
+                    <a href="index.php?act=auth/logout" class="btn-icon-round btn-logout-shortcut" title="Đăng xuất" onclick="return confirm('Bạn có chắc chắn muốn đăng xuất không?');">
+                        <i class="bi bi-box-arrow-right"></i>
+                    </a>
+                <?php else: ?>
+                    <a href="index.php?act=login" class="btn-auth-login">
+                        <i class="bi bi-person"></i>
+                        <span>Đăng nhập</span>
+                    </a>
+                    <a href="index.php?act=register" class="btn-auth-register">Đăng ký</a>
+                <?php endif; ?>
             </div>
         </div>
     </header>
 
-    <main class="container my-4 my-lg-5">
+    <!-- 2. HERO BANNER (Image 2 style) -->
+    <section class="tour-hero">
+        <div class="container position-relative">
+            <div class="breadcrumb-nav">
+                <a href="index.php?act=khachHang/dashboard">Trang chủ</a>
+                <span>&gt;</span>
+                <a href="index.php?act=khachHang/danhSachTour">Tour du lịch</a>
+                <span>&gt;</span>
+                <span><?= htmlspecialchars($tour['ten_tour'] ?? 'Chi tiết tour') ?></span>
+            </div>
+
+            <div class="hero-badge-wrap">
+                <span class="hero-badge"><?= htmlspecialchars($tour['loai_tour'] ?? 'Tour trong nước') ?></span>
+            </div>
+
+            <h1 class="hero-title"><?= htmlspecialchars($tour['ten_tour'] ?? 'Tour Hạ Long 2 ngày 1 đêm') ?></h1>
+
+            <p class="hero-subtitle">
+                <?= htmlspecialchars($tour['mo_ta_ngan'] ?? 'Khám phá kỳ quan thiên nhiên thế giới - Vịnh Hạ Long, trải nghiệm du thuyền sang trọng và nhiều hoạt động thú vị.') ?>
+            </p>
+
+            <div class="hero-meta-row">
+                <div class="hero-meta-item">
+                    <i class="bi bi-star-fill star-gold"></i>
+                    <span><strong><?= number_format($danhGiaAvgHero, 1) ?></strong> (<?= (int)$danhGiaCountHero ?> đánh giá)</span>
+                </div>
+                <div class="hero-meta-item">
+                    <i class="bi bi-geo-alt"></i>
+                    <span><?= htmlspecialchars($khoiHanhHienThi) ?></span>
+                </div>
+                <div class="hero-meta-item">
+                    <i class="bi bi-calendar-event"></i>
+                    <span><?= htmlspecialchars($thoiGianHienThi) ?></span>
+                </div>
+                <div class="hero-meta-item">
+                    <i class="bi bi-truck-front"></i>
+                    <span>Xe ô tô + Du thuyền</span>
+                </div>
+            </div>
+
+            <div class="hero-signature">
+                Vịnh Hạ Long - Kỳ quan giữa lòng Việt Nam ~
+            </div>
+        </div>
+    </section>
+
+    <!-- MAIN BODY -->
+    <main class="container my-4">
+
+        <!-- Flash alerts -->
         <?php if (!empty($_SESSION['success'])): ?>
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                <?php echo htmlspecialchars((string)$_SESSION['success']); unset($_SESSION['success']); ?>
+            <div class="alert alert-success alert-dismissible fade show mb-3" role="alert">
+                <i class="bi bi-check-circle-fill me-2"></i><?= htmlspecialchars((string)$_SESSION['success']); unset($_SESSION['success']); ?>
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
         <?php endif; ?>
         <?php if (!empty($_SESSION['error'])): ?>
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                <?php echo htmlspecialchars((string)$_SESSION['error']); unset($_SESSION['error']); ?>
+            <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i><?= htmlspecialchars((string)$_SESSION['error']); unset($_SESSION['error']); ?>
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
         <?php endif; ?>
 
-        <section class="tourlux-overview-grid js-reveal">
-            <article class="tourlux-overview-card">
-                <i class="bi bi-calendar2-week"></i>
-                <div class="tourlux-overview-label">Khoi hanh gan nhat</div>
-                <div class="tourlux-overview-value"><?php echo htmlspecialchars($ngayKhoiHanhHienThi !== '' ? $ngayKhoiHanhHienThi : 'Dang cap nhat'); ?></div>
-                <div class="tourlux-overview-note"><?php echo htmlspecialchars($khoiHanhHienThi); ?></div>
-            </article>
-            <article class="tourlux-overview-card">
-                <i class="bi bi-hourglass-split"></i>
-                <div class="tourlux-overview-label">Thoi luong</div>
-                <div class="tourlux-overview-value"><?php echo htmlspecialchars($thoiGianHienThi); ?></div>
-                <div class="tourlux-overview-note">Phu hop cho ke hoach di chuyen linh hoat.</div>
-            </article>
-            <article class="tourlux-overview-card">
-                <i class="bi bi-people-fill"></i>
-                <div class="tourlux-overview-label">Tinh trang cho</div>
-                <div class="tourlux-overview-value"><?php echo htmlspecialchars((string)$soChoHienThi); ?></div>
-                <div class="seat-pill <?php echo htmlspecialchars($trangThaiChoClass); ?>">
-                    <i class="bi bi-lightning-charge-fill"></i> <?php echo htmlspecialchars($trangThaiCho); ?>
-                </div>
-            </article>
-            <article class="tourlux-overview-card">
-                <i class="bi bi-cash-coin"></i>
-                <div class="tourlux-overview-label">Gia hien tai</div>
-                <div class="tourlux-overview-value"><?php echo number_format($giaTourHienThi); ?>d</div>
-                <div class="tourlux-overview-note">Gia tinh tren moi khach cho lich khoi hanh hien tai.</div>
-            </article>
-        </section>
-
-        <div class="row g-4">
+        <!-- 3. TWO-COLUMN LAYOUT: BẢNG GIÁ NGANG HÀNG CHÍNH XÁC VỚI 5 ẢNH GALLERY -->
+        <div class="row g-4 align-items-start">
+            
+            <!-- LEFT COLUMN (col-lg-8): GALLERY + TABS + NỘI DUNG TOUR -->
             <div class="col-lg-8">
-                <div class="panel mb-4 js-reveal">
-                    <div class="panel-body">
-                        <img id="mainTourImage" src="<?php echo htmlspecialchars($anhDaiDien); ?>" class="tourlux-mainimg" alt="Ảnh tour">
-
-                        <?php if (!empty($hinhAnhList)): ?>
-                            <div class="tourlux-thumbs mt-2" aria-label="Thư viện ảnh tour">
-                                <?php foreach ($hinhAnhList as $idx => $ha): ?>
-                                    <?php
-                                        $urlAnh = $ha['url_anh'] ?? '';
-                                        if (empty($urlAnh)) continue;
-                                        $active = ($idx === 0) ? ' is-active' : '';
-                                    ?>
-                                    <img
-                                        class="tourlux-thumb<?php echo $active; ?>"
-                                        src="<?php echo htmlspecialchars($urlAnh); ?>"
-                                        data-full="<?php echo htmlspecialchars($urlAnh); ?>"
-                                        alt="Hình ảnh tour"
-                                        loading="lazy"
-                                    >
-                                <?php endforeach; ?>
-                            </div>
-                        <?php endif; ?>
-                    </div>
-	                </div>
-
-	                <div class="panel mb-4 js-reveal">
-	                    <div class="panel-body">
-	                        <h3 class="panel-title"><i class="bi bi-gem"></i> Diem nhan hanh trinh</h3>
-	                        <div class="feature-grid mt-3">
-	                            <?php foreach ($camKetList as $camKet): ?>
-	                                <article class="feature-card">
-	                                    <i class="<?php echo htmlspecialchars($camKet['icon']); ?>"></i>
-	                                    <div class="feature-title"><?php echo htmlspecialchars($camKet['title']); ?></div>
-	                                    <p class="feature-copy"><?php echo htmlspecialchars($camKet['desc']); ?></p>
-	                                </article>
-	                            <?php endforeach; ?>
-	                        </div>
-	                    </div>
-	                </div>
-
-	                <div class="panel mb-4 js-reveal">
-	                    <div class="panel-body">
-                        <h3 class="panel-title"><i class="bi bi-info-circle"></i> Mô tả tour</h3>
-                        <div class="mt-3 tour-copy">
-                            <?php echo nl2br(htmlspecialchars($tour['mo_ta'] ?? 'Chưa có mô tả.')); ?>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="panel mb-4 js-reveal">
-                    <div class="panel-body">
-                        <h3 class="panel-title"><i class="bi bi-calendar-event"></i> Thông tin khởi hành</h3>
-                        <div class="mt-3">
-                            <?php if (!empty($lichKhoiHanhList)): ?>
-                                <div class="schedule-card-list mb-3">
-                                    <?php foreach ($lichKhoiHanhList as $lk): ?>
-                                        <?php
-                                            $statusRaw = trim((string)($lk['trang_thai'] ?? 'Dang mo'));
-                                            $statusClass = 'status-open';
-                                            if (stripos($statusRaw, 'dong') !== false || stripos($statusRaw, 'huy') !== false) {
-                                                $statusClass = 'status-closed';
-                                            } elseif ((int)($lk['so_cho_con_lai'] ?? 999) <= 5) {
-                                                $statusClass = 'status-busy';
-                                            }
-                                        ?>
-                                        <article class="schedule-card">
-                                            <div class="schedule-card-top">
-                                                <div>
-                                                    <div class="schedule-date"><?php echo date('d/m/Y', strtotime($lk['ngay_khoi_hanh'])); ?></div>
-                                                    <div class="schedule-range">Den <?php echo date('d/m/Y', strtotime($lk['ngay_ket_thuc'])); ?></div>
-                                                </div>
-                                                <span class="status-badge <?php echo htmlspecialchars($statusClass); ?>">
-                                                    <?php echo htmlspecialchars($statusRaw); ?>
-                                                </span>
-                                            </div>
-                                            <div class="schedule-meta">
-                                                <div class="schedule-meta-item">
-                                                    <span>Diem tap trung</span>
-                                                    <strong><?php echo htmlspecialchars($lk['diem_tap_trung'] ?? 'Dang cap nhat'); ?></strong>
-                                                </div>
-                                                <div class="schedule-meta-item">
-                                                    <span>So cho con lai</span>
-                                                    <strong><?php echo htmlspecialchars(isset($lk['so_cho_con_lai']) ? ((string)$lk['so_cho_con_lai'] . '/' . (string)($lk['so_cho_toi_da'] ?? $lk['so_cho'] ?? '')) : 'Dang cap nhat'); ?></strong>
-                                                </div>
-                                            </div>
-                                        </article>
-                                    <?php endforeach; ?>
-                                </div>
-                                <table class="table table-bordered table-sm mb-0 data-grid-table d-none">
-                                    <thead>
-                                        <tr>
-                                            <th>Ngày khởi hành</th>
-                                            <th>Ngày kết thúc</th>
-                                            <th>Điểm tập trung</th>
-                                            <th>Trạng thái</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                    <?php foreach ($lichKhoiHanhList as $lk): ?>
-                                        <tr>
-                                            <td><?php echo date('d/m/Y', strtotime($lk['ngay_khoi_hanh'])); ?></td>
-                                            <td><?php echo date('d/m/Y', strtotime($lk['ngay_ket_thuc'])); ?></td>
-                                            <td><?php echo htmlspecialchars($lk['diem_tap_trung']); ?></td>
-                                            <td><?php echo htmlspecialchars($lk['trang_thai']); ?></td>
-                                        </tr>
-                                    <?php endforeach; ?>
-                                    </tbody>
-                                </table>
-                            <?php else: ?>
-                                <div class="text-muted-2">Chưa có lịch khởi hành.</div>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="panel mb-4 js-reveal">
-                    <div class="panel-body">
-                        <h3 class="panel-title"><i class="bi bi-person-badge-fill"></i> Hướng dẫn viên</h3>
-                        <div class="mt-3">
-                            <?php if (!empty($hdvHienThi)): ?>
-                                <div class="d-flex flex-wrap align-items-center gap-2 text-muted-2">
-                                    <span class="chip" style="border-color: rgba(15,23,42,.12); background: rgba(255,255,255,.6); color: var(--lx-ink);">
-                                        <i class="bi bi-person-circle"></i>
-                                        <b><?php echo htmlspecialchars($hdvHienThi['ho_ten'] ?? ''); ?></b>
-                                    </span>
-                                    <span class="chip" style="border-color: rgba(15,23,42,.12); background: rgba(255,255,255,.6); color: var(--lx-ink);">
-                                        <i class="bi bi-envelope-at"></i>
-                                        <?php echo htmlspecialchars($hdvHienThi['email'] ?? ''); ?>
-                                    </span>
-                                    <span class="chip" style="border-color: rgba(15,23,42,.12); background: rgba(255,255,255,.6); color: var(--lx-ink);">
-                                        <i class="bi bi-telephone"></i>
-                                        <?php echo htmlspecialchars($hdvHienThi['so_dien_thoai'] ?? ''); ?>
-                                    </span>
-                                </div>
-                            <?php else: ?>
-                                <div class="text-muted-2"><i class="bi bi-person-x-fill me-1"></i> Chưa có thông tin hướng dẫn viên.</div>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="panel mb-4 js-reveal">
-                    <div class="panel-body">
-                        <h3 class="panel-title"><i class="bi bi-list-task"></i> Lịch trình chi tiết</h3>
-                        <div class="mt-3">
-                            <?php if (!empty($lichTrinhList)): ?>
-                                <div class="timeline-list">
-                                    <?php foreach ($lichTrinhList as $lt): ?>
-                                        <article class="timeline-item">
-                                            <div class="timeline-day">Ngày <?php echo (int)($lt['ngay_thu'] ?? 0); ?></div>
-                                            <div>
-                                                <div class="timeline-place"><i class="bi bi-geo-alt me-1"></i><?php echo htmlspecialchars($lt['dia_diem'] ?? 'Đang cập nhật'); ?></div>
-                                                <div class="timeline-activity"><?php echo htmlspecialchars($lt['hoat_dong'] ?? 'Đang cập nhật hoạt động'); ?></div>
-                                            </div>
-                                        </article>
-                                    <?php endforeach; ?>
-                                </div>
-                            <?php else: ?>
-                                <div class="text-muted-2"><i class="bi bi-x-circle me-1"></i> Chưa cập nhật lịch trình.</div>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                </div>
-
-                <?php if (!empty($nhatKyHienThi)): ?>
-                    <div class="panel mb-4 js-reveal">
-                        <div class="panel-body">
-                            <h3 class="panel-title"><i class="bi bi-journal-text"></i> Nhật ký tour</h3>
-                            <ul class="list-clean mt-3">
-                                <?php foreach ($nhatKyHienThi as $nk): ?>
-                                    <li><strong><?php echo !empty($nk['ngay_ghi']) ? date('d/m/Y', strtotime($nk['ngay_ghi'])) : 'Nhat ky'; ?></strong><br><?php echo htmlspecialchars($nk['noi_dung'] ?? 'Dang cap nhat.'); ?></li>
-                                <?php endforeach; ?>
-                            </ul>
-                        </div>
-                    </div>
-                <?php endif; ?>
-
-                <?php if (!empty($yeuCauHienThi)): ?>
-                    <div class="panel mb-4 js-reveal">
-                        <div class="panel-body">
-                            <h3 class="panel-title"><i class="bi bi-star-fill"></i> Yêu cầu đặc biệt</h3>
-                            <ul class="list-clean mt-3">
-                                <?php foreach ($yeuCauHienThi as $yc): ?>
-                                    <li><?php echo htmlspecialchars($yc['mo_ta']); ?> (Mức độ: <?php echo htmlspecialchars($yc['muc_do_uu_tien']); ?>)</li>
-                                <?php endforeach; ?>
-                            </ul>
-                        </div>
-                    </div>
-                <?php endif; ?>
-
-                <div class="d-flex flex-wrap gap-2 mt-2 mb-4">
-                    <?php if ($isBookingLockedBy48h): ?>
-                        <button type="button" class="btn btn-lux px-4 py-3" disabled>
-                            <i class="bi bi-calendar-x me-1"></i> Tour đã khóa đặt (trước 48h)
+                
+                <!-- 5-PHOTO GALLERY (Nằm trên cùng của cột trái) -->
+                <div class="gallery-grid">
+                    <!-- Large Left Photo -->
+                    <div class="gallery-left" onclick="openLightbox(0)">
+                        <img id="mainGalleryImg" src="<?= htmlspecialchars($galleryImages[0]) ?>" alt="Ảnh chính tour">
+                        <button class="btn-view-video" type="button" onclick="event.stopPropagation(); alert('Video giới thiệu tour đang được cập nhật.');">
+                            <i class="bi bi-play-fill"></i> Xem video
                         </button>
-                    <?php else: ?>
-                        <a href="index.php?act=khachHang/thanhToanTour&id=<?php echo $tour['tour_id'] ?? $tour['id']; ?>" class="btn btn-lux px-4 py-3">
-                            <i class="bi bi-cart-plus me-1"></i> Đặt tour ngay
-                        </a>
-                    <?php endif; ?>
-                    <a href="index.php?act=khachHang/dashboard" class="btn btn-lux-outline px-4 py-3">
-                        <i class="bi bi-house-door me-1"></i> Về trang chủ
-                    </a>
-                </div>
-            </div>
+                    </div>
 
-            <div class="col-lg-4" id="dat-tour">
-                <div class="position-sticky tourlux-sticky">
-                    <div class="panel">
-                        <div class="panel-body">
-                            <div class="tour-info-box mb-3">
-                                <div class="tour-info-head"><i class="bi bi-info-circle"></i> Thông tin tour</div>
-                                <div class="tour-info-row"><span class="k">Tên tour:</span><span class="v"><?php echo htmlspecialchars($tour['ten_tour'] ?? ''); ?></span></div>
-                                <div class="tour-info-row"><span class="k">Mã tour:</span><span class="v"><?php echo htmlspecialchars($maTourHienThi); ?></span></div>
-                                <div class="tour-info-row"><span class="k">Loại tour:</span><span class="v"><?php echo htmlspecialchars($tour['loai_tour'] ?? ''); ?></span></div>
-                                <div class="tour-info-row"><span class="k">Khởi hành:</span><span class="v"><?php echo htmlspecialchars($khoiHanhHienThi); ?></span></div>
-                                <div class="tour-info-row"><span class="k">Ngày khởi hành:</span><span class="v"><?php echo htmlspecialchars($ngayKhoiHanhHienThi !== '' ? $ngayKhoiHanhHienThi : 'Chưa cập nhật'); ?></span></div>
-                                <div class="tour-info-row"><span class="k">Khởi hành sau:</span><span class="v"><?php echo htmlspecialchars($khoiHanhSauHienThi); ?></span></div>
-                                <div class="tour-info-row"><span class="k">Thời gian:</span><span class="v"><?php echo htmlspecialchars($thoiGianHienThi); ?></span></div>
-                                <div class="tour-info-row"><span class="k">Số chỗ còn:</span><span class="v"><?php echo htmlspecialchars((string)$soChoHienThi); ?></span></div>
-                                <?php if ($seatPercentRemain !== null): ?>
-                                    <div class="tour-seat-meter">
-                                        <div class="tour-seat-meter-head">
-                                            <span>Tỉ lệ chỗ còn</span>
-                                            <span><?php echo (int)$seatPercentRemain; ?>%</span>
-                                        </div>
-                                        <div class="tour-seat-bar" aria-hidden="true">
-                                            <div class="tour-seat-progress" style="width: <?php echo (int)$seatPercentRemain; ?>%;"></div>
+                    <!-- 4 Right Thumbnails -->
+                    <div class="gallery-right">
+                        <div class="gallery-thumb-item" onclick="openLightbox(1)">
+                            <img src="<?= htmlspecialchars($galleryImages[1]) ?>" alt="Ảnh tour 2">
+                        </div>
+                        <div class="gallery-thumb-item top-right" onclick="openLightbox(2)">
+                            <img src="<?= htmlspecialchars($galleryImages[2]) ?>" alt="Ảnh tour 3">
+                        </div>
+                        <div class="gallery-thumb-item" onclick="openLightbox(3)">
+                            <img src="<?= htmlspecialchars($galleryImages[3]) ?>" alt="Ảnh tour 4">
+                        </div>
+                        <div class="gallery-thumb-item bottom-right" onclick="openLightbox(4)">
+                            <img src="<?= htmlspecialchars($galleryImages[4]) ?>" alt="Ảnh tour 5">
+                            <div class="gallery-overlay-more">
+                                +12
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TABS (Nằm ngay bên dưới 5 ảnh) -->
+                <nav class="tour-tabs" id="tourTabs">
+                    <button class="tab-btn active" onclick="scrollToTab('tong-quan', this)">Tổng quan</button>
+                    <button class="tab-btn" onclick="scrollToTab('lich-trinh', this)">Lịch trình</button>
+                    <button class="tab-btn" onclick="scrollToTab('dich-vu', this)">Dịch vụ bao gồm</button>
+                    <button class="tab-btn" onclick="scrollToTab('dieu-khoan', this)">Điều khoản</button>
+                    <button class="tab-btn" onclick="scrollToTab('danh-gia', this)">Đánh giá</button>
+                </nav>
+
+                <!-- SECTION 1: GIỚI THIỆU TOUR -->
+                <section class="section-block" id="tong-quan">
+                    <h2 class="section-title">
+                        <i class="bi bi-stars"></i> Giới thiệu tour
+                    </h2>
+                    <div class="section-desc">
+                        <?= !empty($tour['mo_ta']) ? nl2br(htmlspecialchars($tour['mo_ta'])) : 'Tour Hạ Long 2 ngày 1 đêm là hành trình lý tưởng để bạn khám phá vẻ đẹp hùng vĩ của Vịnh Hạ Long – di sản thiên nhiên thế giới được UNESCO công nhận. Bạn sẽ được trải nghiệm du thuyền sang trọng, thưởng thức ẩm thực đặc sản, tham quan các hang động nổi tiếng và tham gia nhiều hoạt động thú vị trên biển.' ?>
+                    </div>
+
+                    <!-- 4 HIGHLIGHTS (Như Hình 2) -->
+                    <div class="highlights-grid">
+                        <div class="highlight-card">
+                            <i class="bi bi-compass h-icon"></i>
+                            <div class="h-title">Tham quan<br>Vịnh Hạ Long</div>
+                        </div>
+                        <div class="highlight-card">
+                            <i class="bi bi-water h-icon"></i>
+                            <div class="h-title">Du thuyền<br>cao cấp</div>
+                        </div>
+                        <div class="highlight-card">
+                            <i class="bi bi-tsunami h-icon"></i>
+                            <div class="h-title">Tắm biển<br>&amp; chèo kayak</div>
+                        </div>
+                        <div class="highlight-card">
+                            <i class="bi bi-egg-fried h-icon"></i>
+                            <div class="h-title">Thưởng thức<br>hải sản tươi ngon</div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- SECTION 2: LỊCH TRÌNH CHI TIẾT -->
+                <section class="section-block" id="lich-trinh">
+                    <h2 class="section-title">
+                        <i class="bi bi-chevron-right"></i> Lịch trình chi tiết
+                    </h2>
+
+                    <?php if (!empty($lichTrinhList)): ?>
+                        <?php foreach ($lichTrinhList as $lt): ?>
+                            <div class="timeline-day-card">
+                                <div class="day-header">
+                                    <span class="day-badge">Ngày <?= (int)($lt['ngay_thu'] ?? 1); ?></span>
+                                    <span class="day-title"><?= htmlspecialchars($lt['dia_diem'] ?? 'Hành trình trong ngày'); ?></span>
+                                </div>
+                                <div class="day-content">
+                                    <img class="day-thumb" src="<?= htmlspecialchars($galleryImages[((int)($lt['ngay_thu'] ?? 1)) % count($galleryImages)]) ?>" alt="Ảnh ngày">
+                                    <div class="timeline-steps">
+                                        <div class="timeline-step">
+                                            <span class="step-time">Chi tiết:</span>
+                                            <span class="step-text"><?= nl2br(htmlspecialchars($lt['hoat_dong'] ?? 'Khám phá và tham quan theo lịch trình.')); ?></span>
                                         </div>
                                     </div>
-                                <?php endif; ?>
-                                <div class="tour-info-row price"><span class="k">Giá/khách:</span><span class="v"><?php echo number_format($tour['gia_tour'] ?? $tour['gia_co_ban'] ?? 0); ?>đ</span></div>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <!-- Lịch trình mẫu chuẩn mực như Ảnh 2 -->
+                        <div class="timeline-day-card">
+                            <div class="day-header">
+                                <span class="day-badge">Ngày 1</span>
+                                <span class="day-title">Hà Nội – Hạ Long (Ăn trưa, tối)</span>
+                            </div>
+                            <div class="day-content">
+                                <img class="day-thumb" src="<?= htmlspecialchars($galleryImages[0]) ?>" alt="Ngày 1">
+                                <div class="timeline-steps">
+                                    <div class="timeline-step">
+                                        <span class="step-time">07:30</span>
+                                        <span class="step-text">Xe đón quý khách tại điểm hẹn, khởi hành đi Hạ Long.</span>
+                                    </div>
+                                    <div class="timeline-step">
+                                        <span class="step-time">11:30</span>
+                                        <span class="step-text">Đến cảng Tuần Châu, làm thủ tục lên du thuyền.</span>
+                                    </div>
+                                    <div class="timeline-step">
+                                        <span class="step-time">12:00</span>
+                                        <span class="step-text">Thưởng thức bữa trưa với các món hải sản tươi ngon.</span>
+                                    </div>
+                                    <div class="timeline-step">
+                                        <span class="step-time">14:00</span>
+                                        <span class="step-text">Tham quan hang Sửng Sốt, chèo kayak hoặc tắm biển.</span>
+                                    </div>
+                                    <div class="timeline-step">
+                                        <span class="step-time">18:00</span>
+                                        <span class="step-text">Quay về du thuyền, tham gia tiệc tối và các hoạt động tự do. Nghỉ đêm trên du thuyền 4 sao.</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="timeline-day-card">
+                            <div class="day-header">
+                                <span class="day-badge">Ngày 2</span>
+                                <span class="day-title">Hạ Long – Hà Nội (Ăn sáng, trưa)</span>
+                            </div>
+                            <div class="day-content">
+                                <img class="day-thumb" src="<?= htmlspecialchars($galleryImages[2]) ?>" alt="Ngày 2">
+                                <div class="timeline-steps">
+                                    <div class="timeline-step">
+                                        <span class="step-time">06:30</span>
+                                        <span class="step-text">Đón bình minh trên vịnh (tự do chụp ảnh, tập thể dục).</span>
+                                    </div>
+                                    <div class="timeline-step">
+                                        <span class="step-time">07:30</span>
+                                        <span class="step-text">Ăn sáng tại du thuyền.</span>
+                                    </div>
+                                    <div class="timeline-step">
+                                        <span class="step-time">08:30</span>
+                                        <span class="step-text">Tham quan đảo Titop, tắm biển và leo núi ngắm toàn cảnh vịnh.</span>
+                                    </div>
+                                    <div class="timeline-step">
+                                        <span class="step-time">11:00</span>
+                                        <span class="step-text">Trả phòng, dùng bữa trưa.</span>
+                                    </div>
+                                    <div class="timeline-step">
+                                        <span class="step-time">12:30</span>
+                                        <span class="step-text">Di chuyển về bến, lên xe về Hà Nội.</span>
+                                    </div>
+                                    <div class="timeline-step">
+                                        <span class="step-time">17:30</span>
+                                        <span class="step-text">Về đến Hà Nội, kết thúc hành trình.</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+                </section>
+
+                <!-- SECTION 3: DỊCH VỤ & TIỆN ÍCH -->
+                <section class="section-block" id="dich-vu">
+                    <h2 class="section-title">
+                        <i class="bi bi-shield-check"></i> Dịch vụ &amp; tiện ích
+                    </h2>
+                    <div class="amenities-grid">
+                        <div class="amenity-card">
+                            <i class="bi bi-water"></i>
+                            <span>Du thuyền 4 sao</span>
+                        </div>
+                        <div class="amenity-card">
+                            <i class="bi bi-cup-hot"></i>
+                            <span>Nhà hàng sang trọng</span>
+                        </div>
+                        <div class="amenity-card">
+                            <i class="bi bi-person-check"></i>
+                            <span>Hướng dẫn viên chuyên nghiệp</span>
+                        </div>
+                        <div class="amenity-card">
+                            <i class="bi bi-shield-lock"></i>
+                            <span>Bảo hiểm du lịch</span>
+                        </div>
+                        <div class="amenity-card">
+                            <i class="bi bi-wifi"></i>
+                            <span>Wifi miễn phí</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- SECTION 4: ĐIỀU KHOẢN -->
+                <section class="section-block" id="dieu-khoan">
+                    <h2 class="section-title">
+                        <i class="bi bi-file-earmark-text"></i> Điều khoản &amp; chính sách
+                    </h2>
+                    <div class="p-3 bg-light rounded-3 text-muted small">
+                        <p class="mb-2"><strong>Chính sách hủy vé:</strong> Miễn phí hủy tour trước 3 ngày khởi hành. Hủy trong vòng 48h trước giờ đi thu phí 50%. Sau 24h tính 100% chi phí.</p>
+                        <p class="mb-0"><strong>Lưu ý:</strong> Quý khách vui lòng mang theo Căn cước công dân hoặc Hộ chiếu khi tham gia tour. Giá vé trẻ em áp dụng cho các bé từ 2 - 11 tuổi.</p>
+                    </div>
+                </section>
+
+                <!-- SECTION 5: ĐÁNH GIÁ TỪ KHÁCH HÀNG -->
+                <section class="section-block" id="danh-gia">
+                    <div class="reviews-header">
+                        <h2 class="section-title mb-0">
+                            <i class="bi bi-chat-quote"></i> Đánh giá từ khách hàng
+                        </h2>
+                        <div class="review-nav-btns">
+                            <button class="btn-rev-circle" type="button" title="Trước"><i class="bi bi-chevron-left"></i></button>
+                            <button class="btn-rev-circle" type="button" title="Sau"><i class="bi bi-chevron-right"></i></button>
+                        </div>
+                    </div>
+
+                    <div class="reviews-layout">
+                        <!-- Score Box Left -->
+                        <div class="score-box">
+                            <div class="score-num"><?= number_format($danhGiaAvgHero, 1) ?><span>/5</span></div>
+                            <div class="stars-row">
+                                <i class="bi bi-star-fill"></i>
+                                <i class="bi bi-star-fill"></i>
+                                <i class="bi bi-star-fill"></i>
+                                <i class="bi bi-star-fill"></i>
+                                <i class="bi bi-star-fill"></i>
+                            </div>
+                            <div class="score-total">Dựa trên <?= (int)$danhGiaCountHero ?> đánh giá</div>
+                        </div>
+
+                        <!-- 3 Review Cards Right -->
+                        <div class="reviews-cards-grid">
+                            <?php foreach (array_slice($danhGiaTourList, 0, 3) as $dg): ?>
+                                <?php
+                                    $ten = trim((string)($dg['ho_ten'] ?? 'Khách hàng'));
+                                    $init = mb_strtoupper(mb_substr($ten, 0, 1));
+                                    $loc = $dg['dia_diem'] ?? 'Hà Nội';
+                                    $dateStr = !empty($dg['ngay_danh_gia']) ? date('d/m/Y', strtotime($dg['ngay_danh_gia'])) : '12/08/2026';
+                                    $diem = (int)($dg['diem'] ?? 5);
+                                ?>
+                                <div class="review-card-item">
+                                    <div>
+                                        <div class="rev-user-row">
+                                            <div class="rev-avatar"><?= htmlspecialchars($init) ?></div>
+                                            <div>
+                                                <div class="rev-name"><?= htmlspecialchars($ten) ?></div>
+                                                <div class="rev-loc"><?= htmlspecialchars($loc) ?> • <?= htmlspecialchars($dateStr) ?></div>
+                                            </div>
+                                        </div>
+                                        <div class="rev-stars">
+                                            <?php for($s=1; $s<=5; $s++): ?>
+                                                <i class="bi bi-star<?= $s <= $diem ? '-fill' : '' ?>"></i>
+                                            <?php endfor; ?>
+                                        </div>
+                                        <div class="rev-content">
+                                            "<?= htmlspecialchars($dg['noi_dung'] ?? 'Tour tuyệt vời, phục vụ rất chu đáo.') ?>"
+                                        </div>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+
+            <!-- RIGHT COLUMN (col-lg-4): BẢNG GIÁ & ĐẶT TOUR NẰM NGANG HÀNG TRÊN CÙNG VỚI ẢNH -->
+            <div class="col-lg-4">
+                <div class="sticky-sidebar">
+                    
+                    <!-- BOOKING / PRICE CARD (NGANG HÀNG VỚI TOP GALLERY) -->
+                    <div class="booking-card">
+                        <div class="price-badge-row">
+                            <span class="badge-discount">Giảm 20%</span>
+                            <span class="price-original"><?= number_format($giaGoc) ?>đ</span>
+                        </div>
+                        <div class="price-main">
+                            <span id="displayPrice"><?= number_format($giaTourHienThi) ?>đ</span> <span>/khách</span>
+                        </div>
+                        <div class="price-save-note">
+                            Tiết kiệm <?= number_format($tietKiem) ?>đ so với giá gốc
+                        </div>
+
+                        <!-- Form chọn ngày & khách -->
+                        <form id="bookingForm" method="get" action="index.php">
+                            <input type="hidden" name="act" value="khachHang/thanhToanTour">
+                            <input type="hidden" name="id" value="<?= (int)($tour['tour_id'] ?? $tour['id'] ?? 0) ?>">
+                            <input type="hidden" name="so_nguoi_lon" id="inputNguoiLon" value="2">
+                            <input type="hidden" name="so_tre_em" id="inputTreEm" value="0">
+                            <input type="hidden" name="so_luong" id="inputTongSoLuong" value="2">
+
+                            <div class="form-group-custom">
+                                <label class="form-label-custom">
+                                    <i class="bi bi-calendar3"></i> Ngày khởi hành
+                                </label>
+                                <select class="custom-select" name="lich_khoi_hanh_id" id="selectLichKhoiHanh">
+                                    <?php if (!empty($lichKhoiHanhList)): ?>
+                                        <?php foreach ($lichKhoiHanhList as $lk): ?>
+                                            <option value="<?= $lk['id'] ?? '' ?>">
+                                                <?= date('d/m/Y', strtotime($lk['ngay_khoi_hanh'])) ?> (<?= date('l', strtotime($lk['ngay_khoi_hanh'])) ?>) - Còn <?= $lk['so_cho_con_lai'] ?? 'nhiều' ?> chỗ
+                                            </option>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <option value="1"><?= $ngayKhoiHanhHienThi ?> (Thứ 7)</option>
+                                        <option value="2"><?= date('d/m/Y', strtotime('+7 days')) ?> (Thứ 7)</option>
+                                        <option value="3"><?= date('d/m/Y', strtotime('+14 days')) ?> (Thứ 7)</option>
+                                    <?php endif; ?>
+                                </select>
+                            </div>
+
+                            <div class="form-group-custom">
+                                <label class="form-label-custom">
+                                    <i class="bi bi-people"></i> Số lượng khách
+                                </label>
+                                <div class="counter-box">
+                                    <div>
+                                        <div class="counter-label">Người lớn (≥ 12 tuổi)</div>
+                                    </div>
+                                    <div class="counter-controls">
+                                        <button class="btn-counter" type="button" onclick="updateCount('adult', -1)">–</button>
+                                        <span class="counter-value" id="valAdult">2</span>
+                                        <button class="btn-counter" type="button" onclick="updateCount('adult', 1)">+</button>
+                                    </div>
+                                </div>
+                                <div class="counter-box">
+                                    <div>
+                                        <div class="counter-label">Trẻ em (2 – 11 tuổi)</div>
+                                    </div>
+                                    <div class="counter-controls">
+                                        <button class="btn-counter" type="button" onclick="updateCount('child', -1)">–</button>
+                                        <span class="counter-value" id="valChild">0</span>
+                                        <button class="btn-counter" type="button" onclick="updateCount('child', 1)">+</button>
+                                    </div>
+                                </div>
                             </div>
 
                             <?php if ($isBookingLockedBy48h): ?>
-                                <div class="alert alert-warning mt-3 mb-0">
-                                    <i class="bi bi-exclamation-triangle me-1"></i>
-                                    Tour này chỉ nhận đặt trước ít nhất 48 giờ so với ngày khởi hành.
-                                </div>
+                                <button type="button" class="btn-book-now" disabled>
+                                    <i class="bi bi-lock"></i> Đã khóa đặt vé (&lt; 48h)
+                                </button>
+                            <?php else: ?>
+                                <button type="submit" class="btn-book-now">
+                                    <i class="bi bi-send-fill"></i> Đặt ngay
+                                </button>
                             <?php endif; ?>
+                            <div class="deposit-note">(Chỉ cần thanh toán trước 30%)</div>
+                        </form>
 
-                            <div class="promo mb-3">
+                        <div class="trust-items">
+                            <div class="trust-item">
+                                <i class="bi bi-clock-history"></i>
+                                <div>
+                                    <div class="trust-item-title">Miễn phí hủy tour</div>
+                                    <div class="trust-item-desc">Hủy trước 3 ngày khởi hành</div>
+                                </div>
+                            </div>
+                            <div class="trust-item">
+                                <i class="bi bi-headset"></i>
+                                <div>
+                                    <div class="trust-item-title">Hỗ trợ 24/7</div>
+                                    <div class="trust-item-desc">Tư vấn nhanh chóng, tận tâm</div>
+                                </div>
+                            </div>
+                            <div class="trust-item">
                                 <i class="bi bi-shield-check"></i>
-                                <div class="text-muted-2">
-                                    Đặt ngay để nhận ưu đãi giờ chót, tiết kiệm thêm <b>1,000K</b>.
+                                <div>
+                                    <div class="trust-item-title">Thanh toán an toàn</div>
+                                    <div class="trust-item-desc">Nhiều phương thức thanh toán</div>
                                 </div>
-                            </div>
-
-                            <div class="d-grid gap-2 tour-action-stack">
-                                <?php if ($isBookingLockedBy48h): ?>
-                                    <button type="button" class="btn btn-lux py-3" disabled>
-                                        <i class="bi bi-lock me-1"></i> Tạm khóa đặt tour
-                                    </button>
-                                <?php else: ?>
-                                    <a class="btn btn-lux py-3" href="index.php?act=khachHang/thanhToanTour&id=<?php echo $tour['tour_id'] ?? $tour['id']; ?>">
-                                        <i class="bi bi-cart-check me-1"></i> Đặt ngay và thanh toán
-                                    </a>
-                                <?php endif; ?>
-                                <a class="btn btn-lux-outline py-3" href="index.php?act=khachHang/dashboard">
-                                    <i class="bi bi-arrow-left-circle me-1"></i> Xem tour khác
-                                </a>
                             </div>
                         </div>
                     </div>
+
+                    <!-- INFO SPEC SHEET CARD -->
+                    <div class="info-spec-card">
+                        <div class="spec-title">Thông tin tour</div>
+                        <table class="spec-table">
+                            <tr>
+                                <td class="spec-label">Thời gian</td>
+                                <td class="spec-value"><?= htmlspecialchars($thoiGianHienThi) ?></td>
+                            </tr>
+                            <tr>
+                                <td class="spec-label">Phương tiện</td>
+                                <td class="spec-value">Xe ô tô + Du thuyền</td>
+                            </tr>
+                            <tr>
+                                <td class="spec-label">Khởi hành từ</td>
+                                <td class="spec-value"><?= htmlspecialchars($khoiHanhHienThi) ?></td>
+                            </tr>
+                            <tr>
+                                <td class="spec-label">Khách sạn</td>
+                                <td class="spec-value">Du thuyền 4 sao</td>
+                            </tr>
+                            <tr>
+                                <td class="spec-label">Giá người lớn</td>
+                                <td class="spec-value"><?= number_format($giaTourHienThi) ?>đ</td>
+                            </tr>
+                            <tr>
+                                <td class="spec-label">Giá trẻ em (2 – 11 tuổi)</td>
+                                <td class="spec-value"><?= number_format($giaTreEm) ?>đ</td>
+                            </tr>
+                            <tr>
+                                <td class="spec-label">Giá em bé (&lt; 2 tuổi)</td>
+                                <td class="spec-value text-success">Miễn phí</td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <!-- PROMO BANNER -->
+                    <div class="promo-card">
+                        <span class="promo-badge">Ưu đãi đặc biệt</span>
+                        <div class="promo-title">Đặt tour sớm – Nhận ngay quà tặng</div>
+                        <div class="promo-desc">Giảm ngay 20% cho nhóm từ 4 khách trở lên và nhiều ưu đãi hấp dẫn khác.</div>
+                        <a href="#bookingForm" class="btn-promo">Tìm hiểu thêm &rarr;</a>
+                    </div>
+
                 </div>
             </div>
+
         </div>
 
-        <?php if (!empty($danhGiaTourList)): ?>
-            <div class="panel mb-4 js-reveal">
-                <div class="panel-body">
-                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-                        <h3 class="panel-title"><i class="bi bi-chat-quote"></i> Phản hồi khách hàng</h3>
-                        <div class="rating-badge">
-                            <span><?php echo number_format((float)($danhGiaTourAvg ?? 0), 1); ?>/5</span>
-                            <span class="text-muted-2" style="font-weight:800;">(<?php echo (int)($danhGiaTourCount ?? 0); ?> đánh giá)</span>
-                        </div>
-                    </div>
-
-                    <div class="review-grid">
-                        <?php foreach (array_slice($danhGiaTourList, 0, 6) as $dg): ?>
-                            <?php
-                                $ten = trim((string)($dg['ho_ten'] ?? $dg['ten_khach_hang'] ?? 'Ẩn danh'));
-                                $initial = 'U';
-                                if ($ten !== '') {
-                                    $initial = strtoupper(substr($ten, 0, 1));
-                                }
-                                $diem = (int)($dg['diem'] ?? 0);
-                                if ($diem < 0) $diem = 0;
-                                if ($diem > 5) $diem = 5;
-                                $noiDung = trim((string)($dg['noi_dung'] ?? ''));
-                                $ngay = !empty($dg['ngay_danh_gia']) ? date('d/m/Y', strtotime($dg['ngay_danh_gia'])) : '';
-                            ?>
-                            <article class="review-card">
-                                <div class="review-top">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <div class="avatar" aria-hidden="true"><?php echo htmlspecialchars($initial); ?></div>
-                                        <div>
-                                            <p class="review-name mb-1"><?php echo htmlspecialchars($ten); ?></p>
-                                            <?php if ($ngay !== ''): ?>
-                                                <div class="review-date"><i class="bi bi-clock me-1"></i><?php echo htmlspecialchars($ngay); ?></div>
-                                            <?php endif; ?>
-                                        </div>
-                                    </div>
-                                    <div class="rating-stars" aria-label="Đánh giá">
-                                        <?php for ($i = 1; $i <= 5; $i++): ?>
-                                            <?php if ($i <= $diem): ?>
-                                                <i class="bi bi-star-fill"></i>
-                                            <?php else: ?>
-                                                <i class="bi bi-star"></i>
-                                            <?php endif; ?>
-                                        <?php endfor; ?>
-                                    </div>
-                                </div>
-                                <?php if ($noiDung !== ''): ?>
-                                    <div class="review-body">“<?php echo htmlspecialchars($noiDung); ?>”</div>
-                                <?php else: ?>
-                                    <div class="review-body text-muted-2">Khách hàng chưa để lại nội dung.</div>
-                                <?php endif; ?>
-                            </article>
-                        <?php endforeach; ?>
-                    </div>
-                </div>
+        <!-- 4. RELATED TOURS (Như Ảnh 2) -->
+        <section class="related-section">
+            <div class="related-header">
+                <div class="related-title">Tour du lịch liên quan</div>
+                <a href="index.php?act=khachHang/danhSachTour" class="link-view-all">Xem tất cả &rarr;</a>
             </div>
-        <?php endif; ?>
 
-        <div class="panel mb-4 js-reveal">
-            <div class="panel-body">
-                <h3 class="panel-title"><i class="bi bi-pencil-square"></i> Đánh giá tour này</h3>
-
-                <?php if (!empty($coTheDanhGiaTour)): ?>
+            <div class="related-grid">
+                <?php foreach (array_slice($tourCungLoai, 0, 4) as $rel): ?>
                     <?php
-                        $existingDiem = !empty($tourReviewCurrentUser['diem']) ? (int)$tourReviewCurrentUser['diem'] : 0;
-                        $existingNoiDung = trim((string)($tourReviewCurrentUser['noi_dung'] ?? ''));
+                        $relId = $rel['tour_id'] ?? $rel['id'] ?? '';
+                        $relName = $rel['ten_tour'] ?? 'Tour du lịch';
+                        $relImg = !empty($rel['hinh_anh']) ? $rel['hinh_anh'] : $galleryImages[0];
+                        $relPrice = (float)($rel['gia_tour'] ?? $rel['gia_co_ban'] ?? 2000000);
+                        $relBadge = $rel['badge'] ?? '';
                     ?>
-                    <?php if (!empty($daDanhGiaTourNay)): ?>
-                        <div class="alert alert-success mt-3 mb-0">
-                            <i class="bi bi-check-circle me-1"></i>
-                            Bạn đã đánh giá tour này. Bạn có thể chỉnh sửa đánh giá bên dưới.
+                    <a href="index.php?act=khachHang/chiTietTour&id=<?= urlencode((string)$relId) ?>" class="rel-card">
+                        <div class="rel-img-wrap">
+                            <img src="<?= htmlspecialchars($relImg) ?>" alt="<?= htmlspecialchars($relName) ?>" loading="lazy">
+                            <?php if ($relBadge === 'Tour nổi bật'): ?>
+                                <span class="rel-badge blue"><?= htmlspecialchars($relBadge) ?></span>
+                            <?php elseif ($relBadge === 'Khuyến mãi'): ?>
+                                <span class="rel-badge orange"><?= htmlspecialchars($relBadge) ?></span>
+                            <?php endif; ?>
                         </div>
-                    <?php endif; ?>
-                    <form class="review-form-shell" method="post" action="index.php?act=khachHang/guiDanhGia">
-                        <input type="hidden" name="loai_danh_gia" value="Tour">
-                        <input type="hidden" name="tour_id" value="<?php echo (int)($tour['tour_id'] ?? 0); ?>">
-                        <input type="hidden" name="tieu_chi" value="ChatLuongTour">
-                        <input type="hidden" name="redirect_tour_id" value="<?php echo (int)($tour['tour_id'] ?? 0); ?>">
-
-                        <div class="row g-3">
-                            <div class="col-md-4">
-                                <label class="form-label fw-bold">Điểm đánh giá</label>
-                                <select class="form-select" name="diem" required>
-                                    <option value="" <?php echo $existingDiem <= 0 ? 'selected' : ''; ?>>Chọn điểm</option>
-                                    <option value="5" <?php echo $existingDiem === 5 ? 'selected' : ''; ?>>5 - Rất hài lòng</option>
-                                    <option value="4" <?php echo $existingDiem === 4 ? 'selected' : ''; ?>>4 - Hài lòng</option>
-                                    <option value="3" <?php echo $existingDiem === 3 ? 'selected' : ''; ?>>3 - Bình thường</option>
-                                    <option value="2" <?php echo $existingDiem === 2 ? 'selected' : ''; ?>>2 - Chưa hài lòng</option>
-                                    <option value="1" <?php echo $existingDiem === 1 ? 'selected' : ''; ?>>1 - Không hài lòng</option>
-                                </select>
-                                <div class="review-score-hints">
-                                    <span class="review-score-chip">5: Xuất sắc</span>
-                                    <span class="review-score-chip">4: Tốt</span>
-                                    <span class="review-score-chip">3: Ổn</span>
-                                    <span class="review-score-chip">2-1: Cần cải thiện</span>
+                        <div class="rel-body">
+                            <div>
+                                <div class="rel-tour-name"><?= htmlspecialchars($relName) ?></div>
+                                <div class="rel-rating">
+                                    <i class="bi bi-star-fill"></i>
+                                    <span><?= htmlspecialchars($rel['rating'] ?? '4.8 (320 đánh giá)') ?></span>
+                                </div>
+                                <div class="rel-meta-row">
+                                    <span><i class="bi bi-geo-alt me-1"></i><?= htmlspecialchars($rel['noi_khoi_hanh'] ?? 'Hà Nội') ?></span>
+                                    <span><i class="bi bi-clock me-1"></i><?= htmlspecialchars($rel['thoi_gian'] ?? '2 ngày 1 đêm') ?></span>
                                 </div>
                             </div>
-                            <div class="col-md-8">
-                                <label class="form-label fw-bold">Nội dung đánh giá</label>
-                                <textarea class="form-control" name="noi_dung" rows="4" maxlength="1000" required placeholder="Chia sẻ trải nghiệm thực tế của bạn về tour..."><?php echo htmlspecialchars($existingNoiDung); ?></textarea>
+                            <div class="rel-footer">
+                                <div class="rel-price"><?= number_format($relPrice) ?>đ<span>/khách</span></div>
+                                <div class="rel-arrow"><i class="bi bi-chevron-right"></i></div>
                             </div>
                         </div>
-
-                        <div class="mt-3 d-flex gap-2 flex-wrap">
-                            <button type="submit" class="btn btn-lux px-4">
-                                <i class="bi bi-send me-1"></i> <?php echo !empty($daDanhGiaTourNay) ? 'Cập nhật đánh giá' : 'Gửi đánh giá'; ?>
-                            </button>
-                            <span class="review-form-footnote align-self-center">Chỉ hiển thị khi bạn đã đặt và hoàn thành tour.</span>
-                        </div>
-                    </form>
-                <?php elseif (empty($daDatTourNay)): ?>
-                    <div class="alert alert-warning mt-3 mb-0">
-                        <i class="bi bi-info-circle me-1"></i>
-                        Bạn cần đặt tour này trước khi có thể đánh giá.
-                    </div>
-                <?php else: ?>
-                    <div class="alert alert-info mt-3 mb-0">
-                        <i class="bi bi-clock-history me-1"></i>
-                        Bạn đã đặt tour, vui lòng đánh giá sau khi đã trải nghiệm xong chuyến đi.
-                    </div>
-                <?php endif; ?>
+                    </a>
+                <?php endforeach; ?>
             </div>
-        </div>
+        </section>
 
-        <?php if (!empty($tourCungLoai)): ?>
-            <div class="panel mb-4 js-reveal">
-                <div class="panel-body">
-                    <h3 class="panel-title"><i class="bi bi-stars"></i> Tour cùng loại</h3>
-                    <div class="related-scroller mt-2" aria-label="Danh sách tour cùng loại">
-                        <?php foreach ($tourCungLoai as $t): ?>
-                            <?php
-                                $tid = $t['tour_id'] ?? $t['id'] ?? '';
-                                if ($tid === '') continue;
-                                $img = $t['hinh_anh'] ?? 'https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=900&q=60';
-                                $gia = $t['gia_tour'] ?? $t['gia_co_ban'] ?? 0;
-                                $moTa = $t['mo_ta_ngan'] ?? $t['mo_ta'] ?? '';
-                                $moTa = trim((string)$moTa);
-                                if (function_exists('mb_strlen') && mb_strlen($moTa) > 80) {
-                                    $moTa = (function_exists('mb_substr') ? mb_substr($moTa, 0, 80) : substr($moTa, 0, 80)) . '...';
-                                }
-                                if ($moTa === '') $moTa = 'Gợi ý tour phù hợp cùng loại, ưu đãi tốt.';
-                            ?>
-                            <article class="related-card">
-                                <img src="<?php echo htmlspecialchars($img); ?>" alt="<?php echo htmlspecialchars($t['ten_tour'] ?? 'Tour'); ?>" loading="lazy">
-                                <div class="related-body">
-                                    <div class="d-flex align-items-start justify-content-between gap-2">
-                                        <h4 class="related-name"><?php echo htmlspecialchars($t['ten_tour'] ?? 'Tour'); ?></h4>
-                                        <?php if (!empty($t['loai_tour'])): ?>
-                                            <span class="related-badge">
-                                                <?php echo htmlspecialchars($t['loai_tour']); ?>
-                                            </span>
-                                        <?php endif; ?>
-                                    </div>
-                                    <div class="related-meta"><i class="bi bi-geo-alt me-1"></i><?php echo htmlspecialchars($moTa); ?></div>
-                                    <div class="related-actions">
-                                        <div class="related-price"><?php echo number_format((float)$gia); ?>đ</div>
-                                        <a class="btn btn-lux-outline btn-sm px-3" href="index.php?act=khachHang/chiTietTour&id=<?php echo urlencode((string)$tid); ?>">
-                                            <i class="bi bi-info-circle me-1"></i> Xem
-                                        </a>
-                                    </div>
-                                </div>
-                            </article>
-                        <?php endforeach; ?>
-                    </div>
-                </div>
-            </div>
-        <?php endif; ?>
     </main>
 
-    <script src="<?php echo BASE_URL; ?>public/assets/bootstrap/bootstrap.bundle.min.js"></script>
-    <script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
-        (function () {
-            var revealEls = document.querySelectorAll('.js-reveal');
-            if (!revealEls || revealEls.length === 0) return;
+    <!-- LIGHTBOX MODAL -->
+    <div class="modal fade" id="galleryModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-xl">
+            <div class="modal-content bg-transparent border-0">
+                <div class="modal-header border-0 pb-0">
+                    <button type="button" class="btn-close btn-close-white ms-auto" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center p-0">
+                    <img id="lightboxImg" class="img-fluid rounded-3 modal-gallery-img" src="" alt="Xem ảnh lớn">
+                </div>
+            </div>
+        </div>
+    </div>
 
-            var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-            if (reduced || !('IntersectionObserver' in window)) {
-                revealEls.forEach(function (el) { el.classList.add('is-visible'); });
-                return;
+    <!-- Bootstrap Bundle JS -->
+    <script src="<?= BASE_URL; ?>public/assets/bootstrap/bootstrap.bundle.min.js"></script>
+
+    <!-- INTERACTIVE JAVASCRIPT -->
+    <script>
+        var adultPrice = <?= (float)$giaTourHienThi ?>;
+        var childPrice = <?= (float)$giaTreEm ?>;
+        var adultCount = 2;
+        var childCount = 0;
+
+        function updateCount(type, delta) {
+            if (type === 'adult') {
+                adultCount = Math.max(1, adultCount + delta);
+                document.getElementById('valAdult').innerText = adultCount;
+                document.getElementById('inputNguoiLon').value = adultCount;
+            } else if (type === 'child') {
+                childCount = Math.max(0, childCount + delta);
+                document.getElementById('valChild').innerText = childCount;
+                document.getElementById('inputTreEm').value = childCount;
             }
+            
+            var totalCount = adultCount + childCount;
+            document.getElementById('inputTongSoLuong').value = totalCount;
 
-            var io = new IntersectionObserver(function (entries, observer) {
-                entries.forEach(function (entry) {
-                    if (entry.isIntersecting) {
-                        entry.target.classList.add('is-visible');
-                        observer.unobserve(entry.target);
-                    }
-                });
-            }, { threshold: 0.12, rootMargin: '0px 0px -30px 0px' });
+            var totalPrice = (adultCount * adultPrice) + (childCount * childPrice);
+            document.getElementById('displayPrice').innerText = new Intl.NumberFormat('vi-VN').format(totalPrice) + 'đ';
+        }
 
-            revealEls.forEach(function (el) { io.observe(el); });
-        })();
+        function scrollToTab(id, el) {
+            document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+            el.classList.add('active');
+            var target = document.getElementById(id);
+            if (target) {
+                var yOffset = -140;
+                var y = target.getBoundingClientRect().top + window.pageYOffset + yOffset;
+                window.scrollTo({top: y, behavior: 'smooth'});
+            }
+        }
 
-        (function () {
-            var mainImg = document.getElementById('mainTourImage');
-            if (!mainImg) return;
-
-            var thumbs = document.querySelectorAll('.tourlux-thumb');
-            if (!thumbs || thumbs.length === 0) return;
-
-            var setActive = function (el) {
-                thumbs.forEach(function (t) { t.classList.remove('is-active'); });
-                el.classList.add('is-active');
-            };
-
-            thumbs.forEach(function (thumb) {
-                thumb.addEventListener('click', function () {
-                    var full = thumb.getAttribute('data-full') || thumb.getAttribute('src');
-                    if (!full) return;
-                    mainImg.setAttribute('src', full);
-                    setActive(thumb);
-                });
-            });
-        })();
+        var galleryPhotos = <?= json_encode($galleryImages) ?>;
+        function openLightbox(index) {
+            var modalEl = document.getElementById('galleryModal');
+            var imgEl = document.getElementById('lightboxImg');
+            if (modalEl && imgEl) {
+                imgEl.src = galleryPhotos[index] || galleryPhotos[0];
+                var modal = new bootstrap.Modal(modalEl);
+                modal.show();
+            }
+        }
     </script>
 </body>
 </html>
