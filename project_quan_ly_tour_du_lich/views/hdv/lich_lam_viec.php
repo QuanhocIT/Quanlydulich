@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
@@ -16,7 +16,7 @@
         <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
             <div>
                 <h3 class="mb-1"><i class="bi bi-calendar-week"></i> Lịch làm việc</h3>
-                <p class="mb-0 opacity-75">Theo d?i l?ch kh?i h?nh, ph?n b? nhi?m v? v? y?u c?u d?c bi?t c?a kh?ch.</p>
+                <p class="mb-0 opacity-75">Theo dõi lịch khởi hành, phân bổ nhiệm vụ và yêu cầu đặc biệt của khách.</p>
             </div>
             <a href="index.php?act=hdv/dashboard" class="btn btn-light">
                 <i class="bi bi-arrow-left"></i> Trang chủ
@@ -37,7 +37,7 @@
         <div class="col-md-4">
             <div class="card stats-card">
                 <div class="card-body">
-                    <div class="text-muted mb-2">L?ch kh?i h?nh du?c ph?n c?ng</div>
+                    <div class="text-muted mb-2">Lịch khởi hành được phân công</div>
                     <h3 class="mb-0"><?php echo count($lichKhoiHanhList ?? []); ?></h3>
                 </div>
             </div>
@@ -45,7 +45,7 @@
         <div class="col-md-4">
             <div class="card stats-card">
                 <div class="card-body">
-                    <div class="text-muted mb-2">Ph?n b? nh?n s?</div>
+                    <div class="text-muted mb-2">Phân bổ nhân sự</div>
                     <h3 class="mb-0"><?php echo count($phanBoNhanSuList ?? []); ?></h3>
                 </div>
             </div>
@@ -119,7 +119,7 @@
 
     <div class="card mb-4">
         <div class="card-header">
-            <h5 class="mb-0"><i class="bi bi-briefcase"></i> L?ch kh?i h?nh du?c ph?n c?ng</h5>
+            <h5 class="mb-0"><i class="bi bi-briefcase"></i> Lịch khởi hành được phân công</h5>
         </div>
         <div class="card-body">
             <?php if (!empty($lichKhoiHanhList)): ?>
@@ -160,14 +160,14 @@
                     </table>
                 </div>
             <?php else: ?>
-                <div class="text-muted">Chua c? l?ch kh?i h?nh n?o du?c ph?n c?ng.</div>
+                <div class="text-muted">Chưa có lịch khởi hành nào được phân công.</div>
             <?php endif; ?>
         </div>
     </div>
 
     <div class="card mb-4">
         <div class="card-header">
-            <h5 class="mb-0"><i class="bi bi-people"></i> Ph?n b? nh?n s?</h5>
+            <h5 class="mb-0"><i class="bi bi-people"></i> Phân bổ nhân sự</h5>
         </div>
         <div class="card-body">
             <?php if (!empty($phanBoNhanSuList)): ?>
@@ -193,7 +193,7 @@
                                     <?php
                                     $statusLabels = [
                                         'ChoXacNhan' => 'Chờ xác nhận',
-                                        'DaXacNhan' => '?? x?c nh?n',
+                                        'DaXacNhan' => 'Đã xác nhận',
                                         'TuChoi' => 'Từ chối',
                                         'Huy' => 'Hủy'
                                     ];
@@ -208,7 +208,7 @@
                                         <input type="hidden" name="lich_khoi_hanh_id" value="<?php echo $pb['lich_khoi_hanh_id']; ?>">
                                         <select name="trang_thai" class="form-select form-select-sm" onchange="this.form.submit()">
                                             <option value="ChoXacNhan" <?php echo $pb['trang_thai'] == 'ChoXacNhan' ? 'selected' : ''; ?>>Chờ xác nhận</option>
-                                            <option value="DaXacNhan" <?php echo $pb['trang_thai'] == 'DaXacNhan' ? 'selected' : ''; ?>>?? x?c nh?n</option>
+                                            <option value="DaXacNhan" <?php echo $pb['trang_thai'] == 'DaXacNhan' ? 'selected' : ''; ?>>Đã xác nhận</option>
                                         </select>
                                     </form>
                                 </td>
@@ -218,7 +218,7 @@
                     </table>
                 </div>
             <?php else: ?>
-                <div class="text-muted">Chua c? ph?n b? nh?n s? n?o.</div>
+                <div class="text-muted">Chưa có phân bổ nhân sự nào.</div>
             <?php endif; ?>
         </div>
     </div>

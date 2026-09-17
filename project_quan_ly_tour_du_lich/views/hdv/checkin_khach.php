@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
@@ -237,7 +237,7 @@
                 <p>Không tìm thấy lịch khởi hành bạn chọn.</p>
             <?php endif; ?>
         <?php else: ?>
-            <p>B?n chua du?c ph?n c?ng l?ch kh?i h?nh n?o.</p>
+            <p>Bạn chưa được phân công lịch khởi hành nào.</p>
         <?php endif; ?>
     </div>
 </body>

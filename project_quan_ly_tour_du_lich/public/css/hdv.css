@@ -27,6 +27,307 @@ body.hdv-body .container {
     max-width: 1360px;
 }
 
+/* ==========================================================================
+   UNIFIED IMAGE 1 TOP NAVBAR FOR HDV
+   ========================================================================== */
+.site-header.hdv-header {
+    background: rgba(255, 255, 255, 0.96);
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid #e2e8f0;
+    position: sticky;
+    top: 0;
+    z-index: 1040;
+    box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05);
+}
+
+.site-header.hdv-header .header-container {
+    max-width: 1380px;
+    margin: 0 auto;
+    padding: 10px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.site-header.hdv-header .brand-block {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+    color: inherit;
+}
+
+.site-header.hdv-header .brand-logo-icon.hdv-brand-icon {
+    width: 42px;
+    height: 42px;
+    background: linear-gradient(135deg, #0d9488, #0284c7);
+    color: #ffffff;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    box-shadow: 0 4px 12px rgba(13, 148, 136, 0.25);
+    flex-shrink: 0;
+}
+
+.site-header.hdv-header .brand-text h1 {
+    font-size: 19px;
+    font-weight: 800;
+    margin: 0;
+    letter-spacing: -0.4px;
+    color: #0f172a;
+    line-height: 1.2;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.site-header.hdv-header .brand-text p {
+    font-size: 11.5px;
+    color: #64748b;
+    margin: 0;
+    font-weight: 500;
+}
+
+.badge-role-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 7px;
+    border-radius: 6px;
+    background: #ecfdf5;
+    color: #047857;
+    font-size: 10.5px;
+    font-weight: 700;
+    border: 1px solid #a7f3d0;
+    letter-spacing: 0.5px;
+}
+
+.site-header.hdv-header .site-nav {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    flex-wrap: wrap;
+}
+
+.site-header.hdv-header .site-nav a {
+    text-decoration: none;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #475569;
+    padding: 8px 12px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.site-header.hdv-header .site-nav a:hover {
+    color: #0284c7;
+    background: #f0f9ff;
+}
+
+.site-header.hdv-header .site-nav a.active {
+    color: #0284c7;
+    background: #e0f2fe;
+    font-weight: 700;
+}
+
+.site-header.hdv-header .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.site-header.hdv-header .btn-icon-round {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    color: #475569;
+    text-decoration: none;
+    position: relative;
+    transition: all 0.2s ease;
+}
+
+.site-header.hdv-header .btn-icon-round:hover {
+    background: #f1f5f9;
+    color: #0284c7;
+    border-color: #cbd5e1;
+}
+
+.site-header.hdv-header .btn-icon-round.btn-logout-shortcut {
+    color: #ef4444;
+    background: #fff5f5;
+    border-color: #fecaca;
+}
+
+.site-header.hdv-header .btn-icon-round.btn-logout-shortcut:hover {
+    background: #fee2e2;
+    color: #dc2626;
+    border-color: #f87171;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(239, 68, 68, 0.15);
+}
+
+.site-header.hdv-header .badge-count {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    background: #ef4444;
+    color: #ffffff;
+    font-size: 10px;
+    font-weight: 700;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #ffffff;
+}
+
+.site-header.hdv-header .user-dropdown-container {
+    position: relative;
+}
+
+.site-header.hdv-header .user-profile-btn {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 4px 12px 4px 4px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 30px;
+    text-decoration: none;
+    color: #1e293b;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.site-header.hdv-header .user-profile-btn:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+}
+
+.site-header.hdv-header .user-profile-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1.5px solid #e2e8f0;
+}
+
+.site-header.hdv-header .user-profile-name {
+    font-size: 13.5px;
+    font-weight: 600;
+    max-width: 130px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.site-header.hdv-header .user-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    width: 250px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.12);
+    padding: 8px;
+    display: none;
+    z-index: 1050;
+    animation: fadeInDown 0.15s ease-out;
+}
+
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.site-header.hdv-header .user-dropdown-container:hover .user-dropdown-menu,
+.site-header.hdv-header .user-dropdown-container:focus-within .user-dropdown-menu {
+    display: block;
+}
+
+.site-header.hdv-header .user-dropdown-header {
+    padding: 10px 12px;
+    border-bottom: 1px solid #f1f5f9;
+    margin-bottom: 6px;
+}
+
+.site-header.hdv-header .user-dropdown-header strong {
+    display: block;
+    font-size: 14px;
+    color: #0f172a;
+    font-weight: 700;
+}
+
+.site-header.hdv-header .user-dropdown-header small {
+    display: block;
+    font-size: 12px;
+    color: #64748b;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.site-header.hdv-header .user-role-badge {
+    font-size: 11px;
+    color: #0d9488;
+    font-weight: 600;
+}
+
+.site-header.hdv-header .user-dropdown-menu a {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #334155;
+    text-decoration: none;
+    transition: all 0.15s;
+}
+
+.site-header.hdv-header .user-dropdown-menu a:hover {
+    background: #f8fafc;
+    color: #0284c7;
+}
+
+.site-header.hdv-header .user-dropdown-menu a.text-danger:hover {
+    background: #fef2f2;
+    color: #dc2626;
+}
+
+.site-header.hdv-header .user-dropdown-divider {
+    height: 1px;
+    background: #f1f5f9;
+    margin: 6px 0;
+}
+
 .hdv-topbar {
     position: sticky;
     top: 0;

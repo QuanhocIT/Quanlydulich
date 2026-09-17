@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
@@ -356,7 +356,7 @@
                                 <select class="form-select" name="loai_yeu_cau" id="loai_yeu_cau" required>
                                     <option value="an_uong">🍽️ Ăn uống (ăn chay, dị ứng...)</option>
                                     <option value="suc_khoe">💊 Sức khỏe (bệnh lý, thuốc...)</option>
-                                    <option value="di_chuyen">?? Di chuy?n (xe lan, ch?m ch?n...)</option>
+                                    <option value="di_chuyen">♿ Di chuyển (xe lăn, chậm chân...)</option>
                                     <option value="phong_o">🏨 Phòng ở (tầng thấp, gần thang máy...)</option>
                                     <option value="hoat_dong">🎯 Hoạt động (không leo núi, không bơi...)</option>
                                     <option value="khac">📌 Khác</option>

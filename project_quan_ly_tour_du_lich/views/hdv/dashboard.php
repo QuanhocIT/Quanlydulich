@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
@@ -38,17 +38,9 @@ $hdvRealtimeWsToken = $hdvRealtimeWsEnabled
                 <p class="mb-0 opacity-75">Bảng điều khiển tổng hợp tour, nhắc việc và cập nhật điều hành dành riêng cho bạn.</p>
             </div>
             <div class="d-flex flex-wrap gap-2">
-                <a href="index.php?act=hdv/notifications" class="btn btn-light position-relative">
-                    <i class="bi bi-bell"></i> Thông báo
-                    <span
-                        id="hdvNotificationBadge"
-                        class="notification-badge"
-                        data-initial="<?php echo (int)($notifications_count ?? 0); ?>"
-                        <?php if (empty($notifications_count)): ?>style="display:none"<?php endif; ?>
-                    ><?php echo (int)($notifications_count ?? 0); ?></span>
-                </a>
-                <a href="index.php?act=hdv/profile" class="btn btn-light"><i class="bi bi-person-circle"></i> Hồ sơ</a>
-                <a href="index.php?act=auth/logout" class="btn btn-outline-light"><i class="bi bi-box-arrow-right"></i> Đăng xuất</a>
+                <a href="index.php?act=hdv/lichLamViec" class="btn btn-light"><i class="bi bi-calendar-week me-1"></i> Lịch làm việc</a>
+                <a href="index.php?act=hdv/checkInKhach" class="btn btn-light"><i class="bi bi-check2-square me-1"></i> Điểm danh</a>
+                <a href="index.php?act=hdv/nhatKyTour" class="btn btn-light"><i class="bi bi-journal-text me-1"></i> Ghi nhật ký</a>
             </div>
         </div>
     </div>
@@ -135,10 +127,13 @@ $hdvRealtimeWsToken = $hdvRealtimeWsEnabled
                                 </div>
                                 <div class="d-flex flex-wrap gap-2">
                                     <a href="index.php?act=hdv/tour_detail&id=<?php echo (int)($tour['tour_id'] ?? 0); ?>" class="btn btn-outline-secondary btn-sm">
-                                        <i class="bi bi-eye"></i> Xem chi tiết
+                                        <i class="bi bi-eye"></i> Chi tiết
                                     </a>
                                     <a href="index.php?act=hdv/danhSachKhach&lich_id=<?php echo (int)($tour['id'] ?? 0); ?>" class="btn btn-outline-secondary btn-sm">
-                                        <i class="bi bi-people"></i> Danh sách khách
+                                        <i class="bi bi-people"></i> Khách đoàn
+                                    </a>
+                                    <a href="index.php?act=hdv/checkInKhach&lich_id=<?php echo (int)($tour['id'] ?? 0); ?>" class="btn btn-outline-primary btn-sm">
+                                        <i class="bi bi-check2-square"></i> Check-in
                                     </a>
                                 </div>
                             </div>
@@ -218,13 +213,15 @@ document.addEventListener('DOMContentLoaded', function () {
     var realtimeWsToken = <?php echo json_encode($hdvRealtimeWsToken, JSON_UNESCAPED_UNICODE); ?>;
 
     function renderBadge(count) {
-        if (!badge) return;
         var safeCount = Math.max(0, Number(count || 0));
-        badge.textContent = String(safeCount);
-        if (safeCount > 0) {
-            badge.style.display = 'inline-flex';
-        } else {
-            badge.style.display = 'none';
+        var navBadge = document.getElementById('hdvNavBadge');
+        if (navBadge) {
+            navBadge.textContent = String(safeCount);
+            navBadge.style.display = safeCount > 0 ? 'inline-flex' : 'none';
+        }
+        if (badge) {
+            badge.textContent = String(safeCount);
+            badge.style.display = safeCount > 0 ? 'inline-flex' : 'none';
         }
     }
 

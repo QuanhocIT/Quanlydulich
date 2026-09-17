@@ -32,17 +32,13 @@ class HDVController {
         return max(0, $count);
     }
 
-    private function resolveCurrentHdvId() {
-        $userId = (int)($_SESSION['user_id'] ?? 0);
-        if ($userId <= 0) {
+    private function resolveCurrentHdvId(): int {
+        try {
+            $info = $this->ensureAndGetHdvInfo();
+            return (int)($info['nhan_su_id'] ?? 0);
+        } catch (Throwable $e) {
             return 0;
         }
-
-        $sql = "SELECT nhan_su_id FROM nhan_su WHERE nguoi_dung_id = ? AND vai_tro = 'HDV' LIMIT 1";
-        $stmt = $this->nhanSuModel->conn->prepare($sql);
-        $stmt->execute([$userId]);
-
-        return (int)$stmt->fetchColumn();
     }
 
     private function requirePostCsrf(string $redirectAct = 'hdv/dashboard') {
@@ -516,28 +512,8 @@ $stats = $this->yeuCauDacBietModel->getSummaryStatsForHDV($nhanSuId, $filters);
      * Trang chủ HDV Dashboard
      */
     public function dashboard() {
-        $userId = $_SESSION['user_id'] ?? null;
-        if (!$userId) {
-            header('Location: index.php?act=auth/login');
-            exit();
-        }
-        
-        // Lấy thông tin nhân sự HDV
-        $sql = "SELECT ns.*, nd.ho_ten, nd.email, nd.so_dien_thoai 
-                FROM nhan_su ns 
-                LEFT JOIN nguoi_dung nd ON ns.nguoi_dung_id = nd.id 
-                WHERE ns.nguoi_dung_id = ? AND ns.vai_tro = 'HDV' LIMIT 1";
-        $stmt = $this->nhanSuModel->conn->prepare($sql);
-        $stmt->execute([$userId]);
-        $hdv_info = $stmt->fetch(PDO::FETCH_ASSOC);
-        
-        if (!$hdv_info) {
-            $_SESSION['error'] = 'Không tìm thấy thông tin HDV.';
-            header('Location: index.php?act=tour/index');
-            exit();
-        }
-        
-        $nhanSuId = $hdv_info['nhan_su_id'];
+        $hdv_info = $this->ensureAndGetHdvInfo();
+        $nhanSuId = (int)$hdv_info['nhan_su_id'];
         
         // Thống kê & danh sách tour dựa trên cả hai nguồn:
         // - HDV chính trong lich_khoi_hanh.hdv_id
@@ -2456,25 +2432,50 @@ $stats = $this->yeuCauDacBietModel->getSummaryStatsForHDV($nhanSuId, $filters);
         exit;
     }
 
-    private function getCurrentHDV() {
-        $userId = $_SESSION['user_id'] ?? null;
-        if (!$userId) {
+    public function ensureAndGetHdvInfo(): array {
+        $userId = (int)($_SESSION['user_id'] ?? 0);
+        if ($userId <= 0) {
             header('Location: index.php?act=auth/login');
             exit();
         }
 
-        $sql = "SELECT nhan_su_id FROM nhan_su WHERE nguoi_dung_id = ? AND vai_tro = 'HDV' LIMIT 1";
+        $sql = "SELECT ns.*, nd.ho_ten, nd.email, nd.so_dien_thoai, nd.avatar, nd.ten_dang_nhap 
+                FROM nhan_su ns 
+                LEFT JOIN nguoi_dung nd ON ns.nguoi_dung_id = nd.id 
+                WHERE ns.nguoi_dung_id = ? AND ns.vai_tro = 'HDV' LIMIT 1";
         $stmt = $this->nhanSuModel->conn->prepare($sql);
         $stmt->execute([$userId]);
-        $nhanSu = $stmt->fetch();
+        $hdv_info = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        if (!$nhanSu) {
-            $_SESSION['error'] = 'Không tìm thấy thông tin HDV.';
+        if (!$hdv_info) {
+            // Self-healing: Tự động tạo bản ghi nhan_su nếu tài khoản có vai trò HDV
+            $stmtUser = $this->nhanSuModel->conn->prepare("SELECT id, ho_ten, email, so_dien_thoai, vai_tro, avatar, ten_dang_nhap FROM nguoi_dung WHERE id = ?");
+            $stmtUser->execute([$userId]);
+            $u = $stmtUser->fetch(PDO::FETCH_ASSOC);
+            if ($u && ($u['vai_tro'] === 'HDV' || ($_SESSION['role'] ?? '') === 'HDV')) {
+                $stmtIns = $this->nhanSuModel->conn->prepare(
+                    "INSERT INTO nhan_su (nguoi_dung_id, vai_tro, loai_hdv, trang_thai_lam_viec) 
+                     VALUES (?, 'HDV', 'TongHop', 'SanSang')"
+                );
+                $stmtIns->execute([$userId]);
+
+                // Truy vấn lại sau khi khởi tạo
+                $stmt->execute([$userId]);
+                $hdv_info = $stmt->fetch(PDO::FETCH_ASSOC);
+            }
+        }
+
+        if (!$hdv_info) {
+            $_SESSION['error'] = 'Không tìm thấy hồ sơ hướng dẫn viên liên kết với tài khoản này.';
             header('Location: index.php?act=tour/index');
             exit();
         }
 
-        return $nhanSu;
+        return $hdv_info;
+    }
+
+    private function getCurrentHDV() {
+        return $this->ensureAndGetHdvInfo();
     }
 
     private function getLichKhoiHanhByHDV(int $nhanSuId) {

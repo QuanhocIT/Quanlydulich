@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
@@ -58,7 +58,7 @@ $bookingList = $bookingList ?? [];
         <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
             <div>
                 <h1 class="h3 mb-1">Quản lý yêu cầu đặc biệt</h1>
-                <p class="text-muted mb-0">Theo d?i v? x? l? c?c y?u c?u c? nh?n c?a kh?ch h?ng</p>
+                <p class="text-muted mb-0">Theo dõi và xử lý các yêu cầu cá nhân của khách hàng</p>
             </div>
             <div class="d-flex gap-2">
                 <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createRequestModal">
