@@ -1,102 +1,82 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Xác thực 2 bước - Quản lý Tour Du lịch</title>
-    <link href="<?php echo BASE_URL; ?>public/assets/bootstrap/bootstrap.min.css" rel="stylesheet">
+    <title>Xác Thực 2 Bước (2FA) - AVENTURA | Life's A Journey</title>
+    <link rel="icon" href="<?php echo BASE_URL; ?>public/images/momo.png" type="image/png">
     <link rel="stylesheet" href="<?php echo BASE_URL; ?>public/assets/bootstrap-icons/bootstrap-icons.min.css">
-    <style>
-        * { margin:0; padding:0; box-sizing:border-box; }
-        body {
-            background-image: url('<?php echo BASE_URL; ?>public/images/logos/hinh-nen-viet-nam-4k10.jpg');
-            background-size:cover; background-position:center; background-attachment:fixed;
-            min-height:100vh; display:flex; align-items:center; justify-content:center;
-            font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
-        }
-        body::before { content:''; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:1; }
-        .wrap { position:relative; z-index:2; width:100%; max-width:420px; padding:0 20px; }
-        .glass-card {
-            background:rgba(255,255,255,0.15); backdrop-filter:blur(20px);
-            border-radius:20px; border:1px solid rgba(255,255,255,0.3);
-            box-shadow:0 8px 32px rgba(0,0,0,0.4); padding:3rem 2.5rem;
-        }
-        .header { text-align:center; margin-bottom:2rem; color:#fff; }
-        .logo-circle {
-            width:72px; height:72px; background:rgba(255,255,255,0.2);
-            border-radius:50%; display:flex; align-items:center; justify-content:center;
-            margin:0 auto 1rem; font-size:2.2rem; color:#fff;
-            border:2px solid rgba(255,255,255,0.4);
-        }
-        .header h2 { font-size:1.75rem; font-weight:700; margin-bottom:.25rem; }
-        .header p  { opacity:.8; font-size:.95rem; }
-        .form-group { margin-bottom:1.5rem; }
-        .form-group label { color:#fff; font-size:.9rem; font-weight:500; margin-bottom:.4rem; display:block; }
-        .code-input {
-            width:100%; padding:.9rem 1rem; background:rgba(255,255,255,0.15);
-            border:1px solid rgba(255,255,255,0.3); border-radius:12px;
-            color:#fff; font-size:1.6rem; font-weight:700; letter-spacing:.5rem;
-            text-align:center;
-        }
-        .code-input::placeholder { color:rgba(255,255,255,0.45); font-size:1rem; letter-spacing:normal; font-weight:400; }
-        .code-input:focus { outline:none; background:rgba(255,255,255,0.25); border-color:rgba(255,255,255,0.5); }
-        .btn-submit {
-            width:100%; padding:1rem;
-            background:linear-gradient(135deg,rgba(255,255,255,0.3),rgba(255,255,255,0.2));
-            border:1px solid rgba(255,255,255,0.4); border-radius:12px; color:#fff;
-            font-size:1.05rem; font-weight:600; cursor:pointer; margin-top:.25rem; transition:all .3s;
-        }
-        .btn-submit:hover { background:rgba(255,255,255,0.35); transform:translateY(-2px); }
-        .alert-err { background:rgba(220,53,69,0.25); border:1px solid rgba(220,53,69,0.5); color:#fff;
-            padding:.85rem 1rem; border-radius:10px; margin-bottom:1.25rem; font-size:.9rem; }
-        .hint { color:rgba(255,255,255,0.65); font-size:.83rem; margin-top:.5rem; text-align:center; }
-        .back-link { text-align:center; margin-top:1.25rem; }
-        .back-link a { color:rgba(255,255,255,0.75); text-decoration:none; font-size:.9rem; }
-        .back-link a:hover { color:#fff; }
-    </style>
+    <link rel="stylesheet" href="<?php echo BASE_URL; ?>public/css/auth-modern.css?v=<?php echo rawurlencode(defined('ASSET_VERSION') ? ASSET_VERSION : '1.0'); ?>">
 </head>
-<body>
-<div class="wrap">
-    <div class="glass-card">
-        <div class="header">
-            <div class="logo-circle"><i class="bi bi-shield-lock-fill"></i></div>
-            <h2>Xác thực 2 bước</h2>
-            <p>Nhập mã 6 chữ số từ ứng dụng Authenticator</p>
-        </div>
-
-        <?php if (!empty($error)): ?>
-            <div class="alert-err"><i class="bi bi-exclamation-triangle me-1"></i><?php echo htmlspecialchars($error); ?></div>
-        <?php endif; ?>
-
-        <form method="POST" action="index.php?act=auth/verify2fa" autocomplete="off">
-            <?php echo csrfField('auth_2fa_verify'); ?>
-            <div class="form-group">
-                <label><i class="bi bi-phone"></i> Mã xác thực (TOTP)</label>
-                <input type="text" name="totp_code" class="code-input"
-                       placeholder="000000" maxlength="6" inputmode="numeric"
-                       pattern="[0-9]{6}" autofocus autocomplete="one-time-code" required>
+<body class="auth-page">
+    <div class="auth-wrapper auth-wrapper-single">
+        <div class="auth-card-single">
+            <div class="auth-single-header">
+                <div class="auth-single-icon">
+                    <i class="bi bi-shield-lock-fill"></i>
+                </div>
+                <h2 class="form-title" style="font-size: 1.6rem;">Xác Thực 2 Bước (2FA)</h2>
+                <p class="form-subtitle">Nhập mã 6 chữ số từ ứng dụng Google Authenticator hoặc Authy</p>
             </div>
-            <button type="submit" class="btn-submit">
-                <i class="bi bi-check-circle"></i> Xác nhận
-            </button>
-        </form>
 
-        <p class="hint">Mã thay đổi mỗi 30 giây. Mở Google Authenticator / Authy để lấy mã.</p>
+            <?php if (!empty($error)): ?>
+                <div class="auth-alert auth-alert-error" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <div><?php echo htmlspecialchars($error); ?></div>
+                </div>
+            <?php endif; ?>
 
-        <div class="back-link">
-            <a href="index.php?act=auth/login"><i class="bi bi-arrow-left"></i> Quay lại đăng nhập</a>
+            <form method="POST" action="index.php?act=auth/verify2fa" autocomplete="off">
+                <?php echo csrfField('auth_2fa_verify'); ?>
+
+                <div class="form-group-modern">
+                    <label class="form-label-modern" for="totp_code" style="justify-content:center;">
+                        <span>Mã xác thực TOTP (6 chữ số)</span>
+                    </label>
+                    <div class="input-container-modern">
+                        <input 
+                            type="text" 
+                            id="totp_code"
+                            name="totp_code" 
+                            class="input-modern" 
+                            style="text-align: center; font-size: 1.6rem; letter-spacing: 0.5rem; font-weight: 700; height: 54px; padding: 0 1rem;"
+                            placeholder="••••••" 
+                            maxlength="6" 
+                            inputmode="numeric"
+                            pattern="[0-9]{6}" 
+                            autofocus 
+                            autocomplete="one-time-code" 
+                            required
+                        >
+                    </div>
+                    <div style="font-size: 0.76rem; color: #94a3b8; text-align: center; margin-top: 0.4rem;">
+                        Mã OTP thay đổi mỗi 30 giây trên điện thoại của bạn
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-auth-primary" style="margin-top: 1.25rem;">
+                    <i class="bi bi-shield-check"></i>
+                    <span>Xác Nhận Đăng Nhập</span>
+                </button>
+            </form>
+
+            <div class="auth-footer-links" style="margin-top: 1.5rem;">
+                <div>
+                    <a href="index.php?act=auth/login" class="link-gold">
+                        <i class="bi bi-arrow-left me-1"></i> Quay lại màn hình đăng nhập
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
-</div>
-<script src="<?php echo BASE_URL; ?>public/assets/bootstrap/bootstrap.bundle.min.js"></script>
-<script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
-// Auto-submit khi nhập đủ 6 chữ số
-document.querySelector('.code-input').addEventListener('input', function() {
-    if (this.value.replace(/\D/g,'').length === 6) {
-        this.value = this.value.replace(/\D/g,'');
-        this.closest('form').submit();
-    }
-});
-</script>
+
+    <script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
+    document.getElementById('totp_code')?.addEventListener('input', function() {
+        if (this.value.replace(/\D/g,'').length === 6) {
+            this.value = this.value.replace(/\D/g,'');
+            this.closest('form').submit();
+        }
+    });
+    </script>
 </body>
 </html>

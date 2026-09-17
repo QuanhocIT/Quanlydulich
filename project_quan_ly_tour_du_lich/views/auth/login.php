@@ -1,445 +1,224 @@
-﻿<!DOCTYPE html>
+<?php
+$validationPayload = getValidationErrors();
+$validationErrors = $validationPayload['errors'] ?? [];
+$errorMessage = !empty($error) ? $error : ($validationPayload['message'] ?? '');
+?>
+<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Đăng nhập - Quản lý Tour Du lịch</title>
-    <link href="<?php echo BASE_URL; ?>public/assets/bootstrap/bootstrap.min.css" rel="stylesheet">
+    <title>Đăng Nhập - AVENTURA | Life's A Journey</title>
+    <link rel="icon" href="<?php echo BASE_URL; ?>public/images/momo.png" type="image/png">
     <link rel="stylesheet" href="<?php echo BASE_URL; ?>public/assets/bootstrap-icons/bootstrap-icons.min.css">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            background-image: url('<?php echo BASE_URL; ?>public/images/logos/hinh-nen-viet-nam-4k10.jpg');
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            background-attachment: fixed;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            position: relative;
-        }
-        
-        /* Dark overlay for better contrast */
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.3);
-            z-index: 1;
-        }
-        
-        .login-container {
-            position: relative;
-            z-index: 2;
-            width: 100%;
-            max-width: 450px;
-            padding: 0 20px;
-            animation: fadeInUp 0.8s ease-out;
-        }
-        
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        /* Glass Morphism Card */
-        .glass-card {
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-            padding: 3rem 2.5rem;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        /* Animated gradient border */
-        .glass-card::before {
-            content: '';
-            position: absolute;
-            top: -2px;
-            left: -2px;
-            right: -2px;
-            bottom: -2px;
-            background: linear-gradient(45deg, 
-                rgba(255, 255, 255, 0.5),
-                rgba(255, 255, 255, 0.1),
-                rgba(255, 255, 255, 0.5)
-            );
-            border-radius: 20px;
-            z-index: -1;
-            animation: borderGlow 3s linear infinite;
-        }
-        
-        @keyframes borderGlow {
-            0%, 100% { opacity: 0.5; }
-            50% { opacity: 1; }
-        }
-        
-        .glass-card::after {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-            animation: shine 3s infinite;
-        }
-        
-        @keyframes shine {
-            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
-            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
-        }
-        
-        .login-header {
-            text-align: center;
-            margin-bottom: 2rem;
-            position: relative;
-            z-index: 1;
-        }
-        
-        .logo-circle {
-            width: 80px;
-            height: 80px;
-            background: rgba(255, 255, 255, 0.25);
-            backdrop-filter: blur(10px);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 1.5rem;
-            border: 2px solid rgba(255, 255, 255, 0.4);
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
-            animation: logoPulse 3s ease-in-out infinite;
-        }
-        
-        @keyframes logoPulse {
-            0%, 100% { 
-                transform: scale(1);
-                box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
-            }
-            50% { 
-                transform: scale(1.05);
-                box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
-            }
-        }
-        
-        .logo-circle i {
-            font-size: 2.5rem;
-            color: white;
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-        }
-        
-        .login-header h2 {
-            color: white;
-            font-size: 1.8rem;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-        }
-        
-        .login-header p {
-            color: rgba(255, 255, 255, 0.9);
-            font-size: 0.95rem;
-            text-shadow: 0 1px 5px rgba(0, 0, 0, 0.3);
-        }
-        
-        .form-group {
-            margin-bottom: 1.5rem;
-            position: relative;
-            z-index: 1;
-        }
-        
-        .form-group label {
-            display: block;
-            color: white;
-            font-weight: 500;
-            margin-bottom: 0.5rem;
-            font-size: 0.95rem;
-            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-        }
-        
-        .input-wrapper {
-            position: relative;
-        }
-        
-        .input-icon {
-            position: absolute;
-            left: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 1.1rem;
-            z-index: 1;
-        }
-        
-        .form-control {
-            width: 100%;
-            padding: 0.9rem 1rem 0.9rem 3rem;
-            background: rgba(255, 255, 255, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 12px;
-            color: white;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(10px);
-        }
-        
-        .form-control::placeholder {
-            color: rgba(255, 255, 255, 0.6);
-        }
-        
-        .form-control:focus {
-            outline: none;
-            background: rgba(255, 255, 255, 0.25);
-            border-color: rgba(255, 255, 255, 0.5);
-            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
-        }
-        
-        .btn-login {
-            width: 100%;
-            padding: 1rem;
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.2));
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            border-radius: 12px;
-            color: white;
-            font-size: 1.1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(10px);
-            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-            margin-top: 1rem;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .btn-login::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 0;
-            height: 0;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.3);
-            transform: translate(-50%, -50%);
-            transition: width 0.6s, height 0.6s;
-        }
-        
-        .btn-login:hover::before {
-            width: 400px;
-            height: 400px;
-        }
-        
-        .btn-login:hover {
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.3));
-            border-color: rgba(255, 255, 255, 0.6);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
-        }
-        
-        .btn-login:active {
-            transform: translateY(0);
-        }
-        
-        .btn-text {
-            position: relative;
-            z-index: 1;
-        }
-        
-        .divider {
-            text-align: center;
-            margin: 1.5rem 0;
-            position: relative;
-            z-index: 1;
-        }
-        
-        .divider::before,
-        .divider::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            width: 40%;
-            height: 1px;
-            background: rgba(255, 255, 255, 0.3);
-        }
-        
-        .divider::before { left: 0; }
-        .divider::after { right: 0; }
-        
-        .divider span {
-            background: transparent;
-            padding: 0 1rem;
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 0.9rem;
-            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-        }
-        
-        .register-link {
-            text-align: center;
-            margin-top: 1.5rem;
-            position: relative;
-            z-index: 1;
-        }
-        
-        .register-link a {
-            color: white;
-            text-decoration: none;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-            padding: 0.5rem 1rem;
-            border-radius: 8px;
-            display: inline-block;
-        }
-        
-        .register-link a:hover {
-            background: rgba(255, 255, 255, 0.2);
-            transform: translateY(-2px);
-        }
-        
-        .alert {
-            background: rgba(220, 53, 69, 0.25);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(220, 53, 69, 0.5);
-            color: white;
-            padding: 1rem;
-            border-radius: 12px;
-            margin-bottom: 1.5rem;
-            text-align: center;
-            animation: shake 0.5s ease;
-            position: relative;
-            z-index: 1;
-        }
-        
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-10px); }
-            75% { transform: translateX(10px); }
-        }
-        
-        .alert i {
-            margin-right: 0.5rem;
-        }
-        
-        /* Responsive */
-        @media (max-width: 576px) {
-            .glass-card {
-                padding: 2rem 1.5rem;
-            }
-            
-            .login-header h2 {
-                font-size: 1.5rem;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="<?php echo BASE_URL; ?>public/css/auth-modern.css?v=<?php echo rawurlencode(defined('ASSET_VERSION') ? ASSET_VERSION : '1.0'); ?>">
 </head>
-<body>
-    <div class="login-container">
-        <div class="glass-card">
-            <div class="login-header">
-                <div class="logo-circle">
-                    <i class="bi bi-globe-asia-australia"></i>
+<body class="auth-page">
+    <div class="auth-wrapper">
+        <div class="auth-card">
+            <!-- Left Panel: Travel Showcase -->
+            <div class="auth-showcase-panel">
+                <div class="brand-badge">
+                    <div class="brand-logo-icon">A</div>
+                    <div>
+                        <div class="brand-name">AVENTURA</div>
+                        <div class="brand-tagline">LIFE'S A JOURNEY</div>
+                    </div>
                 </div>
-                <h2>Đăng nhập</h2>
-                <p>Hệ thống quản lý tour du lịch</p>
-            </div>
-            
-            <?php if (isset($error)): ?>
-                <div class="alert">
-                    <i class="bi bi-exclamation-triangle"></i>
-                    <?php echo $error; ?>
-                </div>
-            <?php endif; ?>
 
-            <?php $validationPayload = getValidationErrors(); ?>
-            <?php if (!isset($error) && !empty($validationPayload['message'])): ?>
-                <div class="alert">
-                    <i class="bi bi-exclamation-triangle"></i>
-                    <?php echo htmlspecialchars((string)$validationPayload['message']); ?>
-                </div>
-            <?php endif; ?>
-            <?php $validationErrors = $validationPayload['errors'] ?? []; ?>
-            
-            <form method="POST" action="index.php?act=auth/login">
-                <?php echo csrfField('auth_login'); ?>
-                <div class="form-group">
-                    <label><i class="bi bi-person"></i> Tên đăng nhập / Email</label>
-                    <div class="input-wrapper">
-                        <i class="bi bi-person-circle input-icon"></i>
-                        <input type="text" name="username" class="form-control" placeholder="Nhập tên đăng nhập hoặc email" required>
+                <div class="showcase-content">
+                    <h1 class="showcase-headline">
+                        Khám Phá Kỳ Quan <span>Việt Nam</span> Bất Tận
+                    </h1>
+                    <p class="showcase-desc">
+                        Hệ thống đặt tour du lịch và quản lý lữ hành thông minh. Đồng hành cùng hàng ngàn chuyến phiêu lưu đáng nhớ trên khắp mọi miền đất nước.
+                    </p>
+
+                    <div class="showcase-features">
+                        <div class="feature-pill">
+                            <i class="bi bi-compass"></i>
+                            <span>Hàng trăm lịch khởi hành đa dạng khắp cả nước</span>
+                        </div>
+                        <div class="feature-pill">
+                            <i class="bi bi-shield-check"></i>
+                            <span>Thanh toán bảo mật đa kênh & xác thực tài khoản 2 lớp</span>
+                        </div>
+                        <div class="feature-pill">
+                            <i class="bi bi-headset"></i>
+                            <span>Đội ngũ hướng dẫn viên & CSKH tận tâm 24/7</span>
+                        </div>
                     </div>
-                    <?php if (!empty($validationErrors['username']) || !empty($validationErrors['credentials'])): ?>
-                        <small style="color:#ffb4b4;display:block;margin-top:6px;">Vui lòng nhập đúng tên đăng nhập/email.</small>
-                    <?php endif; ?>
                 </div>
-                
-                <div class="form-group">
-                    <label><i class="bi bi-lock"></i> Mật khẩu</label>
-                    <div class="input-wrapper">
-                        <i class="bi bi-shield-lock input-icon"></i>
-                        <input type="password" name="password" class="form-control" placeholder="Nhập mật khẩu" required>
+
+                <div class="showcase-footer">
+                    <div>© <?php echo date('Y'); ?> Aventura Travel Platform</div>
+                    <div class="rating-pill">
+                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-star-half"></i>
+                        <span style="color:#fff;margin-left:4px;">4.9 / 5.0</span>
                     </div>
-                    <?php if (!empty($validationErrors['password']) || !empty($validationErrors['credentials'])): ?>
-                        <small style="color:#ffb4b4;display:block;margin-top:6px;">Mật khẩu không hợp lệ.</small>
-                    <?php endif; ?>
                 </div>
-                
-                <button type="submit" class="btn-login">
-                    <span class="btn-text">
-                        <i class="bi bi-box-arrow-in-right"></i> Đăng nhập
-                    </span>
-                </button>
-            </form>
-            
-            <div class="divider">
-                <span>hoặc</span>
             </div>
-            
-            <div class="register-link">
-                <a href="index.php?act=auth/forgotPassword" style="opacity:0.75;font-size:0.9rem;">
-                    <i class="bi bi-key"></i> Quên mật khẩu?
-                </a>
-            </div>
-            <div class="register-link" style="margin-top:0.5rem;">
-                <a href="index.php?act=auth/register">
-                    <i class="bi bi-person-plus"></i> Chưa có tài khoản? Đăng ký ngay
-                </a>
-            </div>
-            <div class="register-link" style="margin-top:0.5rem;opacity:0.7;font-size:0.85rem;">
-                <a href="index.php?act=auth/resendVerification">
-                    <i class="bi bi-envelope-arrow-up"></i> Gửi lại email xác nhận
-                </a>
-            </div>
-            <div class="text-center mt-3">
-                    <a href="google_login.php" class="btn btn-danger w-100"><i class="bi bi-google me-1"></i> Đăng nhập bằng Google</a>
+
+            <!-- Right Panel: Auth Login Form -->
+            <div class="auth-form-panel">
+                <div class="form-header">
+                    <h2 class="form-title">Chào Mừng Trở Lại</h2>
+                    <p class="form-subtitle">Đăng nhập tài khoản để tiếp tục trải nghiệm cùng Aventura</p>
                 </div>
+
+                <!-- Error Flash Alert -->
+                <?php if (!empty($errorMessage)): ?>
+                    <div class="auth-alert auth-alert-error" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        <div><?php echo $errorMessage; ?></div>
+                    </div>
+                <?php endif; ?>
+
+                <?php if (!empty($_SESSION['success'])): ?>
+                    <div class="auth-alert auth-alert-success" role="alert">
+                        <i class="bi bi-check-circle-fill"></i>
+                        <div><?php echo htmlspecialchars((string)$_SESSION['success']); unset($_SESSION['success']); ?></div>
+                    </div>
+                <?php endif; ?>
+
+                <!-- Login Form -->
+                <form method="POST" action="index.php?act=auth/login" id="loginForm">
+                    <?php echo csrfField('auth_login'); ?>
+
+                    <div class="form-group-modern">
+                        <label class="form-label-modern" for="username">
+                            <span>Tên đăng nhập hoặc Email</span>
+                        </label>
+                        <div class="input-container-modern">
+                            <i class="bi bi-person input-icon-prefix"></i>
+                            <input 
+                                type="text" 
+                                id="username" 
+                                name="username" 
+                                class="input-modern" 
+                                placeholder="Nhập username hoặc email của bạn..." 
+                                required
+                                autocomplete="username"
+                            >
+                        </div>
+                        <?php if (!empty($validationErrors['username']) || !empty($validationErrors['credentials'])): ?>
+                            <div class="input-error-text">
+                                <i class="bi bi-info-circle"></i> Vui lòng kiểm tra lại thông tin đăng nhập.
+                            </div>
+                        <?php endif; ?>
+                    </div>
+
+                    <div class="form-group-modern">
+                        <label class="form-label-modern" for="password">
+                            <span>Mật khẩu</span>
+                        </label>
+                        <div class="input-container-modern">
+                            <i class="bi bi-shield-lock input-icon-prefix"></i>
+                            <input 
+                                type="password" 
+                                id="password" 
+                                name="password" 
+                                class="input-modern has-action-btn" 
+                                placeholder="Nhập mật khẩu..." 
+                                required
+                                autocomplete="current-password"
+                            >
+                            <button type="button" class="input-action-btn" id="togglePasswordBtn" title="Hiện/ẩn mật khẩu">
+                                <i class="bi bi-eye" id="togglePasswordIcon"></i>
+                            </button>
+                        </div>
+                        <?php if (!empty($validationErrors['password'])): ?>
+                            <div class="input-error-text">
+                                <i class="bi bi-info-circle"></i> Mật khẩu không hợp lệ.
+                            </div>
+                        <?php endif; ?>
+                    </div>
+
+                    <div class="form-options-row">
+                        <label class="custom-checkbox-wrap">
+                            <input type="checkbox" id="rememberMe">
+                            <span>Ghi nhớ tài khoản</span>
+                        </label>
+                        <a href="index.php?act=auth/forgotPassword" class="link-gold">Quên mật khẩu?</a>
+                    </div>
+
+                    <button type="submit" class="btn-auth-primary" id="submitBtn">
+                        <i class="bi bi-box-arrow-in-right"></i>
+                        <span>Đăng Nhập</span>
+                    </button>
+                </form>
+
+                <div class="auth-divider">
+                    <span>hoặc tiếp tục với</span>
+                </div>
+
+                <a href="google_login.php" class="btn-google-auth">
+                    <svg class="google-icon-svg" viewBox="0 0 48 48">
+                        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+                        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+                        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+                    </svg>
+                    <span>Đăng nhập bằng tài khoản Google</span>
+                </a>
+
+                <div class="auth-footer-links">
+                    <div>
+                        Chưa có tài khoản? 
+                        <a href="index.php?act=auth/register" class="link-gold">Đăng ký thành viên mới</a>
+                    </div>
+                    <div>
+                        <a href="index.php?act=auth/resendVerification" style="color:#94a3b8;font-size:0.82rem;text-decoration:none;">
+                            <i class="bi bi-envelope-check me-1"></i>Chưa nhận được email kích hoạt?
+                        </a>
+                    </div>
+                    <a href="index.php?act=tour/index" class="home-return-link">
+                        <i class="bi bi-arrow-left"></i> Quay lại trang chủ khám phá tour
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
-    
-    <script src="<?php echo BASE_URL; ?>public/assets/bootstrap/bootstrap.bundle.min.js"></script>
+
+    <script nonce="<?php echo defined('CSP_NONCE') ? CSP_NONCE : ''; ?>">
+    document.addEventListener('DOMContentLoaded', function() {
+        // Toggle password visibility
+        const toggleBtn = document.getElementById('togglePasswordBtn');
+        const pwdInput = document.getElementById('password');
+        const pwdIcon = document.getElementById('togglePasswordIcon');
+        if (toggleBtn && pwdInput && pwdIcon) {
+            toggleBtn.addEventListener('click', function() {
+                const isPassword = pwdInput.type === 'password';
+                pwdInput.type = isPassword ? 'text' : 'password';
+                pwdIcon.classList.toggle('bi-eye', !isPassword);
+                pwdIcon.classList.toggle('bi-eye-slash', isPassword);
+            });
+        }
+
+        // Remember username via localStorage
+        const rememberCheckbox = document.getElementById('rememberMe');
+        const usernameInput = document.getElementById('username');
+        const savedUsername = localStorage.getItem('aventura_saved_username');
+        if (savedUsername && usernameInput) {
+            usernameInput.value = savedUsername;
+            if (rememberCheckbox) rememberCheckbox.checked = true;
+        }
+
+        const loginForm = document.getElementById('loginForm');
+        if (loginForm && usernameInput && rememberCheckbox) {
+            loginForm.addEventListener('submit', function() {
+                if (rememberCheckbox.checked) {
+                    localStorage.setItem('aventura_saved_username', usernameInput.value.trim());
+                } else {
+                    localStorage.removeItem('aventura_saved_username');
+                }
+            });
+        }
+    });
+    </script>
 </body>
 </html>
-
-
