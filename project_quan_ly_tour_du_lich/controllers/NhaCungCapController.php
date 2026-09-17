@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/../models/NhaCungCap.php';
+require_once __DIR__ . '/../models/DichVuNhaCungCap.php';
 
 class NhaCungCapController {
     private $nhaCungCapModel;

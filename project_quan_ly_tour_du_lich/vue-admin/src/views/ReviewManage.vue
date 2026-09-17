@@ -136,6 +136,15 @@
           <input v-model="filters.den_ngay" @change="fetchReviews" type="date" class="filter-input" />
         </div>
 
+        <div class="filter-item">
+          <label>Trạng thái trả lời</label>
+          <select v-model="filters.trang_thai_tra_loi" @change="fetchReviews" class="filter-select">
+            <option value="">Tất cả</option>
+            <option value="ChuaTraLoi">Chờ phản hồi</option>
+            <option value="DaTraLoi">Đã trả lời</option>
+          </select>
+        </div>
+
         <div class="filter-item filter-search-col">
           <label>Tìm kiếm khách / nội dung</label>
           <div class="search-input-wrap">
@@ -349,7 +358,8 @@ const filters = ref({
   diem_max: '',
   tu_ngay: '',
   den_ngay: '',
-  search: ''
+  search: '',
+  trang_thai_tra_loi: '',
 });
 const csrfToken = ref('');
 
@@ -433,6 +443,7 @@ async function fetchReviews(manual = false) {
     if (filters.value.tu_ngay) params.append('tu_ngay', filters.value.tu_ngay);
     if (filters.value.den_ngay) params.append('den_ngay', filters.value.den_ngay);
     if (filters.value.search) params.append('search', filters.value.search);
+    if (filters.value.trang_thai_tra_loi) params.append('trang_thai_tra_loi', filters.value.trang_thai_tra_loi);
 
     const res = await fetch('index.php?act=admin/apiDanhGiaList&' + params.toString(), {
       headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
@@ -457,7 +468,8 @@ function resetFilters() {
     diem_max: '',
     tu_ngay: '',
     den_ngay: '',
-    search: ''
+    search: '',
+    trang_thai_tra_loi: '',
   };
   fetchReviews();
 }
@@ -474,6 +486,7 @@ async function submitReply() {
   try {
     const formData = new FormData();
     formData.append('_csrf_token', csrfToken.value);
+    formData.append('_csrf_global', csrfToken.value);
     formData.append('id', currentReview.value.danh_gia_id);
     formData.append('phan_hoi_admin', replyText.value);
 
@@ -507,6 +520,7 @@ async function deleteReview(item) {
   try {
     const formData = new FormData();
     formData.append('_csrf_token', csrfToken.value);
+    formData.append('_csrf_global', csrfToken.value);
     formData.append('id', item.danh_gia_id);
 
     const res = await fetch('index.php?act=admin/danhGia/xoa', {

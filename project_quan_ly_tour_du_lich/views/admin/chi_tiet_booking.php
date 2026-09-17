@@ -1,4 +1,6 @@
 <?php
+/** @var array $booking */
+/** @var array|null $yeuCauTour */
 $pageTitle = 'Chi tiết Booking';
 $currentPage = 'booking';
 ob_start();
@@ -304,6 +306,18 @@ ob_start();
             </p>
         </div>
         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <a href="index.php?act=lichKhoiHanh/chiTietTheoBooking&id=<?php echo $booking['booking_id']; ?>" 
+                   class="btn btn-outline-info" title="Xem lịch trình và phân bổ nhân sự/dịch vụ">
+                    <i class="bi bi-signpost-split"></i> Điều hành lịch & Phân bổ
+                </a>
+                <a href="index.php?act=admin/danhSachKhachTheoTour&booking_id=<?php echo $booking['booking_id']; ?>" 
+                   class="btn btn-outline-success" target="_blank" title="Xem danh sách khách và check-in">
+                    <i class="bi bi-people"></i> Danh sách đoàn
+                </a>
+                <a href="index.php?act=booking/exportPDF&id=<?php echo $booking['booking_id']; ?>" 
+                   class="btn btn-outline-warning" target="_blank" title="Xuất vé / Xác nhận PDF">
+                    <i class="bi bi-file-earmark-pdf"></i> Xuất vé PDF
+                </a>
                 <a href="index.php?act=booking/xuatTaiLieu&id=<?php echo $booking['booking_id']; ?>" 
                    class="btn btn-primary" target="_blank">
                     📄 Xuất tài liệu

@@ -2,8 +2,12 @@
 $pageTitle = 'Dashboard Quản Trị - Vue 3';
 $currentPage = 'dashboard';
 
+$cssFile = __DIR__ . '/../../public/dist/admin/dashboard.css';
+$jsFile = __DIR__ . '/../../public/dist/admin/dashboard.js';
+$dashboardAssetV = (file_exists($jsFile) ? filemtime($jsFile) : time()) . '_' . rawurlencode(ASSET_VERSION);
+
 $additionalCSS = [
-    BASE_URL . 'public/dist/admin/dashboard.css?v=' . rawurlencode(ASSET_VERSION),
+    BASE_URL . 'public/dist/admin/dashboard.css?v=' . $dashboardAssetV,
 ];
 
 ob_start();
@@ -26,7 +30,7 @@ ob_start();
 <script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
     window.__ADMIN_DASHBOARD_INIT__ = <?= json_encode($vueDashboardData ?? [], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
 </script>
-<script type="module" nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>" src="<?= BASE_URL ?>public/dist/admin/dashboard.js?v=<?= rawurlencode(ASSET_VERSION) ?>"></script>
+<script type="module" nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>" src="<?= BASE_URL ?>public/dist/admin/dashboard.js?v=<?= $dashboardAssetV ?>"></script>
 
 <?php
 $content = ob_get_clean();

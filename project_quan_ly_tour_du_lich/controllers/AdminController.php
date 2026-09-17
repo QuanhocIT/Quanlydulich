@@ -171,19 +171,24 @@ class AdminController {
     }
 
     public function getDashboardPayload(): array {
-        $dashboardData = cacheRemember('admin_dashboard_overview_v1', 120, function () {
+        $dashboardData = cacheRemember('admin_dashboard_overview_v2', 60, function () {
+            require_once __DIR__ . '/../models/Tour.php';
             require_once __DIR__ . '/../models/GiaoDich.php';
             require_once __DIR__ . '/../models/Booking.php';
             require_once __DIR__ . '/../models/KhachHang.php';
             require_once __DIR__ . '/../models/DanhGia.php';
             require_once __DIR__ . '/../models/LichKhoiHanh.php';
+            require_once __DIR__ . '/../models/Payment.php';
+            require_once __DIR__ . '/../models/NhanSu.php';
 
+            $conn = connectDB();
             $tourModel = new Tour();
             $giaoDichModel = new GiaoDich();
             $bookingModel = new Booking();
             $khachHangModel = new KhachHang();
             $danhGiaModel = new DanhGia();
             $lichKhoiHanhModel = new LichKhoiHanh();
+            $nhanSuModel = new NhanSu();
 
             $toursRaw = $tourModel->getDashboardTourStats();
             $tourIds = array_map(static function ($tour) {
@@ -212,14 +217,24 @@ class AdminController {
             }
 
             $bookingStatusStats = $bookingModel->getStatusCounts();
+            $cashflowByMonth = $giaoDichModel->getThuChiLoiNhuanTheoThang(12);
+            $paymentStats = Payment::getDashboardPaymentStats($conn);
+            $reviewMetrics = $danhGiaModel->getDashboardReviewMetrics();
+            $operationStats = $lichKhoiHanhModel->getDashboardOperations();
+            $topHdv = $nhanSuModel->getTopHdv(5);
 
             return [
                 'tours' => $tours,
                 'doanhThuTheoThang' => $giaoDichModel->getTongThuTheoThang(12),
+                'cashflowByMonth' => $cashflowByMonth,
                 'bookingStatusStats' => $bookingStatusStats,
                 'khachHangMoiTheoThang' => $khachHangModel->getNewCustomersByMonth(12),
                 'tourStatusStats' => $tourStatusStats,
                 'feedbackStats' => $danhGiaModel->getTourFeedbackBuckets(),
+                'reviewMetrics' => $reviewMetrics,
+                'paymentStats' => $paymentStats,
+                'operationStats' => $operationStats,
+                'topHdv' => $topHdv,
                 'bookingManageStats' => $bookingStatusStats,
                 'lichKhoiHanhStats' => $lichKhoiHanhModel->getScheduleCountByMonth(12),
             ];
@@ -265,7 +280,16 @@ class AdminController {
         $tours = $dashboardData['tours'] ?? [];
         $totalTours = count($tours);
         $doanhThuTheoThang = $dashboardData['doanhThuTheoThang'] ?? [];
+        $cashflowByMonth = $dashboardData['cashflowByMonth'] ?? [];
+        $paymentStats = $dashboardData['paymentStats'] ?? [];
+        $reviewMetrics = $dashboardData['reviewMetrics'] ?? [];
+        $operationStats = $dashboardData['operationStats'] ?? [];
+        $topHdv = $dashboardData['topHdv'] ?? [];
+
         $totalRevenue = array_sum(array_map('floatval', array_values($doanhThuTheoThang)));
+        $totalExpense = array_sum(array_map(static fn($m) => (float)($m['tong_chi'] ?? 0), $cashflowByMonth));
+        $totalNetProfit = $totalRevenue - $totalExpense;
+
         $totalBookings = array_sum(array_map('intval', array_values($bookingStatusStats)));
         $khachHangMoiTheoThang = $dashboardData['khachHangMoiTheoThang'] ?? [];
         $totalCustomers = array_sum(array_map('intval', array_values($khachHangMoiTheoThang)));
@@ -281,22 +305,40 @@ class AdminController {
             'metrics' => [
                 'total_tours' => $totalTours,
                 'total_revenue' => $totalRevenue,
+                'total_expense' => $totalExpense,
+                'net_profit' => $totalNetProfit,
                 'total_bookings' => $totalBookings,
                 'total_customers' => $totalCustomers,
                 'monthly_revenue' => $monthlyRevenue,
                 'pending_bookings' => $pendingBookings,
                 'overdue_debt' => $overdueDebt,
                 'automation_events_24h' => (int)($automationSnapshot['recentEvents24h'] ?? 0),
+                'avg_csat' => (float)($reviewMetrics['avg_score'] ?? 0),
+                'csat_positive_rate' => (float)($reviewMetrics['satisfaction_rate'] ?? 0),
+                'total_reviews' => (int)($reviewMetrics['total_reviews'] ?? 0),
+                'occupancy_rate' => (float)($operationStats['occupancy_rate'] ?? 0),
+                'total_passengers' => (int)($operationStats['total_guests'] ?? 0),
+                'active_schedules' => (int)($operationStats['active_running'] ?? 0),
+                'upcoming_schedules' => (int)($operationStats['upcoming_7_days'] ?? 0),
+                'payment_success_rate' => (float)($paymentStats['success_rate'] ?? 0),
             ],
             'charts' => [
                 'revenue_by_month' => $doanhThuTheoThang,
+                'cashflow_by_month' => $cashflowByMonth,
                 'booking_status' => $bookingStatusStats,
                 'customers_by_month' => $khachHangMoiTheoThang,
                 'tour_status' => $dashboardData['tourStatusStats'] ?? [],
+                'payment_methods' => $paymentStats['methods'] ?? [],
+                'review_distribution' => $reviewMetrics['stars'] ?? [],
+                'schedule_status' => $operationStats['status_counts'] ?? [],
             ],
             'daily_kpi' => $dailyKpiSummary,
             'kpi_alerts' => $kpiAlerts,
             'top_tours' => array_slice($tours, 0, 10),
+            'top_hdv' => $topHdv,
+            'payment_stats' => $paymentStats,
+            'review_metrics' => $reviewMetrics,
+            'operation_stats' => $operationStats,
             'recent_events' => $automationSnapshot['recentEvents'] ?? [],
             'raw_tours' => $tours,
         ];
@@ -804,6 +846,7 @@ class AdminController {
     public function danhSachKhachTheoTour() {
         $lichKhoiHanhId = isset($_GET['lich_khoi_hanh_id']) ? (int)$_GET['lich_khoi_hanh_id'] : 0;
         $tourId = isset($_GET['tour_id']) ? (int)$_GET['tour_id'] : 0;
+        $bookingId = isset($_GET['booking_id']) ? (int)$_GET['booking_id'] : 0;
         
         $tourModel = new Tour();
         $lichKhoiHanhModel = new LichKhoiHanh();
@@ -817,6 +860,20 @@ class AdminController {
         $lichKhoiHanhList = [];
         $checkinStats = null;
         $roomStats = null;
+
+        // Tự động phân giải booking_id sang lịch khởi hành tương ứng nếu có
+        if ($bookingId > 0 && $lichKhoiHanhId <= 0) {
+            $bRow = $bookingModel->findById($bookingId);
+            if ($bRow) {
+                $tourId = (int)($bRow['tour_id'] ?? 0);
+                if (!empty($bRow['ngay_khoi_hanh'])) {
+                    $sRow = $lichKhoiHanhModel->findByTourAndNgayKhoiHanh($tourId, (string)$bRow['ngay_khoi_hanh']);
+                    if ($sRow && !empty($sRow['id'])) {
+                        $lichKhoiHanhId = (int)$sRow['id'];
+                    }
+                }
+            }
+        }
         
         if ($lichKhoiHanhId > 0) {
             $lichKhoiHanh = $lichKhoiHanhModel->findById($lichKhoiHanhId);
@@ -1370,6 +1427,140 @@ class AdminController {
         } catch (Throwable $e) {
             echo json_encode(['success' => false], JSON_UNESCAPED_UNICODE);
         }
+        exit;
+    }
+
+    // ==================== ADMIN PROFILE & SECURITY ====================
+
+    public function profile(): void {
+        requireRole('Admin');
+        $userId = (int)($_SESSION['user_id'] ?? 0);
+
+        require_once __DIR__ . '/../models/NguoiDung.php';
+        $nguoiDungModel = new NguoiDung();
+        $user = $nguoiDungModel->findById($userId);
+
+        if (!$user) {
+            $_SESSION['error'] = 'Không tìm thấy thông tin tài khoản quản trị.';
+            header('Location: index.php?act=admin/dashboard');
+            exit;
+        }
+
+        $twoFactorEnabled = !empty($user['two_factor_enabled']);
+        $csrfToken = csrfToken('admin_form');
+        $csrfGlobal = csrfToken('global_form');
+
+        $currentPage = 'profile';
+        require __DIR__ . '/../views/admin/profile.php';
+    }
+
+    public function updateProfile(): void {
+        requireRole('Admin');
+
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+            header('Location: index.php?act=admin/profile');
+            exit;
+        }
+        $this->requirePostCsrf('admin/profile');
+
+        $userId = (int)($_SESSION['user_id'] ?? 0);
+        $fullname = trim((string)($_POST['ho_ten'] ?? ''));
+        $email = trim((string)($_POST['email'] ?? ''));
+        $phone = trim((string)($_POST['so_dien_thoai'] ?? ''));
+
+        if ($fullname === '') {
+            $_SESSION['error'] = 'Họ và tên không được để trống.';
+            header('Location: index.php?act=admin/profile');
+            exit;
+        }
+
+        if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $_SESSION['error'] = 'Địa chỉ email không hợp lệ.';
+            header('Location: index.php?act=admin/profile');
+            exit;
+        }
+
+        $conn = connectDB();
+        $stmtCheck = $conn->prepare("SELECT COUNT(*) FROM nguoi_dung WHERE email = ? AND id != ? AND (is_deleted = 0 OR is_deleted IS NULL)");
+        $stmtCheck->execute([$email, $userId]);
+        if ((int)$stmtCheck->fetchColumn() > 0) {
+            $_SESSION['error'] = 'Email này đã được sử dụng bởi tài khoản khác.';
+            header('Location: index.php?act=admin/profile');
+            exit;
+        }
+
+        $stmt = $conn->prepare("UPDATE nguoi_dung SET ho_ten = ?, email = ?, so_dien_thoai = ? WHERE id = ?");
+        $ok = $stmt->execute([$fullname, $email, $phone, $userId]);
+
+        if ($ok) {
+            $_SESSION['user_name'] = $fullname;
+            $_SESSION['success'] = 'Cập nhật hồ sơ cá nhân thành công!';
+        } else {
+            $_SESSION['error'] = 'Không thể lưu thông tin hồ sơ.';
+        }
+
+        header('Location: index.php?act=admin/profile');
+        exit;
+    }
+
+    public function changePassword(): void {
+        requireRole('Admin');
+
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+            header('Location: index.php?act=admin/profile');
+            exit;
+        }
+        $this->requirePostCsrf('admin/profile');
+
+        $userId = (int)($_SESSION['user_id'] ?? 0);
+        $currentPassword = (string)($_POST['current_password'] ?? '');
+        $newPassword = (string)($_POST['new_password'] ?? '');
+        $confirmPassword = (string)($_POST['confirm_password'] ?? '');
+
+        if ($currentPassword === '' || $newPassword === '' || $confirmPassword === '') {
+            $_SESSION['error'] = 'Vui lòng điền đầy đủ tất cả các trường mật khẩu.';
+            header('Location: index.php?act=admin/profile#password');
+            exit;
+        }
+
+        if ($newPassword !== $confirmPassword) {
+            $_SESSION['error'] = 'Mật khẩu mới và mật khẩu xác nhận không khớp.';
+            header('Location: index.php?act=admin/profile#password');
+            exit;
+        }
+
+        if (strlen($newPassword) < 8) {
+            $_SESSION['error'] = 'Mật khẩu mới phải có tối thiểu 8 ký tự.';
+            header('Location: index.php?act=admin/profile#password');
+            exit;
+        }
+
+        require_once __DIR__ . '/../models/NguoiDung.php';
+        $nguoiDungModel = new NguoiDung();
+        $user = $nguoiDungModel->findById($userId);
+
+        if (!$user || !password_verify($currentPassword, (string)($user['mat_khau'] ?? ''))) {
+            $_SESSION['error'] = 'Mật khẩu hiện tại không chính xác.';
+            header('Location: index.php?act=admin/profile#password');
+            exit;
+        }
+
+        if (password_verify($newPassword, (string)($user['mat_khau'] ?? ''))) {
+            $_SESSION['error'] = 'Mật khẩu mới không được trùng với mật khẩu cũ.';
+            header('Location: index.php?act=admin/profile#password');
+            exit;
+        }
+
+        $hashed = password_hash($newPassword, PASSWORD_DEFAULT);
+        $ok = $nguoiDungModel->updatePassword($userId, $hashed);
+
+        if ($ok) {
+            $_SESSION['success'] = 'Đổi mật khẩu thành công! Hãy ghi nhớ mật khẩu mới của bạn.';
+        } else {
+            $_SESSION['error'] = 'Không thể cập nhật mật khẩu. Vui lòng thử lại.';
+        }
+
+        header('Location: index.php?act=admin/profile#password');
         exit;
     }
 }

@@ -30,7 +30,8 @@ class DanhGiaController {
             'diem_max' => $_GET['diem_max'] ?? '',
             'tu_ngay' => $_GET['tu_ngay'] ?? '',
             'den_ngay' => $_GET['den_ngay'] ?? '',
-            'search' => $_GET['search'] ?? ''
+            'search' => $_GET['search'] ?? '',
+            'trang_thai_tra_loi' => $_GET['trang_thai_tra_loi'] ?? '',
         ];
         
         $danhGiaList = $this->model->filter($filters);
@@ -62,7 +63,8 @@ class DanhGiaController {
             'diem_max' => $_GET['diem_max'] ?? '',
             'tu_ngay' => $_GET['tu_ngay'] ?? '',
             'den_ngay' => $_GET['den_ngay'] ?? '',
-            'search' => $_GET['search'] ?? ''
+            'search' => $_GET['search'] ?? '',
+            'trang_thai_tra_loi' => $_GET['trang_thai_tra_loi'] ?? '',
         ];
 
         $danhGiaList = $this->model->filter($filters);
@@ -126,6 +128,29 @@ class DanhGiaController {
             
             if ($result) {
                 $_SESSION['success'] = 'Đã trả lời đánh giá';
+
+                // Gửi thông báo cho khách hàng khi Ban Quản Trị phản hồi
+                try {
+                    require_once 'models/ThongBao.php';
+                    $danhGia = $this->model->findById($id);
+                    $nguoiDungId = (int)($danhGia['nguoi_dung_id'] ?? 0);
+                    if ($nguoiDungId > 0) {
+                        $targetName = $danhGia['ten_tour'] ?? ($danhGia['loai_danh_gia'] ?? 'dịch vụ');
+                        $thongBaoModel = new ThongBao();
+                        $thongBaoModel->insert([
+                            'tieu_de' => 'Ban quản trị đã phản hồi đánh giá của bạn',
+                            'noi_dung' => "Đánh giá của bạn về '{$targetName}' đã nhận được phản hồi từ Ban Quản Trị: \"" . mb_strimwidth($phan_hoi_admin, 0, 150, '...') . "\"",
+                            'loai_thong_bao' => 'DanhGia',
+                            'muc_do_uu_tien' => 'TrungBinh',
+                            'nguoi_nhan_id' => $nguoiDungId,
+                            'vai_tro_nhan' => 'KhachHang',
+                            'trang_thai' => 'DaGui',
+                            'thoi_gian_gui' => date('Y-m-d H:i:s'),
+                        ]);
+                    }
+                } catch (Throwable $e) {
+                    error_log('Error sending notification on review reply: ' . $e->getMessage());
+                }
             } else {
                 $_SESSION['error'] = 'Có lỗi xảy ra';
             }

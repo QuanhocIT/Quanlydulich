@@ -198,6 +198,14 @@
                   </a>
 
                   <a 
+                    :href="'index.php?act=admin/quanLyLichKhoiHanh&tour_id=' + tour.tour_id" 
+                    class="btn-sm-action btn-schedule"
+                    title="Xem danh sách lịch khởi hành của tour này"
+                  >
+                    <i class="bi bi-calendar3"></i> Lịch
+                  </a>
+
+                  <a 
                     :href="'index.php?act=tour/clone&id=' + tour.tour_id" 
                     class="btn-sm-action btn-clone"
                     @click="confirmClone($event, tour)"
@@ -903,6 +911,9 @@ onMounted(() => {
 
 .btn-view { background: rgba(14, 165, 233, 0.15); color: #38bdf8; border-color: rgba(14, 165, 233, 0.25); }
 .btn-view:hover { background: rgba(14, 165, 233, 0.25); color: #ffffff; }
+
+.btn-schedule { background: rgba(212, 175, 55, 0.15); color: #fde047; border-color: rgba(212, 175, 55, 0.3); }
+.btn-schedule:hover { background: rgba(212, 175, 55, 0.25); color: #ffffff; }
 
 .btn-clone { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border-color: rgba(245, 158, 11, 0.25); }
 .btn-clone:hover { background: rgba(245, 158, 11, 0.25); color: #fde047; }

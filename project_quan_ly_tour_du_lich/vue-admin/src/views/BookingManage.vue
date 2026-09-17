@@ -242,6 +242,22 @@
               <!-- Action Links -->
               <td class="text-center">
                 <div class="btn-actions-group">
+                  <button 
+                    type="button" 
+                    class="btn-act btn-passengers" 
+                    @click="openPassengerModal(b)" 
+                    title="Xem danh sách hành khách / Check-in"
+                  >
+                    <i class="bi bi-people-fill"></i> Khách
+                  </button>
+                  <button 
+                    type="button" 
+                    class="btn-act btn-quick-status" 
+                    @click="openStatusModal(b)" 
+                    title="Cập nhật trạng thái và tiền cọc"
+                  >
+                    <i class="bi bi-arrow-repeat"></i> Trạng thái
+                  </button>
                   <a 
                     :href="'index.php?act=booking/chiTiet&id=' + b.booking_id" 
                     class="btn-act btn-view"
@@ -251,11 +267,11 @@
                   </a>
                   <a 
                     v-if="b.tour_id"
-                    :href="'index.php?act=tour/phanBoNhanSuLichKhoiHanh&id=' + b.tour_id" 
+                    :href="'index.php?act=lichKhoiHanh/chiTietTheoBooking&id=' + b.booking_id" 
                     class="btn-act btn-assign" 
-                    title="Phân bổ nhân sự và dịch vụ cho tour"
+                    title="Điều hành lịch và phân bổ nhân sự/dịch vụ"
                   >
-                    <i class="bi bi-people"></i> Phân bổ
+                    <i class="bi bi-signpost-split"></i> Phân bổ
                   </a>
                   <a 
                     :href="'index.php?act=booking/exportPDF&id=' + b.booking_id" 
@@ -313,6 +329,183 @@
         </ul>
       </div>
     </section>
+
+    <!-- MODAL: DANH SÁCH HÀNH KHÁCH (PASSENGER MANIFEST) -->
+    <div v-if="isPassengerModalOpen" class="modal-backdrop-custom" @click.self="closePassengerModal">
+      <div class="modal-card modal-lg">
+        <div class="modal-header-custom">
+          <div class="modal-title-wrap">
+            <i class="bi bi-person-lines-fill text-warning me-2 fs-5"></i>
+            <div>
+              <h3 class="modal-title">Danh Sách Hành Khách - {{ activeBooking?.ten_tour || 'Booking Tour' }}</h3>
+              <p class="modal-subtitle">
+                Mã đơn: <strong>#{{ activeBooking?.booking_id }}</strong> | 
+                Khách đặt: <strong>{{ activeBooking?.customer_name || activeBooking?.ho_ten }}</strong> ({{ activeBooking?.so_dien_thoai }}) | 
+                Số lượng: <strong>{{ activeBooking?.so_luong_nguoi || activeBooking?.so_nguoi || 1 }} khách</strong>
+              </p>
+            </div>
+          </div>
+          <button type="button" class="btn-close-modal" @click="closePassengerModal">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+
+        <div class="modal-body-custom">
+          <div v-if="isLoadingPassengers" class="loading-state p-4 text-center">
+            <i class="bi bi-arrow-repeat spin fs-3 text-warning"></i>
+            <p class="mt-2 text-muted">Đang tải danh sách hành khách...</p>
+          </div>
+          <div v-else>
+            <div class="table-responsive">
+              <table class="passenger-table">
+                <thead>
+                  <tr>
+                    <th class="text-center" style="width: 50px;">STT</th>
+                    <th>Họ và tên</th>
+                    <th>Số điện thoại</th>
+                    <th>CCCD / Hộ chiếu</th>
+                    <th class="text-center">Giới tính</th>
+                    <th class="text-center">Trạng thái</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(p, idx) in passengerList" :key="p.id || idx" class="p-row">
+                    <td class="text-center font-monospace">{{ idx + 1 }}</td>
+                    <td>
+                      <strong class="text-light">{{ p.ho_ten }}</strong>
+                      <span v-if="p.is_primary" class="badge-primary-booker ms-2">Trưởng đoàn</span>
+                    </td>
+                    <td>{{ p.so_dien_thoai || '--' }}</td>
+                    <td class="font-monospace text-secondary">{{ p.so_cmnd || '--' }}</td>
+                    <td class="text-center">{{ p.gioi_tinh || '--' }}</td>
+                    <td class="text-center">
+                      <span class="p-status-pill" :class="p.trang_thai === 'DaCheckIn' ? 'p-checked' : 'p-unchecked'">
+                        {{ p.trang_thai === 'DaCheckIn' ? 'Đã check-in' : 'Chưa check-in' }}
+                      </span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="modal-actions-summary mt-3">
+              <span class="text-muted small">
+                <i class="bi bi-info-circle me-1"></i> Danh sách phục vụ khai báo danh sách đoàn, bảo hiểm du lịch và xếp phòng khách sạn.
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer-custom">
+          <div class="footer-links">
+            <a 
+              :href="'index.php?act=admin/danhSachKhachTheoTour&booking_id=' + (activeBooking?.booking_id || 0)" 
+              target="_blank"
+              class="btn-footer-secondary"
+            >
+              <i class="bi bi-printer me-1"></i> In danh sách đoàn
+            </a>
+            <a 
+              href="index.php?act=admin/phanPhongKhachSan" 
+              target="_blank"
+              class="btn-footer-secondary"
+            >
+              <i class="bi bi-building me-1"></i> Xếp phòng KS
+            </a>
+          </div>
+          <button type="button" class="btn-footer-primary" @click="closePassengerModal">
+            Đóng
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: CẬP NHẬT TRẠNG THÁI & TIỀN CỌC NHANH -->
+    <div v-if="isStatusModalOpen" class="modal-backdrop-custom" @click.self="closeStatusModal">
+      <div class="modal-card modal-md">
+        <div class="modal-header-custom">
+          <div class="modal-title-wrap">
+            <i class="bi bi-arrow-repeat text-warning me-2 fs-5"></i>
+            <div>
+              <h3 class="modal-title">Cập Nhật Trạng Thái Booking #{{ activeBooking?.booking_id }}</h3>
+              <p class="modal-subtitle">
+                {{ activeBooking?.ten_tour }} | Tổng tiền: <strong class="text-warning">{{ formatCurrency(activeBooking?.tong_tien) }}</strong>
+              </p>
+            </div>
+          </div>
+          <button type="button" class="btn-close-modal" @click="closeStatusModal">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+
+        <div class="modal-body-custom">
+          <div class="form-group-custom mb-3">
+            <label class="form-label-custom"><i class="bi bi-check2-circle text-warning me-1"></i>Trạng thái đơn hàng</label>
+            <div class="status-options-grid">
+              <label 
+                v-for="opt in statusOptions" 
+                :key="opt.value" 
+                class="status-option-label"
+                :class="{ active: editStatus === opt.value }"
+              >
+                <input type="radio" v-model="editStatus" :value="opt.value" class="d-none" />
+                <i :class="opt.icon"></i>
+                <span>{{ opt.label }}</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-group-custom mb-3" v-if="editStatus === 'DaCoc' || editStatus === 'HoanTat'">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <label class="form-label-custom mb-0"><i class="bi bi-cash-stack text-success me-1"></i>Tiền cọc / Đã thanh toán (VNĐ)</label>
+              <div class="quick-deposit-btns">
+                <button type="button" class="btn-quick-pct" @click="setDepositPercent(0.3)">30%</button>
+                <button type="button" class="btn-quick-pct" @click="setDepositPercent(0.5)">50%</button>
+                <button type="button" class="btn-quick-pct" @click="setDepositPercent(1)">100%</button>
+              </div>
+            </div>
+            <input 
+              type="number" 
+              v-model.number="editTienCoc" 
+              class="form-control-custom"
+              placeholder="Nhập số tiền cọc (VNĐ)"
+              min="0"
+              :max="activeBooking?.tong_tien || 999999999"
+            />
+            <span class="text-muted small mt-1 d-block">
+              Còn lại: <strong class="text-warning">{{ formatCurrency(Math.max(0, (Number(activeBooking?.tong_tien) || 0) - editTienCoc)) }}</strong>
+            </span>
+          </div>
+
+          <div class="form-group-custom mb-3">
+            <label class="form-label-custom"><i class="bi bi-chat-left-text text-warning me-1"></i>Ghi chú nội bộ</label>
+            <textarea 
+              v-model="editGhiChu" 
+              class="form-control-custom textarea-custom" 
+              rows="3" 
+              placeholder="Ghi chú xác nhận, chứng từ thanh toán, yêu cầu phát sinh..."
+            ></textarea>
+          </div>
+        </div>
+
+        <div class="modal-footer-custom">
+          <button type="button" class="btn-footer-secondary" @click="closeStatusModal" :disabled="isSavingStatus">
+            Hủy
+          </button>
+          <button type="button" class="btn-footer-primary" @click="saveQuickStatus" :disabled="isSavingStatus">
+            <i v-if="isSavingStatus" class="bi bi-arrow-repeat spin me-1"></i>
+            <i v-else class="bi bi-check2 me-1"></i>
+            {{ isSavingStatus ? 'Đang lưu...' : 'Lưu thay đổi' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION -->
+    <div v-if="toast.show" class="toast-custom" :class="'toast-' + toast.type">
+      <i :class="toast.type === 'success' ? 'bi bi-check-circle-fill' : 'bi bi-exclamation-circle-fill'"></i>
+      <span>{{ toast.message }}</span>
+    </div>
   </div>
 </template>
 
@@ -348,6 +541,140 @@ const stats = ref({
 const bookings = ref([]);
 const toursList = ref([]);
 const csrfToken = ref('');
+
+// Modals State
+const isPassengerModalOpen = ref(false);
+const isLoadingPassengers = ref(false);
+const passengerList = ref([]);
+
+const isStatusModalOpen = ref(false);
+const isSavingStatus = ref(false);
+const activeBooking = ref(null);
+const editStatus = ref('');
+const editTienCoc = ref(0);
+const editGhiChu = ref('');
+
+const statusOptions = [
+  { value: 'ChoXacNhan', label: 'Chờ xác nhận', icon: 'bi bi-clock-history' },
+  { value: 'DaCoc', label: 'Đã đặt cọc', icon: 'bi bi-cash-coin' },
+  { value: 'HoanTat', label: 'Hoàn tất', icon: 'bi bi-check2-all' },
+  { value: 'Huy', label: 'Đã hủy', icon: 'bi bi-x-circle' },
+];
+
+// Toast State
+const toast = ref({
+  show: false,
+  message: '',
+  type: 'success',
+});
+let toastTimer = null;
+
+function showToast(message, type = 'success') {
+  clearTimeout(toastTimer);
+  toast.value = { show: true, message, type };
+  toastTimer = setTimeout(() => {
+    toast.value.show = false;
+  }, 3500);
+}
+
+// Open Passenger Modal
+async function openPassengerModal(b) {
+  activeBooking.value = b;
+  isPassengerModalOpen.value = true;
+  isLoadingPassengers.value = true;
+  passengerList.value = [];
+
+  try {
+    const res = await fetch(`index.php?act=booking/apiBookingPassengers&id=${b.booking_id}`, {
+      headers: { 'Accept': 'application/json' }
+    });
+    const json = await res.json();
+    if (json.success && json.passengers) {
+      passengerList.value = json.passengers;
+    } else {
+      showToast(json.message || 'Không thể tải danh sách hành khách.', 'error');
+    }
+  } catch (err) {
+    console.error('Error loading passengers:', err);
+    showToast('Lỗi khi tải danh sách hành khách.', 'error');
+  } finally {
+    isLoadingPassengers.value = false;
+  }
+}
+
+function closePassengerModal() {
+  isPassengerModalOpen.value = false;
+}
+
+// Open Status Modal
+function openStatusModal(b) {
+  activeBooking.value = b;
+  editStatus.value = b.trang_thai || 'ChoXacNhan';
+  editTienCoc.value = Number(b.tien_coc) || 0;
+  editGhiChu.value = '';
+  isStatusModalOpen.value = true;
+}
+
+function closeStatusModal() {
+  isStatusModalOpen.value = false;
+}
+
+function setDepositPercent(pct) {
+  if (!activeBooking.value) return;
+  const total = Number(activeBooking.value.tong_tien) || 0;
+  editTienCoc.value = Math.round(total * pct);
+}
+
+// Save Quick Status
+async function saveQuickStatus() {
+  if (!activeBooking.value) return;
+  isSavingStatus.value = true;
+
+  try {
+    const payload = {
+      booking_id: activeBooking.value.booking_id,
+      trang_thai: editStatus.value,
+      tien_coc: editTienCoc.value,
+      ghi_chu: editGhiChu.value,
+      _csrf_global: csrfToken.value,
+      _csrf_token: csrfToken.value,
+    };
+
+    const res = await fetch('index.php?act=booking/apiQuickUpdateStatus', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const json = await res.json();
+    if (json.success) {
+      showToast(json.message || 'Cập nhật trạng thái thành công!', 'success');
+      // Update in table
+      const idx = bookings.value.findIndex(item => item.booking_id === activeBooking.value.booking_id);
+      if (idx !== -1) {
+        bookings.value[idx].trang_thai = editStatus.value;
+        bookings.value[idx].tien_coc = editTienCoc.value;
+        const tongTien = Number(bookings.value[idx].tong_tien) || 0;
+        if (editTienCoc.value >= tongTien && tongTien > 0) {
+          bookings.value[idx].trang_thai_thanh_toan = 'DaThanhToan';
+        } else if (editTienCoc.value > 0) {
+          bookings.value[idx].trang_thai_thanh_toan = 'ThanhToanMotPhan';
+        }
+      }
+      closeStatusModal();
+    } else {
+      showToast(json.message || 'Cập nhật thất bại.', 'error');
+    }
+  } catch (err) {
+    console.error('Error updating status:', err);
+    showToast('Lỗi mạng hoặc máy chủ không phản hồi.', 'error');
+  } finally {
+    isSavingStatus.value = false;
+  }
+}
 
 let searchTimer = null;
 
@@ -836,10 +1163,14 @@ onMounted(() => {
 }
 .btn-view { background: rgba(14, 165, 233, 0.15); color: #38bdf8; border: 1px solid rgba(14, 165, 233, 0.25); }
 .btn-view:hover { background: rgba(14, 165, 233, 0.25); color: #ffffff; }
+.btn-passengers { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.25); cursor: pointer; }
+.btn-passengers:hover { background: rgba(16, 185, 129, 0.25); color: #ffffff; }
+.btn-quick-status { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.25); cursor: pointer; }
+.btn-quick-status:hover { background: rgba(245, 158, 11, 0.25); color: #fde047; }
 .btn-assign { background: rgba(99, 102, 241, 0.15); color: #a5b4fc; border: 1px solid rgba(99, 102, 241, 0.25); }
 .btn-assign:hover { background: rgba(99, 102, 241, 0.25); color: #ffffff; }
-.btn-pdf { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.25); }
-.btn-pdf:hover { background: rgba(245, 158, 11, 0.25); color: #fde047; }
+.btn-pdf { background: rgba(212, 175, 55, 0.15); color: #fbbf24; border: 1px solid rgba(212, 175, 55, 0.25); }
+.btn-pdf:hover { background: rgba(212, 175, 55, 0.25); color: #fde047; }
 .btn-hide { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.25); cursor: pointer; }
 .btn-hide:hover { background: rgba(239, 68, 68, 0.25); color: #fca5a5; }
 
@@ -879,4 +1210,261 @@ onMounted(() => {
 }
 .vue-pagination li.active button { background: #d4af37; color: #0b1120; border-color: #d4af37; font-weight: 700; }
 .vue-pagination li.disabled button { opacity: 0.4; cursor: not-allowed; }
+
+/* MODALS */
+.modal-backdrop-custom {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  z-index: 1050;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  animation: fadeIn 0.2s ease-out;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.modal-card {
+  background: #111827;
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 1.25rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+  width: 100%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: #f3f4f6;
+}
+.modal-md { max-width: 540px; }
+.modal-lg { max-width: 820px; }
+
+.modal-header-custom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 1.75rem;
+  background: rgba(31, 41, 55, 0.7);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.modal-title-wrap {
+  display: flex;
+  align-items: center;
+}
+.modal-title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #ffffff;
+}
+.modal-subtitle {
+  margin: 0.2rem 0 0;
+  font-size: 0.8rem;
+  color: #9ca3af;
+}
+.btn-close-modal {
+  background: transparent;
+  border: none;
+  color: #9ca3af;
+  font-size: 1.25rem;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 0.35rem;
+  transition: all 0.15s;
+}
+.btn-close-modal:hover { color: #ffffff; background: rgba(255, 255, 255, 0.1); }
+
+.modal-body-custom {
+  padding: 1.5rem 1.75rem;
+  overflow-y: auto;
+}
+
+.passenger-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+.passenger-table th {
+  padding: 0.75rem 1rem;
+  background: rgba(31, 41, 55, 0.9);
+  color: #d4af37;
+  font-weight: 700;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: left;
+}
+.passenger-table td {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  color: #e5e7eb;
+}
+.p-row:hover td { background: rgba(255, 255, 255, 0.02); }
+
+.badge-primary-booker {
+  background: rgba(212, 175, 55, 0.2);
+  color: #fde047;
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  font-size: 0.7rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 0.3rem;
+  font-weight: 700;
+}
+
+.p-status-pill {
+  display: inline-block;
+  padding: 0.2rem 0.55rem;
+  border-radius: 1rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+.p-checked { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.3); }
+.p-unchecked { background: rgba(156, 163, 175, 0.15); color: #d1d5db; border: 1px solid rgba(156, 163, 175, 0.25); }
+
+.modal-footer-custom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.15rem 1.75rem;
+  background: rgba(31, 41, 55, 0.7);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+.footer-links {
+  display: flex;
+  gap: 0.65rem;
+}
+.btn-footer-secondary {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.6rem 1.15rem;
+  border-radius: 0.6rem;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #e5e7eb;
+  font-weight: 600;
+  font-size: 0.88rem;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.15s;
+}
+.btn-footer-secondary:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+}
+.btn-footer-primary {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.6rem 1.35rem;
+  border-radius: 0.6rem;
+  background: linear-gradient(135deg, #d4af37 0%, #b89628 100%);
+  border: none;
+  color: #0b1120;
+  font-weight: 800;
+  font-size: 0.9rem;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+  transition: all 0.15s;
+}
+.btn-footer-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(212, 175, 55, 0.4);
+}
+
+.form-group-custom {
+  display: flex;
+  flex-direction: column;
+}
+.form-label-custom {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #d1d5db;
+  margin-bottom: 0.45rem;
+}
+.status-options-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+}
+.status-option-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.65rem;
+  background: rgba(31, 41, 55, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #cbd5e1;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.status-option-label:hover {
+  background: rgba(31, 41, 55, 0.9);
+  border-color: rgba(212, 175, 55, 0.3);
+}
+.status-option-label.active {
+  background: rgba(212, 175, 55, 0.15);
+  border-color: #d4af37;
+  color: #fde047;
+}
+
+.quick-deposit-btns {
+  display: flex;
+  gap: 0.35rem;
+}
+.btn-quick-pct {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #34d399;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.15rem 0.55rem;
+  border-radius: 0.35rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-quick-pct:hover {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: #34d399;
+}
+.textarea-custom {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* TOAST */
+.toast-custom {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.85rem 1.25rem;
+  border-radius: 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+  animation: slideUp 0.25s ease-out;
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(15px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.toast-success {
+  background: #064e3b;
+  color: #6ee7b7;
+  border: 1px solid #059669;
+}
+.toast-error {
+  background: #7f1d1d;
+  color: #fca5a5;
+  border: 1px solid #dc2626;
+}
 </style>
+

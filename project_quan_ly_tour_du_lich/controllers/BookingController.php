@@ -640,8 +640,36 @@ class BookingController
             exit();
         }
 
+        $conn = $this->bookingModel->conn;
+
+        // Lấy nguoi_dung_id của khách hàng nếu có
+        $nguoiDungId = 0;
+        if (!empty($booking['khach_hang_id'])) {
+            $stmtUser = $conn->prepare('SELECT nguoi_dung_id FROM khach_hang WHERE khach_hang_id = ? LIMIT 1');
+            $stmtUser->execute([(int)$booking['khach_hang_id']]);
+            $nguoiDungId = (int)$stmtUser->fetchColumn();
+        }
+
+        require_once 'models/ThongBao.php';
+        $thongBaoModel = new ThongBao();
+
         if ($action === 'reject') {
-            $ok = $changeModel->updateStatus($requestId, 'TuChoi', $note !== '' ? $note : 'Admin từ chối yêu cầu.');
+            $rejectReason = $note !== '' ? $note : 'Admin từ chối yêu cầu do không đáp ứng điều kiện.';
+            $ok = $changeModel->updateStatus($requestId, 'TuChoi', $rejectReason);
+
+            if ($ok && $nguoiDungId > 0) {
+                $thongBaoModel->insert([
+                    'tieu_de' => 'Yêu cầu cho Booking #' . $bookingId . ' bị từ chối',
+                    'noi_dung' => "Yêu cầu thay đổi/hủy cho đơn tour #" . $bookingId . " của bạn không được chấp thuận. Lý do: " . $rejectReason,
+                    'loai_thong_bao' => 'Booking',
+                    'muc_do_uu_tien' => 'Cao',
+                    'nguoi_nhan_id' => $nguoiDungId,
+                    'vai_tro_nhan' => 'KhachHang',
+                    'trang_thai' => 'DaGui',
+                    'thoi_gian_gui' => date('Y-m-d H:i:s'),
+                ]);
+            }
+
             $_SESSION[$ok ? 'success' : 'error'] = $ok
                 ? 'Đã từ chối yêu cầu thay đổi booking.'
                 : 'Không thể cập nhật trạng thái yêu cầu.';
@@ -649,13 +677,13 @@ class BookingController
             exit();
         }
 
-        $conn = $this->bookingModel->conn;
         try {
             $conn->beginTransaction();
 
             $type = (string)($request['loai_yeu_cau'] ?? '');
             if ($type === 'Huy') {
-                $append = '[ADMIN_APPROVE_CANCEL] phi_huy=' . number_format((float)($request['phi_huy'] ?? 0), 0, ',', '.') . ' VND';
+                $phiHuy = max(0, (float)($request['phi_huy'] ?? 0));
+                $append = '[ADMIN_APPROVE_CANCEL] phi_huy=' . number_format($phiHuy, 0, ',', '.') . ' VND';
                 $oldNote = trim((string)($booking['ghi_chu'] ?? ''));
                 $mergedNote = $oldNote !== '' ? ($oldNote . "\n" . $append) : $append;
 
@@ -670,6 +698,44 @@ class BookingController
 
                 if (!$updated) {
                     throw new RuntimeException('Không thể cập nhật booking khi duyệt yêu cầu hủy.');
+                }
+
+                // Tính toán tiền khách đã thanh toán
+                $stmtPaid = $conn->prepare("SELECT COALESCE(SUM(amount), 0) FROM payments WHERE booking_id = ? AND status IN ('ThanhCong', 'DaDoiSoat')");
+                $stmtPaid->execute([$bookingId]);
+                $daThanhToan = (float)$stmtPaid->fetchColumn();
+
+                $tienHoan = max(0, $daThanhToan - $phiHuy);
+
+                // Ghi nhận nghiệp vụ Chi tài chính hoàn tiền nếu số tiền hoàn > 0
+                if ($tienHoan > 0) {
+                    require_once __DIR__ . '/../services/PaymentFinanceService.php';
+                    PaymentFinanceService::createChiRefundTransaction($conn, [
+                        'booking_id' => $bookingId,
+                        'tour_id' => (int)($booking['tour_id'] ?? 0),
+                        'khach_hang_id' => (int)($booking['khach_hang_id'] ?? 0),
+                        'amount' => $tienHoan,
+                        'description' => 'Hoàn tiền hủy booking #' . $bookingId . ' (Đã thanh toán: ' . number_format($daThanhToan, 0, ',', '.') . 'đ, Phí hủy: ' . number_format($phiHuy, 0, ',', '.') . 'đ)',
+                        'payment_date' => date('Y-m-d')
+                    ]);
+                }
+
+                // Gửi thông báo cho khách hàng
+                if ($nguoiDungId > 0) {
+                    $msgRefund = ($tienHoan > 0) 
+                        ? ("Số tiền hoàn lại cho bạn là: " . number_format($tienHoan, 0, ',', '.') . " VNĐ. Kế toán sẽ liên hệ để thực hiện hoàn tất.") 
+                        : "Không có số tiền hoàn lại sau khi khấu trừ phí hủy.";
+
+                    $thongBaoModel->insert([
+                        'tieu_de' => 'Xác nhận hủy Booking #' . $bookingId,
+                        'noi_dung' => "Yêu cầu hủy tour #" . $bookingId . " của bạn đã được duyệt. Phí hủy áp dụng: " . number_format($phiHuy, 0, ',', '.') . " VNĐ. " . $msgRefund,
+                        'loai_thong_bao' => 'Booking',
+                        'muc_do_uu_tien' => 'Cao',
+                        'nguoi_nhan_id' => $nguoiDungId,
+                        'vai_tro_nhan' => 'KhachHang',
+                        'trang_thai' => 'DaGui',
+                        'thoi_gian_gui' => date('Y-m-d H:i:s'),
+                    ]);
                 }
             } elseif ($type === 'DoiLich') {
                 $scheduleId = (int)($request['lich_khoi_hanh_moi_id'] ?? 0);
@@ -708,6 +774,19 @@ class BookingController
                 if (!$updated) {
                     throw new RuntimeException('Không thể cập nhật booking khi duyệt yêu cầu đổi lịch.');
                 }
+
+                if ($nguoiDungId > 0) {
+                    $thongBaoModel->insert([
+                        'tieu_de' => 'Đổi lịch tour thành công cho Booking #' . $bookingId,
+                        'noi_dung' => "Yêu cầu chuyển ngày khởi hành của đơn #" . $bookingId . " sang ngày " . date('d/m/Y', strtotime($newDate)) . " đã được admin phê duyệt thành công.",
+                        'loai_thong_bao' => 'Booking',
+                        'muc_do_uu_tien' => 'TrungBinh',
+                        'nguoi_nhan_id' => $nguoiDungId,
+                        'vai_tro_nhan' => 'KhachHang',
+                        'trang_thai' => 'DaGui',
+                        'thoi_gian_gui' => date('Y-m-d H:i:s'),
+                    ]);
+                }
             } else {
                 throw new RuntimeException('Loại yêu cầu không hợp lệ.');
             }
@@ -728,6 +807,191 @@ class BookingController
         }
 
         header('Location: index.php?act=booking/changeRequests');
+        exit();
+    }
+
+    /**
+     * API danh sách hành khách theo booking
+     */
+    public function apiBookingPassengers(): void
+    {
+        requireRole(['Admin', 'HDV']);
+        header('Content-Type: application/json; charset=utf-8');
+
+        $bookingId = (int)($_GET['id'] ?? ($_GET['booking_id'] ?? 0));
+        if ($bookingId <= 0) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Thiếu mã booking.'], JSON_UNESCAPED_UNICODE);
+            exit();
+        }
+
+        try {
+            $booking = $this->bookingModel->getBookingWithDetails($bookingId);
+            if (!$booking) {
+                http_response_code(404);
+                echo json_encode(['success' => false, 'message' => 'Booking không tồn tại.'], JSON_UNESCAPED_UNICODE);
+                exit();
+            }
+
+            require_once 'models/TourCheckin.php';
+            $tourCheckinModel = new TourCheckin();
+            $checkins = $tourCheckinModel->getByBookingId($bookingId);
+
+            $passengers = [];
+            if (!empty($checkins)) {
+                foreach ($checkins as $idx => $c) {
+                    $passengers[] = [
+                        'id' => (int)($c['id'] ?? 0),
+                        'stt' => $idx + 1,
+                        'ho_ten' => $c['ho_ten'] ?? ($booking['customer_name'] ?? 'Khách ' . ($idx + 1)),
+                        'so_dien_thoai' => $c['so_dien_thoai'] ?? '',
+                        'email' => $c['email'] ?? '',
+                        'so_cmnd' => $c['so_cmnd'] ?? ($c['so_passport'] ?? ''),
+                        'gioi_tinh' => $c['gioi_tinh'] ?? 'Nam',
+                        'ngay_sinh' => $c['ngay_sinh'] ?? '',
+                        'quoc_tich' => $c['quoc_tich'] ?? 'Việt Nam',
+                        'trang_thai' => $c['trang_thai'] ?? 'ChuaCheckIn',
+                        'ghi_chu' => $c['ghi_chu'] ?? '',
+                        'is_primary' => ($idx === 0),
+                    ];
+                }
+            } else {
+                $soNguoi = max(1, (int)($booking['so_nguoi'] ?? 1));
+                for ($i = 1; $i <= $soNguoi; $i++) {
+                    if ($i === 1) {
+                        $passengers[] = [
+                            'id' => 0,
+                            'stt' => 1,
+                            'ho_ten' => $booking['customer_name'] ?? ($booking['ho_ten'] ?? 'Người đặt tour'),
+                            'so_dien_thoai' => $booking['customer_phone'] ?? ($booking['so_dien_thoai'] ?? ''),
+                            'email' => $booking['customer_email'] ?? ($booking['email'] ?? ''),
+                            'so_cmnd' => '',
+                            'gioi_tinh' => 'Nam',
+                            'ngay_sinh' => '',
+                            'quoc_tich' => 'Việt Nam',
+                            'trang_thai' => 'ChuaCheckIn',
+                            'ghi_chu' => $booking['ghi_chu'] ?? '',
+                            'is_primary' => true,
+                        ];
+                    } else {
+                        $passengers[] = [
+                            'id' => 0,
+                            'stt' => $i,
+                            'ho_ten' => 'Khách đoàn #' . $i,
+                            'so_dien_thoai' => '',
+                            'email' => '',
+                            'so_cmnd' => '',
+                            'gioi_tinh' => '',
+                            'ngay_sinh' => '',
+                            'quoc_tich' => 'Việt Nam',
+                            'trang_thai' => 'ChuaCheckIn',
+                            'ghi_chu' => '',
+                            'is_primary' => false,
+                        ];
+                    }
+                }
+            }
+
+            echo json_encode([
+                'success' => true,
+                'booking' => [
+                    'booking_id' => $bookingId,
+                    'ma_booking' => 'BK-' . str_pad((string)$bookingId, 5, '0', STR_PAD_LEFT),
+                    'tour_id' => (int)($booking['tour_id'] ?? 0),
+                    'ten_tour' => $booking['ten_tour'] ?? '',
+                    'ngay_khoi_hanh' => $booking['ngay_khoi_hanh'] ?? '',
+                    'ngay_ket_thuc' => $booking['ngay_ket_thuc'] ?? '',
+                    'so_nguoi' => (int)($booking['so_nguoi'] ?? 1),
+                    'tong_tien' => (float)($booking['tong_tien'] ?? 0),
+                    'tien_coc' => (float)($booking['tien_coc'] ?? 0),
+                    'trang_thai' => $booking['trang_thai'] ?? '',
+                    'customer_name' => $booking['customer_name'] ?? ($booking['ho_ten'] ?? ''),
+                    'customer_phone' => $booking['customer_phone'] ?? ($booking['so_dien_thoai'] ?? ''),
+                ],
+                'passengers' => $passengers,
+            ], JSON_UNESCAPED_UNICODE);
+        } catch (Throwable $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Lỗi: ' . $e->getMessage()], JSON_UNESCAPED_UNICODE);
+        }
+        exit();
+    }
+
+    /**
+     * API cập nhật nhanh trạng thái booking từ modal
+     */
+    public function apiQuickUpdateStatus(): void
+    {
+        requireRole(['Admin', 'HDV']);
+        header('Content-Type: application/json; charset=utf-8');
+
+        $input = $_POST;
+        if (empty($input)) {
+            $raw = file_get_contents('php://input');
+            $json = json_decode($raw, true);
+            if (is_array($json)) {
+                $input = $json;
+            }
+        }
+
+        $bookingId = (int)($input['booking_id'] ?? 0);
+        $trangThai = trim((string)($input['trang_thai'] ?? ''));
+        $tienCoc = isset($input['tien_coc']) && $input['tien_coc'] !== '' ? (float)$input['tien_coc'] : null;
+        $ghiChu = trim((string)($input['ghi_chu'] ?? ''));
+
+        if ($bookingId <= 0 || empty($trangThai)) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Thiếu thông tin booking hoặc trạng thái.'], JSON_UNESCAPED_UNICODE);
+            exit();
+        }
+
+        $validStatuses = ['ChoXacNhan', 'DaCoc', 'HoanTat', 'Huy'];
+        if (!in_array($trangThai, $validStatuses, true)) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Trạng thái không hợp lệ.'], JSON_UNESCAPED_UNICODE);
+            exit();
+        }
+
+        if (!$this->service->checkPermissionToUpdate($bookingId)) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => 'Bạn không có quyền cập nhật booking này.'], JSON_UNESCAPED_UNICODE);
+            exit();
+        }
+
+        try {
+            $booking = $this->bookingModel->findById($bookingId);
+            if (!$booking) {
+                http_response_code(404);
+                echo json_encode(['success' => false, 'message' => 'Booking không tồn tại.'], JSON_UNESCAPED_UNICODE);
+                exit();
+            }
+
+            if ($tienCoc !== null) {
+                $tongTien = (float)($booking['tong_tien'] ?? 0);
+                if ($tienCoc > $tongTien) {
+                    http_response_code(400);
+                    echo json_encode(['success' => false, 'message' => 'Tiền cọc không được lớn hơn tổng tiền.'], JSON_UNESCAPED_UNICODE);
+                    exit();
+                }
+                $trangThaiCoc = ($tienCoc >= $tongTien && $tongTien > 0) ? 'HoanTat' : ($tienCoc > 0 ? 'DaCoc' : 'ChuaCoc');
+                $this->service->processTienCocUpdate($bookingId, $tienCoc, $trangThaiCoc, $ghiChu);
+            }
+
+            $currentBooking = $this->bookingModel->findById($bookingId);
+            if ($currentBooking['trang_thai'] !== $trangThai) {
+                $this->service->updateTrangThaiForBooking($bookingId, $trangThai, $ghiChu, $_SESSION['user_id'] ?? null);
+            }
+
+            echo json_encode([
+                'success' => true,
+                'message' => 'Cập nhật trạng thái booking thành công!',
+                'booking_id' => $bookingId,
+                'trang_thai' => $trangThai,
+            ], JSON_UNESCAPED_UNICODE);
+        } catch (Throwable $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Lỗi cập nhật: ' . $e->getMessage()], JSON_UNESCAPED_UNICODE);
+        }
         exit();
     }
 }

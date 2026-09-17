@@ -576,6 +576,7 @@ $catalogServicesMap = $catalogServicesMap ?? [];
             <div id="detailTabsContent">
                 <!-- Tab: Nhân sự -->
                 <div class="tab-pane active" id="staff" style="display: block;">
+                    <span id="phan-bo-nhan-su"></span>
                         <!-- Add Staff Form -->
                         <div class="add-form-card">
                             <h6 class="fw-bold mb-3">
@@ -1669,6 +1670,24 @@ $catalogServicesMap = $catalogServicesMap ?? [];
         btn.addEventListener('click', function() {
             switchTab(this.getAttribute('data-tab'), this);
         });
+    });
+
+    // Handle initial hash navigation (e.g. #phan-bo-nhan-su, #staff, #service, #customer)
+    window.addEventListener('DOMContentLoaded', function() {
+        var rawHash = (window.location.hash || '').replace('#', '');
+        if (rawHash === 'phan-bo-nhan-su' || rawHash === 'staff') {
+            var btn = document.querySelector('.tab-btn[data-tab="staff"]');
+            if (btn) switchTab('staff', btn);
+        } else if (rawHash === 'services' || rawHash === 'service') {
+            var btn = document.querySelector('.tab-btn[data-tab="service"]');
+            if (btn) switchTab('service', btn);
+        } else if (rawHash === 'guests' || rawHash === 'customer') {
+            var btn = document.querySelector('.tab-btn[data-tab="customer"]');
+            if (btn) switchTab('customer', btn);
+        } else if (rawHash === 'diary') {
+            var btn = document.querySelector('.tab-btn[data-tab="diary"]');
+            if (btn) switchTab('diary', btn);
+        }
     });
     
     (function() {

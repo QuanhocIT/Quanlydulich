@@ -476,33 +476,60 @@ class BaoCaoTaiChinhController
 
     public function duyetChiPhi(): void
     {
-        $chiPhiId = $_GET['id'];
-        $result   = $this->chiPhiModel->approve($chiPhiId, $_SESSION['user_id']);
-        $chiPhi   = $this->chiPhiModel->findById($chiPhiId);
-        $canhBao  = $this->chiPhiModel->kiemTraCanhBao($chiPhi['du_toan_id']);
+        $chiPhiId = (int)($_POST['id'] ?? ($_GET['id'] ?? 0));
+        if ($chiPhiId <= 0) {
+            $_SESSION['error'] = 'Thiếu mã chi phí cần duyệt.';
+            header('Location: ' . $this->buildFinancialReportBackUrl());
+            exit;
+        }
 
-        if ($result) {
-            $_SESSION['success'] = 'Đã duyệt chi phí!';
+        $result  = $this->chiPhiModel->approve($chiPhiId, $_SESSION['user_id'] ?? null);
+        $chiPhi  = $this->chiPhiModel->findById($chiPhiId);
+        $canhBao = !empty($chiPhi['du_toan_id']) ? $this->chiPhiModel->kiemTraCanhBao($chiPhi['du_toan_id']) : null;
+
+        if ($result && $chiPhi) {
+            // Đồng bộ sang sổ cái giao dịch tài chính
+            if (!empty($chiPhi['tour_id']) && (float)($chiPhi['so_tien'] ?? 0) > 0) {
+                try {
+                    $this->giaoDichModel->insert([
+                        'tour_id'        => (int)$chiPhi['tour_id'],
+                        'loai'           => 'Chi',
+                        'so_tien'        => (float)$chiPhi['so_tien'],
+                        'mo_ta'          => '[Chi phí thực tế #' . $chiPhiId . '] ' . ($chiPhi['ten_khoan_chi'] ?? 'Chi phí tour'),
+                        'ngay_giao_dich' => !empty($chiPhi['ngay_phat_sinh']) ? $chiPhi['ngay_phat_sinh'] : date('Y-m-d'),
+                    ]);
+                } catch (\Throwable $e) {
+                    error_log('[duyetChiPhi] Sync to giao_dich_tai_chinh failed: ' . $e->getMessage());
+                }
+            }
+
+            $_SESSION['success'] = 'Đã duyệt chi phí và ghi nhận vào sổ tài chính!';
             if (($canhBao['canh_bao'] ?? '') === 'VuotDuToan') {
                 $_SESSION['warning'] = 'CẢNH BÁO: Chi phí thực tế đã vượt dự toán!';
             } elseif (($canhBao['canh_bao'] ?? '') === 'GanVuot') {
                 $_SESSION['warning'] = 'Lưu ý: Chi phí thực tế đã đạt 90% dự toán!';
             }
         } else {
-            $_SESSION['error'] = 'Có lỗi xảy ra!';
+            $_SESSION['error'] = 'Có lỗi xảy ra khi duyệt chi phí!';
         }
 
-        header('Location: ' . $_SERVER['HTTP_REFERER']);
+        header('Location: ' . $this->buildFinancialReportBackUrl());
         exit;
     }
 
     public function tuChoiChiPhi(): void
     {
-        $chiPhiId = $_POST['id'];
-        $lyDo     = $_POST['ly_do'];
-        $result   = $this->chiPhiModel->reject($chiPhiId, $_SESSION['user_id'], $lyDo);
+        $chiPhiId = (int)($_POST['id'] ?? ($_GET['id'] ?? 0));
+        $lyDo     = trim((string)($_POST['ly_do'] ?? 'Từ chối bởi admin'));
+        if ($chiPhiId <= 0) {
+            $_SESSION['error'] = 'Thiếu mã chi phí cần từ chối.';
+            header('Location: ' . $this->buildFinancialReportBackUrl());
+            exit;
+        }
+
+        $result   = $this->chiPhiModel->reject($chiPhiId, $_SESSION['user_id'] ?? null, $lyDo);
         $_SESSION[$result ? 'success' : 'error'] = $result ? 'Đã từ chối chi phí!' : 'Có lỗi xảy ra!';
-        header('Location: ' . $_SERVER['HTTP_REFERER']);
+        header('Location: ' . $this->buildFinancialReportBackUrl());
         exit;
     }
 

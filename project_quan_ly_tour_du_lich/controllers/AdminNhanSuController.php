@@ -169,26 +169,7 @@ class AdminNhanSuController {
 
     // Admin: quản lý HDV (danh sách + CRUD cơ bản)
     public function quanLyHDV() {
-        $hdvModel = new HDV();
-        $groupId = isset($_GET['group_id']) ? (int)$_GET['group_id'] : null;
-        $q = isset($_GET['q']) ? trim($_GET['q']) : '';
-        if ($q !== '') {
-            // sử dụng search trên nhan_su (tạm gọi chung)
-            $ns = new NhanSu();
-            $hdv_list = $ns->search($q);
-        } else {
-            $hdv_list = $hdvModel->getAll($groupId);
-        }
-        // load groups
-        $groups = [];
-        try {
-            $stmt = $hdvModel->conn->prepare('SELECT * FROM hdv_groups ORDER BY name ASC');
-            $stmt->execute();
-            $groups = $stmt->fetchAll();
-        } catch (Exception $e) {
-            // ignore if table not exists
-        }
-        require 'views/admin/quan_ly_hdv.php';
+        $this->hdvAdvanced();
     }
 
     public function quanLyHDVCreate() {
@@ -313,12 +294,13 @@ class AdminNhanSuController {
         header('Location: index.php?act=admin/quanLyHDV'); exit;
     }
 
-    // Hiển thị lịch phân công HDV (calendar)
+    // Hiển thị lịch phân công HDV (dạng bảng / calendar)
     public function hdvSchedule() {
-        $hdvModel = new HDV();
-        // load hdv list
-        $hdv_list = $hdvModel->getAll();
-        require 'views/admin/hdv_schedule.php';
+        $hdvMgmt = new HDVManagement();
+        $hdv_list = $hdvMgmt->getAllHDV();
+        $lich_lam_viec = $hdvMgmt->getAllLichLamViec();
+        $tours = (new Tour())->getOptions(300);
+        require 'views/admin/hdv_lich_lam_viec_table.php';
     }
 
     // Trang hồ sơ HDV

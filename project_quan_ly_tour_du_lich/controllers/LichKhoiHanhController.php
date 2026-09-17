@@ -50,6 +50,7 @@ class LichKhoiHanhController {
         try {
             $filters = [
                 'search' => trim((string)($_GET['search'] ?? '')),
+                'tour_id' => !empty($_GET['tour_id']) ? (int)$_GET['tour_id'] : null,
                 'trang_thai' => trim((string)($_GET['trang_thai'] ?? '')),
                 'tu_ngay' => trim((string)($_GET['tu_ngay'] ?? '')),
                 'den_ngay' => trim((string)($_GET['den_ngay'] ?? '')),
@@ -58,24 +59,399 @@ class LichKhoiHanhController {
             $lichKhoiHanhList = $this->lichKhoiHanhModel->getAllFiltered($filters);
             $conflictSummary = $this->phanBoNhanSuModel->getScheduleConflictSummary($lichKhoiHanhList);
 
+            $scheduleIds = array_column($lichKhoiHanhList, 'id');
+            $bookingsGrouped = !empty($scheduleIds) ? $this->bookingModel->getKhachByLichKhoiHanhIdsGrouped($scheduleIds) : [];
+            
+            $bookedCountMap = [];
+            foreach ($bookingsGrouped as $lichId => $bList) {
+                $totalPax = 0;
+                foreach ($bList as $bItem) {
+                    $totalPax += (int)($bItem['so_nguoi'] ?? 1);
+                }
+                $bookedCountMap[$lichId] = $totalPax;
+            }
+
             foreach ($lichKhoiHanhList as &$lich) {
-                $soLichTrung = (int)($conflictSummary[(int)($lich['id'] ?? 0)] ?? 0);
+                $lid = (int)($lich['id'] ?? 0);
+                $soLichTrung = (int)($conflictSummary[$lid] ?? 0);
                 $lich['coTrungLichHDV'] = $soLichTrung > 0;
                 $lich['soLichTrungHDV'] = $soLichTrung;
+                $lich['so_khach_da_dat'] = (int)($bookedCountMap[$lid] ?? 0);
+                $soCho = max(1, (int)($lich['so_cho'] ?? 50));
+                $lich['ty_le_lap_day'] = min(100, (int)round(($lich['so_khach_da_dat'] / $soCho) * 100));
             }
             unset($lich);
+
+            $toursList = $this->tourModel->getOptions(500);
+            $hdvList = $this->nhanSuModel->getOptions('HDV');
 
             echo json_encode([
                 'success' => true,
                 'data' => [
                     'schedules' => $lichKhoiHanhList,
+                    'toursList' => $toursList ?: [],
+                    'hdvList' => $hdvList ?: [],
                     'filters' => $filters,
                     'csrfToken' => csrfToken('lich_khoi_hanh_form'),
+                    'csrfGlobal' => csrfToken('global_form'),
                 ]
             ], JSON_UNESCAPED_UNICODE);
         } catch (Throwable $e) {
             http_response_code(500);
             echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+        }
+        exit;
+    }
+
+    public function apiUpdateStatus(): void {
+        header('Content-Type: application/json; charset=utf-8');
+        try {
+            requireRole('Admin');
+            $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+            $id = (int)($input['id'] ?? 0);
+            $status = trim((string)($input['trang_thai'] ?? ''));
+            $cascadeBookings = !isset($input['cascade_bookings']) || (bool)$input['cascade_bookings'];
+            $notifyPassengers = !isset($input['notify_passengers']) || (bool)$input['notify_passengers'];
+
+            $allowedStatus = ['ChoPhanBo', 'SapKhoiHanh', 'DangChay', 'HoanThanh', 'Huy'];
+            if ($id <= 0 || !in_array($status, $allowedStatus, true)) {
+                echo json_encode(['success' => false, 'message' => 'Trạng thái hoặc mã lịch không hợp lệ.']);
+                exit;
+            }
+
+            $schedule = $this->lichKhoiHanhModel->findById($id);
+            if (!$schedule) {
+                echo json_encode(['success' => false, 'message' => 'Lịch khởi hành không tồn tại.']);
+                exit;
+            }
+
+            $tour = $this->tourModel->findById((int)$schedule['tour_id']);
+            $tourName = $tour['ten_tour'] ?? 'Tour #' . $schedule['tour_id'];
+            $ngayKhoiHanh = $schedule['ngay_khoi_hanh'] ?? '';
+
+            $conn = $this->lichKhoiHanhModel->conn;
+            $conn->beginTransaction();
+
+            // 1. Cập nhật trạng thái lịch khởi hành
+            $sql = "UPDATE lich_khoi_hanh SET trang_thai = ? WHERE id = ?";
+            $stmt = $conn->prepare($sql);
+            $success = $stmt->execute([$status, $id]);
+
+            if (!$success) {
+                $conn->rollBack();
+                echo json_encode(['success' => false, 'message' => 'Không thể cập nhật trạng thái lịch khởi hành.']);
+                exit;
+            }
+
+            $affectedBookings = 0;
+            require_once 'models/ThongBao.php';
+            $thongBaoModel = new ThongBao();
+
+            // 2. Nghiệp vụ chuyển sang HOÀN THÀNH
+            if ($status === 'HoanThanh') {
+                // Tự động chốt trạng thái lương nhân sự HDV sang 'ChoDuyet'
+                $conn->prepare("UPDATE phan_bo_nhan_su SET trang_thai_luong = 'ChoDuyet' WHERE lich_khoi_hanh_id = ? AND (trang_thai_luong IS NULL OR trang_thai_luong = 'ChoDuyet')")
+                    ->execute([$id]);
+
+                // Cascade chuyển các booking còn lại sang HoanTat
+                if ($cascadeBookings) {
+                    $stmtB = $conn->prepare("SELECT b.booking_id, b.khach_hang_id, kh.nguoi_dung_id 
+                                             FROM booking b 
+                                             LEFT JOIN khach_hang kh ON kh.khach_hang_id = b.khach_hang_id 
+                                             WHERE b.tour_id = ? AND b.ngay_khoi_hanh = ? AND b.trang_thai IN ('DaXacNhan', 'DaCoc') AND b.is_deleted = 0");
+                    $stmtB->execute([(int)$schedule['tour_id'], $ngayKhoiHanh]);
+                    $targetBookings = $stmtB->fetchAll(PDO::FETCH_ASSOC);
+
+                    if (!empty($targetBookings)) {
+                        $upB = $conn->prepare("UPDATE booking SET trang_thai = 'HoanTat' WHERE booking_id = ?");
+                        foreach ($targetBookings as $tb) {
+                            $upB->execute([(int)$tb['booking_id']]);
+                            $affectedBookings++;
+
+                            // Gửi thông báo mời đánh giá tour
+                            if ($notifyPassengers && !empty($tb['nguoi_dung_id'])) {
+                                $thongBaoModel->insert([
+                                    'tieu_de' => 'Mời đánh giá chuyến đi ' . $tourName,
+                                    'noi_dung' => "Chuyến đi '{$tourName}' khởi hành ngày {$ngayKhoiHanh} đã hoàn thành tốt đẹp. Hãy chia sẻ cảm nhận và đánh giá trải nghiệm để giúp chúng tôi hoàn thiện dịch vụ hơn!",
+                                    'loai_thong_bao' => 'Tour',
+                                    'muc_do_uu_tien' => 'TrungBinh',
+                                    'nguoi_nhan_id' => (int)$tb['nguoi_dung_id'],
+                                    'vai_tro_nhan' => 'KhachHang',
+                                    'trang_thai' => 'DaGui',
+                                    'thoi_gian_gui' => date('Y-m-d H:i:s'),
+                                ]);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 3. Nghiệp vụ chuyển sang HỦY CHUYẾN
+            if ($status === 'Huy') {
+                // Giải phóng phân bổ HDV
+                $conn->prepare("UPDATE phan_bo_nhan_su SET trang_thai = 'DaHuy' WHERE lich_khoi_hanh_id = ?")->execute([$id]);
+
+                // Cascade các booking sang Huy và gửi thông báo
+                if ($cascadeBookings) {
+                    $stmtB = $conn->prepare("SELECT b.booking_id, b.khach_hang_id, kh.nguoi_dung_id 
+                                             FROM booking b 
+                                             LEFT JOIN khach_hang kh ON kh.khach_hang_id = b.khach_hang_id 
+                                             WHERE b.tour_id = ? AND b.ngay_khoi_hanh = ? AND b.trang_thai NOT IN ('Huy', 'HoanTat') AND b.is_deleted = 0");
+                    $stmtB->execute([(int)$schedule['tour_id'], $ngayKhoiHanh]);
+                    $targetBookings = $stmtB->fetchAll(PDO::FETCH_ASSOC);
+
+                    if (!empty($targetBookings)) {
+                        $upB = $conn->prepare("UPDATE booking SET trang_thai = 'Huy' WHERE booking_id = ?");
+                        foreach ($targetBookings as $tb) {
+                            $upB->execute([(int)$tb['booking_id']]);
+                            $affectedBookings++;
+
+                            if ($notifyPassengers && !empty($tb['nguoi_dung_id'])) {
+                                $thongBaoModel->insert([
+                                    'tieu_de' => 'Thông báo hủy lịch khởi hành tour ' . $tourName,
+                                    'noi_dung' => "Rất tiếc, chuyến đi '{$tourName}' khởi hành ngày {$ngayKhoiHanh} đã bị hủy theo kế hoạch vận hành. Bộ phận hỗ trợ sẽ liên hệ với bạn để hoàn cọc hoặc bố trí lịch trình thay thế phù hợp.",
+                                    'loai_thong_bao' => 'Tour',
+                                    'muc_do_uu_tien' => 'Cao',
+                                    'nguoi_nhan_id' => (int)$tb['nguoi_dung_id'],
+                                    'vai_tro_nhan' => 'KhachHang',
+                                    'trang_thai' => 'DaGui',
+                                    'thoi_gian_gui' => date('Y-m-d H:i:s'),
+                                ]);
+                            }
+                        }
+                    }
+                }
+            }
+
+            $conn->commit();
+            $this->lichKhoiHanhModel->clearScheduleReadCache();
+
+            $msg = 'Đã cập nhật trạng thái lịch khởi hành thành công.';
+            if ($affectedBookings > 0) {
+                $msg .= ' Đồng thời đồng bộ ' . $affectedBookings . ' booking liên quan.';
+            }
+
+            echo json_encode([
+                'success' => true,
+                'message' => $msg,
+                'id' => $id,
+                'trang_thai' => $status,
+                'affected_bookings' => $affectedBookings
+            ], JSON_UNESCAPED_UNICODE);
+        } catch (Throwable $e) {
+            if (isset($conn) && $conn->inTransaction()) {
+                $conn->rollBack();
+            }
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        }
+        exit;
+    }
+
+    public function apiAssignHdv(): void {
+        header('Content-Type: application/json; charset=utf-8');
+        try {
+            requireRole('Admin');
+            $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+            $lichKhoiHanhId = (int)($input['lich_khoi_hanh_id'] ?? 0);
+            $nhanSuId = isset($input['nhan_su_id']) ? (int)$input['nhan_su_id'] : 0;
+            $force = !empty($input['force']);
+
+            if ($lichKhoiHanhId <= 0) {
+                echo json_encode(['success' => false, 'message' => 'Mã lịch khởi hành không hợp lệ.']);
+                exit;
+            }
+
+            $schedule = $this->lichKhoiHanhModel->findById($lichKhoiHanhId);
+            if (!$schedule) {
+                echo json_encode(['success' => false, 'message' => 'Lịch khởi hành không tồn tại.']);
+                exit;
+            }
+
+            $conn = $this->lichKhoiHanhModel->conn;
+
+            // Nếu bỏ gán HDV (nhanSuId == 0)
+            if ($nhanSuId <= 0) {
+                $conn->prepare("UPDATE lich_khoi_hanh SET hdv_id = NULL WHERE id = ?")->execute([$lichKhoiHanhId]);
+                $conn->prepare("UPDATE phan_bo_nhan_su SET trang_thai = 'DaHuy' WHERE lich_khoi_hanh_id = ? AND vai_tro = 'HDV'")->execute([$lichKhoiHanhId]);
+                $this->lichKhoiHanhModel->clearScheduleReadCache();
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Đã hủy phân bổ HDV cho lịch khởi hành này.',
+                    'lich_khoi_hanh_id' => $lichKhoiHanhId,
+                    'nhan_su_id' => null
+                ], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+
+            // Kiểm tra xung đột trùng lịch
+            $conflicts = $this->phanBoNhanSuModel->getScheduleConflictsForStaff($lichKhoiHanhId, $nhanSuId);
+            if (!empty($conflicts) && !$force) {
+                $conflictList = [];
+                foreach ($conflicts as $c) {
+                    $conflictList[] = [
+                        'id' => (int)($c['id'] ?? 0),
+                        'ten_tour' => $c['ten_tour'] ?? '',
+                        'ngay_khoi_hanh' => $c['ngay_khoi_hanh'] ?? '',
+                        'ngay_ket_thuc' => $c['ngay_ket_thuc'] ?? $c['ngay_khoi_hanh'] ?? ''
+                    ];
+                }
+
+                echo json_encode([
+                    'success' => false,
+                    'has_conflict' => true,
+                    'conflicts' => $conflictList,
+                    'message' => 'HDV này đang được phân công vào lịch trình khác trùng ngày! Vui lòng xác nhận nếu vẫn muốn phân bổ.'
+                ], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+
+            // Cập nhật HDV cho lịch khởi hành
+            $conn->prepare("UPDATE lich_khoi_hanh SET hdv_id = ? WHERE id = ?")->execute([$nhanSuId, $lichKhoiHanhId]);
+
+            // Cập nhật hoặc tạo bản ghi phan_bo_nhan_su
+            $stmtCheck = $conn->prepare("SELECT id FROM phan_bo_nhan_su WHERE lich_khoi_hanh_id = ? AND vai_tro = 'HDV' LIMIT 1");
+            $stmtCheck->execute([$lichKhoiHanhId]);
+            $existingPbnId = (int)$stmtCheck->fetchColumn();
+
+            if ($existingPbnId > 0) {
+                $conn->prepare("UPDATE phan_bo_nhan_su SET nhan_su_id = ?, trang_thai = 'DaXacNhan' WHERE id = ?")
+                    ->execute([$nhanSuId, $existingPbnId]);
+            } else {
+                $this->phanBoNhanSuModel->insert([
+                    'lich_khoi_hanh_id' => $lichKhoiHanhId,
+                    'nhan_su_id' => $nhanSuId,
+                    'vai_tro' => 'HDV',
+                    'ghi_chu' => 'Phân bổ trực tiếp từ màn hình điều phối',
+                    'trang_thai' => 'DaXacNhan',
+                    'loai_luong' => 'PhanTram',
+                    'phan_tram_hoa_hong' => (float)($schedule['phan_tram_hoa_hong_hdv'] ?? 5.0),
+                    'trang_thai_luong' => 'ChoDuyet'
+                ]);
+            }
+
+            // Gửi thông báo cho HDV
+            $stmtNs = $conn->prepare("SELECT ns.nguoi_dung_id, nd.ho_ten FROM nhan_su ns JOIN nguoi_dung nd ON nd.id = ns.nguoi_dung_id WHERE ns.nhan_su_id = ?");
+            $stmtNs->execute([$nhanSuId]);
+            $nsRow = $stmtNs->fetch(PDO::FETCH_ASSOC);
+
+            if ($nsRow && !empty($nsRow['nguoi_dung_id'])) {
+                require_once 'models/ThongBao.php';
+                (new ThongBao())->insert([
+                    'tieu_de' => 'Phân công hướng dẫn viên tour #' . $schedule['id'],
+                    'noi_dung' => "Bạn đã được phân công phụ trách chuyến đi khởi hành ngày " . ($schedule['ngay_khoi_hanh'] ?? '') . " tại " . ($schedule['diem_tap_trung'] ?? 'điểm hẹn') . ". Vui lòng kiểm tra lịch làm việc và danh sách đoàn.",
+                    'loai_thong_bao' => 'Tour',
+                    'muc_do_uu_tien' => 'Cao',
+                    'nguoi_nhan_id' => (int)$nsRow['nguoi_dung_id'],
+                    'vai_tro_nhan' => 'HDV',
+                    'trang_thai' => 'DaGui',
+                    'thoi_gian_gui' => date('Y-m-d H:i:s'),
+                ]);
+            }
+
+            $this->lichKhoiHanhModel->clearScheduleReadCache();
+
+            echo json_encode([
+                'success' => true,
+                'message' => 'Đã phân bổ hướng dẫn viên ' . ($nsRow['ho_ten'] ?? '') . ' cho lịch trình thành công!',
+                'lich_khoi_hanh_id' => $lichKhoiHanhId,
+                'nhan_su_id' => $nhanSuId,
+                'ten_hdv' => $nsRow['ho_ten'] ?? ''
+            ], JSON_UNESCAPED_UNICODE);
+        } catch (Throwable $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        }
+        exit;
+    }
+
+    public function apiSchedulePassengers(): void {
+        header('Content-Type: application/json; charset=utf-8');
+        try {
+            requireRole(['Admin', 'HDV']);
+            $id = (int)($_GET['id'] ?? 0);
+            if ($id <= 0) {
+                echo json_encode(['success' => false, 'message' => 'Thiếu ID lịch khởi hành.']);
+                exit;
+            }
+
+            $schedule = $this->lichKhoiHanhModel->findById($id);
+            if (!$schedule) {
+                echo json_encode(['success' => false, 'message' => 'Lịch khởi hành không tồn tại.']);
+                exit;
+            }
+
+            $bookings = $this->bookingModel->getKhachByLichKhoiHanhId($id);
+            require_once 'models/CheckinKhach.php';
+            $checkinModel = new CheckinKhach();
+            $checkinRows = $checkinModel->getByLichKhoiHanh($id);
+
+            echo json_encode([
+                'success' => true,
+                'schedule' => $schedule,
+                'bookings' => $bookings ?: [],
+                'passengers' => $checkinRows ?: []
+            ], JSON_UNESCAPED_UNICODE);
+        } catch (Throwable $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        }
+        exit;
+    }
+
+    public function apiQuickUpdate(): void {
+        header('Content-Type: application/json; charset=utf-8');
+        try {
+            requireRole('Admin');
+            $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+            $id = (int)($input['id'] ?? 0);
+
+            if ($id <= 0) {
+                echo json_encode(['success' => false, 'message' => 'Mã lịch khởi hành không hợp lệ.']);
+                exit;
+            }
+
+            $ngayKhoiHanh = trim((string)($input['ngay_khoi_hanh'] ?? ''));
+            $gioXuatPhat = trim((string)($input['gio_xuat_phat'] ?? '08:00'));
+            $ngayKetThuc = trim((string)($input['ngay_ket_thuc'] ?? ''));
+            $gioKetThuc = trim((string)($input['gio_ket_thuc'] ?? '18:00'));
+            $diemTapTrung = trim((string)($input['diem_tap_trung'] ?? ''));
+            $soCho = max(1, (int)($input['so_cho'] ?? 50));
+            $trangThai = trim((string)($input['trang_thai'] ?? 'SapKhoiHanh'));
+
+            $sql = "UPDATE lich_khoi_hanh SET
+                        ngay_khoi_hanh = ?,
+                        gio_xuat_phat = ?,
+                        ngay_ket_thuc = ?,
+                        gio_ket_thuc = ?,
+                        diem_tap_trung = ?,
+                        so_cho = ?,
+                        trang_thai = ?
+                    WHERE id = ?";
+            $stmt = $this->lichKhoiHanhModel->conn->prepare($sql);
+            $success = $stmt->execute([
+                $ngayKhoiHanh,
+                $gioXuatPhat,
+                $ngayKetThuc ?: null,
+                $gioKetThuc ?: null,
+                $diemTapTrung,
+                $soCho,
+                $trangThai,
+                $id
+            ]);
+
+            if ($success) {
+                $this->lichKhoiHanhModel->clearScheduleReadCache();
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Đã cập nhật thông tin lịch khởi hành thành công.'
+                ], JSON_UNESCAPED_UNICODE);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Không thể lưu lịch khởi hành.']);
+            }
+        } catch (Throwable $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
         }
         exit;
     }
@@ -92,6 +468,7 @@ class LichKhoiHanhController {
 
         $filters = [
             'search' => trim((string)($_GET['search'] ?? '')),
+            'tour_id' => !empty($_GET['tour_id']) ? (int)$_GET['tour_id'] : null,
             'trang_thai' => trim((string)($_GET['trang_thai'] ?? '')),
             'tu_ngay' => trim((string)($_GET['tu_ngay'] ?? '')),
             'den_ngay' => trim((string)($_GET['den_ngay'] ?? '')),
@@ -100,17 +477,38 @@ class LichKhoiHanhController {
         $lichKhoiHanhList = $this->lichKhoiHanhModel->getAllFiltered($filters);
         $conflictSummary = $this->phanBoNhanSuModel->getScheduleConflictSummary($lichKhoiHanhList);
 
+        $scheduleIds = array_column($lichKhoiHanhList, 'id');
+        $bookingsGrouped = !empty($scheduleIds) ? $this->bookingModel->getKhachByLichKhoiHanhIdsGrouped($scheduleIds) : [];
+        $bookedCountMap = [];
+        foreach ($bookingsGrouped as $lichId => $bList) {
+            $totalPax = 0;
+            foreach ($bList as $bItem) {
+                $totalPax += (int)($bItem['so_nguoi'] ?? 1);
+            }
+            $bookedCountMap[$lichId] = $totalPax;
+        }
+
         foreach ($lichKhoiHanhList as &$lich) {
-            $soLichTrung = (int)($conflictSummary[(int)($lich['id'] ?? 0)] ?? 0);
+            $lid = (int)($lich['id'] ?? 0);
+            $soLichTrung = (int)($conflictSummary[$lid] ?? 0);
             $lich['coTrungLichHDV'] = $soLichTrung > 0;
             $lich['soLichTrungHDV'] = $soLichTrung;
+            $lich['so_khach_da_dat'] = (int)($bookedCountMap[$lid] ?? 0);
+            $soCho = max(1, (int)($lich['so_cho'] ?? 50));
+            $lich['ty_le_lap_day'] = min(100, (int)round(($lich['so_khach_da_dat'] / $soCho) * 100));
         }
         unset($lich);
+
+        $toursList = $this->tourModel->getOptions(500);
+        $hdvList = $this->nhanSuModel->getOptions('HDV');
         
         $vueScheduleData = [
             'schedules' => $lichKhoiHanhList,
+            'toursList' => $toursList ?: [],
+            'hdvList' => $hdvList ?: [],
             'filters' => $filters,
             'csrfToken' => csrfToken('lich_khoi_hanh_form'),
+            'csrfGlobal' => csrfToken('global_form'),
         ];
 
         require 'views/admin/quan_ly_lich_khoi_hanh.php';
