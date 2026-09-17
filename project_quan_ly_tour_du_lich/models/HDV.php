@@ -131,64 +131,142 @@ class HDV
         return $stmt->execute([$id]);
     }
 
-    // Lấy lịch phân công của HDV
+    // Lấy lịch phân công của HDV (kết hợp lich_khoi_hanh và lich_lam_viec_hdv)
     public function getSchedule(int $hdvId, ?string $from = null, ?string $to = null): array {
-        $params = [$hdvId];
-        $sql = "SELECT * FROM hdv_schedules WHERE hdv_id = ?";
+        // 1. Lấy từ lich_khoi_hanh và phan_bo_nhan_su
+        $sqlTour = "SELECT lkh.id, lkh.tour_id, t.ten_tour as note,
+                           CONCAT(lkh.ngay_khoi_hanh, ' 00:00:00') as start_time,
+                           CONCAT(COALESCE(lkh.ngay_ket_thuc, lkh.ngay_khoi_hanh), ' 23:59:59') as end_time,
+                           lkh.trang_thai, 'Tour' as loai
+                    FROM lich_khoi_hanh lkh
+                    LEFT JOIN tour t ON lkh.tour_id = t.tour_id
+                    WHERE (lkh.hdv_id = ? OR EXISTS (
+                        SELECT 1 FROM phan_bo_nhan_su pbn 
+                        WHERE pbn.lich_khoi_hanh_id = lkh.id AND pbn.nhan_su_id = ? AND pbn.vai_tro = 'HDV' AND pbn.deleted_at IS NULL
+                    ))
+                    AND lkh.deleted_at IS NULL
+                    AND lkh.trang_thai != 'Huy'";
+        $paramsTour = [$hdvId, $hdvId];
         if ($from) {
-            $sql .= " AND end_time >= ?"; $params[] = $from;
+            $sqlTour .= " AND COALESCE(lkh.ngay_ket_thuc, lkh.ngay_khoi_hanh) >= ?";
+            $paramsTour[] = date('Y-m-d', strtotime($from));
         }
         if ($to) {
-            $sql .= " AND start_time <= ?"; $params[] = $to;
+            $sqlTour .= " AND lkh.ngay_khoi_hanh <= ?";
+            $paramsTour[] = date('Y-m-d', strtotime($to));
         }
-        $sql .= " ORDER BY start_time ASC";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->execute($params);
-        return $stmt->fetchAll();
+        $stmtTour = $this->conn->prepare($sqlTour);
+        $stmtTour->execute($paramsTour);
+        $tourRows = $stmtTour->fetchAll(PDO::FETCH_ASSOC);
+
+        // 2. Lấy từ lich_lam_viec_hdv
+        $sqlLlv = "SELECT id, tour_id, COALESCE(ghi_chu, loai_lich) as note,
+                          CONCAT(ngay_bat_dau, ' 00:00:00') as start_time,
+                          CONCAT(ngay_ket_thuc, ' 23:59:59') as end_time,
+                          trang_thai, loai_lich as loai
+                   FROM lich_lam_viec_hdv
+                   WHERE nhan_su_id = ? AND trang_thai != 'Huy'";
+        $paramsLlv = [$hdvId];
+        if ($from) {
+            $sqlLlv .= " AND ngay_ket_thuc >= ?";
+            $paramsLlv[] = date('Y-m-d', strtotime($from));
+        }
+        if ($to) {
+            $sqlLlv .= " AND ngay_bat_dau <= ?";
+            $paramsLlv[] = date('Y-m-d', strtotime($to));
+        }
+        $stmtLlv = $this->conn->prepare($sqlLlv);
+        $stmtLlv->execute($paramsLlv);
+        $llvRows = $stmtLlv->fetchAll(PDO::FETCH_ASSOC);
+
+        $merged = array_merge($tourRows ?: [], $llvRows ?: []);
+        usort($merged, function($a, $b) {
+            return strcmp($a['start_time'] ?? '', $b['start_time'] ?? '');
+        });
+        return $merged;
     }
 
     // Thêm phân công lịch
     public function addSchedule(int $hdvId, ?int $tourId, string $startTime, string $endTime, ?string $note = null): bool {
-        $sql = "INSERT INTO hdv_schedules (hdv_id, tour_id, start_time, end_time, note) VALUES (?, ?, ?, ?, ?)";
+        $startDate = date('Y-m-d', strtotime($startTime));
+        $endDate = date('Y-m-d', strtotime($endTime));
+        $sql = "INSERT INTO lich_lam_viec_hdv (nhan_su_id, tour_id, loai_lich, ngay_bat_dau, ngay_ket_thuc, ghi_chu, trang_thai)
+                VALUES (?, ?, 'Tour', ?, ?, ?, 'XacNhan')";
         $stmt = $this->conn->prepare($sql);
-        return $stmt->execute([$hdvId, $tourId, $startTime, $endTime, $note]);
+        return $stmt->execute([$hdvId, $tourId, $startDate, $endDate, $note]);
     }
 
     // Ghi nhận nghỉ phép / vắng mặt
     public function addAbsence(int $hdvId, string $fromDate, string $toDate, ?string $type = null, ?string $reason = null): bool {
-        $sql = "INSERT INTO hdv_absences (hdv_id, date_from, date_to, type, reason) VALUES (?, ?, ?, ?, ?)";
+        $startDate = date('Y-m-d', strtotime($fromDate));
+        $endDate = date('Y-m-d', strtotime($toDate));
+        $loaiLich = 'NghiPhep';
+        if ($type === 'Ban') {
+            $loaiLich = 'Ban';
+        }
+        $sql = "INSERT INTO lich_lam_viec_hdv (nhan_su_id, loai_lich, ngay_bat_dau, ngay_ket_thuc, ghi_chu, trang_thai)
+                VALUES (?, ?, ?, ?, ?, 'XacNhan')";
         $stmt = $this->conn->prepare($sql);
-        return $stmt->execute([$hdvId, $fromDate, $toDate, $type, $reason]);
+        return $stmt->execute([$hdvId, $loaiLich, $startDate, $endDate, $reason]);
     }
 
     // Kiểm tra HDV có rảnh trong khoảng thời gian nhất định
     public function isAvailable(int $hdvId, string $startTime, string $endTime): bool {
-        // Kiểm tra lịch phân công trùng
-        $sql = "SELECT COUNT(*) as c FROM hdv_schedules WHERE hdv_id = ? AND NOT (end_time <= ? OR start_time >= ?)";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->execute([$hdvId, $startTime, $endTime]);
-        $r = $stmt->fetch();
-        if ($r && $r['c'] > 0) return false;
+        $startDate = date('Y-m-d', strtotime($startTime));
+        $endDate = date('Y-m-d', strtotime($endTime));
 
-        // Kiểm tra vắng mặt
-        $dateFrom = date('Y-m-d', strtotime($startTime));
-        $dateTo = date('Y-m-d', strtotime($endTime));
-        $sql2 = "SELECT COUNT(*) as c FROM hdv_absences WHERE hdv_id = ? AND NOT (date_to < ? OR date_from > ?)";
-        $stmt2 = $this->conn->prepare($sql2);
-        $stmt2->execute([$hdvId, $dateFrom, $dateTo]);
-        $r2 = $stmt2->fetch();
-        if ($r2 && $r2['c'] > 0) return false;
+        // Kiểm tra lịch tour đang chạy hoặc sắp khởi hành
+        $sqlTour = "SELECT COUNT(*) as c 
+                    FROM lich_khoi_hanh lkh
+                    WHERE (lkh.hdv_id = ? OR EXISTS (
+                        SELECT 1 FROM phan_bo_nhan_su pbn 
+                        WHERE pbn.lich_khoi_hanh_id = lkh.id AND pbn.nhan_su_id = ? AND pbn.vai_tro = 'HDV' AND pbn.deleted_at IS NULL
+                    ))
+                    AND lkh.deleted_at IS NULL
+                    AND lkh.trang_thai IN ('SapKhoiHanh', 'DangChay', 'DaXacNhan')
+                    AND NOT (COALESCE(lkh.ngay_ket_thuc, lkh.ngay_khoi_hanh) < ? OR lkh.ngay_khoi_hanh > ?)";
+        $stmtTour = $this->conn->prepare($sqlTour);
+        $stmtTour->execute([$hdvId, $hdvId, $startDate, $endDate]);
+        $rTour = $stmtTour->fetch(PDO::FETCH_ASSOC);
+        if ($rTour && (int)$rTour['c'] > 0) {
+            return false;
+        }
+
+        // Kiểm tra lịch làm việc / nghỉ phép / bận
+        $sqlLlv = "SELECT COUNT(*) as c 
+                   FROM lich_lam_viec_hdv
+                   WHERE nhan_su_id = ?
+                     AND trang_thai != 'Huy'
+                     AND NOT (ngay_ket_thuc < ? OR ngay_bat_dau > ?)";
+        $stmtLlv = $this->conn->prepare($sqlLlv);
+        $stmtLlv->execute([$hdvId, $startDate, $endDate]);
+        $rLlv = $stmtLlv->fetch(PDO::FETCH_ASSOC);
+        if ($rLlv && (int)$rLlv['c'] > 0) {
+            return false;
+        }
 
         return true;
     }
 
-    // Lấy lịch sử dẫn tour (liên kết với bảng tour hoặc booking nếu có)
+    // Lấy lịch sử dẫn tour (liên kết với bảng tour và lich_khoi_hanh)
     public function getTourHistory(int $hdvId, int $limit = 50): array {
-        // Nếu có bảng liên kết giữa hdv và tour (ví dụ hdv_schedules), trả về các tour đã dẫn
-        $sql = "SELECT hs.*, t.* FROM hdv_schedules hs LEFT JOIN tour t ON hs.tour_id = t.tour_id WHERE hs.hdv_id = ? ORDER BY hs.start_time DESC LIMIT ?";
+        $limit = max(1, min(200, (int)$limit));
+        $sql = "SELECT lkh.id, lkh.tour_id, t.ten_tour, t.ten_tour as title,
+                       lkh.ngay_khoi_hanh as start_time,
+                       COALESCE(lkh.ngay_ket_thuc, lkh.ngay_khoi_hanh) as end_time,
+                       lkh.trang_thai
+                FROM lich_khoi_hanh lkh
+                LEFT JOIN tour t ON lkh.tour_id = t.tour_id
+                WHERE (lkh.hdv_id = ? OR EXISTS (
+                    SELECT 1 FROM phan_bo_nhan_su pbn 
+                    WHERE pbn.lich_khoi_hanh_id = lkh.id AND pbn.nhan_su_id = ? AND pbn.vai_tro = 'HDV' AND pbn.deleted_at IS NULL
+                ))
+                AND lkh.deleted_at IS NULL
+                ORDER BY lkh.ngay_khoi_hanh DESC
+                LIMIT $limit";
         $stmt = $this->conn->prepare($sql);
-        $stmt->execute([$hdvId, (int)$limit]);
-        return $stmt->fetchAll();
+        $stmt->execute([$hdvId, $hdvId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     /**
@@ -206,35 +284,53 @@ class HDV
             return [];
         }
 
-        $hdvIds = array_values(array_map('intval', $hdvIds));
-        $ph     = implode(',', array_fill(0, count($hdvIds), '?'));
+        $hdvIds = array_values(array_unique(array_map('intval', $hdvIds)));
+        if (empty($hdvIds)) {
+            return [];
+        }
 
-        // Tìm HDV bận do lịch phân công trùng
-        $stmt = $this->conn->prepare(
-            "SELECT DISTINCT hdv_id
-             FROM hdv_schedules
-             WHERE hdv_id IN ($ph)
-               AND NOT (end_time <= ? OR start_time >= ?)"
-        );
-        $stmt->execute(array_merge($hdvIds, [$startTime, $endTime]));
-        $busyBySchedule = array_column($stmt->fetchAll(PDO::FETCH_ASSOC), 'hdv_id');
+        $startDate = date('Y-m-d', strtotime((string)$startTime));
+        $endDate   = date('Y-m-d', strtotime((string)$endTime));
+        $ph        = implode(',', array_fill(0, count($hdvIds), '?'));
 
-        // Tìm HDV bận do vắng mặt
-        $dateFrom = date('Y-m-d', strtotime((string)$startTime));
-        $dateTo   = date('Y-m-d', strtotime((string)$endTime));
-        $stmt2 = $this->conn->prepare(
-            "SELECT DISTINCT hdv_id
-             FROM hdv_absences
-             WHERE hdv_id IN ($ph)
-               AND NOT (date_to < ? OR date_from > ?)"
-        );
-        $stmt2->execute(array_merge($hdvIds, [$dateFrom, $dateTo]));
-        $busyByAbsence = array_column($stmt2->fetchAll(PDO::FETCH_ASSOC), 'hdv_id');
+        // 1. HDV bận do lịch khởi hành / phân bổ nhân sự
+        $sqlTour = "SELECT DISTINCT lkh.hdv_id as busy_id
+                    FROM lich_khoi_hanh lkh
+                    WHERE lkh.hdv_id IN ($ph)
+                      AND lkh.deleted_at IS NULL
+                      AND lkh.trang_thai IN ('SapKhoiHanh', 'DangChay', 'DaXacNhan')
+                      AND NOT (COALESCE(lkh.ngay_ket_thuc, lkh.ngay_khoi_hanh) < ? OR lkh.ngay_khoi_hanh > ?)
+                    UNION
+                    SELECT DISTINCT pbn.nhan_su_id as busy_id
+                    FROM phan_bo_nhan_su pbn
+                    JOIN lich_khoi_hanh lkh2 ON pbn.lich_khoi_hanh_id = lkh2.id
+                    WHERE pbn.nhan_su_id IN ($ph)
+                      AND pbn.vai_tro = 'HDV'
+                      AND pbn.deleted_at IS NULL
+                      AND lkh2.deleted_at IS NULL
+                      AND lkh2.trang_thai IN ('SapKhoiHanh', 'DangChay', 'DaXacNhan')
+                      AND NOT (COALESCE(lkh2.ngay_ket_thuc, lkh2.ngay_khoi_hanh) < ? OR lkh2.ngay_khoi_hanh > ?)";
+        
+        $paramsTour = array_merge($hdvIds, [$startDate, $endDate], $hdvIds, [$startDate, $endDate]);
+        $stmtTour = $this->conn->prepare($sqlTour);
+        $stmtTour->execute($paramsTour);
+        $busyByTour = array_column($stmtTour->fetchAll(PDO::FETCH_ASSOC), 'busy_id');
+
+        // 2. HDV bận do lich_lam_viec_hdv
+        $sqlLlv = "SELECT DISTINCT nhan_su_id as busy_id
+                   FROM lich_lam_viec_hdv
+                   WHERE nhan_su_id IN ($ph)
+                     AND trang_thai != 'Huy'
+                     AND NOT (ngay_ket_thuc < ? OR ngay_bat_dau > ?)";
+        $paramsLlv = array_merge($hdvIds, [$startDate, $endDate]);
+        $stmtLlv = $this->conn->prepare($sqlLlv);
+        $stmtLlv->execute($paramsLlv);
+        $busyByLlv = array_column($stmtLlv->fetchAll(PDO::FETCH_ASSOC), 'busy_id');
 
         $unavailable = array_unique(
             array_merge(
-                array_map('intval', $busyBySchedule),
-                array_map('intval', $busyByAbsence)
+                array_map('intval', $busyByTour),
+                array_map('intval', $busyByLlv)
             )
         );
 

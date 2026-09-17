@@ -39,6 +39,7 @@ spl_autoload_register(function ($className) {
         $baseDirs = [
             __DIR__ . '/controllers/',
             __DIR__ . '/models/',
+            __DIR__ . '/services/',
         ];
     }
 
@@ -249,6 +250,12 @@ if (!$routeValidation['ok']) {
 }
 
 if ($method === 'POST') {
+    $rawInput = file_get_contents('php://input');
+    $jsonInput = json_decode($rawInput, true);
+    if (is_array($jsonInput) && empty($_POST)) {
+        $_POST = $jsonInput;
+    }
+
     $csrfExemptActs = [
         'payment/bankWebhook',
         // These actions already perform scoped CSRF verification in their controllers.
@@ -264,15 +271,50 @@ if ($method === 'POST') {
         'booking/delete',
         'booking/hideCompleted',
         'booking/datTourChoKhach',
+        'booking/apiQuickUpdateStatus',
+        'admin/apiQuickUpdateStatus',
         'admin/confirm_payment_received',
         'admin/confirm_gateway_payment',
         'admin/query_vnpay_status',
         'admin/paymentReconcile',
+        'admin/danhGia/traLoi',
+        'admin/danhGia/xoa',
+        'admin/apiToggleUserStatus',
+        'admin/apiCreateUser',
+        'admin/apiUpdateUser',
+        'admin/apiResetPassword',
+        'admin/apiDeleteUser',
+        'admin/toggleAutomation',
+        'admin/runAutomationJob',
+        'admin/updateDecisionAssistStatus',
+        'admin/duyetChiPhi',
+        'admin/tuChoiChiPhi',
+        'lichKhoiHanh/apiUpdateStatus',
+        'admin/apiUpdateScheduleStatus',
+        'lichKhoiHanh/apiQuickUpdate',
+        'lichKhoiHanh/apiAssignHdv',
+        'admin/apiAssignHdv',
     ];
 
     if (!in_array($act, $csrfExemptActs, true)) {
-        $csrfGlobalToken = $_POST['_csrf_global'] ?? '';
-        if (!verifyCsrfToken($csrfGlobalToken, 'global_form')) {
+        $csrfGlobalToken = $_POST['_csrf_global'] ?? ($jsonInput['_csrf_global'] ?? '');
+        $csrfToken = $_POST['_csrf_token'] ?? ($jsonInput['_csrf_token'] ?? '');
+        $valid = verifyCsrfToken($csrfGlobalToken, 'global_form')
+              || verifyCsrfToken($csrfToken, 'admin_form')
+              || verifyCsrfToken($csrfToken, 'lich_khoi_hanh_form');
+
+        if (!$valid) {
+            $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH'])
+                || (isset($_SERVER['HTTP_ACCEPT']) && str_contains($_SERVER['HTTP_ACCEPT'], 'application/json'))
+                || (isset($_SERVER['CONTENT_TYPE']) && str_contains($_SERVER['CONTENT_TYPE'], 'application/json'));
+
+            if ($isAjax) {
+                http_response_code(403);
+                header('Content-Type: application/json; charset=utf-8');
+                echo json_encode(['success' => false, 'message' => 'Yêu cầu không hợp lệ (CSRF). Vui lòng làm mới trang.'], JSON_UNESCAPED_UNICODE);
+                exit();
+            }
+
             $_SESSION['error'] = 'Yeu cau khong hop le (CSRF). Vui long thu lai.';
             $backAct = requestString('act', 'tour/index', 'GET');
             header('Location: index.php?act=' . urlencode($backAct));
@@ -335,12 +377,23 @@ match ($act) {
     'booking/sendEmail' => (new BookingController())->sendEmail(),
     'booking/changeRequests' => (new BookingController())->changeRequests(),
     'booking/processChangeRequest' => (new BookingController())->processChangeRequest(),
+    'booking/apiBookingPassengers' => (new BookingController())->apiBookingPassengers(),
+    'admin/apiBookingPassengers' => (new BookingController())->apiBookingPassengers(),
+    'booking/apiQuickUpdateStatus' => (new BookingController())->apiQuickUpdateStatus(),
+    'admin/apiQuickUpdateStatus' => (new BookingController())->apiQuickUpdateStatus(),
 
     
     // Lịch khởi hành
     'lichKhoiHanh/index' => (new LichKhoiHanhController())->index(),
     'lichKhoiHanh/apiList' => (new LichKhoiHanhController())->apiLichKhoiHanhList(),
     'admin/apiLichKhoiHanhList' => (new LichKhoiHanhController())->apiLichKhoiHanhList(),
+    'lichKhoiHanh/apiUpdateStatus' => (new LichKhoiHanhController())->apiUpdateStatus(),
+    'admin/apiUpdateScheduleStatus' => (new LichKhoiHanhController())->apiUpdateStatus(),
+    'lichKhoiHanh/apiQuickUpdate' => (new LichKhoiHanhController())->apiQuickUpdate(),
+    'lichKhoiHanh/apiAssignHdv' => (new LichKhoiHanhController())->apiAssignHdv(),
+    'admin/apiAssignHdv' => (new LichKhoiHanhController())->apiAssignHdv(),
+    'lichKhoiHanh/apiSchedulePassengers' => (new LichKhoiHanhController())->apiSchedulePassengers(),
+    'admin/apiSchedulePassengers' => (new LichKhoiHanhController())->apiSchedulePassengers(),
     'lichKhoiHanh/create' => (new LichKhoiHanhController())->create(),
     'lichKhoiHanh/chiTiet' => (new LichKhoiHanhController())->chiTiet(),
     'lichKhoiHanh/chiTietTheoBooking' => (new LichKhoiHanhController())->chiTietTheoBooking(),
@@ -394,13 +447,22 @@ match ($act) {
     'admin/chiTietNhatKyTour' => (new AdminNhatKyTourController())->chiTietNhatKyTour(),
     'admin/formNhatKyTour' => (new AdminNhatKyTourController())->formNhatKyTour(),
     'admin/saveNhatKyTour' => (new AdminNhatKyTourController())->saveNhatKyTour(),
-    'admin/deleteNhatKyTour' => (new AdminNhatKyTourController())->deleteNhatKyTour(),
     // Nhà cung cấp → AdminNhaCungCapController
     'admin/addNhacungcap' => (new AdminNhaCungCapController())->addNhacungcap(),
+
+    // Admin Profile & Security → AdminController
+    'admin/profile' => (new AdminController())->profile(),
+    'admin/updateProfile' => (new AdminController())->updateProfile(),
+    'admin/changePassword' => (new AdminController())->changePassword(),
+
     // Người dùng → AdminNguoiDungController
     'admin/quanLyNguoiDung' => (new AdminNguoiDungController())->quanLyNguoiDung(),
     'admin/apiNguoiDungList' => (new AdminNguoiDungController())->apiUserList(),
     'admin/apiToggleUserStatus' => (new AdminNguoiDungController())->apiToggleStatus(),
+    'admin/apiCreateUser' => (new AdminNguoiDungController())->apiCreateUser(),
+    'admin/apiUpdateUser' => (new AdminNguoiDungController())->apiUpdateUser(),
+    'admin/apiResetPassword' => (new AdminNguoiDungController())->apiResetPassword(),
+    'admin/apiDeleteUser' => (new AdminNguoiDungController())->apiDeleteUser(),
     'admin/capNhatTrangThaiNguoiDung' => (new AdminNguoiDungController())->capNhatTrangThaiNguoiDung(),
     // Lương/thưởng nhân sự → AdminLuongController
     'admin/quanLyLuongThuong' => (new AdminLuongController())->quanLyLuongThuong(),
@@ -535,6 +597,8 @@ match ($act) {
     'khachHang/guiDanhGia' => (new KhachHangController())->guiDanhGia(),
     'khachHang/traCuu' => (new KhachHangController())->traCuu(),
     'khachHang/hoaDon' => (new KhachHangController())->hoaDon(),
+    'khachHang/viCuaToi' => (new KhachHangController())->viCuaToi(),
+    'khachHang/tourYeuThich' => (new KhachHangController())->tourYeuThich(),
     'khachHang/lichSuThanhToan' => (new KhachHangController())->lichSuThanhToan(),
     'khachHang/timeline' => (new KhachHangController())->timeline(),
     'khachHang/lichTrinhTour' => (new KhachHangController())->lichTrinhTour(),

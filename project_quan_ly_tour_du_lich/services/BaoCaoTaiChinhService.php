@@ -62,11 +62,46 @@ class BaoCaoTaiChinhService
     {
         $thongKe = $this->giaoDichModel->getThongKeTongHop($tuNgay, $denNgay);
         $tongThu = (float)($thongKe['tong_thu'] ?? 0);
-        $tongChi = (float)($thongKe['tong_chi'] ?? 0);
+        $tongChiGD = (float)($thongKe['tong_chi'] ?? 0);
+
+        // Include approved chi_phi_thuc_te
+        $sqlCP = "SELECT COALESCE(SUM(so_tien), 0) FROM chi_phi_thuc_te WHERE trang_thai = 'DaDuyet'";
+        $paramsCP = [];
+        if ($tuNgay !== '') {
+            $sqlCP .= " AND ngay_phat_sinh >= ?";
+            $paramsCP[] = $tuNgay;
+        }
+        if ($denNgay !== '') {
+            $sqlCP .= " AND ngay_phat_sinh <= ?";
+            $paramsCP[] = $denNgay;
+        }
+        $stmtCP = $this->conn->prepare($sqlCP);
+        $stmtCP->execute($paramsCP);
+        $tongChiThucTe = (float)$stmtCP->fetchColumn();
+
+        // Also check if any giao_dich already referenced chi_phi_thuc_te to avoid double-counting
+        $sqlLinked = "SELECT COALESCE(SUM(so_tien), 0) FROM giao_dich_tai_chinh WHERE loai = 'Chi' AND mo_ta LIKE '[Chi phí thực tế #%'";
+        $paramsLinked = [];
+        if ($tuNgay !== '') {
+            $sqlLinked .= " AND ngay_giao_dich >= ?";
+            $paramsLinked[] = $tuNgay;
+        }
+        if ($denNgay !== '') {
+            $sqlLinked .= " AND ngay_giao_dich <= ?";
+            $paramsLinked[] = $denNgay;
+        }
+        $stmtLinked = $this->conn->prepare($sqlLinked);
+        $stmtLinked->execute($paramsLinked);
+        $tongLinked = (float)$stmtLinked->fetchColumn();
+
+        // Net expenses = tongChiGD + (unlinked approved chi_phi_thuc_te)
+        $tongChi = $tongChiGD + max(0, $tongChiThucTe - $tongLinked);
+        $loiNhuan = $tongThu - $tongChi;
+
         return [
             'tongThu'   => $tongThu,
             'tongChi'   => $tongChi,
-            'loiNhuan'  => (float)($thongKe['lai_lo'] ?? ($tongThu - $tongChi)),
+            'loiNhuan'  => $loiNhuan,
             'topTours'  => $this->getTopToursByRevenue(5),
         ];
     }
@@ -101,6 +136,27 @@ class BaoCaoTaiChinhService
             $chiPhiByTour[(int)($row['tour_id'] ?? 0)] = (float)($row['tong_chi_thuc_te'] ?? 0);
         }
 
+        // Lấy chi phí thực tế đã được hạch toán trong giao_dich_tai_chinh để tránh trùng lắp
+        $sqlLinked = "SELECT tour_id, COALESCE(SUM(so_tien), 0) AS tong_linked
+                      FROM giao_dich_tai_chinh
+                      WHERE loai = 'Chi' AND mo_ta LIKE '[Chi phí thực tế #%'";
+        $linkedParams = [];
+        if ($startDate !== '') {
+            $sqlLinked .= " AND ngay_giao_dich >= ?";
+            $linkedParams[] = $startDate;
+        }
+        if ($endDate !== '') {
+            $sqlLinked .= " AND ngay_giao_dich <= ?";
+            $linkedParams[] = $endDate;
+        }
+        $sqlLinked .= " GROUP BY tour_id";
+        $stmtLinked = $this->conn->prepare($sqlLinked);
+        $stmtLinked->execute($linkedParams);
+        $linkedByTour = [];
+        foreach ($stmtLinked->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $linkedByTour[(int)($row['tour_id'] ?? 0)] = (float)($row['tong_linked'] ?? 0);
+        }
+
         $stmtDuToan = $this->conn->prepare(
             "SELECT tour_id, COALESCE(SUM(tong_du_toan), 0) AS tong_du_toan
              FROM du_toan_tour GROUP BY tour_id"
@@ -122,13 +178,18 @@ class BaoCaoTaiChinhService
             $tongThu        = (float)($stat['tong_thu'] ?? 0);
             $tongChiGD      = (float)($stat['tong_chi'] ?? 0);
             $tongChiThucTe  = (float)($chiPhiByTour[$tourId] ?? 0);
+            $tongLinked     = (float)($linkedByTour[$tourId] ?? 0);
             $tongDuToan     = (float)($duToanByTour[$tourId] ?? 0);
             $status         = 'AnToan';
 
+            // Tổng chi thực tế chuẩn = chi ghi nhận giao dịch + phần chi phí thực tế phát sinh ngoài
+            $tongChiChuan   = $tongChiGD + max(0.0, $tongChiThucTe - $tongLinked);
+            $loiNhuan       = $tongThu - $tongChiChuan;
+
             if ($tongDuToan > 0) {
-                if ($tongChiThucTe > $tongDuToan) {
+                if ($tongChiChuan > $tongDuToan) {
                     $status = 'VuotDuToan';
-                } elseif ($tongChiThucTe >= ($tongDuToan * 0.9)) {
+                } elseif ($tongChiChuan >= ($tongDuToan * 0.9)) {
                     $status = 'GanVuot';
                 }
             }
@@ -141,7 +202,7 @@ class BaoCaoTaiChinhService
                 'tong_chi_giao_dich'  => $tongChiGD,
                 'tong_chi_thuc_te'    => $tongChiThucTe,
                 'tong_du_toan'        => $tongDuToan,
-                'loi_nhuan'           => $tongThu - $tongChiThucTe,
+                'loi_nhuan'           => $loiNhuan,
                 'status'              => $status,
             ];
         }
@@ -211,6 +272,14 @@ class BaoCaoTaiChinhService
         $stmtChiPhi->execute([$tourId]);
         $tongChiThucTe = (float)$stmtChiPhi->fetchColumn();
 
+        $stmtLinked = $this->conn->prepare(
+            "SELECT COALESCE(SUM(so_tien), 0)
+             FROM giao_dich_tai_chinh
+             WHERE tour_id = ? AND loai = 'Chi' AND mo_ta LIKE '[Chi phí thực tế #%'"
+        );
+        $stmtLinked->execute([$tourId]);
+        $tongLinked = (float)$stmtLinked->fetchColumn();
+
         $stmtBookings = $this->conn->prepare(
             "SELECT b.booking_id, b.ngay_dat, b.tong_tien, b.trang_thai, nd.ho_ten
              FROM booking b
@@ -223,6 +292,8 @@ class BaoCaoTaiChinhService
         $stmtBookings->execute([$tourId]);
         $bookings = $stmtBookings->fetchAll(PDO::FETCH_ASSOC);
 
+        $tongChiChuan = $tongChiGD + max(0.0, $tongChiThucTe - $tongLinked);
+
         return [
             'giaoDichs'    => $giaoDichs,
             'tour'         => $tour,
@@ -230,7 +301,7 @@ class BaoCaoTaiChinhService
             'tongChiGD'    => $tongChiGD,
             'tongChiThucTe'=> $tongChiThucTe,
             'bookings'     => $bookings,
-            'loiNhuan'     => $tongThu - $tongChiGD - $tongChiThucTe,
+            'loiNhuan'     => $tongThu - $tongChiChuan,
         ];
     }
 
@@ -248,7 +319,11 @@ class BaoCaoTaiChinhService
         string $ghiChu
     ): void {
         $stmtDebt = $this->conn->prepare(
-            "SELECT id, so_tien, han_thanh_toan FROM cong_no_hdv WHERE id = ? LIMIT 1"
+            "SELECT c.id, c.tour_id, c.hdv_id, c.so_tien, c.han_thanh_toan, nd.ho_ten AS ten_hdv
+             FROM cong_no_hdv c
+             LEFT JOIN nhan_su ns ON c.hdv_id = ns.nhan_su_id
+             LEFT JOIN nguoi_dung nd ON ns.nguoi_dung_id = nd.id
+             WHERE c.id = ? LIMIT 1"
         );
         $stmtDebt->execute([$congNoId]);
         $debtRow = $stmtDebt->fetch(PDO::FETCH_ASSOC);
@@ -282,6 +357,22 @@ class BaoCaoTaiChinhService
         );
         $stmtInsert->execute([$congNoId, $ngayThanhToan, $soTienThanhToan, $phuongThuc, $ghiChu]);
 
+        // Ghi nhận bút toán nghiệp vụ 'Chi' vào sổ cái giao_dich_tai_chinh
+        $stmtGD = $this->conn->prepare(
+            "INSERT INTO giao_dich_tai_chinh (tour_id, loai, so_tien, mo_ta, ngay_giao_dich)
+             VALUES (?, 'Chi', ?, ?, ?)"
+        );
+        $moTaGD = 'Chi thanh toan cong no HDV #' . $congNoId . ' (' . ($debtRow['ten_hdv'] ?? ('HDV #' . $debtRow['hdv_id'])) . ') - ' . $phuongThuc;
+        if (trim($ghiChu) !== '') {
+            $moTaGD .= ' | ' . trim($ghiChu);
+        }
+        $stmtGD->execute([
+            (int)($debtRow['tour_id'] ?? 0),
+            $soTienThanhToan,
+            $moTaGD,
+            $ngayThanhToan
+        ]);
+
         $conLaiSauThanhToan = max(0.0, $conLai - $soTienThanhToan);
         $trangThaiMoi = 'ChoDuyet';
         if ($conLaiSauThanhToan <= 0.0001) {
@@ -296,6 +387,9 @@ class BaoCaoTaiChinhService
         $stmtUpdate->execute([$trangThaiMoi, $congNoId]);
 
         $this->conn->commit();
+
+        cacheForget('admin_dashboard_overview_v1');
+        cacheForgetByPrefix('bao_cao_tai_chinh_');
     }
 
     /**
@@ -464,9 +558,10 @@ class BaoCaoTaiChinhService
              LEFT JOIN khach_hang kh ON b.khach_hang_id = kh.khach_hang_id
              LEFT JOIN nguoi_dung nd ON kh.nguoi_dung_id = nd.id
              LEFT JOIN tour t ON b.tour_id = t.tour_id
-             WHERE b.han_thanh_toan IS NOT NULL
+             WHERE b.is_deleted = 0
+               AND b.han_thanh_toan IS NOT NULL
                AND b.han_thanh_toan <= DATE_ADD(CURDATE(), INTERVAL 3 DAY)
-               AND (b.trang_thai IS NULL OR b.trang_thai <> 'DaHuy')"
+               AND (b.trang_thai IS NULL OR b.trang_thai <> 'Huy')"
         );
         $stmtBookings->execute();
         foreach ($stmtBookings->fetchAll(PDO::FETCH_ASSOC) as $booking) {
@@ -556,7 +651,8 @@ class BaoCaoTaiChinhService
              LEFT JOIN khach_hang kh ON b.khach_hang_id = kh.khach_hang_id
              LEFT JOIN nguoi_dung nd ON kh.nguoi_dung_id = nd.id
              LEFT JOIN tour t ON b.tour_id = t.tour_id
-             WHERE (b.trang_thai IS NULL OR b.trang_thai <> 'DaHuy')
+             WHERE b.is_deleted = 0
+               AND (b.trang_thai IS NULL OR b.trang_thai <> 'Huy')
              ORDER BY b.ngay_dat DESC, b.booking_id DESC"
         );
         $stmt->execute();

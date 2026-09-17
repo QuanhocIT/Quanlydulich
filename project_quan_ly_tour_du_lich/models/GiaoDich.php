@@ -18,6 +18,34 @@ class GiaoDich {
         }
         return $result;
     }
+
+    // Lấy chi tiết Thu, Chi và Lợi Nhuận theo từng tháng (mặc định 12 tháng gần nhất)
+    public function getThuChiLoiNhuanTheoThang(int $soThang = 12): array {
+        $sql = "SELECT DATE_FORMAT(ngay_giao_dich, '%m/%Y') as thang,
+                       DATE_FORMAT(ngay_giao_dich, '%Y-%m') as raw_month,
+                       COALESCE(SUM(CASE WHEN loai = 'Thu' THEN so_tien ELSE 0 END), 0) as tong_thu,
+                       COALESCE(SUM(CASE WHEN loai = 'Chi' THEN so_tien ELSE 0 END), 0) as tong_chi
+                FROM giao_dich_tai_chinh
+                GROUP BY raw_month, thang
+                ORDER BY raw_month DESC
+                LIMIT ?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute([$soThang]);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $result = [];
+        foreach (array_reverse($rows) as $row) {
+            $thu = (float)$row['tong_thu'];
+            $chi = (float)$row['tong_chi'];
+            $result[] = [
+                'thang' => (string)$row['thang'],
+                'raw_month' => (string)$row['raw_month'],
+                'tong_thu' => $thu,
+                'tong_chi' => $chi,
+                'loi_nhuan' => $thu - $chi,
+            ];
+        }
+        return $result;
+    }
     // Lấy tổng thu của một tour
     public function getTongThuByTourId(int $tourId): float {
         $sql = "SELECT SUM(so_tien) as tong_thu FROM giao_dich_tai_chinh WHERE tour_id = ? AND loai = 'Thu'";
@@ -82,44 +110,11 @@ class GiaoDich {
     }
 
     private function getTableColumns(string $tableName): array {
-        if (!array_key_exists($tableName, self::$tableColumnsCache)) {
-            $sql = "SELECT COLUMN_NAME
-                    FROM INFORMATION_SCHEMA.COLUMNS
-                    WHERE TABLE_SCHEMA = DATABASE()
-                      AND TABLE_NAME = ?
-                    ORDER BY ORDINAL_POSITION";
-            $stmt = $this->conn->prepare($sql);
-            $stmt->execute([$tableName]);
-            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-            $columns = [];
-            foreach ($rows as $row) {
-                $name = (string)($row['COLUMN_NAME'] ?? '');
-                if ($name !== '') {
-                    $columns[] = $name;
-                }
-            }
-            self::$tableColumnsCache[$tableName] = $columns;
-        }
-
-        return self::$tableColumnsCache[$tableName];
+        return SchemaHelper::getTableColumns($this->conn, $tableName);
     }
 
     private function giaoDichSelectColumns(string $alias = ''): string {
-        $columns = $this->getTableColumns('giao_dich_tai_chinh');
-        if (empty($columns)) {
-            return $alias !== '' ? ($alias . '.id') : 'id';
-        }
-
-        if ($alias === '') {
-            return implode(', ', $columns);
-        }
-
-        $prefixed = array_map(static function ($column) use ($alias) {
-            return $alias . '.' . $column;
-        }, $columns);
-
-        return implode(', ', $prefixed);
+        return SchemaHelper::selectColumns($this->conn, 'giao_dich_tai_chinh', $alias);
     }
 
     private function buildFilterConditions(array $filters, array &$params): array {
@@ -338,6 +333,17 @@ class GiaoDich {
 
     // Thống kê theo từng tour
     public function getThongKeTheoTour(?string $startDate = null, ?string $endDate = null): array {
+        $joinConditions = ["t.tour_id = gd.tour_id"];
+        $params = [];
+        if ($startDate) {
+            $joinConditions[] = "gd.ngay_giao_dich >= ?";
+            $params[] = $startDate;
+        }
+        if ($endDate) {
+            $joinConditions[] = "gd.ngay_giao_dich <= ?";
+            $params[] = $endDate;
+        }
+
         $sql = "SELECT 
                     t.tour_id,
                     t.ten_tour,
@@ -345,26 +351,11 @@ class GiaoDich {
                     COALESCE(SUM(CASE WHEN gd.loai = 'Chi' THEN gd.so_tien ELSE 0 END), 0) as tong_chi,
                     COUNT(gd.id) as so_giao_dich
                 FROM tour t
-                LEFT JOIN giao_dich_tai_chinh gd ON t.tour_id = gd.tour_id";
-        $params = [];
-        $where = [];
-        
-        if ($startDate) {
-            $where[] = "(gd.ngay_giao_dich >= ? OR gd.ngay_giao_dich IS NULL)";
-            $params[] = $startDate;
-        }
-        if ($endDate) {
-            $where[] = "(gd.ngay_giao_dich <= ? OR gd.ngay_giao_dich IS NULL)";
-            $params[] = $endDate;
-        }
-        
-        if (!empty($where)) {
-            $sql .= " WHERE " . implode(" AND ", $where);
-        }
-        
-        $sql .= " GROUP BY t.tour_id, t.ten_tour 
-                  ORDER BY (COALESCE(SUM(CASE WHEN gd.loai = 'Thu' THEN gd.so_tien ELSE 0 END), 0) - 
-                            COALESCE(SUM(CASE WHEN gd.loai = 'Chi' THEN gd.so_tien ELSE 0 END), 0)) DESC";
+                LEFT JOIN giao_dich_tai_chinh gd ON " . implode(" AND ", $joinConditions) . "
+                WHERE t.is_deleted = 0
+                GROUP BY t.tour_id, t.ten_tour 
+                ORDER BY (COALESCE(SUM(CASE WHEN gd.loai = 'Thu' THEN gd.so_tien ELSE 0 END), 0) - 
+                          COALESCE(SUM(CASE WHEN gd.loai = 'Chi' THEN gd.so_tien ELSE 0 END), 0)) DESC";
         
         $stmt = $this->conn->prepare($sql);
         $stmt->execute($params);
@@ -382,6 +373,17 @@ class GiaoDich {
 
     // Lấy tổng thu chi cho tất cả tour bằng 1 truy vấn gộp.
     public function getThuChiTatCaTour(?string $startDate = null, ?string $endDate = null): array {
+        $joinConditions = ["t.tour_id = gd.tour_id"];
+        $params = [];
+        if (!empty($startDate)) {
+            $joinConditions[] = "gd.ngay_giao_dich >= ?";
+            $params[] = $startDate;
+        }
+        if (!empty($endDate)) {
+            $joinConditions[] = "gd.ngay_giao_dich <= ?";
+            $params[] = $endDate;
+        }
+
         $sql = "SELECT
                     t.tour_id,
                     t.ten_tour,
@@ -389,27 +391,10 @@ class GiaoDich {
                     COALESCE(SUM(CASE WHEN gd.loai = 'Thu' THEN gd.so_tien ELSE 0 END), 0) AS tong_thu,
                     COALESCE(SUM(CASE WHEN gd.loai = 'Chi' THEN gd.so_tien ELSE 0 END), 0) AS tong_chi
                 FROM tour t
-                LEFT JOIN giao_dich_tai_chinh gd ON t.tour_id = gd.tour_id";
-
-        $params = [];
-        $where = [];
-
-        if (!empty($startDate)) {
-            $where[] = "(gd.ngay_giao_dich >= ? OR gd.ngay_giao_dich IS NULL)";
-            $params[] = $startDate;
-        }
-
-        if (!empty($endDate)) {
-            $where[] = "(gd.ngay_giao_dich <= ? OR gd.ngay_giao_dich IS NULL)";
-            $params[] = $endDate;
-        }
-
-        if (!empty($where)) {
-            $sql .= " WHERE " . implode(' AND ', $where);
-        }
-
-        $sql .= " GROUP BY t.tour_id, t.ten_tour, t.loai_tour
-                  ORDER BY t.tour_id DESC";
+                LEFT JOIN giao_dich_tai_chinh gd ON " . implode(" AND ", $joinConditions) . "
+                WHERE t.is_deleted = 0
+                GROUP BY t.tour_id, t.ten_tour, t.loai_tour
+                ORDER BY t.tour_id DESC";
 
         $stmt = $this->conn->prepare($sql);
         $stmt->execute($params);

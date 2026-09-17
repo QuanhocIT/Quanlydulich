@@ -6,7 +6,7 @@ class LichKhoiHanh
     private static array $columnExistsCache = [];
     private static array $tableColumnsCache = [];
 
-    private function clearScheduleReadCache(): void {
+    public function clearScheduleReadCache(): void {
         cacheForgetByPrefix('lich_khoi_hanh_options_');
         cacheForgetByPrefix('lich_khoi_hanh_upcoming_');
         cacheForget('admin_dashboard_overview_v1');
@@ -18,43 +18,11 @@ class LichKhoiHanh
     }
 
     private function getTableColumns(string $tableName): array {
-        if (!array_key_exists($tableName, self::$tableColumnsCache)) {
-            $sql = "SELECT COLUMN_NAME
-                    FROM INFORMATION_SCHEMA.COLUMNS
-                    WHERE TABLE_SCHEMA = DATABASE()
-                      AND TABLE_NAME = ?
-                    ORDER BY ORDINAL_POSITION";
-            $stmt = $this->conn->prepare($sql);
-            $stmt->execute([$tableName]);
-            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-            $columns = [];
-            foreach ($rows as $row) {
-                $name = (string)($row['COLUMN_NAME'] ?? '');
-                if ($name !== '') {
-                    $columns[] = $name;
-                }
-            }
-            self::$tableColumnsCache[$tableName] = $columns;
-        }
-
-        return self::$tableColumnsCache[$tableName];
+        return SchemaHelper::getTableColumns($this->conn, $tableName);
     }
 
     private function selectColumnsFromTable(string $tableName, string $alias = ''): string {
-        $columns = $this->getTableColumns($tableName);
-        if (empty($columns)) {
-            return $alias !== '' ? ($alias . '.id') : 'id';
-        }
-
-        if ($alias === '') {
-            return implode(', ', $columns);
-        }
-
-        $prefixed = array_map(static function ($column) use ($alias) {
-            return $alias . '.' . $column;
-        }, $columns);
-        return implode(', ', $prefixed);
+        return SchemaHelper::selectColumns($this->conn, $tableName, $alias);
     }
 
     private function lichKhoiHanhSelectColumns(string $alias = ''): string {
@@ -62,50 +30,19 @@ class LichKhoiHanh
     }
 
     private function hasColumn(string $tableName, string $columnName): bool {
-        $key = $tableName . '.' . $columnName;
-        if (array_key_exists($key, self::$columnExistsCache)) {
-            return self::$columnExistsCache[$key];
-        }
-
-        try {
-            $sql = "SELECT COUNT(*)
-                    FROM INFORMATION_SCHEMA.COLUMNS
-                    WHERE TABLE_SCHEMA = DATABASE()
-                      AND TABLE_NAME = ?
-                      AND COLUMN_NAME = ?";
-            $stmt = $this->conn->prepare($sql);
-            $stmt->execute([$tableName, $columnName]);
-            self::$columnExistsCache[$key] = ((int)$stmt->fetchColumn() > 0);
-        } catch (Throwable $e) {
-            self::$columnExistsCache[$key] = false;
-        }
-
-        return self::$columnExistsCache[$key];
+        return SchemaHelper::hasColumn($this->conn, $tableName, $columnName);
     }
 
     private function scheduleNotDeletedClause(string $alias = ''): string {
-        if (!$this->hasColumn('lich_khoi_hanh', 'deleted_at')) {
-            return '1=1';
-        }
-
-        $prefix = $alias !== '' ? ($alias . '.') : '';
-        return $prefix . 'deleted_at IS NULL';
+        return SchemaHelper::notDeletedClause($this->conn, 'lich_khoi_hanh', $alias);
     }
 
     private function assignmentNotDeletedClause(string $tableName, string $alias): string {
-        if (!$this->hasColumn($tableName, 'deleted_at')) {
-            return '1=1';
-        }
-
-        return $alias . '.deleted_at IS NULL';
+        return SchemaHelper::notDeletedClause($this->conn, $tableName, $alias);
     }
 
     private function bookingNotDeletedClause(string $alias = 'b'): string {
-        if (!$this->hasColumn('booking', 'is_deleted')) {
-            return '1=1';
-        }
-
-        return $alias . '.is_deleted = 0';
+        return SchemaHelper::notDeletedClause($this->conn, 'booking', $alias);
     }
 
     // Tự động cập nhật trạng thái lịch khởi hành theo thời gian hiện tại
@@ -238,6 +175,12 @@ class LichKhoiHanh
             $params[] = $keyword;
         }
 
+        $tourId = !empty($filters['tour_id']) ? (int)$filters['tour_id'] : 0;
+        if ($tourId > 0) {
+            $where[] = "lk.tour_id = ?";
+            $params[] = $tourId;
+        }
+
         $tuNgay = trim((string)($filters['tu_ngay'] ?? ''));
         if ($tuNgay !== '') {
             $where[] = "lk.ngay_khoi_hanh >= ?";
@@ -250,22 +193,21 @@ class LichKhoiHanh
             $params[] = $denNgay;
         }
 
-        if (!empty($where)) {
-            $sql .= ' AND ' . implode(' AND ', $where);
-        }
-
-        $sql .= ' GROUP BY lk.id';
-
         $trangThai = trim((string)($filters['trang_thai'] ?? ''));
         if ($trangThai !== '') {
             if ($trangThai === 'ChoPhanBo') {
                 $having[] = 'COUNT(DISTINCT pbn.id) = 0';
             } else {
-                $having[] = 'lk.trang_thai = ?';
+                $where[] = 'lk.trang_thai = ?';
                 $params[] = $trangThai;
-                $having[] = 'COUNT(DISTINCT pbn.id) > 0';
             }
         }
+
+        if (!empty($where)) {
+            $sql .= ' AND ' . implode(' AND ', $where);
+        }
+
+        $sql .= ' GROUP BY lk.id';
 
         if (!empty($having)) {
             $sql .= ' HAVING ' . implode(' AND ', $having);
@@ -325,6 +267,48 @@ class LichKhoiHanh
         }
 
         return $result;
+    }
+
+    // Tổng hợp chỉ số vận hành lịch khởi hành và tỷ lệ lấp đầy chỗ
+    public function getDashboardOperations(): array {
+        $notDeleted = $this->scheduleNotDeletedClause();
+        $sqlStatus = "SELECT trang_thai, COUNT(*) AS count, COALESCE(SUM(so_cho), 0) AS tong_cho
+                      FROM lich_khoi_hanh
+                      WHERE $notDeleted
+                      GROUP BY trang_thai";
+        $stmtStatus = $this->conn->query($sqlStatus);
+        $statusMap = [];
+        $totalCapacity = 0;
+        if ($stmtStatus) {
+            while ($row = $stmtStatus->fetch(PDO::FETCH_ASSOC)) {
+                $st = (string)($row['trang_thai'] ?? 'Khac');
+                $statusMap[$st] = (int)($row['count'] ?? 0);
+                $totalCapacity += (int)($row['tong_cho'] ?? 0);
+            }
+        }
+
+        $activeCount = (int)($statusMap['DangChay'] ?? 0);
+
+        $sqlUpcoming = "SELECT COUNT(*) FROM lich_khoi_hanh
+                        WHERE $notDeleted
+                          AND ngay_khoi_hanh BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)";
+        $upcomingCount = (int)($this->conn->query($sqlUpcoming)?->fetchColumn() ?? 0);
+
+        $sqlGuests = "SELECT COALESCE(SUM(b.so_nguoi), 0) AS total_guests
+                      FROM booking b
+                      WHERE b.trang_thai != 'Huy' AND b.is_deleted = 0";
+        $totalGuests = (int)($this->conn->query($sqlGuests)?->fetchColumn() ?? 0);
+
+        $occupancyRate = $totalCapacity > 0 ? round(($totalGuests / $totalCapacity) * 100, 1) : 0.0;
+
+        return [
+            'status_counts' => $statusMap,
+            'active_running' => $activeCount,
+            'upcoming_7_days' => $upcomingCount,
+            'total_capacity' => $totalCapacity,
+            'total_guests' => $totalGuests,
+            'occupancy_rate' => $occupancyRate,
+        ];
     }
 
     // Tìm lịch khởi hành theo tour và ngày khởi hành (dùng để map từ booking)

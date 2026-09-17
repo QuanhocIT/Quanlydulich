@@ -84,32 +84,42 @@ class HDVManagement
                     nd.ho_ten, 
                     nd.email, 
                     nd.so_dien_thoai,
-                    COALESCE((SELECT AVG(diem) FROM phan_hoi_danh_gia phd 
-                              INNER JOIN lich_khoi_hanh lkh ON phd.tour_id = lkh.tour_id 
-                              WHERE lkh.hdv_id = ns.nhan_su_id), 0) as danh_gia_tb,
+                    COALESCE((SELECT AVG(diem) FROM danh_gia dg 
+                              WHERE dg.loai_danh_gia = 'NhanSu' 
+                                AND dg.nhan_su_id = ns.nhan_su_id 
+                                AND dg.deleted_at IS NULL), 0) as danh_gia_tb,
                     COALESCE((SELECT COUNT(DISTINCT tour_id) FROM lich_khoi_hanh 
-                              WHERE hdv_id = ns.nhan_su_id), 0) as so_tour_da_dan
+                              WHERE hdv_id = ns.nhan_su_id AND deleted_at IS NULL), 0) as so_tour_da_dan
                 FROM nhan_su ns
                 INNER JOIN nguoi_dung nd ON ns.nguoi_dung_id = nd.id
                 WHERE ns.vai_tro = 'HDV' 
                   AND nd.trang_thai = 'HoatDong'
                   AND ns.nhan_su_id NOT IN (
-                      SELECT hdv_id 
-                      FROM lich_khoi_hanh 
-                      WHERE hdv_id IS NOT NULL
-                        AND (
-                            (ngay_khoi_hanh <= ? AND ngay_ket_thuc >= ?)
-                            OR (ngay_khoi_hanh <= ? AND ngay_ket_thuc >= ?)
-                            OR (ngay_khoi_hanh >= ? AND ngay_ket_thuc <= ?)
-                        )
+                      SELECT lk.hdv_id 
+                      FROM lich_khoi_hanh lk 
+                      WHERE lk.hdv_id IS NOT NULL
+                        AND lk.trang_thai IN ('SapKhoiHanh', 'DangChay')
+                        AND lk.deleted_at IS NULL
+                        AND lk.ngay_khoi_hanh <= ? 
+                        AND COALESCE(lk.ngay_ket_thuc, lk.ngay_khoi_hanh) >= ?
+                      UNION
+                      SELECT pbn.nhan_su_id
+                      FROM phan_bo_nhan_su pbn
+                      JOIN lich_khoi_hanh lk2 ON pbn.lich_khoi_hanh_id = lk2.id
+                      WHERE pbn.vai_tro = 'HDV'
+                        AND pbn.trang_thai IN ('ChoXacNhan', 'DaXacNhan')
+                        AND pbn.deleted_at IS NULL
+                        AND lk2.trang_thai IN ('SapKhoiHanh', 'DangChay')
+                        AND lk2.deleted_at IS NULL
+                        AND lk2.ngay_khoi_hanh <= ?
+                        AND COALESCE(lk2.ngay_ket_thuc, lk2.ngay_khoi_hanh) >= ?
                   )
                 ORDER BY danh_gia_tb DESC, so_tour_da_dan DESC";
         
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([
-            $ngay_bat_dau, $ngay_bat_dau,
-            $ngay_ket_thuc, $ngay_ket_thuc,
-            $ngay_bat_dau, $ngay_ket_thuc
+            $ngay_ket_thuc, $ngay_bat_dau,
+            $ngay_ket_thuc, $ngay_bat_dau
         ]);
         return $stmt->fetchAll();
     }

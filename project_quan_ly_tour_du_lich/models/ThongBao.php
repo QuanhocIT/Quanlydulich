@@ -7,35 +7,12 @@ class ThongBao
 
     private function hasColumn(string $tableName, string $columnName): bool
     {
-        $key = $tableName . '.' . $columnName;
-        if (array_key_exists($key, self::$columnExistsCache)) {
-            return self::$columnExistsCache[$key];
-        }
-
-        try {
-            $sql = "SELECT COUNT(*)
-                    FROM INFORMATION_SCHEMA.COLUMNS
-                    WHERE TABLE_SCHEMA = DATABASE()
-                      AND TABLE_NAME = ?
-                      AND COLUMN_NAME = ?";
-            $stmt = $this->conn->prepare($sql);
-            $stmt->execute([$tableName, $columnName]);
-            self::$columnExistsCache[$key] = ((int)$stmt->fetchColumn() > 0);
-        } catch (Throwable $e) {
-            self::$columnExistsCache[$key] = false;
-        }
-
-        return self::$columnExistsCache[$key];
+        return SchemaHelper::hasColumn($this->conn, $tableName, $columnName);
     }
 
     private function thongBaoNotDeletedClause(string $alias = 'tb'): string
     {
-        if (!$this->hasColumn('thong_bao', 'deleted_at')) {
-            return '1=1';
-        }
-
-        $prefix = $alias !== '' ? ($alias . '.') : '';
-        return $prefix . 'deleted_at IS NULL';
+        return SchemaHelper::notDeletedClause($this->conn, 'thong_bao', $alias);
     }
 
     /**

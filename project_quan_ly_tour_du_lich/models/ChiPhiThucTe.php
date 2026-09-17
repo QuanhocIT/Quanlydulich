@@ -87,7 +87,7 @@ class ChiPhiThucTe
                     nd_ghi.ho_ten as nguoi_ghi_nhan
                 FROM chi_phi_thuc_te cp
                 JOIN tour t ON cp.tour_id = t.tour_id
-                LEFT JOIN lich_khoi_hanh lkh ON cp.lich_khoi_hanh_id = lkh.lich_id
+                LEFT JOIN lich_khoi_hanh lkh ON cp.lich_khoi_hanh_id = lkh.id
                 JOIN nguoi_dung nd_ghi ON cp.nguoi_ghi_nhan_id = nd_ghi.id
                 WHERE cp.trang_thai = 'ChoXacNhan'
                 ORDER BY cp.created_at ASC";

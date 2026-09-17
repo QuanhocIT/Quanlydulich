@@ -162,6 +162,27 @@ SET @sql_stmt := IF(@has_col = 0,
 PREPARE stmt FROM @sql_stmt; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 -- phan_hoi_hdv
+CREATE TABLE IF NOT EXISTS phan_hoi_hdv (
+  id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  tour_id INT NOT NULL,
+  hdv_id INT NOT NULL,
+  loai_danh_gia VARCHAR(50) NULL,
+  ten_doi_tuong VARCHAR(255) NULL,
+  diem_danh_gia INT NULL,
+  tieu_de VARCHAR(255) NULL,
+  noi_dung TEXT NULL,
+  diem_manh TEXT NULL,
+  diem_yeu TEXT NULL,
+  de_xuat TEXT NULL,
+  hinh_anh TEXT NULL,
+  nguoi_xu_ly_id INT NULL,
+  trang_thai VARCHAR(50) DEFAULT 'MoiGui',
+  ngay_tao DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_ph_hdv_tour (tour_id),
+  INDEX idx_ph_hdv_hdv (hdv_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 SET @has_col := (
   SELECT COUNT(*) FROM information_schema.columns
   WHERE table_schema = @db_name AND table_name = 'phan_hoi_hdv' AND column_name = 'deleted_at'

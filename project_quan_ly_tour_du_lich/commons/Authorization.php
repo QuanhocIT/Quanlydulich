@@ -140,6 +140,12 @@ class Authorization {
                 'tour/deleteNhanSuLichKhoiHanh' => ['Admin'],
                 'tour/deleteDichVuLichKhoiHanh' => ['Admin'],
                 'payment/redirect' => [self::AUTHENTICATED],
+                'lichKhoiHanh/index' => ['Admin', 'HDV'],
+                'lichKhoiHanh/apiList' => ['Admin', 'HDV'],
+                'lichKhoiHanh/apiAssignHdv' => ['Admin'],
+                'lichKhoiHanh/apiSchedulePassengers' => ['Admin', 'HDV'],
+                'lichKhoiHanh/apiUpdateStatus' => ['Admin'],
+                'lichKhoiHanh/apiQuickUpdate' => ['Admin'],
             ],
         ];
     }

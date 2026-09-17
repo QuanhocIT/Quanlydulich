@@ -22,45 +22,11 @@ class Tour
     }
 
     private function getTableColumns(string $tableName): array {
-        if (!array_key_exists($tableName, self::$tableColumnsCache)) {
-            $sql = "SELECT COLUMN_NAME
-                    FROM INFORMATION_SCHEMA.COLUMNS
-                    WHERE TABLE_SCHEMA = DATABASE()
-                      AND TABLE_NAME = ?
-                    ORDER BY ORDINAL_POSITION";
-            $stmt = $this->conn->prepare($sql);
-            $stmt->execute([$tableName]);
-            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-            $columns = [];
-            foreach ($rows as $row) {
-                $name = (string)($row['COLUMN_NAME'] ?? '');
-                if ($name !== '') {
-                    $columns[] = $name;
-                }
-            }
-
-            self::$tableColumnsCache[$tableName] = $columns;
-        }
-
-        return self::$tableColumnsCache[$tableName];
+        return SchemaHelper::getTableColumns($this->conn, $tableName);
     }
 
     private function selectColumnsFromTable(string $tableName, string $alias = ''): string {
-        $columns = $this->getTableColumns($tableName);
-        if (empty($columns)) {
-            return $alias !== '' ? ($alias . '.id') : 'id';
-        }
-
-        if ($alias === '') {
-            return implode(', ', $columns);
-        }
-
-        $prefixed = array_map(static function ($column) use ($alias) {
-            return $alias . '.' . $column;
-        }, $columns);
-
-        return implode(', ', $prefixed);
+        return SchemaHelper::selectColumns($this->conn, $tableName, $alias);
     }
 
     private function tourSelectColumns(string $alias = ''): string {
@@ -72,67 +38,19 @@ class Tour
     }
 
     private function supportsIsDeleted(): bool {
-        if ($this->hasIsDeletedColumn !== null) {
-            return $this->hasIsDeletedColumn;
-        }
-
-        try {
-            $sql = "SELECT COUNT(*)
-                    FROM INFORMATION_SCHEMA.COLUMNS
-                    WHERE TABLE_SCHEMA = DATABASE()
-                      AND TABLE_NAME = 'tour'
-                      AND COLUMN_NAME = 'is_deleted'";
-            $stmt = $this->conn->query($sql);
-            $this->hasIsDeletedColumn = ((int)$stmt->fetchColumn() > 0);
-        } catch (Throwable $e) {
-            $this->hasIsDeletedColumn = false;
-        }
-
-        return $this->hasIsDeletedColumn;
+        return SchemaHelper::hasColumn($this->conn, 'tour', 'is_deleted');
     }
 
     private function notDeletedClause(): string {
-        return $this->supportsIsDeleted() ? 'is_deleted = 0' : '1=1';
+        return SchemaHelper::notDeletedClause($this->conn, 'tour');
     }
 
     private function supportsDeletedAt(): bool {
-        if ($this->hasDeletedAtColumn !== null) {
-            return $this->hasDeletedAtColumn;
-        }
-
-        try {
-            $sql = "SELECT COUNT(*)
-                    FROM INFORMATION_SCHEMA.COLUMNS
-                    WHERE TABLE_SCHEMA = DATABASE()
-                      AND TABLE_NAME = 'tour'
-                      AND COLUMN_NAME = 'deleted_at'";
-            $stmt = $this->conn->query($sql);
-            $this->hasDeletedAtColumn = ((int)$stmt->fetchColumn() > 0);
-        } catch (Throwable $e) {
-            $this->hasDeletedAtColumn = false;
-        }
-
-        return $this->hasDeletedAtColumn;
+        return SchemaHelper::hasColumn($this->conn, 'tour', 'deleted_at');
     }
 
     private function supportsBookingIsDeleted(): bool {
-        if ($this->hasBookingIsDeletedColumn !== null) {
-            return $this->hasBookingIsDeletedColumn;
-        }
-
-        try {
-            $sql = "SELECT COUNT(*)
-                    FROM INFORMATION_SCHEMA.COLUMNS
-                    WHERE TABLE_SCHEMA = DATABASE()
-                      AND TABLE_NAME = 'booking'
-                      AND COLUMN_NAME = 'is_deleted'";
-            $stmt = $this->conn->query($sql);
-            $this->hasBookingIsDeletedColumn = ((int)$stmt->fetchColumn() > 0);
-        } catch (Throwable $e) {
-            $this->hasBookingIsDeletedColumn = false;
-        }
-
-        return $this->hasBookingIsDeletedColumn;
+        return SchemaHelper::hasColumn($this->conn, 'booking', 'is_deleted');
     }
 
     private function bookingNotDeletedClause(string $alias = 'b'): string {
@@ -140,23 +58,7 @@ class Tour
     }
 
     private function supportsYeuCauDacBietDeletedAt(): bool {
-        if ($this->hasYeuCauDacBietDeletedAtColumn !== null) {
-            return $this->hasYeuCauDacBietDeletedAtColumn;
-        }
-
-        try {
-            $sql = "SELECT COUNT(*)
-                    FROM INFORMATION_SCHEMA.COLUMNS
-                    WHERE TABLE_SCHEMA = DATABASE()
-                      AND TABLE_NAME = 'yeu_cau_dac_biet'
-                      AND COLUMN_NAME = 'deleted_at'";
-            $stmt = $this->conn->query($sql);
-            $this->hasYeuCauDacBietDeletedAtColumn = ((int)$stmt->fetchColumn() > 0);
-        } catch (Throwable $e) {
-            $this->hasYeuCauDacBietDeletedAtColumn = false;
-        }
-
-        return $this->hasYeuCauDacBietDeletedAtColumn;
+        return SchemaHelper::hasColumn($this->conn, 'yeu_cau_dac_biet', 'deleted_at');
     }
 
     private function yeuCauDacBietNotDeletedClause(string $alias = 'yc'): string {
@@ -164,23 +66,7 @@ class Tour
     }
 
     private function supportsNhatKyTourDeletedAt(): bool {
-        if ($this->hasNhatKyTourDeletedAtColumn !== null) {
-            return $this->hasNhatKyTourDeletedAtColumn;
-        }
-
-        try {
-            $sql = "SELECT COUNT(*)
-                    FROM INFORMATION_SCHEMA.COLUMNS
-                    WHERE TABLE_SCHEMA = DATABASE()
-                      AND TABLE_NAME = 'nhat_ky_tour'
-                      AND COLUMN_NAME = 'deleted_at'";
-            $stmt = $this->conn->query($sql);
-            $this->hasNhatKyTourDeletedAtColumn = ((int)$stmt->fetchColumn() > 0);
-        } catch (Throwable $e) {
-            $this->hasNhatKyTourDeletedAtColumn = false;
-        }
-
-        return $this->hasNhatKyTourDeletedAtColumn;
+        return SchemaHelper::hasColumn($this->conn, 'nhat_ky_tour', 'deleted_at');
     }
 
     private function nhatKyTourNotDeletedClause(string $alias = 'nkt'): string {
@@ -258,10 +144,26 @@ class Tour
             array_push($params, $keyword, $keyword);
         }
 
+        if (isset($filters['min_price']) && is_numeric($filters['min_price'])) {
+            $where[] = 'gia_co_ban >= ?';
+            $params[] = (float)$filters['min_price'];
+        }
+
+        if (isset($filters['max_price']) && is_numeric($filters['max_price'])) {
+            $where[] = 'gia_co_ban <= ?';
+            $params[] = (float)$filters['max_price'];
+        }
+
+        $sortSql = match ($filters['sort'] ?? '') {
+            'price_asc' => 'gia_co_ban ASC, tour_id DESC',
+            'price_desc' => 'gia_co_ban DESC, tour_id DESC',
+            default => 'tour_id DESC',
+        };
+
         $sql = "SELECT tour_id, ten_tour, loai_tour, mo_ta, gia_co_ban, trang_thai
                 FROM tour
                 WHERE " . implode(' AND ', $where) . "
-                ORDER BY tour_id DESC";
+                ORDER BY " . $sortSql;
 
         if ($limit !== null) {
             $sql .= " LIMIT ? OFFSET ?";

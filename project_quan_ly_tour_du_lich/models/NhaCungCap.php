@@ -11,43 +11,11 @@ class NhaCungCap
     }
 
     private function getTableColumns(string $tableName): array {
-        if (!array_key_exists($tableName, self::$tableColumnsCache)) {
-            $sql = "SELECT COLUMN_NAME
-                    FROM INFORMATION_SCHEMA.COLUMNS
-                    WHERE TABLE_SCHEMA = DATABASE()
-                      AND TABLE_NAME = ?
-                    ORDER BY ORDINAL_POSITION";
-            $stmt = $this->conn->prepare($sql);
-            $stmt->execute([$tableName]);
-            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-            $columns = [];
-            foreach ($rows as $row) {
-                $name = (string)($row['COLUMN_NAME'] ?? '');
-                if ($name !== '') {
-                    $columns[] = $name;
-                }
-            }
-            self::$tableColumnsCache[$tableName] = $columns;
-        }
-
-        return self::$tableColumnsCache[$tableName];
+        return SchemaHelper::getTableColumns($this->conn, $tableName);
     }
 
     private function selectColumnsFromTable(string $tableName, string $alias = ''): string {
-        $columns = $this->getTableColumns($tableName);
-        if (empty($columns)) {
-            return $alias !== '' ? ($alias . '.id') : 'id';
-        }
-
-        if ($alias === '') {
-            return implode(', ', $columns);
-        }
-
-        $prefixed = array_map(static function ($column) use ($alias) {
-            return $alias . '.' . $column;
-        }, $columns);
-        return implode(', ', $prefixed);
+        return SchemaHelper::selectColumns($this->conn, $tableName, $alias);
     }
 
     private function nhaCungCapSelectColumns(string $alias = ''): string {
@@ -59,34 +27,11 @@ class NhaCungCap
     }
 
     private function hasColumn(string $tableName, string $columnName): bool {
-        $key = $tableName . '.' . $columnName;
-        if (array_key_exists($key, self::$columnExistsCache)) {
-            return self::$columnExistsCache[$key];
-        }
-
-        try {
-            $sql = "SELECT COUNT(*)
-                    FROM INFORMATION_SCHEMA.COLUMNS
-                    WHERE TABLE_SCHEMA = DATABASE()
-                      AND TABLE_NAME = ?
-                      AND COLUMN_NAME = ?";
-            $stmt = $this->conn->prepare($sql);
-            $stmt->execute([$tableName, $columnName]);
-            self::$columnExistsCache[$key] = ((int)$stmt->fetchColumn() > 0);
-        } catch (Throwable $e) {
-            self::$columnExistsCache[$key] = false;
-        }
-
-        return self::$columnExistsCache[$key];
+        return SchemaHelper::hasColumn($this->conn, $tableName, $columnName);
     }
 
     private function nhaCungCapNotDeletedClause(string $alias = ''): string {
-        if (!$this->hasColumn('nha_cung_cap', 'is_deleted')) {
-            return '1=1';
-        }
-
-        $prefix = $alias !== '' ? ($alias . '.') : '';
-        return $prefix . 'is_deleted = 0';
+        return SchemaHelper::notDeletedClause($this->conn, 'nha_cung_cap', $alias);
     }
 
     public function getAll(): array {

@@ -4,6 +4,7 @@ require_once __DIR__ . '/RequestValidator.php';
 require_once __DIR__ . '/Authorization.php';
 require_once __DIR__ . '/SessionSecurity.php';
 require_once __DIR__ . '/PasswordPolicy.php';
+require_once __DIR__ . '/SchemaHelper.php';
 
 // Kết nối CSDL qua PDO
 function connectDB() {
@@ -11,31 +12,8 @@ function connectDB() {
 }
 
 function dbColumnExists(string $tableName, string $columnName, ?PDO $conn = null) {
-    static $columnCache = [];
-
-    $tableName = trim((string)$tableName);
-    $columnName = trim((string)$columnName);
-    if ($tableName === '' || $columnName === '') {
-        return false;
-    }
-
-    $cacheKey = strtolower($tableName . '.' . $columnName);
-    if (array_key_exists($cacheKey, $columnCache)) {
-        return $columnCache[$cacheKey];
-    }
-
     $pdo = $conn instanceof PDO ? $conn : connectDB();
-    $stmt = $pdo->prepare(
-        "SELECT COUNT(*)
-         FROM INFORMATION_SCHEMA.COLUMNS
-         WHERE TABLE_SCHEMA = DATABASE()
-           AND TABLE_NAME = ?
-           AND COLUMN_NAME = ?"
-    );
-    $stmt->execute([$tableName, $columnName]);
-    $columnCache[$cacheKey] = ((int)$stmt->fetchColumn() > 0);
-
-    return $columnCache[$cacheKey];
+    return SchemaHelper::hasColumn($pdo, $tableName, $columnName);
 }
 
 function cacheBaseDir() {

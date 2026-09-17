@@ -13,44 +13,11 @@ class Booking
     }
 
     private function getTableColumns(string $tableName): array {
-        if (!array_key_exists($tableName, self::$tableColumnsCache)) {
-            $sql = "SELECT COLUMN_NAME
-                    FROM INFORMATION_SCHEMA.COLUMNS
-                    WHERE TABLE_SCHEMA = DATABASE()
-                      AND TABLE_NAME = ?
-                    ORDER BY ORDINAL_POSITION";
-            $stmt = $this->conn->prepare($sql);
-            $stmt->execute([$tableName]);
-            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-            $columnMap = [];
-            foreach ($rows as $row) {
-                $name = (string)($row['COLUMN_NAME'] ?? '');
-                if ($name !== '') {
-                    $columnMap[$name] = true;
-                }
-            }
-            self::$tableColumnsCache[$tableName] = $columnMap;
-        }
-
-        return array_keys(self::$tableColumnsCache[$tableName]);
+        return SchemaHelper::getTableColumns($this->conn, $tableName);
     }
 
     private function selectColumnsFromTable(string $tableName, string $alias = ''): string {
-        $columns = $this->getTableColumns($tableName);
-        if (empty($columns)) {
-            return $alias !== '' ? ($alias . '.booking_id') : 'booking_id';
-        }
-
-        if ($alias === '') {
-            return implode(', ', $columns);
-        }
-
-        $prefixed = array_map(static function ($column) use ($alias) {
-            return $alias . '.' . $column;
-        }, $columns);
-
-        return implode(', ', $prefixed);
+        return SchemaHelper::selectColumns($this->conn, $tableName, $alias);
     }
 
     private function bookingSelectColumns(string $alias = ''): string {
@@ -58,24 +25,11 @@ class Booking
     }
 
     private function hasColumn(string $tableName, string $columnName): bool {
-        $key = $tableName . '.' . $columnName;
-        if (array_key_exists($key, self::$columnExistsCache)) {
-            return self::$columnExistsCache[$key];
-        }
-
-        $columns = $this->getTableColumns($tableName);
-        self::$columnExistsCache[$key] = in_array($columnName, $columns, true);
-
-        return self::$columnExistsCache[$key];
+        return SchemaHelper::hasColumn($this->conn, $tableName, $columnName);
     }
 
     private function bookingNotDeletedClause(string $alias = ''): string {
-        if (!$this->hasColumn('booking', 'is_deleted')) {
-            return '1=1';
-        }
-
-        $prefix = $alias !== '' ? ($alias . '.') : '';
-        return $prefix . 'is_deleted = 0';
+        return SchemaHelper::notDeletedClause($this->conn, 'booking', $alias);
     }
 
     // Tìm booking theo tour_id và khach_hang_id (mã tour và mã khách hàng)
@@ -902,7 +856,7 @@ class Booking
 
     public function getBookingStatusStats(): array {
         try {
-            $sql = "SELECT trang_thai, COUNT(*) as cnt FROM booking GROUP BY trang_thai";
+            $sql = "SELECT trang_thai, COUNT(*) as cnt FROM booking WHERE is_deleted = 0 GROUP BY trang_thai";
             $stmt = $this->conn->query($sql);
             $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
             $stats = [

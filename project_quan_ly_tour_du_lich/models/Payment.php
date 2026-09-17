@@ -75,6 +75,63 @@ class Payment {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    // Thống kê phân bổ cổng thanh toán và tỷ lệ giao dịch cho Dashboard
+    public static function getDashboardPaymentStats(PDO $conn): array {
+        $notDeleted = self::notDeletedClause($conn);
+        $sql = "SELECT COALESCE(payment_method, 'Khac') AS payment_method,
+                       status,
+                       COUNT(*) AS count,
+                       COALESCE(SUM(amount), 0) AS total_amount
+                FROM payments
+                WHERE $notDeleted
+                GROUP BY payment_method, status";
+        $stmt = $conn->prepare($sql);
+        $stmt->execute();
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+        $methodsMap = [];
+        $totalCollected = 0.0;
+        $successCount = 0;
+        $failedCount = 0;
+
+        foreach ($rows as $r) {
+            $method = (string)$r['payment_method'];
+            $status = (string)$r['status'];
+            $count = (int)$r['count'];
+            $amount = (float)$r['total_amount'];
+
+            if (!isset($methodsMap[$method])) {
+                $methodsMap[$method] = [
+                    'payment_method' => $method,
+                    'success_count' => 0,
+                    'failed_count' => 0,
+                    'total_collected' => 0.0,
+                ];
+            }
+
+            if (in_array($status, [self::STATUS_THANH_CONG, self::STATUS_DA_DOI_SOAT], true)) {
+                $methodsMap[$method]['success_count'] += $count;
+                $methodsMap[$method]['total_collected'] += $amount;
+                $totalCollected += $amount;
+                $successCount += $count;
+            } else {
+                $methodsMap[$method]['failed_count'] += $count;
+                $failedCount += $count;
+            }
+        }
+
+        $totalCount = $successCount + $failedCount;
+        $successRate = $totalCount > 0 ? round(($successCount / $totalCount) * 100, 1) : 0.0;
+
+        return [
+            'methods' => array_values($methodsMap),
+            'total_collected' => $totalCollected,
+            'success_count' => $successCount,
+            'failed_count' => $failedCount,
+            'success_rate' => $successRate,
+        ];
+    }
+
     public static function getStateList(): array {
         return [
             self::STATUS_TAO_MOI,

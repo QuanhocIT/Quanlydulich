@@ -390,6 +390,26 @@ class NhanSu
         $stmt->execute([$keyword, $keyword, $keyword, $keyword]);
         return $stmt->fetchAll();
     }
+
+    // Lấy danh sách Top HDV xuất sắc cho dashboard
+    public function getTopHdv(int $limit = 5): array {
+        $limit = max(1, (int)$limit);
+        $sql = "SELECT ns.nhan_su_id, nd.ho_ten, nd.email, nd.so_dien_thoai,
+                       COALESCE(ns.so_tour_da_dan, 0) AS so_tour_da_dan,
+                       COALESCE(ns.danh_gia_tb, 0) AS danh_gia_tb,
+                       ns.trang_thai_lam_viec
+                FROM nhan_su AS ns
+                JOIN nguoi_dung AS nd ON ns.nguoi_dung_id = nd.id
+                WHERE ns.vai_tro = 'HDV'
+                  AND " . $this->nhanSuNotDeletedClause('ns') . "
+                  AND " . $this->nguoiDungNotDeletedClause('nd') . "
+                ORDER BY ns.danh_gia_tb DESC, ns.so_tour_da_dan DESC
+                LIMIT ?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindValue(1, $limit, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    }
 }
 
 ?>

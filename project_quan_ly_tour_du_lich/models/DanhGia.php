@@ -21,9 +21,18 @@ class DanhGia {
         $params = [];
         
         // Lọc theo loại
-        if (!empty($filters['loai_danh_gia'])) {
+        $loaiVal = $filters['loai_danh_gia'] ?? ($filters['loai'] ?? '');
+        if (!empty($loaiVal)) {
             $sql .= " AND dg.loai_danh_gia = ?";
-            $params[] = $filters['loai_danh_gia'];
+            $params[] = $loaiVal;
+        }
+
+        // Lọc theo trạng thái trả lời của admin
+        $replyStatus = $filters['trang_thai_tra_loi'] ?? '';
+        if ($replyStatus === 'DaTraLoi') {
+            $sql .= " AND dg.phan_hoi_admin IS NOT NULL AND TRIM(dg.phan_hoi_admin) != ''";
+        } elseif ($replyStatus === 'ChuaTraLoi') {
+            $sql .= " AND (dg.phan_hoi_admin IS NULL OR TRIM(dg.phan_hoi_admin) = '')";
         }
         
         // Lọc theo điểm
@@ -118,6 +127,39 @@ class DanhGia {
             'Trung bình' => (int)($row['trung_binh'] ?? 0),
             'Không hài lòng' => (int)($row['khong_hai_long'] ?? 0),
             'Rất không hài lòng' => (int)($row['rat_khong_hai_long'] ?? 0),
+        ];
+    }
+
+    // Tổng hợp chỉ số đánh giá CSAT và phân bổ số sao cho Dashboard
+    public function getDashboardReviewMetrics(): array {
+        $sql = "SELECT COUNT(*) AS total_reviews,
+                       COALESCE(AVG(diem), 0) AS avg_score,
+                       COALESCE(SUM(CASE WHEN diem >= 4 THEN 1 ELSE 0 END), 0) AS positive_count,
+                       COALESCE(SUM(CASE WHEN diem >= 5 THEN 1 ELSE 0 END), 0) AS star_5,
+                       COALESCE(SUM(CASE WHEN diem = 4 THEN 1 ELSE 0 END), 0) AS star_4,
+                       COALESCE(SUM(CASE WHEN diem = 3 THEN 1 ELSE 0 END), 0) AS star_3,
+                       COALESCE(SUM(CASE WHEN diem = 2 THEN 1 ELSE 0 END), 0) AS star_2,
+                       COALESCE(SUM(CASE WHEN diem <= 1 THEN 1 ELSE 0 END), 0) AS star_1
+                FROM danh_gia
+                WHERE deleted_at IS NULL";
+        $stmt = $this->conn->query($sql);
+        $row = $stmt ? ($stmt->fetch(PDO::FETCH_ASSOC) ?: []) : [];
+        $total = (int)($row['total_reviews'] ?? 0);
+        $avgScore = round((float)($row['avg_score'] ?? 0), 1);
+        $posCount = (int)($row['positive_count'] ?? 0);
+        $satisfactionRate = $total > 0 ? round(($posCount / $total) * 100, 1) : 0.0;
+
+        return [
+            'total_reviews' => $total,
+            'avg_score' => $avgScore,
+            'satisfaction_rate' => $satisfactionRate,
+            'stars' => [
+                5 => (int)($row['star_5'] ?? 0),
+                4 => (int)($row['star_4'] ?? 0),
+                3 => (int)($row['star_3'] ?? 0),
+                2 => (int)($row['star_2'] ?? 0),
+                1 => (int)($row['star_1'] ?? 0),
+            ]
         ];
     }
 
@@ -382,6 +424,7 @@ class DanhGia {
     // Tìm theo ID
     public function findById($id) {
         $sql = "SELECT dg.*, 
+                       k.nguoi_dung_id,
                        nd.ho_ten as ten_khach_hang,
                        nd.email as email_khach_hang,
                        nd.so_dien_thoai as dien_thoai_khach_hang,
@@ -409,14 +452,7 @@ class DanhGia {
     
     // Xóa đánh giá
     public function delete($id) {
-        $hasDeletedAt = false;
-        try {
-            $stmtCheck = $this->conn->prepare("SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'danh_gia' AND COLUMN_NAME = 'deleted_at'");
-            $stmtCheck->execute();
-            $hasDeletedAt = ((int)$stmtCheck->fetchColumn() > 0);
-        } catch (Throwable $e) {
-            $hasDeletedAt = false;
-        }
+        $hasDeletedAt = SchemaHelper::hasColumn($this->conn, 'danh_gia', 'deleted_at');
         if ($hasDeletedAt) {
             $sql = "UPDATE danh_gia SET deleted_at = NOW() WHERE danh_gia_id = ? AND deleted_at IS NULL";
         } else {
