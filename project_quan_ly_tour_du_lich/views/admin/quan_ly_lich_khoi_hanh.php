@@ -3,7 +3,7 @@ $pageTitle = 'Quản lý Lịch Khởi Hành - Vue 3';
 $currentPage = 'lichKhoiHanh';
 
 $additionalCSS = [
-    BASE_URL . 'public/dist/admin/schedule-manage.css?v=' . rawurlencode(ASSET_VERSION),
+    BASE_URL . 'public/dist/admin/schedule-manage.css?v=' . rawurlencode(ASSET_VERSION) . '_' . time(),
 ];
 
 ob_start();
@@ -27,7 +27,7 @@ ob_start();
     window.__BASE_URL__ = '<?= BASE_URL ?>';
     window.__ADMIN_SCHEDULE_MANAGE_INIT__ = <?= json_encode($vueScheduleData ?? [], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
 </script>
-<script type="module" nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>" src="<?= BASE_URL ?>public/dist/admin/schedule-manage.js?v=<?= rawurlencode(ASSET_VERSION) ?>"></script>
+<script type="module" nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>" src="<?= BASE_URL ?>public/dist/admin/schedule-manage.js?v=<?= rawurlencode(ASSET_VERSION) . '_' . time() ?>"></script>
 
 <?php
 $content = ob_get_clean();

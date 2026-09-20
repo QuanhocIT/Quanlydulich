@@ -9,78 +9,113 @@
       </div>
     </transition>
 
-    <!-- PAGE HEADER -->
-    <header class="page-header">
-      <div class="header-left">
-        <div class="badge-tag">
-          <i class="bi bi-calendar3-event"></i>
-          <span>Điều Phối Lịch Trình</span>
+    <!-- PAGE HEADER HERO BANNER -->
+    <header class="page-header-hero">
+      <div class="hero-bg"></div>
+      <div class="hero-content">
+        <div class="hero-left">
+          <div class="badge-tag">
+            <i class="bi bi-compass-fill"></i>
+            <span>AVENTURA • TOUR MANAGEMENT</span>
+          </div>
+          <h1 class="hero-title">Quản lý lịch khởi hành</h1>
+          <p class="hero-subtitle">
+            Theo dõi, quản lý và sắp xếp lịch khởi hành tour một cách hiệu quả.
+            <span v-if="selectedTourId" class="badge-tour-filter ms-2">
+              Đang lọc Tour #{{ selectedTourId }}
+              <button type="button" class="btn-clear-tour" @click="clearTourFilter" title="Bỏ lọc theo tour">&times;</button>
+            </span>
+          </p>
         </div>
-        <p class="header-subtitle">
-          Theo dõi tiến độ vận hành, tỷ lệ lấp đầy chỗ, cảnh báo HDV và phân bổ dịch vụ theo thời gian thực
-          <span v-if="selectedTourId" class="badge-tour-filter ms-2">
-            Đang lọc Tour #{{ selectedTourId }}
-            <button type="button" class="btn-clear-tour" @click="clearTourFilter" title="Bỏ lọc theo tour">&times;</button>
-          </span>
-        </p>
-      </div>
-      <div class="header-actions">
-        <a href="index.php?act=lichKhoiHanh/create" class="btn-create">
-          <i class="bi bi-plus-lg"></i>
-          <span>Thêm Lịch Khởi Hành</span>
-        </a>
+        <div class="hero-right">
+          <div class="current-time-display">
+            <i class="bi bi-clock-history text-cyan me-2"></i>
+            <span>{{ currentTimeString || 'Đang cập nhật giờ...' }}</span>
+          </div>
+          <a href="index.php?act=lichKhoiHanh/create" class="btn-hero-create">
+            <i class="bi bi-plus-lg"></i>
+            <span>Tạo lịch khởi hành</span>
+          </a>
+        </div>
       </div>
     </header>
 
     <!-- 5 STATS CARDS -->
     <section class="stats-grid">
-      <div class="stat-card stat-total">
+      <div class="stat-card">
+        <div class="stat-icon-box icon-blue">
+          <i class="bi bi-calendar-event"></i>
+        </div>
         <div class="stat-content">
           <span class="stat-label">Tổng số lịch</span>
           <strong class="stat-num">{{ stats.total }}</strong>
+          <div class="stat-trend trend-positive">
+            <i class="bi bi-arrow-up-short"></i> <span>+0% so với tháng trước</span>
+          </div>
         </div>
-        <div class="stat-icon-box"><i class="bi bi-calendar-check-fill"></i></div>
       </div>
 
-      <div class="stat-card stat-upcoming">
+      <div class="stat-card">
+        <div class="stat-icon-box icon-green">
+          <i class="bi bi-airplane-engines-fill"></i>
+        </div>
         <div class="stat-content">
           <span class="stat-label">Sắp khởi hành</span>
           <strong class="stat-num">{{ stats.upcoming }}</strong>
+          <div class="stat-trend trend-positive">
+            <i class="bi bi-arrow-up-short"></i> <span>+0% so với tháng trước</span>
+          </div>
         </div>
-        <div class="stat-icon-box"><i class="bi bi-clock-history"></i></div>
       </div>
 
-      <div class="stat-card stat-ongoing">
+      <div class="stat-card">
+        <div class="stat-icon-box icon-purple">
+          <i class="bi bi-check-circle-fill"></i>
+        </div>
         <div class="stat-content">
           <span class="stat-label">Đang chạy</span>
           <strong class="stat-num">{{ stats.ongoing }}</strong>
+          <div class="stat-trend trend-positive">
+            <i class="bi bi-arrow-up-short"></i> <span>+0% so với tháng trước</span>
+          </div>
         </div>
-        <div class="stat-icon-box"><i class="bi bi-play-circle-fill"></i></div>
       </div>
 
-      <div class="stat-card stat-completed">
+      <div class="stat-card">
+        <div class="stat-icon-box icon-orange">
+          <i class="bi bi-clock-fill"></i>
+        </div>
         <div class="stat-content">
           <span class="stat-label">Đã hoàn thành</span>
           <strong class="stat-num">{{ stats.completed }}</strong>
+          <div class="stat-trend trend-positive">
+            <i class="bi bi-arrow-up-short"></i> <span>+0% so với tháng trước</span>
+          </div>
         </div>
-        <div class="stat-icon-box"><i class="bi bi-check2-all"></i></div>
       </div>
 
-      <div class="stat-card stat-pending">
+      <div class="stat-card">
+        <div class="stat-icon-box icon-red">
+          <i class="bi bi-x-circle-fill"></i>
+        </div>
         <div class="stat-content">
           <span class="stat-label">Chờ phân bổ</span>
           <strong class="stat-num">{{ stats.pending }}</strong>
+          <div class="stat-trend trend-positive">
+            <i class="bi bi-arrow-up-short"></i> <span>+0% so với tháng trước</span>
+          </div>
         </div>
-        <div class="stat-icon-box"><i class="bi bi-person-exclamation"></i></div>
       </div>
     </section>
 
     <!-- FILTER TOOLBAR -->
-    <section class="filter-card">
-      <div class="filter-grid">
+    <section class="filter-section">
+      <div class="filter-header">
+        <i class="bi bi-funnel-fill text-cyan me-2"></i>Tìm kiếm & Lọc
+      </div>
+      <div class="filter-grid-inline">
         <!-- Search Keyword -->
         <div class="filter-col search-col">
-          <label class="filter-label"><i class="bi bi-search me-1"></i>Tìm kiếm</label>
           <div class="input-icon-wrap">
             <i class="bi bi-search icon-left"></i>
             <input 
@@ -88,7 +123,7 @@
               @input="onSearchInput"
               type="text" 
               class="form-input-custom" 
-              placeholder="Tên tour, điểm tập trung..."
+              placeholder="Tìm theo tên tour, mã tour, điểm đến..."
             />
             <button v-if="searchQuery" @click="clearSearch" class="btn-clear-search">
               <i class="bi bi-x"></i>
@@ -98,283 +133,180 @@
 
         <!-- Tour Dropdown Filter -->
         <div class="filter-col">
-          <label class="filter-label"><i class="bi bi-map me-1"></i>Tour</label>
-          <select v-model="selectedTourId" @change="onFilterChange" class="form-select-custom">
-            <option value="">Tất cả tour</option>
-            <option v-for="t in toursList" :key="t.tour_id" :value="t.tour_id">
-              {{ t.ten_tour }}
-            </option>
-          </select>
+          <div class="select-icon-wrap">
+            <i class="bi bi-map icon-left"></i>
+            <select v-model="selectedTourId" @change="onFilterChange" class="form-select-custom">
+              <option value="">Tất cả tour</option>
+              <option v-for="t in toursList" :key="t.tour_id" :value="t.tour_id">
+                {{ t.ten_tour }}
+              </option>
+            </select>
+          </div>
         </div>
 
         <!-- Guide Dropdown Filter -->
         <div class="filter-col">
-          <label class="filter-label"><i class="bi bi-person-badge me-1"></i>Hướng Dẫn Viên</label>
-          <select v-model="selectedHdvId" @change="onFilterChange" class="form-select-custom">
-            <option value="">Tất cả HDV</option>
-            <option value="unassigned">Chưa phân bổ HDV</option>
-            <option v-for="h in hdvList" :key="h.nhan_su_id" :value="h.nhan_su_id">
-              {{ h.ho_ten }}
-            </option>
-          </select>
+          <div class="select-icon-wrap">
+            <i class="bi bi-person-badge icon-left"></i>
+            <select v-model="selectedHdvId" @change="onFilterChange" class="form-select-custom">
+              <option value="">Tất cả hướng dẫn viên</option>
+              <option value="unassigned">Chưa phân bổ HDV</option>
+              <option v-for="h in hdvList" :key="h.nhan_su_id" :value="h.nhan_su_id">
+                {{ h.ho_ten }}
+              </option>
+            </select>
+          </div>
         </div>
 
         <!-- Status Filter -->
         <div class="filter-col">
-          <label class="filter-label"><i class="bi bi-info-circle me-1"></i>Trạng thái</label>
-          <select v-model="selectedStatus" @change="onFilterChange" class="form-select-custom">
-            <option value="">Tất cả trạng thái</option>
-            <option value="ChoPhanBo">Đang chờ phân bổ</option>
-            <option value="SapKhoiHanh">Sắp khởi hành</option>
-            <option value="DangChay">Đang chạy</option>
-            <option value="HoanThanh">Hoàn thành</option>
-            <option value="Huy">Đã hủy</option>
-          </select>
-        </div>
-
-        <!-- Date From -->
-        <div class="filter-col date-col">
-          <label class="filter-label"><i class="bi bi-calendar-event me-1"></i>Từ ngày</label>
-          <input 
-            v-model="fromDate" 
-            @change="onFilterChange"
-            type="date" 
-            class="form-input-custom" 
-          />
+          <div class="select-icon-wrap">
+            <i class="bi bi-shield-check icon-left"></i>
+            <select v-model="selectedStatus" @change="onFilterChange" class="form-select-custom">
+              <option value="">Tất cả trạng thái</option>
+              <option value="ChoPhanBo">Đang chờ phân bổ</option>
+              <option value="SapKhoiHanh">Sắp khởi hành</option>
+              <option value="DangChay">Đang chạy</option>
+              <option value="HoanThanh">Hoàn thành</option>
+              <option value="Huy">Đã hủy</option>
+            </select>
+          </div>
         </div>
 
         <!-- Date To -->
         <div class="filter-col date-col">
-          <label class="filter-label"><i class="bi bi-calendar-event me-1"></i>Đến ngày</label>
-          <input 
-            v-model="toDate" 
-            @change="onFilterChange"
-            type="date" 
-            class="form-input-custom" 
-          />
-        </div>
-
-        <!-- Sort Filter -->
-        <div class="filter-col">
-          <label class="filter-label"><i class="bi bi-arrow-down-up me-1"></i>Sắp xếp</label>
-          <select v-model="sortBy" class="form-select-custom">
-            <option value="date_asc">Khởi hành sớm nhất</option>
-            <option value="date_desc">Khởi hành muộn nhất</option>
-            <option value="occupancy_desc">Tỷ lệ lấp đầy cao nhất</option>
-            <option value="occupancy_asc">Tỷ lệ lấp đầy thấp nhất</option>
-          </select>
-        </div>
-
-        <!-- Page Size -->
-        <div class="filter-col">
-          <label class="filter-label"><i class="bi bi-grid-3x3 me-1"></i>Hiển thị</label>
-          <select v-model="pageSize" class="form-select-custom">
-            <option :value="12">12 lịch / trang</option>
-            <option :value="24">24 lịch / trang</option>
-            <option :value="48">48 lịch / trang</option>
-            <option :value="0">Tất cả</option>
-          </select>
+          <div class="input-icon-wrap">
+            <i class="bi bi-calendar-event icon-left"></i>
+            <input 
+              v-model="toDate" 
+              @change="onFilterChange"
+              type="date" 
+              class="form-input-custom" 
+            />
+          </div>
         </div>
 
         <!-- Reset Button -->
         <div class="filter-col action-col">
-          <button @click="resetFilters" class="btn-reset" title="Khôi phục bộ lọc">
-            <i class="bi bi-arrow-counterclockwise"></i>
+          <button @click="resetFilters" class="btn-refresh" title="Làm mới bộ lọc">
+            <i class="bi bi-arrow-clockwise me-1"></i> Làm mới
           </button>
         </div>
       </div>
     </section>
 
-    <!-- SCHEDULES GRID -->
+    <!-- SCHEDULES DATA TABLE -->
     <section class="schedule-section">
       <div class="section-meta-bar">
-        <span>Tổng cộng: <strong>{{ sortedAndFilteredSchedules.length }}</strong> lịch trình</span>
-        <span v-if="isLoading" class="loading-tag">
-          <i class="bi bi-arrow-repeat spin"></i> Đang tải dữ liệu...
-        </span>
+        <div class="meta-left">
+          <span class="live-dot-pulse"></span>
+          Danh sách lịch khởi hành (<strong>{{ sortedAndFilteredSchedules.length }}</strong> kết quả)
+          <span v-if="isLoading" class="loading-tag ms-3">
+            <i class="bi bi-arrow-repeat spin"></i> Đang tải dữ liệu...
+          </span>
+        </div>
+        <div class="meta-right">
+          <label class="per-page-label">Hiển thị</label>
+          <select v-model="pageSize" class="per-page-select">
+            <option :value="10">10 bản ghi</option>
+            <option :value="20">20 bản ghi</option>
+            <option :value="50">50 bản ghi</option>
+          </select>
+          <div class="view-toggles ms-3">
+            <button class="btn-view-toggle"><i class="bi bi-grid-fill"></i></button>
+            <button class="btn-view-toggle active"><i class="bi bi-list-ul"></i></button>
+          </div>
+        </div>
       </div>
 
-      <div class="schedules-grid">
-        <div 
-          v-for="item in paginatedSchedules" 
-          :key="item.id" 
-          class="schedule-card"
-          :class="getScheduleBorderClass(item)"
-        >
-          <!-- Date Badge -->
-          <div class="date-badge-box">
-            <span class="date-day">{{ formatDay(item.ngay_khoi_hanh) }}</span>
-            <span class="date-month">{{ formatMonth(item.ngay_khoi_hanh) }}</span>
-            <span class="date-year">{{ formatYear(item.ngay_khoi_hanh) }}</span>
-          </div>
-
-          <!-- Main Info -->
-          <div class="schedule-content">
-            <div class="card-top-bar">
-              <div class="tour-id-group">
-                <span class="tour-id-pill">#{{ item.id }}</span>
-                <span v-if="item.tour_id" class="tour-code-pill">Tour #{{ item.tour_id }}</span>
-              </div>
-
-              <div class="status-warning-group">
-                <!-- Status Pill -->
-                <span class="status-pill" :class="getStatusClass(item)">
+      <div class="table-responsive glass-table-wrap">
+        <table class="table-glass">
+          <thead>
+            <tr>
+              <th style="width: 50px">#</th>
+              <th style="min-width: 250px">Tour</th>
+              <th>Mã lịch</th>
+              <th>Ngày khởi hành</th>
+              <th>Ngày về</th>
+              <th>Hướng dẫn viên</th>
+              <th>Trạng thái</th>
+              <th>Số khách</th>
+              <th style="text-align: right; padding-right: 20px;">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(item, index) in paginatedSchedules" :key="item.id" class="table-row-hover">
+              <td class="text-secondary">{{ (currentPage - 1) * pageSize + index + 1 }}</td>
+              <td>
+                <div class="tour-info-cell">
+                  <div class="tour-thumb">
+                    <img :src="getTourThumbnail(item)" alt="Tour img" @error="handleImgError" />
+                  </div>
+                  <div class="tour-details">
+                    <div class="tour-name">{{ item.ten_tour || 'Chưa cập nhật tên tour' }}</div>
+                    <div class="tour-dest">
+                      <i class="bi bi-geo-alt-fill text-danger me-1"></i>
+                      <span>{{ item.diem_tap_trung || 'Chưa có điểm tập trung' }}</span>
+                    </div>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <span class="badge-code">#{{ item.id }}</span>
+              </td>
+              <td class="date-cell">
+                <i class="bi bi-calendar2-check text-cyan me-1"></i> {{ formatDate(item.ngay_khoi_hanh) }}
+              </td>
+              <td class="date-cell">
+                <i class="bi bi-calendar2-x text-orange me-1"></i> {{ formatDate(item.ngay_ket_thuc) }}
+              </td>
+              <td>
+                <div v-if="item.ten_hdv" class="hdv-cell">
+                  <div class="hdv-name">{{ item.ten_hdv }}</div>
+                  <a href="#" class="hdv-phone" @click.prevent><i class="bi bi-telephone-fill me-1"></i>{{ item.dien_thoai_hdv || 'Đang cập nhật' }}</a>
+                </div>
+                <div v-else class="hdv-cell text-muted">
+                  <span class="badge-unassigned">Chưa phân bổ</span>
+                </div>
+              </td>
+              <td>
+                <span class="status-badge" :class="getStatusClass(item)">
                   {{ getStatusText(item) }}
                 </span>
-
-                <!-- Warning Pill -->
-                <span 
-                  v-if="hasWarning(item)" 
-                  class="warning-pill"
-                  :title="getWarningTooltip(item)"
-                >
-                  <i class="bi bi-exclamation-triangle-fill me-1"></i>
-                  {{ getWarningText(item) }}
-                </span>
-              </div>
-            </div>
-
-            <!-- Tour Title -->
-            <h3 class="tour-title">{{ item.ten_tour || 'Chưa cập nhật tên tour' }}</h3>
-
-            <!-- Details Grid -->
-            <div class="details-grid">
-              <div class="detail-item">
-                <i class="bi bi-box-arrow-right text-primary"></i>
-                <div>
-                  <span class="detail-label">Khởi hành:</span>
-                  <strong class="detail-val">{{ formatDate(item.ngay_khoi_hanh) }} ({{ item.gio_xuat_phat || '00:00' }})</strong>
+              </td>
+              <td>
+                <div class="occupancy-cell">
+                  <strong>{{ item.so_khach_da_dat || 0 }}</strong><span class="text-secondary">/{{ item.so_cho || 50 }}</span>
                 </div>
-              </div>
-
-              <div class="detail-item">
-                <i class="bi bi-box-arrow-in-left text-success"></i>
-                <div>
-                  <span class="detail-label">Kết thúc:</span>
-                  <strong class="detail-val">{{ formatDate(item.ngay_ket_thuc) }} ({{ item.gio_ket_thuc || '00:00' }})</strong>
+              </td>
+              <td class="actions-cell">
+                <button @click="openPassengersModal(item)" class="action-btn btn-view" title="Khách Đoàn">
+                  <i class="bi bi-eye"></i>
+                </button>
+                <button @click="openEditModal(item)" class="action-btn btn-edit" title="Sửa Lịch">
+                  <i class="bi bi-pencil-square"></i>
+                </button>
+                <button @click="openStatusModal(item)" class="action-btn btn-more" title="Đổi trạng thái">
+                  <i class="bi bi-three-dots-vertical"></i>
+                </button>
+              </td>
+            </tr>
+            <tr v-if="sortedAndFilteredSchedules.length === 0 && !isLoading">
+              <td colspan="9" class="text-center py-5">
+                <div class="empty-state">
+                  <i class="bi bi-search" style="font-size: 2.5rem; color: rgba(255,255,255,0.2);"></i>
+                  <p class="mt-3 text-secondary">Không tìm thấy lịch khởi hành nào phù hợp.</p>
                 </div>
-              </div>
-
-              <div class="detail-item full-width" v-if="item.diem_tap_trung">
-                <i class="bi bi-geo-alt-fill text-danger"></i>
-                <div>
-                  <span class="detail-label">Tập trung:</span>
-                  <strong class="detail-val">{{ item.diem_tap_trung }}</strong>
-                </div>
-              </div>
-
-              <div class="detail-item">
-                <i class="bi bi-people text-info"></i>
-                <div>
-                  <span class="detail-label">Sức chứa:</span>
-                  <strong class="detail-val">{{ item.so_cho || 50 }} chỗ</strong>
-                </div>
-              </div>
-
-              <div class="detail-item">
-                <i class="bi bi-person-badge text-warning"></i>
-                <div>
-                  <span class="detail-label">Nhân sự HDV:</span>
-                  <strong class="detail-val" :class="Number(item.so_nhan_su) > 0 ? 'text-success' : 'text-danger'">
-                    {{ item.ten_hdv || (Number(item.so_nhan_su) > 0 ? (item.so_nhan_su + ' nhân sự') : 'Chưa phân bổ') }}
-                  </strong>
-                </div>
-              </div>
-            </div>
-
-            <!-- OCCUPANCY PROGRESS BAR -->
-            <div class="occupancy-wrap">
-              <div class="occupancy-labels">
-                <span class="occupancy-title">
-                  <i class="bi bi-people-fill text-gold me-1"></i>Tình trạng chỗ:
-                  <strong>{{ item.so_khach_da_dat || 0 }} / {{ item.so_cho || 50 }} khách</strong>
-                </span>
-                <span class="occupancy-pct" :class="getOccupancyClass(item.ty_le_lap_day)">
-                  {{ item.ty_le_lap_day || 0 }}% lấp đầy
-                </span>
-              </div>
-              <div class="occupancy-bar-track">
-                <div 
-                  class="occupancy-bar-fill" 
-                  :class="getOccupancyBarClass(item.ty_le_lap_day)"
-                  :style="{ width: Math.min(100, item.ty_le_lap_day || 0) + '%' }"
-                ></div>
-              </div>
-            </div>
-
-            <!-- Card Action Footer -->
-            <div class="card-footer-actions">
-              <button 
-                @click="openPassengersModal(item)" 
-                class="btn-card btn-detail"
-                title="Xem danh sách khách và điểm danh nhanh"
-              >
-                <i class="bi bi-people-fill"></i>
-                <span>Khách Đoàn</span>
-              </button>
-
-              <button 
-                @click="openAssignModal(item)" 
-                class="btn-card btn-assign"
-                title="Gán hoặc thay đổi hướng dẫn viên nhanh"
-              >
-                <i class="bi bi-person-gear"></i>
-                <span>Gán HDV</span>
-              </button>
-
-              <button 
-                @click="openStatusModal(item)"
-                class="btn-card btn-status"
-                title="Cập nhật nhanh trạng thái chuyến đi"
-              >
-                <i class="bi bi-arrow-repeat"></i>
-                <span>Trạng Thái</span>
-              </button>
-
-              <button 
-                @click="openEditModal(item)"
-                class="btn-card btn-edit"
-                title="Sửa nhanh thông tin khởi hành, điểm tập trung, số chỗ"
-              >
-                <i class="bi bi-pencil"></i>
-                <span>Sửa</span>
-              </button>
-
-              <a 
-                :href="'index.php?act=admin/danhSachKhachTheoTour&lich_id=' + item.id" 
-                class="btn-card btn-manifest"
-                title="In danh sách hành khách đi tour"
-                target="_blank"
-              >
-                <i class="bi bi-printer"></i>
-                <span>In Đoàn</span>
-              </a>
-
-              <a 
-                :href="'index.php?act=admin/phanPhongKhachSan&lich_khoi_hanh_id=' + item.id" 
-                class="btn-card btn-room"
-                title="Phân bổ phòng khách sạn cho đoàn"
-              >
-                <i class="bi bi-building"></i>
-                <span>Phòng</span>
-              </a>
-            </div>
-          </div>
-        </div>
-
-        <!-- Empty State -->
-        <div v-if="sortedAndFilteredSchedules.length === 0 && !isLoading" class="empty-box">
-          <i class="bi bi-calendar-x fs-1 text-muted d-block mb-3"></i>
-          <h4 class="fw-bold text-dark">Không có lịch khởi hành nào</h4>
-          <p class="text-secondary">Hãy thay đổi bộ lọc tìm kiếm hoặc tạo lịch khởi hành mới.</p>
-        </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
       <!-- PAGINATION BAR -->
-      <div v-if="totalPages > 1" class="schedule-pagination-bar">
+      <div v-if="totalPages > 1" class="schedule-pagination-bar mt-4">
         <div class="pagination-info">
-          Hiển thị trang <strong>{{ currentPage }}</strong> / <strong>{{ totalPages }}</strong> 
-          (Tổng số <strong>{{ sortedAndFilteredSchedules.length }}</strong> lịch trình)
+          Trang <strong>{{ currentPage }}</strong> / <strong>{{ totalPages }}</strong> 
         </div>
         <div class="pagination-controls">
           <button 
@@ -382,7 +314,7 @@
             :disabled="currentPage <= 1" 
             class="btn-pag-nav"
           >
-            <i class="bi bi-chevron-left"></i> Trước
+            <i class="bi bi-chevron-left"></i>
           </button>
           <button 
             v-for="p in visiblePages" 
@@ -398,7 +330,7 @@
             :disabled="currentPage >= totalPages" 
             class="btn-pag-nav"
           >
-            Sau <i class="bi bi-chevron-right"></i>
+            <i class="bi bi-chevron-right"></i>
           </button>
         </div>
       </div>
@@ -437,7 +369,7 @@
                   <div class="opt-icon text-warning"><i class="bi bi-hourglass-split"></i></div>
                   <div class="opt-text">
                     <strong>Chờ Phân Bổ</strong>
-                    <p>Chưa hoàn tất HDV hoặc dịch vụ</p>
+                    <p>Chưa hoàn tất HDV</p>
                   </div>
                 </label>
 
@@ -449,7 +381,7 @@
                   <div class="opt-icon text-info"><i class="bi bi-clock-history"></i></div>
                   <div class="opt-text">
                     <strong>Sắp Khởi Hành</strong>
-                    <p>Đã sẵn sàng trước ngày xuất phát</p>
+                    <p>Sẵn sàng trước ngày đi</p>
                   </div>
                 </label>
 
@@ -461,7 +393,7 @@
                   <div class="opt-icon text-success"><i class="bi bi-play-circle-fill"></i></div>
                   <div class="opt-text">
                     <strong>Đang Chạy</strong>
-                    <p>Đoàn đang di chuyển trên tour</p>
+                    <p>Đoàn đang trên tour</p>
                   </div>
                 </label>
 
@@ -473,7 +405,7 @@
                   <div class="opt-icon text-primary"><i class="bi bi-check2-all"></i></div>
                   <div class="opt-text">
                     <strong>Hoàn Thành</strong>
-                    <p>Kết thúc tour, chuyển sang quyết toán</p>
+                    <p>Kết thúc chuyến đi</p>
                   </div>
                 </label>
 
@@ -751,10 +683,10 @@
             </div>
           </div>
 
-          <div class="modal-footer">
-            <button @click="isEditModalOpen = false" class="btn-modal-cancel">Hủy bỏ</button>
-            <button @click="submitQuickEdit" class="btn-modal-submit" :disabled="isSavingEdit">
-              <i class="bi" :class="isSavingEdit ? 'bi-hourglass-split' : 'bi-save-fill'"></i>
+          <div class="modal-footer mt-4">
+            <button @click="isEditModalOpen = false" class="btn-modal-cancel">Hủy</button>
+            <button @click="submitEditSchedule" class="btn-modal-submit" :disabled="isSavingEdit">
+              <i class="bi" :class="isSavingEdit ? 'bi-hourglass-split' : 'bi-check-lg'"></i>
               <span>{{ isSavingEdit ? 'Đang lưu...' : 'Lưu Thay Đổi' }}</span>
             </button>
           </div>
@@ -764,8 +696,46 @@
   </div>
 </template>
 
+
 <script setup>
 import { ref, computed, onMounted } from 'vue';
+import { onUnmounted } from 'vue';
+
+const currentTimeString = ref('');
+let clockInterval = null;
+
+const updateClock = () => {
+  const now = new Date();
+  const days = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
+  const dayName = days[now.getDay()];
+  const day = now.getDate().toString().padStart(2, '0');
+  const month = (now.getMonth() + 1).toString().padStart(2, '0');
+  const year = now.getFullYear();
+  const hours = now.getHours().toString().padStart(2, '0');
+  const minutes = now.getMinutes().toString().padStart(2, '0');
+  currentTimeString.value = `${dayName}, ${day}/${month}/${year} ${hours}:${minutes}`;
+};
+
+onMounted(() => {
+  updateClock();
+  clockInterval = setInterval(updateClock, 60000);
+});
+
+onUnmounted(() => {
+  clearInterval(clockInterval);
+});
+
+function getTourThumbnail(item) {
+  if (item.hinh_anh) {
+    return (window.__BASE_URL__ || '') + 'public/uploads/tours/' + item.hinh_anh;
+  }
+  return (window.__BASE_URL__ || '') + 'public/images/dashboard/halong_banner.jpg';
+}
+
+function handleImgError(e) {
+  e.target.src = (window.__BASE_URL__ || '') + 'public/images/dashboard/halong_banner.jpg';
+}
+
 
 const props = defineProps({
   initialData: {
@@ -1280,739 +1250,767 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* ==========================================================================
+   GLASSMORPHISM THEME - SCHEDULE MANAGE
+   ========================================================================== */
 .vue-admin-schedule-manage {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  padding: 0.5rem 0 2rem;
-  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  color: #f8fafc;
+  --app-bg: #0b1120;
+  --panel-bg: rgba(17, 25, 40, 0.75);
+  --panel-border: rgba(255, 255, 255, 0.08);
+  --text-main: #f1f5f9;
+  --text-muted: #94a3b8;
+  --primary-color: #3b82f6;
+  --primary-hover: #2563eb;
+  --success-color: #10b981;
+  --warning-color: #f59e0b;
+  --danger-color: #ef4444;
+  --info-color: #0ea5e9;
+  --gold-color: #eab308;
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+
+  background-color: var(--app-bg);
+  min-height: 100vh;
+  padding: 0 0 40px 0;
+  color: var(--text-main);
+  font-family: 'Inter', sans-serif;
 }
 
-/* PAGE HEADER */
-.page-header {
-  background: linear-gradient(135deg, rgba(22, 31, 46, 0.85) 0%, rgba(15, 23, 42, 0.95) 100%);
-  padding: 1.75rem 2rem;
-  border-radius: 1.25rem;
+/* ==========================================================================
+   HERO BANNER
+   ========================================================================== */
+.page-header-hero {
+  position: relative;
+  height: 280px;
+  border-radius: 0 0 24px 24px;
+  overflow: hidden;
+  margin-bottom: -60px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+.hero-bg {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #0f172a 100%);
+  background-size: cover;
+  background-position: center 30%;
+  z-index: 1;
+}
+
+.hero-bg::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(15, 23, 42, 0.6) 50%, rgba(15, 23, 42, 0.3) 100%);
+  z-index: 2;
+}
+
+.hero-content {
+  position: relative;
+  z-index: 3;
+  height: 100%;
+  padding: 40px 50px;
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(14px);
-  position: relative;
-  overflow: hidden;
+  align-items: flex-start;
 }
-.header-left { position: relative; z-index: 1; }
+
 .badge-tag {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  background: rgba(212, 175, 55, 0.15);
-  color: #fde047;
+  gap: 8px;
+  background: rgba(59, 130, 246, 0.2);
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  color: #60a5fa;
+  padding: 6px 12px;
+  border-radius: 20px;
   font-size: 0.75rem;
-  font-weight: 700;
-  padding: 0.3rem 0.65rem;
-  border-radius: 2rem;
-  border: 1px solid rgba(212, 175, 55, 0.3);
-  margin-bottom: 0.5rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  margin-bottom: 15px;
+  backdrop-filter: blur(4px);
 }
-.header-title { font-size: 1.75rem; font-weight: 800; margin: 0; color: #ffffff; }
-.header-subtitle { font-size: 0.95rem; color: #94a3b8; margin: 0.25rem 0 0; }
+
+.hero-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 10px 0;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+
+.hero-subtitle {
+  font-size: 1.1rem;
+  color: rgba(255,255,255,0.8);
+  max-width: 600px;
+  line-height: 1.5;
+}
 
 .badge-tour-filter {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  background: rgba(212, 175, 55, 0.2);
-  color: #fde047;
-  border: 1px solid rgba(212, 175, 55, 0.4);
-  padding: 0.2rem 0.55rem;
-  border-radius: 1rem;
-  font-size: 0.78rem;
-  font-weight: 700;
+  gap: 5px;
+  background: rgba(245, 158, 11, 0.2);
+  border: 1px solid rgba(245, 158, 11, 0.5);
+  color: #fcd34d;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 0.85rem;
 }
+
 .btn-clear-tour {
-  background: transparent;
+  background: none;
   border: none;
-  color: #fde047;
-  font-size: 1rem;
+  color: #fcd34d;
+  font-size: 1.2rem;
   line-height: 1;
-  padding: 0;
-  cursor: pointer;
-  opacity: 0.75;
-  transition: opacity 0.15s;
-}
-.btn-clear-tour:hover { opacity: 1; }
-
-.btn-create {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  background: linear-gradient(135deg, #d4af37 0%, #b89628 100%);
-  color: #0b1120;
-  padding: 0.75rem 1.25rem;
-  border-radius: 0.65rem;
-  font-weight: 700;
-  font-size: 0.9rem;
-  text-decoration: none;
-  box-shadow: 0 4px 14px rgba(212, 175, 55, 0.35);
-  transition: all 0.2s;
-}
-.btn-create:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(212, 175, 55, 0.45); color: #0b1120; }
-
-/* STATS GRID */
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 1.15rem;
-}
-.stat-card {
-  background: rgba(22, 31, 46, 0.75);
-  border-radius: 1.15rem;
-  padding: 1.25rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-left-width: 4px;
-  backdrop-filter: blur(12px);
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-.stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
-  border-color: rgba(255, 255, 255, 0.15);
-}
-.stat-total { border-left-color: #6366f1; }
-.stat-upcoming { border-left-color: #0284c7; }
-.stat-ongoing { border-left-color: #10b981; }
-.stat-completed { border-left-color: #64748b; }
-.stat-pending { border-left-color: #f59e0b; }
-
-.stat-label { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; color: #94a3b8; display: block; margin-bottom: 0.35rem; letter-spacing: 0.03em; }
-.stat-num { font-size: 1.75rem; font-weight: 800; color: #ffffff; line-height: 1; }
-.stat-icon-box {
-  width: 46px;
-  height: 46px;
-  border-radius: 0.65rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.4rem;
-}
-.stat-total .stat-icon-box { background: rgba(99, 102, 241, 0.16); color: #818cf8; }
-.stat-upcoming .stat-icon-box { background: rgba(14, 165, 233, 0.16); color: #38bdf8; }
-.stat-ongoing .stat-icon-box { background: rgba(16, 185, 129, 0.16); color: #34d399; }
-.stat-completed .stat-icon-box { background: rgba(255, 255, 255, 0.08); color: #94a3b8; }
-.stat-pending .stat-icon-box { background: rgba(245, 158, 11, 0.16); color: #fbbf24; }
-
-/* FILTER CARD */
-.filter-card {
-  background: rgba(22, 31, 46, 0.75);
-  border-radius: 1.15rem;
-  padding: 1.25rem 1.5rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-  backdrop-filter: blur(12px);
-}
-.filter-grid {
-  display: grid;
-  grid-template-columns: 2fr 1.2fr 1fr 1fr auto;
-  gap: 1rem;
-  align-items: flex-end;
-}
-.filter-col { display: flex; flex-direction: column; gap: 0.4rem; }
-.filter-label { font-size: 0.82rem; font-weight: 700; color: #cbd5e1; }
-.input-icon-wrap { position: relative; display: flex; align-items: center; }
-.icon-left { position: absolute; left: 0.85rem; color: #94a3b8; font-size: 0.9rem; }
-.form-input-custom, .form-select-custom {
-  width: 100%;
-  height: 44px;
-  padding: 0 0.85rem;
-  border-radius: 0.65rem;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  font-size: 0.9rem;
-  color: #ffffff;
-  outline: none;
-  background-color: rgba(11, 17, 32, 0.85);
-  transition: all 0.2s;
-}
-.search-col .form-input-custom { padding-left: 2.5rem; padding-right: 2.2rem; }
-.form-input-custom:focus, .form-select-custom:focus {
-  border-color: #d4af37;
-  background-color: rgba(11, 17, 32, 0.95);
-  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.2);
-}
-.form-input-custom::placeholder {
-  color: #64748b;
-}
-.btn-clear-search {
-  position: absolute;
-  right: 0.6rem;
-  background: transparent;
-  border: none;
-  color: #94a3b8;
-  font-size: 1.1rem;
+  padding: 0 2px;
   cursor: pointer;
 }
-.btn-reset {
-  height: 44px;
-  width: 44px;
-  border-radius: 0.65rem;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.06);
-  color: #cbd5e1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.15rem;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.btn-reset:hover {
-  background: rgba(212, 175, 55, 0.2);
-  border-color: #d4af37;
-  color: #fde047;
-}
 
-/* SCHEDULE SECTION */
-.schedule-section {
+.hero-right {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  align-items: flex-end;
+  gap: 20px;
 }
+
+.current-time-display {
+  display: flex;
+  align-items: center;
+  background: rgba(255,255,255,0.1);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 10px 20px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.15);
+  color: #fff;
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+.btn-hero-create {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--primary-color);
+  color: #fff;
+  padding: 14px 24px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 1rem;
+  text-decoration: none;
+  border: 1px solid rgba(255,255,255,0.2);
+  box-shadow: 0 8px 20px rgba(59,130,246,0.4);
+  transition: all 0.3s ease;
+}
+
+.btn-hero-create:hover {
+  background: var(--primary-hover);
+  transform: translateY(-2px);
+  color: #fff;
+}
+
+/* ==========================================================================
+   STATS GRID
+   ========================================================================== */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 20px;
+  padding: 0 40px;
+  position: relative;
+  z-index: 10;
+  margin-bottom: 30px;
+}
+
+.stat-card {
+  background: var(--panel-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--panel-border);
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  box-shadow: var(--glass-shadow);
+  transition: transform 0.3s ease, border-color 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+  border-color: rgba(255,255,255,0.2);
+}
+
+.stat-icon-box {
+  width: 54px;
+  height: 54px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+}
+
+.stat-icon-box.icon-blue { background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); }
+.stat-icon-box.icon-green { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
+.stat-icon-box.icon-purple { background: rgba(168,85,247,0.15); color: #c084fc; border: 1px solid rgba(168,85,247,0.3); }
+.stat-icon-box.icon-orange { background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }
+.stat-icon-box.icon-red { background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
+
+.stat-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-label {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.stat-num {
+  font-size: 1.5rem;
+  color: var(--text-main);
+  line-height: 1.2;
+  margin-bottom: 5px;
+}
+
+.stat-trend {
+  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.trend-positive { color: #34d399; }
+.trend-negative { color: #f87171; }
+
+/* ==========================================================================
+   FILTER SECTION
+   ========================================================================== */
+.filter-section {
+  background: var(--panel-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--panel-border);
+  border-radius: 16px;
+  margin: 0 40px 30px;
+  padding: 20px;
+  box-shadow: var(--glass-shadow);
+}
+
+.filter-header {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 15px;
+  color: #fff;
+  display: flex;
+  align-items: center;
+}
+
+.filter-grid-inline {
+  display: grid;
+  grid-template-columns: 2fr 1.5fr 1.5fr 1.2fr 1.2fr auto;
+  gap: 15px;
+  align-items: center;
+}
+
+.input-icon-wrap, .select-icon-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.icon-left {
+  position: absolute;
+  left: 12px;
+  color: var(--text-muted);
+  font-size: 1rem;
+  pointer-events: none;
+}
+
+.form-input-custom, .form-select-custom {
+  width: 100%;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: var(--text-main);
+  padding: 10px 12px 10px 38px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  outline: none;
+}
+
+.form-input-custom:focus, .form-select-custom:focus {
+  border-color: rgba(59, 130, 246, 0.6);
+  background: rgba(15, 23, 42, 0.8);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.btn-clear-search {
+  position: absolute;
+  right: 10px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0;
+  font-size: 1.2rem;
+}
+
+.btn-clear-search:hover { color: #fff; }
+
+.btn-refresh {
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  color: #60a5fa;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 42px;
+}
+
+.btn-refresh:hover {
+  background: rgba(59, 130, 246, 0.3);
+  color: #fff;
+}
+
+/* ==========================================================================
+   DATA TABLE SECTION
+   ========================================================================== */
+.schedule-section {
+  background: var(--panel-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--panel-border);
+  border-radius: 16px;
+  margin: 0 40px;
+  padding: 20px;
+  box-shadow: var(--glass-shadow);
+}
+
 .section-meta-bar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 0.9rem;
-  color: #cbd5e1;
-  padding: 0 0.5rem;
-}
-.loading-tag { color: #38bdf8; font-weight: 600; display: inline-flex; align-items: center; gap: 0.4rem; }
-.spin { animation: spin 1s linear infinite; }
-@keyframes spin { 100% { transform: rotate(360deg); } }
-
-/* SCHEDULES GRID */
-.schedules-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(460px, 1fr));
-  gap: 1.25rem;
+  margin-bottom: 20px;
 }
 
-.schedule-card {
-  background: rgba(22, 31, 46, 0.75);
-  border-radius: 1.15rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+.meta-left {
   display: flex;
-  overflow: hidden;
-  border-left-width: 4px;
-  backdrop-filter: blur(12px);
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-.schedule-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
-  border-color: rgba(255, 255, 255, 0.15);
-}
-
-.border-sky { border-left-color: #0284c7; }
-.border-emerald { border-left-color: #10b981; }
-.border-amber { border-left-color: #f59e0b; }
-.border-rose { border-left-color: #f43f5e; }
-.border-slate { border-left-color: #64748b; }
-
-/* Date Box */
-.date-badge-box {
-  width: 95px;
-  background: rgba(11, 17, 32, 0.9);
-  border-right: 1px solid rgba(255, 255, 255, 0.08);
-  display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 1rem;
-  flex-shrink: 0;
-}
-.date-day { font-size: 1.85rem; font-weight: 800; color: #ffffff; line-height: 1; }
-.date-month { font-size: 0.85rem; font-weight: 700; color: #d4af37; text-transform: uppercase; margin-top: 0.25rem; }
-.date-year { font-size: 0.72rem; color: #94a3b8; }
-
-/* Content */
-.schedule-content {
-  flex: 1;
-  padding: 1.25rem 1.35rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
-}
-.card-top-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-.tour-id-group { display: flex; gap: 0.4rem; align-items: center; }
-.tour-id-pill {
-  background: rgba(255, 255, 255, 0.08);
-  color: #94a3b8;
-  font-weight: 700;
-  font-size: 0.78rem;
-  padding: 0.2rem 0.5rem;
-  border-radius: 0.35rem;
-}
-.tour-code-pill {
-  background: rgba(14, 165, 233, 0.18);
-  color: #7dd3fc;
-  font-weight: 600;
-  font-size: 0.78rem;
-  padding: 0.2rem 0.5rem;
-  border-radius: 0.35rem;
-  border: 1px solid rgba(14, 165, 233, 0.35);
-}
-
-.status-warning-group { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; }
-.status-pill {
-  display: inline-block;
-  padding: 0.25rem 0.65rem;
-  border-radius: 2rem;
-  font-size: 0.75rem;
-  font-weight: 700;
-  white-space: nowrap;
-}
-.st-upcoming { background: rgba(14, 165, 233, 0.18); color: #7dd3fc; border: 1px solid rgba(14, 165, 233, 0.35); }
-.st-ongoing { background: rgba(16, 185, 129, 0.18); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.35); }
-.st-completed { background: rgba(255, 255, 255, 0.08); color: #94a3b8; border: 1px solid rgba(255, 255, 255, 0.12); }
-.st-pending { background: rgba(245, 158, 11, 0.18); color: #fde68a; border: 1px solid rgba(245, 158, 11, 0.35); }
-
-.warning-pill {
-  display: inline-flex;
-  align-items: center;
-  background: rgba(239, 68, 68, 0.18);
-  color: #fca5a5;
-  border: 1px solid rgba(239, 68, 68, 0.35);
-  font-size: 0.73rem;
-  font-weight: 700;
-  padding: 0.25rem 0.55rem;
-  border-radius: 2rem;
-}
-
-.tour-title {
   font-size: 1.05rem;
-  font-weight: 800;
-  color: #ffffff;
-  margin: 0;
-  line-height: 1.35;
+  font-weight: 500;
+  color: #fff;
 }
 
-.details-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.65rem 1rem;
-  background: rgba(11, 17, 32, 0.6);
-  padding: 0.85rem 1rem;
-  border-radius: 0.65rem;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+.live-dot-pulse {
+  width: 10px;
+  height: 10px;
+  background-color: var(--primary-color);
+  border-radius: 50%;
+  margin-right: 10px;
+  box-shadow: 0 0 0 rgba(59, 130, 246, 0.4);
+  animation: pulse 2s infinite;
 }
-.detail-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.45rem;
-  font-size: 0.82rem;
-}
-.detail-item.full-width { grid-column: 1 / -1; }
-.detail-label { color: #94a3b8; display: block; font-size: 0.75rem; }
-.detail-val { color: #cbd5e1; }
 
-.card-footer-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.5rem;
-  margin-top: auto;
-  padding-top: 0.5rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
 }
-.btn-card {
-  display: inline-flex;
+
+.meta-right {
+  display: flex;
   align-items: center;
-  gap: 0.35rem;
-  padding: 0.45rem 0.85rem;
-  border-radius: 0.45rem;
-  font-size: 0.82rem;
-  font-weight: 700;
-  text-decoration: none;
-  transition: all 0.2s;
+  gap: 10px;
 }
-.btn-detail { background: rgba(14, 165, 233, 0.15); color: #38bdf8; border: 1px solid rgba(14, 165, 233, 0.25); }
-.btn-detail:hover { background: rgba(14, 165, 233, 0.25); color: #ffffff; }
-.btn-assign { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.25); }
-.btn-assign:hover { background: rgba(16, 185, 129, 0.25); color: #ffffff; }
-.btn-status { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.25); cursor: pointer; }
-.btn-status:hover { background: rgba(245, 158, 11, 0.25); color: #ffffff; }
-.btn-edit { background: rgba(139, 92, 246, 0.15); color: #a78bfa; border: 1px solid rgba(139, 92, 246, 0.25); cursor: pointer; }
-.btn-edit:hover { background: rgba(139, 92, 246, 0.25); color: #ffffff; }
-.btn-manifest { background: rgba(6, 182, 212, 0.15); color: #22d3ee; border: 1px solid rgba(6, 182, 212, 0.25); }
-.btn-manifest:hover { background: rgba(6, 182, 212, 0.25); color: #ffffff; }
-.btn-room { background: rgba(212, 175, 55, 0.15); color: #fde047; border: 1px solid rgba(212, 175, 55, 0.25); }
-.btn-room:hover { background: rgba(212, 175, 55, 0.25); color: #ffffff; }
 
-/* OCCUPANCY BAR */
-.occupancy-wrap {
+.per-page-label {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.per-page-select {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  outline: none;
+}
+
+.view-toggles {
+  display: flex;
+  background: rgba(0,0,0,0.2);
+  border-radius: 6px;
+  padding: 2px;
+  border: 1px solid rgba(255,255,255,0.05);
+}
+
+.btn-view-toggle {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-view-toggle.active {
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.table-responsive {
+  overflow-x: auto;
+}
+
+.table-glass {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  text-align: left;
+}
+
+.table-glass th {
+  padding: 15px;
+  color: var(--text-muted);
+  font-weight: 500;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  background: rgba(0,0,0,0.1);
+}
+
+.table-glass td {
+  padding: 15px;
+  vertical-align: middle;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  font-size: 0.95rem;
+  transition: background 0.2s ease;
+}
+
+.table-row-hover:hover td {
+  background: rgba(255,255,255,0.03);
+}
+
+.tour-info-cell {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.tour-thumb {
+  width: 50px;
+  height: 50px;
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.tour-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.tour-details {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
-  background: rgba(11, 17, 32, 0.4);
-  padding: 0.65rem 0.85rem;
-  border-radius: 0.55rem;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  gap: 4px;
 }
-.occupancy-labels {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+
+.tour-name {
+  font-weight: 600;
+  color: #fff;
+  font-size: 0.95rem;
+}
+
+.tour-dest {
   font-size: 0.8rem;
-}
-.occupancy-title { color: #94a3b8; }
-.occupancy-title strong { color: #f8fafc; font-weight: 700; margin-left: 0.25rem; }
-.occupancy-pct { font-weight: 800; font-size: 0.78rem; }
-.pct-full { color: #f43f5e; }
-.pct-high { color: #f59e0b; }
-.pct-med { color: #38bdf8; }
-.pct-low { color: #34d399; }
-
-.occupancy-bar-track {
-  width: 100%;
-  height: 6px;
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 1rem;
-  overflow: hidden;
-}
-.occupancy-bar-fill {
-  height: 100%;
-  border-radius: 1rem;
-  transition: width 0.3s ease;
-}
-.bar-rose { background: linear-gradient(90deg, #f43f5e, #fb7185); }
-.bar-amber { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
-.bar-sky { background: linear-gradient(90deg, #0284c7, #38bdf8); }
-.bar-emerald { background: linear-gradient(90deg, #059669, #34d399); }
-
-.st-cancelled { background: rgba(239, 68, 68, 0.18); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.35); }
-
-/* TOAST NOTIFICATION */
-.toast-popup {
-  position: fixed;
-  top: 1.5rem;
-  right: 1.5rem;
-  z-index: 9999;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.85rem 1.25rem;
-  border-radius: 0.75rem;
-  font-size: 0.9rem;
-  font-weight: 600;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(16px);
-}
-.toast-popup.success {
-  background: rgba(6, 78, 59, 0.92);
-  border: 1px solid #10b981;
-  color: #ecfdf5;
-}
-.toast-popup.error {
-  background: rgba(127, 29, 29, 0.92);
-  border: 1px solid #ef4444;
-  color: #fef2f2;
-}
-.toast-close {
-  background: transparent;
-  border: none;
-  color: inherit;
-  font-size: 1.15rem;
-  cursor: pointer;
-  padding: 0 0.25rem;
+  color: var(--text-muted);
 }
 
-/* MODAL OVERLAY & CARD */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 9000;
-  background: rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(8px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
-}
-.modal-card {
-  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 1.25rem;
-  width: 100%;
-  max-width: 520px;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
-  overflow: hidden;
-}
-.modal-card.modal-lg { max-width: 720px; }
-.modal-header {
-  padding: 1.25rem 1.5rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-.modal-title { font-size: 1.15rem; font-weight: 800; color: #ffffff; margin: 0; }
-.modal-close-btn {
-  background: transparent;
-  border: none;
-  color: #94a3b8;
-  font-size: 1.5rem;
-  cursor: pointer;
-}
-.modal-body { padding: 1.5rem; }
-.modal-footer {
-  padding: 1rem 1.5rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.75rem;
-}
-.btn-modal-cancel {
-  padding: 0.6rem 1.15rem;
-  border-radius: 0.6rem;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  background: rgba(255, 255, 255, 0.05);
+.badge-code {
+  background: rgba(255,255,255,0.1);
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-family: monospace;
+  font-size: 0.85rem;
   color: #cbd5e1;
-  font-weight: 600;
-  cursor: pointer;
 }
-.btn-modal-submit {
-  padding: 0.6rem 1.25rem;
-  border-radius: 0.6rem;
-  border: none;
-  background: linear-gradient(135deg, #d4af37 0%, #b89628 100%);
-  color: #0b1120;
-  font-weight: 800;
-  cursor: pointer;
+
+.date-cell {
+  font-size: 0.9rem;
+  color: #e2e8f0;
+}
+
+.hdv-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.hdv-name {
+  font-weight: 500;
+  color: #fff;
+}
+
+.hdv-phone {
+  font-size: 0.8rem;
+  color: #60a5fa;
+  text-decoration: none;
+}
+
+.badge-unassigned {
+  display: inline-block;
+  padding: 4px 8px;
+  background: rgba(248, 113, 113, 0.1);
+  color: #fca5a5;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  border: 1px solid rgba(248, 113, 113, 0.2);
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.status-green, .st-completed { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
+.status-yellow, .st-pending { background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }
+.status-blue, .st-upcoming, .st-ongoing { background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); }
+.status-red, .st-cancelled { background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
+
+.occupancy-cell {
+  background: rgba(0,0,0,0.2);
+  padding: 6px 10px;
+  border-radius: 6px;
+  text-align: center;
+  border: 1px solid rgba(255,255,255,0.05);
+}
+
+.actions-cell {
+  text-align: right;
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.action-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.05);
+  color: var(--text-muted);
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-}
-.btn-modal-submit:disabled { opacity: 0.6; cursor: not-allowed; }
-
-.schedule-summary-box {
-  background: rgba(11, 17, 32, 0.6);
-  padding: 1rem;
-  border-radius: 0.65rem;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-}
-.summary-tour-title { font-weight: 800; color: #f8fafc; font-size: 1rem; margin-bottom: 0.25rem; }
-.summary-dates { font-size: 0.85rem; color: #94a3b8; }
-
-.status-options-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 0.65rem;
-  margin-top: 0.5rem;
-}
-.status-option-card {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 0.75rem 1rem;
-  border-radius: 0.65rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(11, 17, 32, 0.5);
+  justify-content: center;
   cursor: pointer;
-  transition: all 0.2s;
-}
-.status-option-card:hover { border-color: rgba(212, 175, 55, 0.4); background: rgba(11, 17, 32, 0.8); }
-.status-option-card.active { border-color: #d4af37; background: rgba(212, 175, 55, 0.12); }
-.opt-icon { font-size: 1.5rem; }
-.opt-text strong { display: block; font-size: 0.92rem; color: #ffffff; }
-.opt-text p { margin: 0; font-size: 0.78rem; color: #94a3b8; }
-
-.empty-box {
-  grid-column: 1 / -1;
-  background: rgba(22, 31, 46, 0.75);
-  border-radius: 1.15rem;
-  padding: 4rem 2rem;
-  text-align: center;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(12px);
+  transition: all 0.2s ease;
 }
 
-/* PAGINATION BAR */
+.action-btn:hover {
+  background: rgba(255,255,255,0.15);
+  color: #fff;
+}
+
+.btn-view:hover { color: #34d399; border-color: rgba(52, 211, 153, 0.4); }
+.btn-edit:hover { color: #60a5fa; border-color: rgba(96, 165, 250, 0.4); }
+
+/* ==========================================================================
+   PAGINATION
+   ========================================================================== */
 .schedule-pagination-bar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 1rem;
-  padding: 1.25rem 1.5rem;
-  background: rgba(22, 31, 46, 0.8);
-  border-radius: 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  margin-top: 1rem;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255,255,255,0.05);
 }
-.pagination-info {
-  color: #94a3b8;
-  font-size: 0.9rem;
-}
-.pagination-info strong {
-  color: #f1f5f9;
-}
+
 .pagination-controls {
   display: flex;
-  align-items: center;
-  gap: 0.4rem;
+  gap: 5px;
 }
+
 .btn-pag-nav, .btn-pag-num {
-  padding: 0.45rem 0.85rem;
-  border-radius: 0.5rem;
-  font-size: 0.85rem;
-  font-weight: 600;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(15, 23, 42, 0.6);
-  color: #cbd5e1;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: var(--text-muted);
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
 }
-.btn-pag-nav:hover:not(:disabled), .btn-pag-num:hover {
-  border-color: #d4af37;
-  color: #d4af37;
-  background: rgba(212, 175, 55, 0.12);
-}
-.btn-pag-num.active {
-  background: #d4af37;
-  color: #0f172a;
-  border-color: #d4af37;
-  font-weight: 800;
-}
+
 .btn-pag-nav:disabled {
-  opacity: 0.4;
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
-/* CONFLICT ALERT BOX */
-.conflict-alert-box {
-  background: rgba(239, 68, 68, 0.15);
-  border: 1px solid rgba(239, 68, 68, 0.4);
-  border-radius: 0.75rem;
-  padding: 1rem;
+.btn-pag-num.active, .btn-pag-nav:not(:disabled):hover, .btn-pag-num:hover {
+  background: var(--primary-color);
+  color: #fff;
+  border-color: var(--primary-hover);
 }
-.conflict-header {
-  color: #fca5a5;
-  font-size: 0.95rem;
-  margin-bottom: 0.35rem;
+
+/* ==========================================================================
+   MODALS (Keep existing structural logic, apply glass theme)
+   ========================================================================== */
+.modal-overlay {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(5px);
+  display: flex; justify-content: center; align-items: center;
+  z-index: 1050;
 }
-.conflict-desc {
-  font-size: 0.85rem;
-  color: #fecaca;
-  margin-bottom: 0.5rem;
+.modal-card {
+  background: rgba(17, 25, 40, 0.95);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 16px;
+  width: 90%; max-width: 500px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+  overflow: hidden;
 }
-.conflict-list {
-  margin: 0 0 0.5rem 1.25rem;
-  padding: 0;
-  font-size: 0.82rem;
-  color: #fee2e2;
+.modal-card.modal-lg { max-width: 800px; }
+.modal-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  display: flex; justify-content: space-between; align-items: center;
+  background: rgba(0,0,0,0.2);
 }
+.modal-title { font-size: 1.2rem; font-weight: 600; color: #fff; margin: 0; }
+.modal-close-btn { background: none; border: none; color: #94a3b8; font-size: 1.5rem; cursor: pointer; }
+.modal-close-btn:hover { color: #fff; }
+.modal-body { padding: 24px; max-height: 70vh; overflow-y: auto; }
+.modal-footer {
+  padding: 20px 24px; border-top: 1px solid rgba(255,255,255,0.1);
+  display: flex; justify-content: flex-end; gap: 15px;
+  background: rgba(0,0,0,0.2);
+}
+.btn-modal-cancel {
+  background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+  color: #fff; padding: 10px 20px; border-radius: 8px; cursor: pointer;
+}
+.btn-modal-submit {
+  background: var(--primary-color); border: none;
+  color: #fff; padding: 10px 20px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px;
+}
+.btn-modal-submit:disabled { opacity: 0.7; cursor: not-allowed; }
+.schedule-summary-box {
+  background: rgba(0,0,0,0.2); padding: 15px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 20px;
+}
+.summary-tour-title { font-weight: 600; color: #60a5fa; margin-bottom: 5px; }
+.summary-dates { color: #cbd5e1; font-size: 0.9rem; }
+.form-label { color: #cbd5e1; font-size: 0.9rem; margin-bottom: 6px; display: block; }
+.status-options-grid { display: flex; flex-direction: column; gap: 10px; }
+.status-option-card {
+  display: flex; align-items: center; gap: 15px; padding: 12px 15px;
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px; cursor: pointer; transition: all 0.2s ease;
+}
+.status-option-card:hover { background: rgba(255,255,255,0.1); }
+.status-option-card.active {
+  background: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.5); box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.5);
+}
+.opt-icon { font-size: 1.5rem; width: 40px; text-align: center; }
+.opt-text strong { color: #fff; display: block; font-size: 1rem; margin-bottom: 2px; }
+.opt-text p { color: #94a3b8; font-size: 0.85rem; margin: 0; }
+.custom-check label { color: #cbd5e1; font-size: 0.9rem; cursor: pointer; }
+.table-manifest-bookings { width: 100%; border-collapse: collapse; }
+.table-manifest-bookings th, .table-manifest-bookings td {
+  padding: 10px; border: 1px solid rgba(255,255,255,0.1); text-align: left; font-size: 0.9rem;
+}
+.table-manifest-bookings th { background: rgba(0,0,0,0.3); color: #94a3b8; }
+.badge-checkin-yes { background: rgba(16,185,129,0.2); color: #34d399; padding: 4px 8px; border-radius: 12px; font-size: 0.8rem; }
+.badge-checkin-no { background: rgba(245,158,11,0.2); color: #fcd34d; padding: 4px 8px; border-radius: 12px; font-size: 0.8rem; }
+
+/* Toast */
+.toast-popup {
+  position: fixed; top: 24px; right: 24px; z-index: 9999;
+  padding: 14px 22px; border-radius: 12px;
+  display: flex; align-items: center; gap: 10px;
+  font-weight: 500; font-size: 0.95rem;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+  color: #fff;
+}
+.toast-popup.success { background: rgba(16,185,129,0.9); }
+.toast-popup.error { background: rgba(239,68,68,0.9); }
+.toast-close { background: none; border: none; color: #fff; font-size: 1.3rem; cursor: pointer; margin-left: 10px; }
+
+/* Fade Transition */
+.fade-enter-active, .fade-leave-active { transition: opacity 0.3s ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
+
+/* Spin Animation */
+@keyframes spin { to { transform: rotate(360deg); } }
+.spin { animation: spin 1s linear infinite; }
+
+/* Text Helpers */
+.text-cyan { color: #22d3ee !important; }
+.text-orange { color: #fb923c !important; }
+.text-gold { color: #eab308 !important; }
+.text-danger { color: #ef4444 !important; }
+.text-secondary { color: #94a3b8 !important; }
+
+/* Warning Modal Button */
 .btn-modal-warning {
-  padding: 0.6rem 1.25rem;
-  border-radius: 0.6rem;
-  border: none;
-  background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
-  color: #ffffff;
-  font-weight: 800;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-.btn-modal-warning:disabled { opacity: 0.6; cursor: not-allowed; }
-
-/* PASSENGER MANIFEST TABLE */
-.table-manifest-bookings {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.85rem;
-}
-.table-manifest-bookings th {
-  background: rgba(15, 23, 42, 0.85);
-  color: #94a3b8;
-  padding: 0.65rem 0.85rem;
-  text-align: left;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  font-weight: 700;
-}
-.table-manifest-bookings td {
-  padding: 0.65rem 0.85rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  color: #e2e8f0;
-}
-.badge-bk {
-  background: rgba(56, 189, 248, 0.2);
-  color: #38bdf8;
-  padding: 0.2rem 0.5rem;
-  border-radius: 0.35rem;
-  font-weight: 700;
-  font-size: 0.75rem;
-}
-.badge-status-sm {
-  background: rgba(255, 255, 255, 0.1);
-  color: #cbd5e1;
-  padding: 0.2rem 0.5rem;
-  border-radius: 0.35rem;
-  font-size: 0.75rem;
-}
-.badge-checkin-yes {
-  background: rgba(34, 197, 94, 0.2);
-  color: #4ade80;
-  padding: 0.25rem 0.6rem;
-  border-radius: 0.35rem;
-  font-weight: 700;
-  font-size: 0.75rem;
-}
-.badge-checkin-no {
-  background: rgba(245, 158, 11, 0.2);
-  color: #fcd34d;
-  padding: 0.25rem 0.6rem;
-  border-radius: 0.35rem;
-  font-weight: 600;
-  font-size: 0.75rem;
-}
-.btn-assign {
-  background: rgba(212, 175, 55, 0.15);
-  color: #fde047;
-  border: 1px solid rgba(212, 175, 55, 0.3);
-}
-.btn-assign:hover {
-  background: rgba(212, 175, 55, 0.3);
-  color: #ffffff;
-}
-.cascading-options-wrap {
-  background: rgba(11, 17, 32, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 0.65rem;
-  padding: 0.85rem 1rem;
+  background: rgba(245,158,11,0.8); border: none;
+  color: #fff; padding: 10px 20px; border-radius: 8px; cursor: pointer;
+  display: flex; align-items: center; gap: 8px;
 }
 
-@media (max-width: 992px) {
-  .filter-grid { grid-template-columns: 1fr 1fr; }
-  .schedules-grid { grid-template-columns: 1fr; }
+/* Empty State */
+.empty-state { display: flex; flex-direction: column; align-items: center; }
+
+/* Loading Tag */
+.loading-tag { color: #fbbf24; font-size: 0.9rem; }
+
+/* Conflict Alert */
+.conflict-alert-box {
+  background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3);
+  border-radius: 10px; padding: 15px;
 }
-@media (max-width: 600px) {
-  .page-header { flex-direction: column; align-items: flex-start; gap: 1rem; }
-  .filter-grid { grid-template-columns: 1fr; }
-  .schedule-card { flex-direction: column; }
-  .date-badge-box { width: 100%; flex-direction: row; gap: 0.5rem; border-right: none; border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
-  .details-grid { grid-template-columns: 1fr; }
-  .card-footer-actions { flex-wrap: wrap; }
+.conflict-header { display: flex; align-items: center; margin-bottom: 8px; color: #f87171; font-size: 0.95rem; }
+.conflict-desc { color: #cbd5e1; font-size: 0.9rem; margin: 5px 0; }
+.conflict-list { color: #e2e8f0; font-size: 0.85rem; padding-left: 20px; margin: 5px 0; }
+.conflict-note { margin-top: 8px; }
+
+/* Badge BK */
+.badge-bk { background: rgba(59,130,246,0.15); color: #60a5fa; padding: 3px 8px; border-radius: 6px; font-family: monospace; font-size: 0.85rem; }
+.badge-status-sm { background: rgba(255,255,255,0.1); color: #cbd5e1; padding: 3px 8px; border-radius: 6px; font-size: 0.8rem; }
+
+/* Bootstrap Grid helpers for modals */
+.row { display: flex; flex-wrap: wrap; margin: 0 -6px; }
+.col-md-4 { flex: 0 0 33.333%; max-width: 33.333%; padding: 0 6px; }
+.col-md-6 { flex: 0 0 50%; max-width: 50%; padding: 0 6px; }
+.col-md-8 { flex: 0 0 66.666%; max-width: 66.666%; padding: 0 6px; }
+.g-3 { gap: 12px; }
+
+/* Modal form inputs (no left-icon padding) */
+.modal-body .form-input-custom {
+  padding-left: 12px;
 }
 </style>
+

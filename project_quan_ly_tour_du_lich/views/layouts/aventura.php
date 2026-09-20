@@ -49,7 +49,7 @@ $userRoleLabel = $currentRole ? htmlspecialchars((string)$currentRole) : 'Quản
         <meta http-equiv="refresh" content="<?php echo (int)$metaRefreshSeconds; ?>">
     <?php endif; ?>
     <title><?php echo isset($pageTitle) ? $pageTitle . ' - ' : ''; ?>AVENTURA - Life's A Journey</title>
-    <link rel="stylesheet" href="<?php echo BASE_URL; ?>public/css/aventura.css?v=<?php echo rawurlencode(ASSET_VERSION); ?>">
+    <link rel="stylesheet" href="<?php echo BASE_URL; ?>public/css/aventura.css?v=<?php echo rawurlencode(ASSET_VERSION) . '_' . (file_exists(__DIR__ . '/../../public/css/aventura.css') ? filemtime(__DIR__ . '/../../public/css/aventura.css') : time()); ?>">
     <?php if (isset($currentPage) && $currentPage === 'baoCaoTaiChinh'): ?>
         <link rel="stylesheet" href="<?php echo BASE_URL; ?>public/css/finance-report-unified.css?v=<?php echo rawurlencode(ASSET_VERSION); ?>">
     <?php endif; ?>
@@ -281,8 +281,8 @@ $userRoleLabel = $currentRole ? htmlspecialchars((string)$currentRole) : 'Quản
         .sidebar-brand-wrapper {
             display: flex;
             align-items: center;
-            gap: 13px;
-            padding: 0 20px 18px;
+            gap: 10px;
+            padding: 0 10px 16px;
             margin-bottom: 8px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.07);
             text-decoration: none;
@@ -294,10 +294,10 @@ $userRoleLabel = $currentRole ? htmlspecialchars((string)$currentRole) : 'Quản
         }
 
         .brand-emblem {
-            width: 44px;
-            height: 44px;
-            min-width: 44px;
-            border-radius: 13px;
+            width: 40px;
+            height: 40px;
+            min-width: 40px;
+            border-radius: 11px;
             background: linear-gradient(135deg, rgba(223, 169, 116, 0.28) 0%, rgba(212, 175, 55, 0.08) 100%);
             border: 1px solid rgba(223, 169, 116, 0.45);
             box-shadow: 0 0 20px rgba(223, 169, 116, 0.22);
@@ -305,7 +305,7 @@ $userRoleLabel = $currentRole ? htmlspecialchars((string)$currentRole) : 'Quản
             align-items: center;
             justify-content: center;
             color: #dfa974;
-            font-size: 22px;
+            font-size: 20px;
             transition: all 0.3s ease;
         }
 
@@ -322,9 +322,9 @@ $userRoleLabel = $currentRole ? htmlspecialchars((string)$currentRole) : 'Quản
         }
 
         .brand-title {
-            font-size: 20px;
+            font-size: 19px;
             font-weight: 800;
-            letter-spacing: 2px;
+            letter-spacing: 1.8px;
             line-height: 1.15;
             background: linear-gradient(135deg, #ffffff 30%, #dfa974 100%);
             -webkit-background-clip: text;
@@ -355,22 +355,22 @@ $userRoleLabel = $currentRole ? htmlspecialchars((string)$currentRole) : 'Quản
 
         /* Realtime status pill */
         .realtime-status-pill {
-            margin: 4px 16px 14px;
-            padding: 7px 12px;
-            border-radius: 10px;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.07);
+            margin: 4px 6px 12px;
+            padding: 6px 10px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.09);
             display: flex;
             align-items: center;
-            gap: 9px;
+            gap: 8px;
             font-size: 11px;
-            color: rgba(255, 255, 255, 0.65);
+            color: #e2e8f0;
             transition: all 0.25s ease;
         }
 
         .realtime-status-pill:hover {
-            background: rgba(255, 255, 255, 0.05);
-            border-color: rgba(255, 255, 255, 0.12);
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.15);
         }
 
         .status-pulse-dot {
@@ -420,16 +420,16 @@ $userRoleLabel = $currentRole ? htmlspecialchars((string)$currentRole) : 'Quản
             margin: 0;
             display: flex;
             flex-direction: column;
-            gap: 3px;
+            gap: 2px;
         }
 
         .sidebar .nav-group-label {
-            font-size: 10px;
+            font-size: 11px;
             font-weight: 700;
-            color: rgba(255, 255, 255, 0.38);
-            letter-spacing: 1.4px;
+            color: #94a3b8 !important;
+            letter-spacing: 1.2px;
             text-transform: uppercase;
-            padding: 16px 20px 6px;
+            padding: 14px 10px 6px;
             display: flex;
             align-items: center;
             gap: 8px;
@@ -439,7 +439,7 @@ $userRoleLabel = $currentRole ? htmlspecialchars((string)$currentRole) : 'Quản
             content: '';
             flex: 1;
             height: 1px;
-            background: linear-gradient(90deg, rgba(255, 255, 255, 0.08) 0%, transparent 100%);
+            background: linear-gradient(90deg, rgba(255, 255, 255, 0.12) 0%, transparent 100%);
         }
 
         /* Nav Items / Links */
@@ -452,99 +452,123 @@ $userRoleLabel = $currentRole ? htmlspecialchars((string)$currentRole) : 'Quản
         .sidebar .nav .nav-toggle {
             display: flex;
             align-items: center;
-            gap: 12px;
-            padding: 9px 14px;
-            margin: 2px 12px;
-            border-radius: 12px;
-            color: rgba(255, 255, 255, 0.72);
+            gap: 9px;
+            padding: 8px 10px;
+            margin: 2px 6px;
+            border-radius: 8px;
+            color: #f1f5f9 !important;
             text-decoration: none;
             font-size: 13.5px;
-            font-weight: 500;
-            transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+            font-weight: 550;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
             background: transparent;
             border-left: 3.5px solid transparent;
-            min-height: 44px;
+            min-height: 40px;
             cursor: pointer;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .sidebar .nav a .nav-text,
+        .sidebar .nav .nav-toggle .nav-text {
+            color: #f1f5f9 !important;
+            font-weight: 550;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            line-height: 1.25;
         }
 
         .sidebar .nav a:hover,
         .sidebar .nav .nav-toggle:hover {
-            color: #ffffff;
-            background: rgba(255, 255, 255, 0.06);
-            transform: translateX(4px);
+            color: #ffffff !important;
+            background: rgba(255, 255, 255, 0.08) !important;
+            transform: translateX(2px);
+        }
+
+        .sidebar .nav a:hover .nav-text,
+        .sidebar .nav .nav-toggle:hover .nav-text {
+            color: #ffffff !important;
         }
 
         .sidebar .nav a.active,
         .sidebar .nav .nav-toggle.active {
             color: #ffffff !important;
-            font-weight: 600 !important;
-            background: linear-gradient(90deg, rgba(223, 169, 116, 0.2) 0%, rgba(223, 169, 116, 0.05) 100%) !important;
+            font-weight: 650 !important;
+            background: linear-gradient(90deg, rgba(223, 169, 116, 0.25) 0%, rgba(223, 169, 116, 0.06) 100%) !important;
             border-left: 3.5px solid #dfa974 !important;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+        }
+
+        .sidebar .nav a.active .nav-text,
+        .sidebar .nav .nav-toggle.active .nav-text {
+            color: #ffffff !important;
+            font-weight: 650;
         }
 
         /* Nav Icon Container */
         .sidebar .nav-icon-bg {
-            width: 32px;
-            min-width: 32px;
-            height: 32px;
-            border-radius: 9px;
+            width: 26px;
+            min-width: 26px;
+            height: 26px;
+            border-radius: 6px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            background: rgba(255, 255, 255, 0.05);
-            color: rgba(255, 255, 255, 0.75);
-            font-size: 15px;
-            transition: all 0.22s ease;
+            background: rgba(255, 255, 255, 0.06);
+            color: #93c5fd;
+            font-size: 14.5px;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
         }
 
         .sidebar .nav a:hover .nav-icon-bg,
         .sidebar .nav .nav-toggle:hover .nav-icon-bg {
-            background: rgba(223, 169, 116, 0.2);
+            background: rgba(223, 169, 116, 0.22);
             color: #dfa974;
-            transform: scale(1.06);
+            transform: scale(1.05);
         }
 
         .sidebar .nav a.active .nav-icon-bg,
         .sidebar .nav .nav-toggle.active .nav-icon-bg {
             background: linear-gradient(135deg, #dfa974 0%, #b8860b 100%);
             color: #0b0f19;
-            box-shadow: 0 0 12px rgba(223, 169, 116, 0.45);
+            box-shadow: 0 0 10px rgba(223, 169, 116, 0.45);
         }
 
         /* Nav Badges */
         .sidebar .nav-badge {
             margin-left: auto;
-            min-width: 22px;
-            height: 20px;
-            border-radius: 10px;
-            padding: 0 7px;
-            font-size: 11px;
+            min-width: 20px;
+            height: 18px;
+            border-radius: 9px;
+            padding: 0 6px;
+            font-size: 10.5px;
             font-weight: 700;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             color: #ffffff;
             background: linear-gradient(135deg, #f59e0b, #d97706);
-            box-shadow: 0 2px 8px rgba(245, 158, 11, 0.4);
+            box-shadow: 0 2px 6px rgba(245, 158, 11, 0.4);
         }
 
         #paymentNavBadge {
             background: linear-gradient(135deg, #10b981, #059669);
-            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+            box-shadow: 0 2px 6px rgba(16, 185, 129, 0.4);
         }
 
         #reviewNavBadge {
             background: linear-gradient(135deg, #8b5cf6, #6d28d9);
-            box-shadow: 0 2px 8px rgba(139, 92, 246, 0.4);
+            box-shadow: 0 2px 6px rgba(139, 92, 246, 0.4);
         }
 
         /* Expand Chevron */
         .sidebar .expand-icon {
             margin-left: auto;
             font-size: 12px;
-            color: rgba(255, 255, 255, 0.45);
+            color: #cbd5e1;
             transition: transform 0.25s ease;
         }
 
@@ -555,9 +579,9 @@ $userRoleLabel = $currentRole ? htmlspecialchars((string)$currentRole) : 'Quản
 
         /* Submenus (Nested Tree) */
         .nav-child-menu {
-            margin: 4px 12px 8px 28px;
-            padding: 4px 0 4px 12px;
-            border-left: 1.5px solid rgba(223, 169, 116, 0.3);
+            margin: 2px 6px 6px 14px;
+            padding: 2px 0 2px 8px;
+            border-left: 1.5px solid rgba(223, 169, 116, 0.35);
             display: flex;
             flex-direction: column;
             gap: 2px;
@@ -568,30 +592,32 @@ $userRoleLabel = $currentRole ? htmlspecialchars((string)$currentRole) : 'Quản
         }
 
         .nav-child-menu a {
-            padding: 7px 12px !important;
+            padding: 6px 8px !important;
             margin: 0 !important;
             font-size: 13px !important;
-            border-radius: 8px !important;
-            color: rgba(255, 255, 255, 0.65) !important;
+            font-weight: 500 !important;
+            border-radius: 6px !important;
+            color: #cbd5e1 !important;
             border-left: none !important;
-            min-height: 34px !important;
+            min-height: 32px !important;
             display: flex !important;
             align-items: center !important;
-            gap: 8px !important;
+            gap: 7px !important;
             background: transparent !important;
+            -webkit-font-smoothing: antialiased;
         }
 
         .nav-child-menu a:hover {
-            color: #dfa974 !important;
-            background: rgba(223, 169, 116, 0.08) !important;
-            transform: translateX(4px) !important;
+            color: #ffffff !important;
+            background: rgba(223, 169, 116, 0.12) !important;
+            transform: translateX(3px) !important;
         }
 
         .child-dot {
             width: 5px;
             height: 5px;
             border-radius: 50%;
-            background: rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.4);
             display: inline-block;
             transition: all 0.2s ease;
             flex-shrink: 0;
@@ -605,15 +631,65 @@ $userRoleLabel = $currentRole ? htmlspecialchars((string)$currentRole) : 'Quản
 
         /* Sidebar Bottom Profile Card */
         .sidebar-user-card {
-            margin: 22px 12px 10px;
-            padding: 12px;
-            border-radius: 14px;
+            margin: 16px 6px 10px;
+            padding: 10px;
+            border-radius: 12px;
             background: linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
             border: 1px solid rgba(255, 255, 255, 0.08);
             display: flex;
             align-items: center;
-            gap: 10px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+            gap: 8px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Global Theme Override: Ensure Nav is ALWAYS crisp and high-contrast in all themes */
+        body.theme-light .sidebar .nav a,
+        body.theme-light .sidebar .nav .nav-toggle,
+        body.theme-light .sidebar .nav .nav-text,
+        body.theme-light .sidebar .nav li a,
+        body.theme-business-dark .sidebar .nav a,
+        body.theme-business-dark .sidebar .nav .nav-toggle,
+        body.theme-business-dark .sidebar .nav .nav-text,
+        body.theme-business-dark .sidebar .nav li a {
+            color: #f1f5f9 !important;
+        }
+        body.theme-light .sidebar .nav a:hover,
+        body.theme-light .sidebar .nav .nav-toggle:hover,
+        body.theme-business-dark .sidebar .nav a:hover,
+        body.theme-business-dark .sidebar .nav .nav-toggle:hover {
+            color: #ffffff !important;
+            background: rgba(255, 255, 255, 0.08) !important;
+        }
+        body.theme-light .sidebar .nav a.active,
+        body.theme-light .sidebar .nav .nav-toggle.active,
+        body.theme-business-dark .sidebar .nav a.active,
+        body.theme-business-dark .sidebar .nav .nav-toggle.active {
+            color: #ffffff !important;
+            background: linear-gradient(90deg, rgba(223, 169, 116, 0.25) 0%, rgba(223, 169, 116, 0.06) 100%) !important;
+            border-left: 3.5px solid #dfa974 !important;
+        }
+        body.theme-light .sidebar .nav-icon-bg,
+        body.theme-business-dark .sidebar .nav-icon-bg {
+            background: rgba(255, 255, 255, 0.06) !important;
+            color: #93c5fd !important;
+        }
+        body.theme-light .sidebar .nav a.active .nav-icon-bg,
+        body.theme-business-dark .sidebar .nav a.active .nav-icon-bg {
+            background: linear-gradient(135deg, #dfa974 0%, #b8860b 100%) !important;
+            color: #0b0f19 !important;
+        }
+        body.theme-light .sidebar .nav-group-label,
+        body.theme-business-dark .sidebar .nav-group-label {
+            color: #94a3b8 !important;
+        }
+        body.theme-light .sidebar .nav-child-menu a,
+        body.theme-business-dark .sidebar .nav-child-menu a {
+            color: #cbd5e1 !important;
+        }
+        body.theme-light .sidebar .nav-child-menu a:hover,
+        body.theme-business-dark .sidebar .nav-child-menu a:hover {
+            color: #ffffff !important;
+            background: rgba(223, 169, 116, 0.12) !important;
         }
 
         .sidebar-user-avatar-wrap {
@@ -711,6 +787,38 @@ $userRoleLabel = $currentRole ? htmlspecialchars((string)$currentRole) : 'Quản
             color: rgba(255, 255, 255, 0.35);
             text-align: center;
             line-height: 1.4;
+        }
+
+        /* ==========================================================================
+           TĂNG KÍCH THƯỚC NỘI DUNG TẤT CẢ CÁC TRANG TÀI KHOẢN ADMIN
+           ========================================================================== */
+        body.is-admin .content-area,
+        body.role-admin .content-area {
+            zoom: 1.07;
+            padding: 26px 36px 60px;
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+
+        body.is-admin .content-area table,
+        body.role-admin .content-area table {
+            font-size: 14.5px;
+        }
+
+        @media (max-width: 1366px) {
+            body.is-admin .content-area,
+            body.role-admin .content-area {
+                zoom: 1.05;
+                padding: 22px 28px 50px;
+            }
+        }
+
+        @media (max-width: 992px) {
+            body.is-admin .content-area,
+            body.role-admin .content-area {
+                zoom: 1.0;
+                padding: 16px 16px 40px;
+            }
         }
     </style>
 </head>
@@ -1088,7 +1196,7 @@ $userRoleLabel = $currentRole ? htmlspecialchars((string)$currentRole) : 'Quản
             }
             if (state === 'polling') {
                 realtimeStatus.classList.add('is-polling');
-                realtimeStatusText.textContent = 'Realtime: Fallback polling';
+                realtimeStatusText.textContent = 'Realtime: Đang đồng bộ';
                 return;
             }
 
@@ -1189,8 +1297,16 @@ $userRoleLabel = $currentRole ? htmlspecialchars((string)$currentRole) : 'Quản
             }, streamReconnectDelay);
         }
 
+        let wsReconnectAttempts = 0;
+        const maxWsReconnectAttempts = 3;
+
         function scheduleWsReconnect() {
             if (wsReconnectTimer) return;
+            wsReconnectAttempts++;
+            if (wsReconnectAttempts > maxWsReconnectAttempts) {
+                setRealtimeConnectionState('polling');
+                return;
+            }
             setRealtimeConnectionState('reconnecting');
             wsReconnectTimer = setTimeout(function() {
                 wsReconnectTimer = null;
@@ -1218,6 +1334,7 @@ $userRoleLabel = $currentRole ? htmlspecialchars((string)$currentRole) : 'Quản
             notificationWebSocket = new WebSocket(wsUrl);
 
             notificationWebSocket.onopen = function() {
+                wsReconnectAttempts = 0;
                 setRealtimeConnectionState('connected');
                 stopFallbackPolling();
             };

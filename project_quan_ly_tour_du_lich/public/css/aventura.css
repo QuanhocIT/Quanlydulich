@@ -248,11 +248,15 @@ body.theme-business-dark {
   background: rgba(26, 26, 26, 0.95);
   padding-top: 30px;
   position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
   height: 100vh;
   overflow-y: auto;
   border-right: 1px solid rgba(255, 255, 255, 0.1);
   z-index: 200;
-  margin-left: 20px !important;
+  margin: 0 !important;
+  margin-left: 0 !important;
   transition: transform 0.22s ease, opacity 0.22s ease;
 }
 
@@ -610,24 +614,32 @@ body.theme-light .sidebar-theme:hover {
   background: rgba(169, 125, 0, 0.12);
 }
 
-body.theme-light .nav a {
-  color: #23324a;
+body.theme-light .nav a,
+body.theme-light .sidebar .nav a,
+body.theme-light .sidebar .nav .nav-toggle,
+body.theme-light .sidebar .nav .nav-text {
+  color: #f1f5f9 !important;
 }
 
-body.theme-light .nav-icon-bg {
-  background: rgba(24, 39, 67, 0.08);
-  color: #24344e;
+body.theme-light .nav-icon-bg,
+body.theme-light .sidebar .nav-icon-bg {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #93c5fd !important;
 }
 
-body.theme-light .nav-badge {
-  color: #805d00;
-  background: rgba(169, 125, 0, 0.16);
+body.theme-light .nav-badge,
+body.theme-light .sidebar .nav-badge {
+  color: #ffffff !important;
+  background: linear-gradient(135deg, #f59e0b, #d97706) !important;
 }
 
 body.theme-light .nav a.active,
-body.theme-light .nav a:hover {
-  background: rgba(30, 45, 75, 0.1);
-  border-left-color: #b48a15;
+body.theme-light .nav a:hover,
+body.theme-light .sidebar .nav a.active,
+body.theme-light .sidebar .nav a:hover {
+  background: rgba(255, 255, 255, 0.12) !important;
+  border-left-color: #dfa974 !important;
+  color: #ffffff !important;
 }
 
 body.theme-light .header-item,
