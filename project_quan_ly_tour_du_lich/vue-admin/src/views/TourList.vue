@@ -268,52 +268,103 @@
         <table class="modern-tour-table">
           <thead>
             <tr>
-              <th style="width: 80px;" class="col-center">ID</th>
-              <th style="min-width: 280px;">Tên Tour & Lộ Trình</th>
-              <th style="width: 150px;" class="col-center">Loại Tour</th>
-              <th style="width: 170px;" class="col-right">Giá Cơ Bản</th>
-              <th style="width: 150px;" class="col-center">Trạng Thái</th>
-              <th style="width: 380px;" class="col-center">Thao Tác</th>
+              <th style="width: 75px;" class="col-center">MÃ</th>
+              <th style="min-width: 380px;">THÔNG TIN TOUR & LỘ TRÌNH</th>
+              <th style="width: 170px;" class="col-center">PHÂN LOẠI & LỊCH</th>
+              <th style="width: 160px;" class="col-right">BIỂU GIÁ CƠ BẢN</th>
+              <th style="width: 140px;" class="col-center">TRẠNG THÁI</th>
+              <th style="width: 250px;" class="col-center">THAO TÁC</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="tour in tours" :key="tour.tour_id" class="tour-data-row">
-              <!-- ID -->
+              <!-- Tour ID -->
               <td class="col-center">
-                <span class="tour-code-badge">#{{ tour.tour_id }}</span>
+                <span class="tour-code-badge" :title="'Mã hệ thống #' + tour.tour_id">
+                  #{{ tour.tour_id }}
+                </span>
               </td>
 
-              <!-- Name & Route -->
+              <!-- Name, Thumbnail & Details -->
               <td class="tour-info-cell">
-                <div class="tour-info-block">
-                  <a :href="'index.php?act=admin/chiTietTour&id=' + tour.tour_id" class="tour-name-link" :title="tour.ten_tour">
-                    {{ tour.ten_tour }}
-                  </a>
-                  <div class="tour-chips-row">
-                    <span v-if="tour.diem_khoi_hanh" class="chip-item chip-departure" title="Điểm xuất phát">
-                      <i class="bi bi-geo-alt-fill"></i>
-                      <span>{{ tour.diem_khoi_hanh }}</span>
-                    </span>
-                    <span v-if="tour.thoi_gian_tour" class="chip-item chip-duration" title="Thời gian tour">
-                      <i class="bi bi-clock-fill"></i>
-                      <span>{{ tour.thoi_gian_tour }}</span>
-                    </span>
+                <div class="tour-profile-box">
+                  <!-- Thumbnail photo with fallback -->
+                  <div class="tour-thumbnail-frame">
+                    <img 
+                      v-if="tour.hinh_anh && !failedImages[tour.tour_id]"
+                      :src="tour.hinh_anh" 
+                      :alt="tour.ten_tour"
+                      class="tour-thumbnail-img"
+                      @error="handleImageError(tour.tour_id)"
+                      loading="lazy"
+                    />
+                    <div v-else class="tour-thumbnail-fallback" :class="getTypeFallbackClass(tour.loai_tour)">
+                      <i class="bi" :class="getTypeIcon(tour.loai_tour)"></i>
+                    </div>
+                  </div>
+
+                  <!-- Details wrap -->
+                  <div class="tour-details-wrap">
+                    <a :href="'index.php?act=admin/chiTietTour&id=' + tour.tour_id" class="tour-name-link" :title="tour.ten_tour">
+                      {{ tour.ten_tour }}
+                    </a>
+
+                    <!-- Subtitle chips row -->
+                    <div class="tour-chips-row">
+                      <!-- Duration chip -->
+                      <span v-if="extractDuration(tour)" class="chip-pill chip-duration" title="Thời gian lộ trình">
+                        <i class="bi bi-clock-history"></i>
+                        <span>{{ extractDuration(tour) }}</span>
+                      </span>
+
+                      <!-- Schedule chip -->
+                      <a 
+                        :href="'index.php?act=lichKhoiHanh/index&tour_id=' + tour.tour_id"
+                        class="chip-pill chip-schedule-link"
+                        :class="tour.so_lich > 0 ? 'schedule-active' : 'schedule-empty'"
+                        :title="tour.so_lich > 0 ? 'Đang có ' + tour.so_lich + ' lịch khởi hành' : 'Chưa có lịch khởi hành, bấm để thêm'"
+                      >
+                        <i class="bi" :class="tour.so_lich > 0 ? 'bi-calendar-check-fill' : 'bi-calendar-plus'"></i>
+                        <span>{{ tour.so_lich > 0 ? tour.so_lich + ' lịch chạy' : 'Chưa có lịch' }}</span>
+                      </a>
+
+                      <!-- QR indicator chip -->
+                      <span v-if="tour.qr_code_path" class="chip-pill chip-qr-badge" @click.stop="openQrModal(tour)" title="Xem mã QR tra cứu">
+                        <i class="bi bi-qr-code"></i>
+                        <span>QR</span>
+                      </span>
+                    </div>
+
+                    <!-- Description snippet -->
+                    <p v-if="tour.mo_ta" class="tour-desc-text" :title="tour.mo_ta">
+                      {{ tour.mo_ta }}
+                    </p>
                   </div>
                 </div>
               </td>
 
-              <!-- Type -->
+              <!-- Category & Nearest Departure -->
               <td class="col-center">
-                <span class="type-pill-badge" :class="getTypeBadgeClass(tour.loai_tour)">
-                  <i class="bi" :class="getTypeIcon(tour.loai_tour)"></i>
-                  <span>{{ formatLoaiTour(tour.loai_tour) }}</span>
-                </span>
+                <div class="type-cell-block">
+                  <span class="type-pill-badge" :class="getTypeBadgeClass(tour.loai_tour)">
+                    <i class="bi" :class="getTypeIcon(tour.loai_tour)"></i>
+                    <span>{{ formatLoaiTour(tour.loai_tour) }}</span>
+                  </span>
+                  <div v-if="tour.nearest_date" class="nearest-schedule-sub" title="Khởi hành gần nhất">
+                    <i class="bi bi-airplane-engines-fill"></i>
+                    <span>{{ formatDate(tour.nearest_date) }}</span>
+                  </div>
+                </div>
               </td>
 
               <!-- Price -->
               <td class="col-right">
                 <div class="price-display-wrapper">
-                  <span class="price-number">{{ formatCurrency(tour.gia_co_ban) }}</span>
+                  <div class="price-main-line">
+                    <span class="price-number">{{ formatPriceOnly(tour.gia_co_ban) }}</span>
+                    <span class="price-unit">đ</span>
+                  </div>
+                  <span class="price-caption">Giá gốc / khách</span>
                 </div>
               </td>
 
@@ -328,74 +379,71 @@
                 </span>
               </td>
 
-              <!-- Actions -->
+              <!-- Modern Horizontal Actions -->
               <td class="col-center">
-                <div class="action-btn-cluster">
-                  <a 
-                    :href="'index.php?act=tour/update&id=' + tour.tour_id" 
-                    class="btn-act-chip btn-act-edit"
-                    title="Chỉnh sửa thông tin tour"
-                  >
-                    <i class="bi bi-pencil-square"></i>
-                    <span>Sửa</span>
-                  </a>
-
+                <div class="saas-action-bar">
+                  <!-- Primary Action: View details -->
                   <a 
                     :href="'index.php?act=admin/chiTietTour&id=' + tour.tour_id" 
-                    class="btn-act-chip btn-act-detail"
+                    class="btn-saas-primary"
                     title="Xem chi tiết hồ sơ tour"
                   >
-                    <i class="bi bi-eye"></i>
+                    <i class="bi bi-eye-fill"></i>
                     <span>Chi tiết</span>
                   </a>
 
-                  <a 
-                    :href="'index.php?act=lichKhoiHanh/index&tour_id=' + tour.tour_id" 
-                    class="btn-act-chip btn-act-schedule"
-                    title="Quản lý lịch khởi hành tour này"
-                  >
-                    <i class="bi bi-calendar3"></i>
-                    <span>Lịch</span>
-                  </a>
+                  <!-- Secondary Icon Buttons Group (Single Clean Row) -->
+                  <div class="saas-icon-buttons">
+                    <a 
+                      :href="'index.php?act=tour/update&id=' + tour.tour_id" 
+                      class="btn-saas-icon btn-saas-edit"
+                      title="Chỉnh sửa thông tin tour"
+                    >
+                      <i class="bi bi-pencil-square"></i>
+                    </a>
 
-                  <a 
-                    :href="'index.php?act=tour/clone&id=' + tour.tour_id" 
-                    class="btn-act-chip btn-act-clone"
-                    @click="confirmClone($event, tour)"
-                    title="Sao chép (clone) tour mới"
-                  >
-                    <i class="bi bi-copy"></i>
-                    <span>Clone</span>
-                  </a>
+                    <a 
+                      :href="'index.php?act=lichKhoiHanh/index&tour_id=' + tour.tour_id" 
+                      class="btn-saas-icon btn-saas-calendar"
+                      title="Quản lý lịch khởi hành"
+                    >
+                      <i class="bi bi-calendar3"></i>
+                    </a>
 
-                  <button 
-                    v-if="tour.qr_code_path" 
-                    @click="openQrModal(tour)"
-                    class="btn-act-chip btn-act-qr"
-                    title="Xem mã QR thanh toán / tra cứu"
-                  >
-                    <i class="bi bi-qr-code"></i>
-                    <span>QR</span>
-                  </button>
+                    <button 
+                      v-if="tour.qr_code_path" 
+                      @click="openQrModal(tour)"
+                      class="btn-saas-icon btn-saas-qr"
+                      title="Xem mã QR tra cứu"
+                    >
+                      <i class="bi bi-qr-code"></i>
+                    </button>
+                    <a 
+                      v-else 
+                      :href="'index.php?act=tour/generateQr&id=' + tour.tour_id"
+                      class="btn-saas-icon btn-saas-qr-gen"
+                      title="Tạo mã QR tra cứu"
+                    >
+                      <i class="bi bi-qr-code-scan"></i>
+                    </a>
 
-                  <a 
-                    v-else 
-                    :href="'index.php?act=tour/generateQr&id=' + tour.tour_id"
-                    class="btn-act-chip btn-act-qr-gen"
-                    title="Tạo mã QR tra cứu"
-                  >
-                    <i class="bi bi-qr-code-scan"></i>
-                    <span>Tạo QR</span>
-                  </a>
+                    <a 
+                      :href="'index.php?act=tour/clone&id=' + tour.tour_id" 
+                      class="btn-saas-icon btn-saas-clone"
+                      @click="confirmClone($event, tour)"
+                      title="Nhân bản (Clone) tour"
+                    >
+                      <i class="bi bi-copy"></i>
+                    </a>
 
-                  <button 
-                    @click="confirmDeleteTour(tour)" 
-                    class="btn-act-chip btn-act-delete"
-                    title="Xóa tour khỏi hệ thống"
-                  >
-                    <i class="bi bi-trash3"></i>
-                    <span>Xóa</span>
-                  </button>
+                    <button 
+                      @click="confirmDeleteTour(tour)" 
+                      class="btn-saas-icon btn-saas-delete"
+                      title="Xóa tour khỏi hệ thống"
+                    >
+                      <i class="bi bi-trash3"></i>
+                    </button>
+                  </div>
                 </div>
               </td>
             </tr>
@@ -418,6 +466,7 @@
           </tbody>
         </table>
       </div>
+
 
       <!-- PAGINATION (Matching Reference Modern Bar) -->
       <div class="pagination-footer-bar" v-if="totalPages > 1">
@@ -522,6 +571,7 @@ const searchInputRef = ref(null);
 const activeQrTour = ref(null);
 const deleteTourId = ref(null);
 const deleteFormRef = ref(null);
+const failedImages = ref({});
 
 let searchTimeout = null;
 
@@ -718,6 +768,42 @@ function getTypeIcon(type) {
     case 'QuocTe': return 'bi-airplane-fill';
     case 'TheoYeuCau': return 'bi-stars';
     default: return 'bi-map-fill';
+  }
+}
+
+function handleImageError(tourId) {
+  failedImages.value[tourId] = true;
+}
+
+function extractDuration(tour) {
+  const text = (tour.ten_tour || '') + ' ' + (tour.mo_ta || '');
+  const match = text.match(/(\d+\s*(?:ngày|ngay|N)\s*\d*\s*(?:đêm|dem|Đ)?)/i);
+  if (match) {
+    return match[1].trim();
+  }
+  return null;
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '';
+  const parts = dateStr.split('-');
+  if (parts.length === 3) {
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  }
+  return dateStr;
+}
+
+function formatPriceOnly(val) {
+  const num = Number(val) || 0;
+  return num.toLocaleString('vi-VN');
+}
+
+function getTypeFallbackClass(type) {
+  switch (type) {
+    case 'TrongNuoc': return 'fallback-domestic';
+    case 'QuocTe': return 'fallback-international';
+    case 'TheoYeuCau': return 'fallback-custom';
+    default: return 'fallback-domestic';
   }
 }
 
@@ -1386,24 +1472,82 @@ onMounted(() => {
 
 .tour-code-badge {
   display: inline-block;
-  background: rgba(59, 130, 246, 0.15);
+  background: rgba(59, 130, 246, 0.12);
   color: #60a5fa;
-  border: 1px solid rgba(59, 130, 246, 0.3);
-  font-size: 0.8rem;
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  font-size: 0.78rem;
   font-weight: 800;
-  padding: 0.25rem 0.6rem;
-  border-radius: 7px;
-  font-family: monospace, sans-serif;
+  padding: 0.22rem 0.55rem;
+  border-radius: 6px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
+/* TOUR PROFILE BOX (Thumbnail + Meta + Snippet) */
 .tour-info-cell {
-  max-width: 420px;
+  max-width: 480px;
 }
 
-.tour-info-block {
+.tour-profile-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.95rem;
+}
+
+.tour-thumbnail-frame {
+  width: 58px;
+  height: 58px;
+  min-width: 58px;
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #111a2e;
+  flex-shrink: 0;
+}
+
+.tour-thumbnail-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.3s ease;
+}
+
+.tour-data-row:hover .tour-thumbnail-img {
+  transform: scale(1.08);
+}
+
+.tour-thumbnail-fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+}
+
+.fallback-domestic {
+  background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+  color: #93c5fd;
+}
+
+.fallback-international {
+  background: linear-gradient(135deg, #064e3b, #10b981);
+  color: #6ee7b7;
+}
+
+.fallback-custom {
+  background: linear-gradient(135deg, #581c87, #a855f7);
+  color: #e9d5ff;
+}
+
+.tour-details-wrap {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.3rem;
+  min-width: 0;
+  flex: 1;
 }
 
 .tour-name-link {
@@ -1412,7 +1556,11 @@ onMounted(() => {
   color: #ffffff;
   text-decoration: none;
   line-height: 1.35;
-  transition: color 0.2s ease;
+  transition: color 0.18s ease;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .tour-name-link:hover {
@@ -1421,37 +1569,96 @@ onMounted(() => {
 
 .tour-chips-row {
   display: flex;
-  gap: 0.65rem;
+  gap: 0.45rem;
   align-items: center;
   flex-wrap: wrap;
 }
 
-.chip-item {
+.chip-pill {
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
-  font-size: 0.78rem;
-  color: #94a3b8;
-}
-
-.chip-departure {
-  color: #94a3b8;
-}
-
-.chip-departure i {
-  color: #38bdf8;
-  font-size: 0.8rem;
+  gap: 0.3rem;
+  font-size: 0.73rem;
+  font-weight: 600;
+  padding: 0.18rem 0.55rem;
+  border-radius: 6px;
+  text-decoration: none;
 }
 
 .chip-duration {
-  background: rgba(255, 255, 255, 0.06);
-  color: #cbd5e1;
-  padding: 0.12rem 0.5rem;
-  border-radius: 5px;
+  background: rgba(223, 169, 116, 0.12);
+  color: #dfa974;
+  border: 1px solid rgba(223, 169, 116, 0.25);
 }
 
-.chip-duration i {
-  color: #dfa974;
+.chip-schedule-link.schedule-active {
+  background: rgba(16, 185, 129, 0.12);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.chip-schedule-link.schedule-active:hover {
+  background: rgba(16, 185, 129, 0.25);
+  color: #6ee7b7;
+  transform: translateY(-1px);
+}
+
+.chip-schedule-link.schedule-empty {
+  background: rgba(148, 163, 184, 0.08);
+  color: #94a3b8;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.chip-schedule-link.schedule-empty:hover {
+  background: rgba(59, 130, 246, 0.15);
+  color: #93c5fd;
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.chip-qr-badge {
+  background: rgba(56, 189, 248, 0.12);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.chip-qr-badge:hover {
+  background: rgba(56, 189, 248, 0.25);
+  color: #7dd3fc;
+  transform: translateY(-1px);
+}
+
+.tour-desc-text {
+  font-size: 0.77rem;
+  color: #94a3b8;
+  margin: 0;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* CATEGORY & SCHEDULE */
+.type-cell-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.nearest-schedule-sub {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.73rem;
+  color: #38bdf8;
+  font-weight: 600;
 }
 
 /* TYPE PILL BADGES */
@@ -1459,9 +1666,9 @@ onMounted(() => {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  padding: 0.32rem 0.8rem;
+  padding: 0.3rem 0.75rem;
   border-radius: 999px;
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   font-weight: 700;
   white-space: nowrap;
 }
@@ -1489,13 +1696,32 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
+  gap: 0.15rem;
+}
+
+.price-main-line {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.18rem;
 }
 
 .price-number {
-  font-size: 1.05rem;
+  font-size: 1.15rem;
   font-weight: 800;
   color: #34d399;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
+}
+
+.price-unit {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #34d399;
+}
+
+.price-caption {
+  font-size: 0.72rem;
+  color: #64748b;
+  font-weight: 600;
 }
 
 /* STATUS PILL BADGE */
@@ -1505,7 +1731,7 @@ onMounted(() => {
   gap: 0.4rem;
   padding: 0.28rem 0.8rem;
   border-radius: 999px;
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   font-weight: 700;
   white-space: nowrap;
 }
@@ -1529,102 +1755,98 @@ onMounted(() => {
   background: currentColor;
 }
 
-/* ACTION BUTTONS CLUSTER */
-.action-btn-cluster {
+/* SAAS ACTION BAR (Horizontal Single-Row Layout) */
+.saas-action-bar {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  flex-wrap: wrap;
+  gap: 0.5rem;
   justify-content: center;
 }
 
-.btn-act-chip {
+.btn-saas-primary {
   display: inline-flex;
   align-items: center;
-  gap: 0.28rem;
-  padding: 0.35rem 0.65rem;
-  border-radius: 7px;
-  font-size: 0.78rem;
-  font-weight: 600;
+  gap: 0.35rem;
+  padding: 0.42rem 0.85rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #ffffff;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  border: 1px solid #3b82f6;
   text-decoration: none;
-  cursor: pointer;
-  border: 1px solid transparent;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
   transition: all 0.18s ease;
   white-space: nowrap;
 }
 
-.btn-act-edit {
-  background: rgba(59, 130, 246, 0.12);
-  color: #93c5fd;
-  border-color: rgba(59, 130, 246, 0.25);
-}
-.btn-act-edit:hover {
-  background: #2563eb;
+.btn-saas-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.45);
   color: #ffffff;
-  border-color: #2563eb;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+}
+
+.saas-icon-buttons {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 3px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.btn-saas-icon {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  font-size: 0.88rem;
+  text-decoration: none;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.16s ease;
+  background: transparent;
+  color: #94a3b8;
+}
+
+.btn-saas-icon:hover {
   transform: translateY(-1px);
 }
 
-.btn-act-detail {
-  background: rgba(14, 165, 233, 0.12);
-  color: #7dd3fc;
-  border-color: rgba(14, 165, 233, 0.25);
-}
-.btn-act-detail:hover {
-  background: #0284c7;
-  color: #ffffff;
-  border-color: #0284c7;
-  transform: translateY(-1px);
+.btn-saas-edit:hover {
+  background: rgba(59, 130, 246, 0.2);
+  color: #60a5fa;
+  border-color: rgba(59, 130, 246, 0.35);
 }
 
-.btn-act-schedule {
-  background: rgba(223, 169, 116, 0.15);
-  color: #fde047;
-  border-color: rgba(223, 169, 116, 0.3);
-}
-.btn-act-schedule:hover {
-  background: #d4af37;
-  color: #0b1120;
-  border-color: #d4af37;
-  transform: translateY(-1px);
+.btn-saas-calendar:hover {
+  background: rgba(223, 169, 116, 0.2);
+  color: #dfa974;
+  border-color: rgba(223, 169, 116, 0.35);
 }
 
-.btn-act-clone {
-  background: rgba(168, 85, 247, 0.12);
-  color: #d8b4fe;
-  border-color: rgba(168, 85, 247, 0.25);
-}
-.btn-act-clone:hover {
-  background: #9333ea;
-  color: #ffffff;
-  border-color: #9333ea;
-  transform: translateY(-1px);
+.btn-saas-qr:hover,
+.btn-saas-qr-gen:hover {
+  background: rgba(20, 184, 166, 0.2);
+  color: #2dd4bf;
+  border-color: rgba(20, 184, 166, 0.35);
 }
 
-.btn-act-qr,
-.btn-act-qr-gen {
-  background: rgba(20, 184, 166, 0.12);
-  color: #5eead4;
-  border-color: rgba(20, 184, 166, 0.25);
-}
-.btn-act-qr:hover,
-.btn-act-qr-gen:hover {
-  background: #0d9488;
-  color: #ffffff;
-  border-color: #0d9488;
-  transform: translateY(-1px);
+.btn-saas-clone:hover {
+  background: rgba(168, 85, 247, 0.2);
+  color: #c084fc;
+  border-color: rgba(168, 85, 247, 0.35);
 }
 
-.btn-act-delete {
-  background: rgba(239, 68, 68, 0.12);
-  color: #fca5a5;
-  border-color: rgba(239, 68, 68, 0.25);
-}
-.btn-act-delete:hover {
-  background: #dc2626;
-  color: #ffffff;
-  border-color: #dc2626;
-  transform: translateY(-1px);
+.btn-saas-delete:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.35);
 }
 
 /* EMPTY STATE */
@@ -1881,3 +2103,4 @@ onMounted(() => {
   to { transform: scale(1); opacity: 1; }
 }
 </style>
+

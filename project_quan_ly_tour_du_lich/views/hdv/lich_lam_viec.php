@@ -9,6 +9,12 @@
     <link rel="stylesheet" href="<?php echo BASE_URL; ?>public/css/hdv.css">
 </head>
 <body class="hdv-body">
+<?php
+$nhiemVuTheoLich = $nhiemVuTheoLich ?? [];
+$lichKhoiHanhList = $lichKhoiHanhList ?? [];
+$lichTrinhTheoTour = $lichTrinhTheoTour ?? [];
+$yeuCauDacBietTheoLich = $yeuCauDacBietTheoLich ?? [];
+?>
 <?php include __DIR__ . '/partials/hdv_nav.php'; ?>
 
 <div class="page-header">
@@ -233,7 +239,7 @@
                     <?php
                         $tourId = $lich['tour_id'] ?? null;
                         $lichTrinh = ($tourId && isset($lichTrinhTheoTour[$tourId])) ? $lichTrinhTheoTour[$tourId] : [];
-                        $nhiemVu = isset($nhiemVuTheoLich[$lich['id']]) ? $nhiemVuTheoLich[$lich['id']] : null;
+                        $nhiemVu = $nhiemVuTheoLich[$lich['id']] ?? null;
                     ?>
                     <div class="card mb-3">
                         <div class="card-body">

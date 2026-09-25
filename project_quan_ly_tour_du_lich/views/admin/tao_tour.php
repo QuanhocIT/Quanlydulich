@@ -25,7 +25,8 @@ ob_start();
         --font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
 
-    body.page-tour .content-area {
+    body:not(.theme-light).page-tour .content-area,
+    body:not(.theme-light).page-tourCreate .content-area {
         background: #070d1e !important;
         background-image: 
             radial-gradient(circle at 10% 10%, rgba(37, 99, 235, 0.12), transparent 40%),
@@ -34,6 +35,26 @@ ob_start();
         padding: 24px 36px 60px !important;
         min-height: 100vh;
         color: var(--text-primary);
+        font-family: var(--font-family);
+    }
+
+    body.theme-light.page-tour .content-area,
+    body.theme-light.page-tourCreate .content-area,
+    body.theme-light .tour-editor-container {
+        --bg-main: #f8fafc;
+        --card-bg: #ffffff;
+        --card-border: #e2e8f0;
+        --card-border-hover: #cbd5e1;
+        --input-bg: #ffffff;
+        --input-border: #cbd5e1;
+        --input-border-focus: #2563eb;
+        --text-primary: #0f172a;
+        --text-muted: #64748b;
+        background: #f8fafc !important;
+        background-image: none !important;
+        padding: 24px 36px 60px !important;
+        min-height: 100vh;
+        color: #0f172a !important;
         font-family: var(--font-family);
     }
 

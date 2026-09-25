@@ -1,57 +1,178 @@
 <template>
   <div class="vue-admin-salary-manage">
-    <!-- PAGE HEADER -->
+    <!-- PAGE HEADER BANNER (MATCHING IMAGE 2) -->
     <header class="page-header">
       <div class="header-left">
-        <div class="badge-tag">
+        <div class="header-icon-circle">
           <i class="bi bi-wallet2"></i>
-          <span>Tài Chính & Nhân Sự</span>
         </div>
-        <h1 class="header-title">Quản Lý Lương Thưởng Nhân Sự</h1>
-        <p class="header-subtitle">
-          Theo dõi định mức lương cứng, hoa hồng dẫn tour và quy trình duyệt thanh toán
-        </p>
+        <div class="header-text-group">
+          <div class="badge-tag">
+            <span>TÀI CHÍNH &amp; NHÂN SỰ</span>
+          </div>
+          <h1 class="header-title">
+            Quản Lý Lương Thưởng<br>Nhân Sự
+          </h1>
+          <p class="header-subtitle">
+            Theo dõi định mức lương cứng, hoa hồng dẫn tour và quy trình duyệt thanh toán
+          </p>
+        </div>
       </div>
 
+      <!-- CENTER MODERN ILLUSTRATION (MATCHING IMAGE 2) -->
+      <div class="header-illustration">
+        <svg width="220" height="110" viewBox="0 0 220 110" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Soft Background Glow -->
+          <ellipse cx="110" cy="55" rx="85" ry="42" fill="#eff6ff" />
+          
+          <!-- Document Card -->
+          <g filter="drop-shadow(0px 6px 12px rgba(37, 99, 235, 0.08))">
+            <rect x="55" y="16" width="76" height="80" rx="8" fill="#ffffff" stroke="#dbeafe" stroke-width="1.5"/>
+            <!-- Avatar on doc -->
+            <circle cx="93" cy="36" r="10" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1.5"/>
+            <path d="M87 44c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="#3b82f6" stroke-width="1.5" stroke-linecap="round"/>
+            <circle cx="93" cy="34" r="3.5" fill="#3b82f6"/>
+            <!-- Text lines on doc -->
+            <rect x="67" y="52" width="52" height="4" rx="2" fill="#e2e8f0"/>
+            <rect x="67" y="60" width="38" height="4" rx="2" fill="#cbd5e1"/>
+            <rect x="67" y="68" width="46" height="4" rx="2" fill="#f1f5f9"/>
+            <rect x="67" y="76" width="30" height="4" rx="2" fill="#e2e8f0"/>
+          </g>
+
+          <!-- Golden Coins Stack -->
+          <g filter="drop-shadow(0px 4px 8px rgba(245, 158, 11, 0.2))">
+            <!-- Coin 1 bottom -->
+            <ellipse cx="62" cy="85" rx="14" ry="5.5" fill="#d97706"/>
+            <ellipse cx="62" cy="82" rx="14" ry="5.5" fill="#f59e0b"/>
+            <ellipse cx="62" cy="80" rx="14" ry="5.5" fill="#fbbf24"/>
+            <!-- Coin 2 middle -->
+            <ellipse cx="62" cy="77" rx="14" ry="5.5" fill="#d97706"/>
+            <ellipse cx="62" cy="74" rx="14" ry="5.5" fill="#f59e0b"/>
+            <ellipse cx="62" cy="72" rx="14" ry="5.5" fill="#fbbf24"/>
+            <!-- Coin 3 top -->
+            <ellipse cx="62" cy="69" rx="14" ry="5.5" fill="#d97706"/>
+            <ellipse cx="62" cy="66" rx="14" ry="5.5" fill="#f59e0b"/>
+            <ellipse cx="62" cy="64" rx="14" ry="5.5" fill="#fbbf24"/>
+            <ellipse cx="62" cy="64" rx="10" ry="3.5" fill="#fef3c7"/>
+          </g>
+
+          <!-- Rising Bar Chart Card -->
+          <g filter="drop-shadow(0px 6px 14px rgba(37, 99, 235, 0.12))">
+            <rect x="135" y="32" width="46" height="52" rx="6" fill="#ffffff" stroke="#e0e7ff" stroke-width="1.2"/>
+            <!-- Bar 1 -->
+            <rect x="143" y="62" width="6" height="16" rx="2" fill="#93c5fd"/>
+            <!-- Bar 2 -->
+            <rect x="153" y="52" width="6" height="26" rx="2" fill="#60a5fa"/>
+            <!-- Bar 3 -->
+            <rect x="163" y="42" width="6" height="36" rx="2" fill="#2563eb"/>
+          </g>
+        </svg>
+      </div>
+
+      <!-- RIGHT ACTION BUTTON -->
       <div class="header-actions">
         <button class="btn-create" @click="showCreateForm = !showCreateForm">
           <i class="bi" :class="showCreateForm ? 'bi-x-lg' : 'bi-plus-lg'"></i>
           <span>{{ showCreateForm ? 'Đóng form' : 'Tạo Lương/Thưởng' }}</span>
+          <i v-if="!showCreateForm" class="bi bi-chevron-right ms-1"></i>
         </button>
       </div>
     </header>
 
-    <!-- SUMMARY KPI STATS -->
+    <!-- 4 KPI STAT CARDS (MATCHING IMAGE 2) -->
     <section class="stats-row">
-      <div class="stat-pill stat-total">
-        <div class="stat-icon"><i class="bi bi-cash-stack"></i></div>
-        <div class="stat-info">
-          <span class="stat-label">Tổng Quỹ Lương</span>
-          <strong class="stat-val text-success">{{ formatCurrency(totalPayroll) }}</strong>
+      <!-- Card 1: Tổng lương tháng này -->
+      <div class="stat-card stat-card-green">
+        <div class="stat-main">
+          <div class="stat-icon-circle bg-emerald-light text-emerald">
+            <i class="bi bi-cash-stack"></i>
+          </div>
+          <div class="stat-content">
+            <div class="stat-label">Tổng lương tháng này</div>
+            <div class="stat-val">{{ formatCurrency(totalPayroll) }}</div>
+            <div class="stat-sub text-trend">
+              <span class="trend-green">↑ 0%</span>
+              <span class="sub-muted">so với tháng trước</span>
+            </div>
+          </div>
+        </div>
+        <div class="stat-graphic">
+          <!-- Sparkline Curve SVG -->
+          <svg width="60" height="28" viewBox="0 0 60 28" fill="none">
+            <path d="M2 24 C14 24, 20 16, 32 16 C44 16, 48 4, 58 4" stroke="#34d399" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
         </div>
       </div>
 
-      <div class="stat-pill stat-fixed">
-        <div class="stat-icon"><i class="bi bi-bank"></i></div>
-        <div class="stat-info">
-          <span class="stat-label">Lương Cố Định</span>
-          <strong class="stat-val text-primary">{{ formatCurrency(totalFixed) }}</strong>
+      <!-- Card 2: Tổng nhân sự -->
+      <div class="stat-card stat-card-blue">
+        <div class="stat-main">
+          <div class="stat-icon-circle bg-blue-light text-blue">
+            <i class="bi bi-people-fill"></i>
+          </div>
+          <div class="stat-content">
+            <div class="stat-label">Tổng nhân sự</div>
+            <div class="stat-val">{{ filteredList.length }}</div>
+            <div class="stat-sub text-muted">
+              <span>* Không thay đổi</span>
+            </div>
+          </div>
+        </div>
+        <div class="stat-graphic">
+          <!-- Outline Person SVG -->
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#93c5fd" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="7" r="4"/>
+            <path d="M5.5 21a6.5 6.5 0 0 1 13 0"/>
+          </svg>
         </div>
       </div>
 
-      <div class="stat-pill stat-commission">
-        <div class="stat-icon"><i class="bi bi-award"></i></div>
-        <div class="stat-info">
-          <span class="stat-label">Tổng Hoa Hồng</span>
-          <strong class="stat-val text-warning">{{ formatCurrency(totalCommission) }}</strong>
+      <!-- Card 3: Tổng tour phụ trách -->
+      <div class="stat-card stat-card-amber">
+        <div class="stat-main">
+          <div class="stat-icon-circle bg-amber-light text-amber">
+            <i class="bi bi-award-fill"></i>
+          </div>
+          <div class="stat-content">
+            <div class="stat-label">Tổng tour phụ trách</div>
+            <div class="stat-val">{{ totalToursCount }}</div>
+            <div class="stat-sub text-muted">
+              <span>* Không thay đổi</span>
+            </div>
+          </div>
+        </div>
+        <div class="stat-graphic">
+          <!-- Outline Compass/Route SVG -->
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#fcd34d" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/>
+            <line x1="9" y1="3" x2="9" y2="18"/>
+            <line x1="15" y1="6" x2="15" y2="21"/>
+          </svg>
         </div>
       </div>
 
-      <div class="stat-pill stat-records">
-        <div class="stat-icon"><i class="bi bi-people"></i></div>
-        <div class="stat-info">
-          <span class="stat-label">Bản Ghi Lương</span>
-          <strong class="stat-val">{{ filteredList.length }} mục</strong>
+      <!-- Card 4: Tổng trạng thái -->
+      <div class="stat-card stat-card-purple">
+        <div class="stat-main">
+          <div class="stat-icon-circle bg-purple-light text-purple">
+            <i class="bi bi-grid-fill"></i>
+          </div>
+          <div class="stat-content">
+            <div class="stat-label">Tổng trạng thái</div>
+            <div class="stat-val">{{ filteredList.length }} mục</div>
+            <div class="stat-sub">
+              <span class="dot-active">●</span>
+              <span class="sub-muted">Đang hoạt động</span>
+            </div>
+          </div>
+        </div>
+        <div class="stat-graphic">
+          <!-- Outline Card/Grid SVG -->
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#c4b5fd" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2"/>
+            <line x1="3" y1="9" x2="21" y2="9"/>
+            <line x1="9" y1="21" x2="9" y2="9"/>
+          </svg>
         </div>
       </div>
     </section>
@@ -60,7 +181,7 @@
     <transition name="slide">
       <section v-if="showCreateForm" class="create-card">
         <div class="create-card-header">
-          <h4 class="m-0"><i class="bi bi-plus-circle me-2"></i>Thêm Định Mức Lương/Thưởng Tour</h4>
+          <h4><i class="bi bi-plus-circle me-2"></i>Thêm Định Mức Lương/Thưởng Tour</h4>
           <span class="sub-text">Thiết lập mức thù lao cố định hoặc % hoa hồng cho nhân sự dẫn tour</span>
         </div>
 
@@ -123,18 +244,20 @@
       </section>
     </transition>
 
-    <!-- FILTER TOOLBAR -->
+    <!-- FILTER TOOLBAR (MATCHING IMAGE 2) -->
     <section class="filter-card">
       <div class="filter-grid">
-        <!-- Search Name -->
-        <div class="filter-col">
-          <label class="filter-label"><i class="bi bi-search me-1"></i>Tìm nhanh nhân sự</label>
-          <input 
-            type="text" 
-            v-model="searchKeyword" 
-            placeholder="Nhập tên nhân sự..." 
-            class="form-control-custom"
-          />
+        <!-- Search Name with Icon Inside -->
+        <div class="filter-col col-search">
+          <div class="search-input-box">
+            <i class="bi bi-search search-icon"></i>
+            <input 
+              type="text" 
+              v-model="searchKeyword" 
+              placeholder="Nhập tên nhân sự..." 
+              class="form-control-search"
+            />
+          </div>
         </div>
 
         <!-- Filter Staff Dropdown -->
@@ -170,23 +293,20 @@
           </select>
         </div>
 
-        <!-- Period Selectors -->
+        <!-- Period Selectors (Month + Year Dropdowns side by side) -->
         <div class="filter-col period-col">
           <label class="filter-label"><i class="bi bi-calendar me-1"></i>Kỳ lương</label>
-          <div class="d-flex gap-2">
-            <select v-model="filterMonth" :disabled="showAll" class="form-select-custom">
+          <div class="period-select-wrap">
+            <select v-model="filterMonth" :disabled="showAll" class="form-select-custom select-month">
               <option value="">Tháng --</option>
               <option v-for="m in 12" :key="m" :value="String(m)">Tháng {{ m }}</option>
             </select>
-            <input 
-              type="number" 
-              v-model="filterYear" 
-              :disabled="showAll" 
-              min="2020" 
-              max="2030" 
-              class="form-control-custom" 
-              style="width: 90px;"
-            />
+            <select v-model="filterYear" :disabled="showAll" class="form-select-custom select-year">
+              <option value="2024">2024</option>
+              <option value="2025">2025</option>
+              <option value="2026">2026</option>
+              <option value="2027">2027</option>
+            </select>
           </div>
         </div>
 
@@ -199,70 +319,100 @@
       </div>
     </section>
 
-    <!-- DATA TABLE -->
+    <!-- DATA TABLE CARD (MATCHING IMAGE 2) -->
     <section class="table-card">
       <div class="table-responsive">
         <table class="salary-table">
           <thead>
             <tr>
-              <th>Nhân Sự</th>
-              <th>Vai Trò</th>
-              <th>Tour / Lịch Khởi Hành</th>
-              <th class="text-center">Ngày Khởi Hành</th>
-              <th class="text-end">Cố Định</th>
-              <th class="text-end">Hoa Hồng</th>
-              <th class="text-end">Tổng Lương</th>
-              <th class="text-center">Trạng Thái</th>
-              <th class="text-center">Chi Tiết</th>
+              <th class="th-checkbox text-center">
+                <input type="checkbox" v-model="selectAll" class="custom-checkbox" />
+              </th>
+              <th>NHÂN SỰ</th>
+              <th class="text-center">VAI TRÒ</th>
+              <th>TOUR / LỊCH KHỞI HÀNH</th>
+              <th class="text-center">NGÀY KHỞI HÀNH</th>
+              <th class="text-end">CỐ ĐỊNH</th>
+              <th class="text-end">HOA HỒNG</th>
+              <th class="text-end">TỔNG LƯƠNG</th>
+              <th class="text-center">TRẠNG THÁI</th>
+              <th class="text-center">CHI TIẾT</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="(row, idx) in filteredList" :key="idx" class="salary-row">
-              <!-- Staff -->
-              <td>
-                <strong class="staff-name">{{ row.ho_ten }}</strong>
-                <div class="staff-id-tag">#{{ row.nhan_su_id }}</div>
+              <!-- Checkbox -->
+              <td class="text-center td-checkbox">
+                <input type="checkbox" :value="row.nhan_su_id" v-model="selectedRows" class="custom-checkbox" />
               </td>
 
-              <!-- Role -->
-              <td>
-                <span class="role-pill" :class="row.vai_tro === 'HDV' ? 'pill-hdv' : 'pill-other'">
-                  {{ row.vai_tro || 'Nhân sự' }}
+              <!-- Staff Info (Avatar + Name + ID) -->
+              <td class="td-staff">
+                <div class="staff-cell-flex">
+                  <div class="staff-avatar-box">
+                    <img v-if="row.avatar" :src="getAvatarUrl(row.avatar)" class="avatar-img" :alt="row.ho_ten" />
+                    <div v-else class="avatar-fallback" :style="{ background: getAvatarBg(row.ho_ten, idx) }">
+                      <!-- Render SVG avatar face based on index -->
+                      <svg v-if="idx % 2 === 0" width="36" height="36" viewBox="0 0 36 36" fill="none">
+                        <circle cx="18" cy="18" r="18" fill="#e0f2fe"/>
+                        <circle cx="18" cy="14" r="6" fill="#0284c7"/>
+                        <path d="M8 30c0-5.5 4.5-10 10-10s10 4.5 10 10" fill="#0284c7"/>
+                      </svg>
+                      <svg v-else width="36" height="36" viewBox="0 0 36 36" fill="none">
+                        <circle cx="18" cy="18" r="18" fill="#fce7f3"/>
+                        <circle cx="18" cy="14" r="6" fill="#db2777"/>
+                        <path d="M8 30c0-5.5 4.5-10 10-10s10 4.5 10 10" fill="#db2777"/>
+                      </svg>
+                    </div>
+                  </div>
+                  <div class="staff-meta">
+                    <strong class="staff-name">{{ row.ho_ten }}</strong>
+                    <div class="staff-id">#{{ row.nhan_su_id }}</div>
+                  </div>
+                </div>
+              </td>
+
+              <!-- Role Badge -->
+              <td class="text-center">
+                <span class="role-pill">
+                  {{ row.vai_tro || 'HDV' }}
                 </span>
               </td>
 
-              <!-- Tour -->
-              <td class="tour-name-cell">
-                <div class="tour-text">{{ row.ten_tour || 'N/A' }}</div>
-                <small v-if="row.lich_khoi_hanh_id" class="text-muted">Lịch #{{ row.lich_khoi_hanh_id }}</small>
+              <!-- Tour / Departure -->
+              <td class="tour-cell">
+                <div class="tour-title">{{ row.ten_tour_gan_nhat || row.ten_tour || 'N/A' }}</div>
+                <div class="tour-sub" v-if="row.ngay_khoi_hanh_gan_nhat || row.ngay_khoi_hanh">
+                  Khởi hành: {{ formatDate(row.ngay_khoi_hanh_gan_nhat || row.ngay_khoi_hanh) }}
+                </div>
               </td>
 
-              <!-- Date -->
-              <td class="text-center text-muted">
-                {{ formatDate(row.ngay_khoi_hanh) }}
+              <!-- Departure Date -->
+              <td class="text-center text-date">
+                {{ formatDate(row.ngay_khoi_hanh_gan_nhat || row.ngay_khoi_hanh) }}
               </td>
 
               <!-- Fixed Amount -->
-              <td class="text-end fw-semibold">
+              <td class="text-end text-amount">
                 {{ formatCurrency(row.tong_co_dinh || row.so_tien_co_dinh) }}
               </td>
 
               <!-- Commission Amount -->
-              <td class="text-end text-warning fw-semibold">
+              <td class="text-end text-amount">
                 {{ formatCurrency(row.tong_hoa_hong || row.tien_hoa_hong) }}
               </td>
 
-              <!-- Total Salary -->
+              <!-- Total Salary (Bold Green) -->
               <td class="text-end">
-                <span class="total-salary-badge">
+                <span class="total-salary-val">
                   {{ formatCurrency(row.tong_luong) }}
                 </span>
               </td>
 
-              <!-- Status -->
+              <!-- Status Badge (Pending / Approved / Paid) -->
               <td class="text-center">
-                <span class="status-pill" :class="getStatusClass(row.trang_thai_luong)">
-                  {{ formatStatus(row.trang_thai_luong) }}
+                <span class="status-badge" :class="getStatusClass(row.trang_thai_luong_tong_hop || row.trang_thai_luong)">
+                  {{ formatStatus(row.trang_thai_luong_tong_hop || row.trang_thai_luong) }}
                 </span>
               </td>
 
@@ -270,7 +420,7 @@
               <td class="text-center">
                 <a 
                   :href="'index.php?act=admin/chiTietLuong&nhan_su_id=' + row.nhan_su_id + (filterMonth ? '&month=' + filterMonth : '') + (filterYear ? '&year=' + filterYear : '')" 
-                  class="btn-detail"
+                  class="btn-detail-action"
                   title="Xem bảng chi tiết lương & thao tác duyệt"
                 >
                   <i class="bi bi-eye"></i> Chi tiết
@@ -280,13 +430,29 @@
 
             <!-- Empty row -->
             <tr v-if="filteredList.length === 0">
-              <td colspan="9" class="empty-cell">
+              <td colspan="10" class="empty-cell">
                 <i class="bi bi-inbox fs-2 text-muted d-block mb-2"></i>
                 Không tìm thấy dữ liệu lương phù hợp với bộ lọc.
               </td>
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <!-- TABLE FOOTER BAR (MATCHING IMAGE 2) -->
+      <div class="table-footer-bar">
+        <div class="footer-info">
+          Hiển thị 1 - {{ filteredList.length }} trong tổng số {{ allLuongTongHop.length }} nhân sự
+        </div>
+        <div class="footer-pagination">
+          <button class="btn-page btn-page-prev" disabled>
+            <i class="bi bi-chevron-left"></i>
+          </button>
+          <button class="btn-page btn-page-active">1</button>
+          <button class="btn-page btn-page-next" disabled>
+            <i class="bi bi-chevron-right"></i>
+          </button>
+        </div>
       </div>
     </section>
   </div>
@@ -311,6 +477,7 @@ const filterTrangThai = ref('');
 const filterMonth = ref(String(new Date().getMonth() + 1));
 const filterYear = ref(String(new Date().getFullYear()));
 const showAll = ref(false);
+const selectedRows = ref([]);
 
 const allLuongTongHop = ref([]);
 const nhanSuList = ref([]);
@@ -318,7 +485,7 @@ const tourList = ref([]);
 const lichKhoiHanhList = ref([]);
 const csrfToken = ref('');
 
-// Computed Totals
+// Computed List
 const filteredList = computed(() => {
   let list = [...allLuongTongHop.value];
 
@@ -336,12 +503,27 @@ const filteredList = computed(() => {
   }
 
   if (filterTrangThai.value) {
-    list = list.filter(r => r.trang_thai_luong === filterTrangThai.value);
+    list = list.filter(r => (r.trang_thai_luong_tong_hop || r.trang_thai_luong) === filterTrangThai.value);
   }
 
   return list;
 });
 
+// Select All Checkbox
+const selectAll = computed({
+  get() {
+    return filteredList.value.length > 0 && selectedRows.value.length === filteredList.value.length;
+  },
+  set(val) {
+    if (val) {
+      selectedRows.value = filteredList.value.map(r => r.nhan_su_id);
+    } else {
+      selectedRows.value = [];
+    }
+  }
+});
+
+// Summary Totals
 const totalPayroll = computed(() => {
   return filteredList.value.reduce((sum, r) => sum + (Number(r.tong_luong) || 0), 0);
 });
@@ -352,6 +534,15 @@ const totalFixed = computed(() => {
 
 const totalCommission = computed(() => {
   return filteredList.value.reduce((sum, r) => sum + (Number(r.tong_hoa_hong || r.tien_hoa_hong) || 0), 0);
+});
+
+const totalToursCount = computed(() => {
+  const tours = new Set();
+  filteredList.value.forEach(r => {
+    if (r.tour_id) tours.add(r.tour_id);
+    if (r.ten_tour_gan_nhat) tours.add(r.ten_tour_gan_nhat);
+  });
+  return tours.size;
 });
 
 function applyData(data) {
@@ -376,7 +567,7 @@ function resetFilters() {
   filterTrangThai.value = '';
 }
 
-// Formatters
+// Helpers
 function formatCurrency(val) {
   const num = Number(val) || 0;
   return num.toLocaleString('vi-VN') + ' đ';
@@ -384,7 +575,7 @@ function formatCurrency(val) {
 
 function formatDate(str) {
   if (!str) return '--/--/----';
-  const parts = str.split('-');
+  const parts = str.split(' ')[0].split('-');
   if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
   return str;
 }
@@ -400,11 +591,22 @@ function formatStatus(status) {
 
 function getStatusClass(status) {
   switch (status) {
-    case 'ChoDuyet': return 'status-pending';
-    case 'DaDuyet': return 'status-approved';
-    case 'DaThanhToan': return 'status-paid';
-    default: return 'status-pending';
+    case 'ChoDuyet': return 'badge-status-pending';
+    case 'DaDuyet': return 'badge-status-approved';
+    case 'DaThanhToan': return 'badge-status-paid';
+    default: return 'badge-status-pending';
   }
+}
+
+function getAvatarUrl(path) {
+  if (!path) return '';
+  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+  return window.__BASE_URL__ ? window.__BASE_URL__ + path : path;
+}
+
+function getAvatarBg(name, idx) {
+  const colors = ['#e0f2fe', '#fce7f3', '#fef3c7', '#dcfce7'];
+  return colors[idx % colors.length];
 }
 
 onMounted(() => {
@@ -420,333 +622,678 @@ onMounted(() => {
   flex-direction: column;
   gap: 1.5rem;
   padding: 0.5rem 0 2rem;
-  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  color: #f8fafc;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  color: #0f172a;
 }
 
-/* PAGE HEADER */
+/* 1. PAGE HEADER BANNER */
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: linear-gradient(135deg, rgba(22, 31, 46, 0.85) 0%, rgba(15, 23, 42, 0.95) 100%);
-  padding: 1.75rem 2rem;
-  border-radius: 1.25rem;
-  color: #ffffff;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(14px);
+  background: #ffffff;
+  padding: 1.6rem 2.2rem;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.04);
+  position: relative;
+  overflow: hidden;
 }
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.header-icon-circle {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #eff6ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #2563eb;
+  font-size: 1.8rem;
+  flex-shrink: 0;
+  border: 1px solid #dbeafe;
+}
+
+.header-text-group {
+  display: flex;
+  flex-direction: column;
+}
+
 .badge-tag {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  background: rgba(212, 175, 55, 0.15);
-  color: #fde047;
-  border: 1px solid rgba(212, 175, 55, 0.3);
-  padding: 0.3rem 0.75rem;
-  border-radius: 2rem;
-  font-size: 0.75rem;
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #dbeafe;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  margin-bottom: 0.5rem;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.45rem;
+  width: fit-content;
 }
+
 .header-title {
-  font-size: 1.75rem;
+  font-size: 1.65rem;
   font-weight: 800;
   margin: 0;
-  color: #ffffff;
+  color: #0f172a;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
 }
+
 .header-subtitle {
-  font-size: 0.95rem;
-  color: #94a3b8;
-  margin: 0.25rem 0 0;
+  font-size: 0.86rem;
+  color: #64748b;
+  margin: 0.4rem 0 0;
+  line-height: 1.4;
 }
+
+.header-illustration {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 992px) {
+  .header-illustration {
+    display: none;
+  }
+}
+
 .btn-create {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  background: linear-gradient(135deg, #d4af37 0%, #b89628 100%);
-  color: #0b1120;
+  gap: 0.45rem;
+  background: #2563eb;
+  color: #ffffff;
   padding: 0.75rem 1.4rem;
-  border-radius: 0.65rem;
+  border-radius: 10px;
   font-weight: 700;
-  font-size: 0.95rem;
+  font-size: 0.92rem;
   border: none;
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(212, 175, 55, 0.35);
-  transition: all 0.2s;
-}
-.btn-create:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(212, 175, 55, 0.45);
-  color: #0b1120;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
+  transition: all 0.2s ease;
+  white-space: nowrap;
 }
 
-/* STATS ROW */
-.stats-row {
-  display: flex;
-  gap: 1.25rem;
-  flex-wrap: wrap;
+.btn-create:hover {
+  background: #1d4ed8;
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.35);
+  transform: translateY(-1px);
 }
-.stat-pill {
-  flex: 1;
-  min-width: 200px;
-  background: rgba(22, 31, 46, 0.75);
-  border-radius: 1.15rem;
-  padding: 1.15rem 1.35rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-  backdrop-filter: blur(12px);
+
+/* 2. STATS ROW (4 CARDS) */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.25rem;
+}
+
+@media (max-width: 1200px) {
+  .stats-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .stats-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.stat-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 1.25rem 1.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.02);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
+}
+
+.stat-main {
   display: flex;
   align-items: center;
   gap: 1rem;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
-.stat-pill:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
-  border-color: rgba(255, 255, 255, 0.15);
-}
-.stat-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 0.65rem;
+
+.stat-icon-circle {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 1.35rem;
+  flex-shrink: 0;
 }
-.stat-total .stat-icon { background: rgba(16, 185, 129, 0.16); color: #34d399; }
-.stat-fixed .stat-icon { background: rgba(14, 165, 233, 0.16); color: #38bdf8; }
-.stat-commission .stat-icon { background: rgba(245, 158, 11, 0.16); color: #fbbf24; }
-.stat-records .stat-icon { background: rgba(139, 92, 246, 0.16); color: #a78bfa; }
-.stat-info { display: flex; flex-direction: column; }
-.stat-label { font-size: 0.8rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.04em; }
-.stat-val { font-size: 1.45rem; font-weight: 800; color: #ffffff; line-height: 1.2; }
-.stat-val.text-success { color: #34d399 !important; }
-.stat-val.text-primary { color: #38bdf8 !important; }
-.stat-val.text-warning { color: #fbbf24 !important; }
 
-/* CREATE CARD */
-.create-card {
-  background: rgba(22, 31, 46, 0.92);
-  border-radius: 1.15rem;
-  padding: 1.5rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
-  backdrop-filter: blur(16px);
-  color: #ffffff;
+.bg-emerald-light { background: #ecfdf5; }
+.text-emerald { color: #10b981; }
+
+.bg-blue-light { background: #eff6ff; }
+.text-blue { color: #3b82f6; }
+
+.bg-amber-light { background: #fffbeb; }
+.text-amber { color: #f59e0b; }
+
+.bg-purple-light { background: #f5f3ff; }
+.text-purple { color: #8b5cf6; }
+
+.stat-content {
+  display: flex;
+  flex-direction: column;
 }
-.create-card-header {
-  margin-bottom: 1.25rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  padding-bottom: 0.75rem;
+
+.stat-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 0.2rem;
 }
-.create-card-header h4 {
-  color: #d4af37;
+
+.stat-val {
+  font-size: 1.55rem;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.2;
+}
+
+.stat-sub {
+  font-size: 0.76rem;
+  margin-top: 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.trend-green {
+  color: #10b981;
   font-weight: 700;
 }
-.sub-text { font-size: 0.85rem; color: #94a3b8; }
+
+.sub-muted {
+  color: #94a3b8;
+}
+
+.dot-active {
+  color: #10b981;
+  font-size: 0.85rem;
+}
+
+.stat-graphic {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.85;
+}
+
+/* 3. CREATE CARD */
+.create-card {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 1.5rem 1.8rem;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+}
+
+.create-card-header {
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 0.75rem;
+}
+
+.create-card-header h4 {
+  color: #2563eb;
+  font-weight: 700;
+  margin: 0;
+}
+
+.sub-text {
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 1rem;
+  gap: 1.1rem;
 }
+
 .form-label {
   display: block;
   font-size: 0.82rem;
   font-weight: 700;
-  color: #cbd5e1;
+  color: #334155;
   margin-bottom: 0.35rem;
 }
-.form-control-custom, .form-select-custom {
+
+.form-control-custom,
+.form-select-custom {
   width: 100%;
   padding: 0.6rem 0.85rem;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 0.65rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
   font-size: 0.88rem;
-  background: rgba(11, 17, 32, 0.85);
-  color: #ffffff;
+  background: #ffffff;
+  color: #0f172a;
   outline: none;
-  transition: all 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
-.form-control-custom:focus, .form-select-custom:focus {
-  border-color: #d4af37;
-  background: rgba(11, 17, 32, 0.95);
-  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.2);
+
+.form-control-custom:focus,
+.form-select-custom:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
 }
-.form-control-custom::placeholder {
-  color: #64748b;
-}
+
 .form-actions {
   display: flex;
   gap: 0.75rem;
   margin-top: 1.25rem;
 }
+
 .btn-submit-salary {
-  background: linear-gradient(135deg, #d4af37 0%, #b89628 100%);
-  color: #0b1120;
-  padding: 0.65rem 1.35rem;
-  border-radius: 0.55rem;
+  background: #2563eb;
+  color: #ffffff;
+  padding: 0.65rem 1.4rem;
+  border-radius: 8px;
   border: none;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(212, 175, 55, 0.35);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
   transition: all 0.2s;
-}
-.btn-submit-salary:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(212, 175, 55, 0.45);
-}
-.btn-cancel {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  color: #cbd5e1;
-  padding: 0.65rem 1rem;
-  border-radius: 0.55rem;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.btn-cancel:hover {
-  background: rgba(255, 255, 255, 0.12);
-  color: #ffffff;
 }
 
-/* FILTER CARD */
-.filter-card {
-  background: rgba(22, 31, 46, 0.75);
-  border-radius: 1.15rem;
-  padding: 1.25rem 1.5rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-  backdrop-filter: blur(12px);
+.btn-submit-salary:hover {
+  background: #1d4ed8;
 }
+
+.btn-cancel {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+  padding: 0.65rem 1.1rem;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+/* 4. FILTER CARD */
+.filter-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 1.2rem 1.5rem;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.02);
+}
+
 .filter-grid {
   display: grid;
-  grid-template-columns: 1.5fr 1fr 1fr 1fr 1.2fr auto;
+  grid-template-columns: 1.8fr 1.2fr 1.2fr 1.2fr 1.6fr auto;
   gap: 1rem;
   align-items: flex-end;
 }
-@media (max-width: 1024px) {
-  .filter-grid { grid-template-columns: 1fr 1fr; }
+
+@media (max-width: 1200px) {
+  .filter-grid {
+    grid-template-columns: 1fr 1fr;
+  }
 }
+
+.col-search {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.search-input-box {
+  position: relative;
+  width: 100%;
+}
+
+.search-icon {
+  position: absolute;
+  left: 0.9rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  font-size: 0.9rem;
+  pointer-events: none;
+}
+
+.form-control-search {
+  width: 100%;
+  padding: 0.65rem 0.9rem 0.65rem 2.4rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  background: #ffffff;
+  color: #0f172a;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-control-search:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
 .filter-label {
   display: flex;
   align-items: center;
   gap: 0.35rem;
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: #cbd5e1;
-  margin-bottom: 0.4rem;
-  letter-spacing: 0.03em;
-  text-transform: none; /* Do not uppercase icon glyphs! */
-}
-.filter-label i {
-  font-style: normal;
-  text-transform: none !important;
-  color: #d4af37;
-  display: inline-block;
-}
-.btn-reset {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  color: #cbd5e1;
-  padding: 0.6rem 0.85rem;
-  border-radius: 0.65rem;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.btn-reset:hover {
-  background: rgba(212, 175, 55, 0.2);
-  border-color: #d4af37;
-  color: #fde047;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 0.35rem;
 }
 
-/* TABLE CARD */
+.period-select-wrap {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.select-month {
+  flex: 1.2;
+}
+
+.select-year {
+  flex: 1;
+}
+
+.btn-reset {
+  width: 42px;
+  height: 42px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-reset:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+  border-color: #94a3b8;
+}
+
+/* 5. TABLE CARD */
 .table-card {
-  background: rgba(22, 31, 46, 0.75);
-  border-radius: 1.15rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-  backdrop-filter: blur(12px);
+  background: #ffffff;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.02);
   overflow: hidden;
 }
-.table-responsive { overflow-x: auto; }
+
+.table-responsive {
+  overflow-x: auto;
+}
+
 .salary-table {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
   font-size: 0.88rem;
 }
+
 .salary-table th {
-  padding: 0.9rem 1.15rem;
-  background: rgba(11, 17, 32, 0.9);
-  color: #d4af37;
+  padding: 0.95rem 1.15rem;
+  background: #f8fafc;
+  color: #475569;
   font-weight: 700;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid #e2e8f0;
   white-space: nowrap;
 }
+
 .salary-table td {
-  padding: 1rem 1.15rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 1.1rem 1.15rem;
+  border-bottom: 1px solid #f1f5f9;
   vertical-align: middle;
-  color: #cbd5e1;
+  color: #334155;
+  background: #ffffff;
 }
-.salary-row:hover td { background: rgba(255, 255, 255, 0.03); }
 
-.staff-name { color: #ffffff; font-size: 0.92rem; font-weight: 700; }
-.staff-id-tag { font-size: 0.75rem; color: #94a3b8; }
+.salary-row:hover td {
+  background: #f8fafc;
+}
 
-.role-pill {
-  display: inline-block;
-  padding: 0.2rem 0.55rem;
-  border-radius: 2rem;
-  font-size: 0.75rem;
+.custom-checkbox {
+  width: 17px;
+  height: 17px;
+  border-radius: 4px;
+  border: 1.5px solid #cbd5e1;
+  cursor: pointer;
+  accent-color: #2563eb;
+}
+
+.th-checkbox,
+.td-checkbox {
+  width: 44px;
+  padding-left: 1.25rem !important;
+  padding-right: 0.5rem !important;
+}
+
+/* Staff Cell */
+.staff-cell-flex {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.staff-avatar-box {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.staff-meta {
+  display: flex;
+  flex-direction: column;
+}
+
+.staff-name {
+  color: #0f172a;
+  font-size: 0.92rem;
   font-weight: 700;
 }
-.pill-hdv { background: rgba(14, 165, 233, 0.18); color: #7dd3fc; border: 1px solid rgba(14, 165, 233, 0.35); }
-.pill-other { background: rgba(255, 255, 255, 0.08); color: #cbd5e1; border: 1px solid rgba(255, 255, 255, 0.12); }
 
-.tour-name-cell { max-width: 260px; }
-.tour-text { font-weight: 600; color: #f1f5f9; }
-
-.total-salary-badge {
-  font-weight: 800;
-  font-size: 0.95rem;
-  color: #34d399;
+.staff-id {
+  font-size: 0.78rem;
+  color: #94a3b8;
+  font-weight: 600;
 }
 
-.status-pill {
+/* Role Badge */
+.role-pill {
   display: inline-block;
-  padding: 0.25rem 0.65rem;
-  border-radius: 2rem;
+  padding: 0.22rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: #e0f2fe;
+  color: #0284c7;
+  border: 1px solid #bae6fd;
+  text-transform: uppercase;
+}
+
+/* Tour Cell */
+.tour-cell {
+  max-width: 280px;
+}
+
+.tour-title {
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 0.88rem;
+}
+
+.tour-sub {
+  font-size: 0.78rem;
+  color: #94a3b8;
+  margin-top: 0.15rem;
+}
+
+.text-date {
+  color: #475569;
+  font-weight: 500;
+}
+
+.text-amount {
+  color: #334155;
+  font-weight: 600;
+}
+
+.total-salary-val {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #10b981;
+}
+
+/* Status Badges */
+.status-badge {
+  display: inline-block;
+  padding: 0.3rem 0.85rem;
+  border-radius: 999px;
   font-size: 0.78rem;
   font-weight: 700;
 }
-.status-pending { background: rgba(245, 158, 11, 0.18); color: #fde68a; border: 1px solid rgba(245, 158, 11, 0.35); }
-.status-approved { background: rgba(14, 165, 233, 0.18); color: #7dd3fc; border: 1px solid rgba(14, 165, 233, 0.35); }
-.status-paid { background: rgba(16, 185, 129, 0.18); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.35); }
 
-.btn-detail {
+.badge-status-pending {
+  background: #fef3c7;
+  color: #d97706;
+  border: 1px solid #fde68a;
+}
+
+.badge-status-approved {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.badge-status-paid {
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+}
+
+/* Action Button */
+.btn-detail-action {
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
-  background: rgba(14, 165, 233, 0.15);
-  color: #38bdf8;
-  border: 1px solid rgba(14, 165, 233, 0.25);
-  padding: 0.35rem 0.75rem;
-  border-radius: 0.45rem;
+  gap: 0.35rem;
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+  padding: 0.35rem 0.85rem;
+  border-radius: 8px;
   text-decoration: none;
   font-weight: 600;
-  font-size: 0.8rem;
-  transition: all 0.15s;
-}
-.btn-detail:hover {
-  background: rgba(14, 165, 233, 0.25);
-  color: #ffffff;
+  font-size: 0.82rem;
+  transition: all 0.15s ease;
 }
 
-.empty-cell { padding: 3rem !important; text-align: center; color: #64748b; }
+.btn-detail-action:hover {
+  background: #dbeafe;
+  color: #1d4ed8;
+  border-color: #93c5fd;
+}
+
+.empty-cell {
+  padding: 3rem !important;
+  text-align: center;
+  color: #64748b;
+}
+
+/* 6. TABLE FOOTER BAR */
+.table-footer-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  background: #ffffff;
+  border-top: 1px solid #f1f5f9;
+}
+
+.footer-info {
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.footer-pagination {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.btn-page {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-page:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-page-active {
+  background: #2563eb;
+  color: #ffffff;
+  border-color: #2563eb;
+}
 </style>

@@ -1,9 +1,14 @@
 <?php
-$pageTitle = 'Chi tiết lương nhân sự - Vue 3';
+$pageTitle = 'Quản lý lương thưởng nhân sự';
 $currentPage = 'luongThuong';
 
+$cssPath = __DIR__ . '/../../public/dist/admin/salary-detail.css';
+$jsPath = __DIR__ . '/../../public/dist/admin/salary-detail.js';
+$cssVersion = file_exists($cssPath) ? filemtime($cssPath) : time();
+$jsVersion = file_exists($jsPath) ? filemtime($jsPath) : time();
+
 $additionalCSS = [
-    BASE_URL . 'public/dist/admin/salary-detail.css?v=' . rawurlencode(ASSET_VERSION),
+    BASE_URL . 'public/dist/admin/salary-detail.css?v=' . $cssVersion,
 ];
 
 ob_start();
@@ -27,7 +32,7 @@ ob_start();
     window.__BASE_URL__ = '<?= BASE_URL ?>';
     window.__ADMIN_SALARY_DETAIL_INIT__ = <?= json_encode($vueSalaryData ?? [], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
 </script>
-<script type="module" nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>" src="<?= BASE_URL ?>public/dist/admin/salary-detail.js?v=<?= rawurlencode(ASSET_VERSION) ?>"></script>
+<script type="module" nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>" src="<?= BASE_URL ?>public/dist/admin/salary-detail.js?v=<?= $jsVersion ?>"></script>
 
 <?php
 $content = ob_get_clean();

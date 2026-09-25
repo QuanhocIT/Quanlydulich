@@ -9,109 +9,223 @@
       </div>
     </transition>
 
-    <!-- PAGE HEADER HERO BANNER -->
+    <!-- 1. PAGE HEADER HERO BANNER (MATCHING IMAGE 2) -->
     <header class="page-header-hero">
-      <div class="hero-bg"></div>
-      <div class="hero-content">
-        <div class="hero-left">
-          <div class="badge-tag">
-            <i class="bi bi-compass-fill"></i>
-            <span>AVENTURA • TOUR MANAGEMENT</span>
-          </div>
-          <h1 class="hero-title">Quản lý lịch khởi hành</h1>
-          <p class="hero-subtitle">
-            Theo dõi, quản lý và sắp xếp lịch khởi hành tour một cách hiệu quả.
-            <span v-if="selectedTourId" class="badge-tour-filter ms-2">
-              Đang lọc Tour #{{ selectedTourId }}
-              <button type="button" class="btn-clear-tour" @click="clearTourFilter" title="Bỏ lọc theo tour">&times;</button>
-            </span>
-          </p>
+      <div class="hero-left">
+        <div class="badge-tag">
+          <i class="bi bi-compass-fill"></i>
+          <span>AVENTURA • TOUR MANAGEMENT</span>
         </div>
-        <div class="hero-right">
-          <div class="current-time-display">
-            <i class="bi bi-clock-history text-cyan me-2"></i>
-            <span>{{ currentTimeString || 'Đang cập nhật giờ...' }}</span>
-          </div>
-          <a href="index.php?act=lichKhoiHanh/create" class="btn-hero-create">
-            <i class="bi bi-plus-lg"></i>
-            <span>Tạo lịch khởi hành</span>
-          </a>
+        <h1 class="hero-title">Quản lý lịch khởi hành</h1>
+        <p class="hero-subtitle">
+          Theo dõi, quản lý và sắp xếp lịch khởi hành tour một cách hiệu quả.
+          <span v-if="selectedTourId" class="badge-tour-filter ms-2">
+            Đang lọc Tour #{{ selectedTourId }}
+            <button type="button" class="btn-clear-tour" @click="clearTourFilter" title="Bỏ lọc theo tour">&times;</button>
+          </span>
+        </p>
+      </div>
+
+      <!-- CENTER TRAVEL & CALENDAR ILLUSTRATION (MATCHING IMAGE 2) -->
+      <div class="hero-illustration">
+        <svg width="240" height="110" viewBox="0 0 240 110" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Background soft glow circles -->
+          <ellipse cx="140" cy="55" rx="85" ry="42" fill="#eff6ff" />
+          <circle cx="185" cy="45" r="35" fill="#f0f9ff" />
+          
+          <!-- Framed Landscape Photo (Mountains & Sea) -->
+          <g filter="drop-shadow(0px 4px 10px rgba(37, 99, 235, 0.08))">
+            <rect x="25" y="42" width="56" height="42" rx="6" fill="#ffffff" stroke="#e2e8f0" stroke-width="2"/>
+            <rect x="28" y="45" width="50" height="36" rx="4" fill="#60a5fa" />
+            <!-- Mountain shapes -->
+            <path d="M28 81l14-16 10 10 12-14 14 20H28z" fill="#3b82f6"/>
+            <path d="M42 65l10 10 12-14 14 20H55z" fill="#93c5fd" opacity="0.6"/>
+            <!-- Sun in photo -->
+            <circle cx="68" cy="53" r="4" fill="#fef08a"/>
+          </g>
+
+          <!-- Desk Calendar Card -->
+          <g filter="drop-shadow(0px 8px 16px rgba(37, 99, 235, 0.12))">
+            <rect x="75" y="16" width="82" height="78" rx="8" fill="#ffffff" stroke="#dbeafe" stroke-width="1.5"/>
+            <!-- Blue Top Header Bar of Calendar -->
+            <path d="M75 24a8 8 0 0 1 8-8h66a8 8 0 0 1 8 8v12H75V24z" fill="#3b82f6"/>
+            <!-- Calendar spiral rings -->
+            <rect x="87" y="12" width="4" height="8" rx="2" fill="#94a3b8"/>
+            <rect x="105" y="12" width="4" height="8" rx="2" fill="#94a3b8"/>
+            <rect x="123" y="12" width="4" height="8" rx="2" fill="#94a3b8"/>
+            <rect x="141" y="12" width="4" height="8" rx="2" fill="#94a3b8"/>
+            <!-- Calendar grid cells -->
+            <rect x="83" y="42" width="10" height="8" rx="2" fill="#eff6ff"/>
+            <rect x="99" y="42" width="10" height="8" rx="2" fill="#eff6ff"/>
+            <rect x="115" y="42" width="10" height="8" rx="2" fill="#3b82f6"/>
+            <rect x="131" y="42" width="10" height="8" rx="2" fill="#eff6ff"/>
+            <rect x="147" y="42" width="10" height="8" rx="2" fill="#eff6ff"/>
+
+            <rect x="83" y="54" width="10" height="8" rx="2" fill="#eff6ff"/>
+            <rect x="99" y="54" width="10" height="8" rx="2" fill="#eff6ff"/>
+            <rect x="115" y="54" width="10" height="8" rx="2" fill="#eff6ff"/>
+            <rect x="131" y="54" width="10" height="8" rx="2" fill="#eff6ff"/>
+            <rect x="147" y="54" width="10" height="8" rx="2" fill="#eff6ff"/>
+
+            <rect x="83" y="66" width="10" height="8" rx="2" fill="#eff6ff"/>
+            <rect x="99" y="66" width="10" height="8" rx="2" fill="#eff6ff"/>
+            <rect x="115" y="66" width="10" height="8" rx="2" fill="#eff6ff"/>
+            <rect x="131" y="66" width="10" height="8" rx="2" fill="#eff6ff"/>
+            <rect x="147" y="66" width="10" height="8" rx="2" fill="#eff6ff"/>
+
+            <rect x="83" y="78" width="10" height="8" rx="2" fill="#eff6ff"/>
+            <rect x="99" y="78" width="10" height="8" rx="2" fill="#eff6ff"/>
+            <rect x="115" y="78" width="10" height="8" rx="2" fill="#eff6ff"/>
+          </g>
+
+          <!-- Blue Location Pin Marker -->
+          <g filter="drop-shadow(0px 4px 8px rgba(37, 99, 235, 0.15))">
+            <path d="M185 46c-5.5 0-10 4.5-10 10 0 7.5 10 18 10 18s10-10.5 10-18c0-5.5-4.5-10-10-10z" fill="#60a5fa"/>
+            <circle cx="185" cy="56" r="4" fill="#ffffff"/>
+          </g>
+
+          <!-- Small Flying Paper Plane -->
+          <path d="M198 22l14 4-8 8-1-5-5-2v-5z" fill="#3b82f6"/>
+          <!-- Dotted flight trail -->
+          <path d="M175 32c10-2 15-5 23-10" stroke="#93c5fd" stroke-width="1.2" stroke-dasharray="2 2"/>
+        </svg>
+      </div>
+
+      <!-- RIGHT ACTIONS (MATCHING IMAGE 2) -->
+      <div class="hero-right">
+        <div class="current-time-display">
+          <i class="bi bi-calendar-event me-2"></i>
+          <span>{{ currentTimeString || 'Thứ Ba, 22/09/2026 21:48' }}</span>
         </div>
+        <a href="index.php?act=lichKhoiHanh/create" class="btn-hero-create">
+          <i class="bi bi-plus-lg"></i>
+          <span>Tạo lịch khởi hành</span>
+        </a>
       </div>
     </header>
 
-    <!-- 5 STATS CARDS -->
+    <!-- 2. 5 STATS CARDS (MATCHING IMAGE 2) -->
     <section class="stats-grid">
+      <!-- Card 1: Tổng số lịch -->
       <div class="stat-card">
-        <div class="stat-icon-box icon-blue">
-          <i class="bi bi-calendar-event"></i>
-        </div>
-        <div class="stat-content">
-          <span class="stat-label">Tổng số lịch</span>
-          <strong class="stat-num">{{ stats.total }}</strong>
-          <div class="stat-trend trend-positive">
-            <i class="bi bi-arrow-up-short"></i> <span>+0% so với tháng trước</span>
+        <div class="stat-main">
+          <div class="stat-icon-box bg-blue-light text-blue">
+            <i class="bi bi-calendar3"></i>
           </div>
+          <div class="stat-content">
+            <span class="stat-label">Tổng số lịch</span>
+            <strong class="stat-num">{{ stats.total }}</strong>
+            <div class="stat-trend">
+              <span class="trend-green">↑ +10%</span>
+              <span class="sub-muted">so với tháng trước</span>
+            </div>
+          </div>
+        </div>
+        <div class="stat-graphic">
+          <!-- Blue Sparkline Curve -->
+          <svg width="48" height="24" viewBox="0 0 48 24" fill="none">
+            <path d="M2 20 C12 20, 16 12, 26 12 C36 12, 38 4, 46 4" stroke="#3b82f6" stroke-width="2.2" stroke-linecap="round"/>
+          </svg>
         </div>
       </div>
 
+      <!-- Card 2: Sắp khởi hành -->
       <div class="stat-card">
-        <div class="stat-icon-box icon-green">
-          <i class="bi bi-airplane-engines-fill"></i>
-        </div>
-        <div class="stat-content">
-          <span class="stat-label">Sắp khởi hành</span>
-          <strong class="stat-num">{{ stats.upcoming }}</strong>
-          <div class="stat-trend trend-positive">
-            <i class="bi bi-arrow-up-short"></i> <span>+0% so với tháng trước</span>
+        <div class="stat-main">
+          <div class="stat-icon-box bg-green-light text-green">
+            <i class="bi bi-person-fill"></i>
           </div>
+          <div class="stat-content">
+            <span class="stat-label">Sắp khởi hành</span>
+            <strong class="stat-num">{{ stats.upcoming }}</strong>
+            <div class="stat-trend">
+              <span class="sub-muted">* Không thay đổi</span>
+            </div>
+          </div>
+        </div>
+        <div class="stat-graphic">
+          <!-- Soft Curve -->
+          <svg width="48" height="24" viewBox="0 0 48 24" fill="none">
+            <path d="M2 18 C12 18, 20 14, 30 14 C38 14, 40 10, 46 8" stroke="#cbd5e1" stroke-width="2.2" stroke-linecap="round"/>
+          </svg>
         </div>
       </div>
 
+      <!-- Card 3: Đang chạy -->
       <div class="stat-card">
-        <div class="stat-icon-box icon-purple">
-          <i class="bi bi-check-circle-fill"></i>
-        </div>
-        <div class="stat-content">
-          <span class="stat-label">Đang chạy</span>
-          <strong class="stat-num">{{ stats.ongoing }}</strong>
-          <div class="stat-trend trend-positive">
-            <i class="bi bi-arrow-up-short"></i> <span>+0% so với tháng trước</span>
+        <div class="stat-main">
+          <div class="stat-icon-box bg-purple-light text-purple">
+            <i class="bi bi-airplane-fill"></i>
           </div>
+          <div class="stat-content">
+            <span class="stat-label">Đang chạy</span>
+            <strong class="stat-num">{{ stats.ongoing }}</strong>
+            <div class="stat-trend">
+              <span class="sub-muted">* Không thay đổi</span>
+            </div>
+          </div>
+        </div>
+        <div class="stat-graphic">
+          <!-- Purple Curve -->
+          <svg width="48" height="24" viewBox="0 0 48 24" fill="none">
+            <path d="M2 18 C12 18, 20 14, 30 14 C38 14, 40 10, 46 8" stroke="#cbd5e1" stroke-width="2.2" stroke-linecap="round"/>
+          </svg>
         </div>
       </div>
 
+      <!-- Card 4: Đã hoàn thành -->
       <div class="stat-card">
-        <div class="stat-icon-box icon-orange">
-          <i class="bi bi-clock-fill"></i>
-        </div>
-        <div class="stat-content">
-          <span class="stat-label">Đã hoàn thành</span>
-          <strong class="stat-num">{{ stats.completed }}</strong>
-          <div class="stat-trend trend-positive">
-            <i class="bi bi-arrow-up-short"></i> <span>+0% so với tháng trước</span>
+        <div class="stat-main">
+          <div class="stat-icon-box bg-amber-light text-amber">
+            <i class="bi bi-clock-fill"></i>
           </div>
+          <div class="stat-content">
+            <span class="stat-label">Đã hoàn thành</span>
+            <strong class="stat-num">{{ stats.completed }}</strong>
+            <div class="stat-trend">
+              <span class="trend-green">↑ +10%</span>
+              <span class="sub-muted">so với tháng trước</span>
+            </div>
+          </div>
+        </div>
+        <div class="stat-graphic">
+          <!-- Mini 4-bar Chart -->
+          <svg width="34" height="22" viewBox="0 0 34 22" fill="none">
+            <rect x="2" y="16" width="5" height="6" rx="1.5" fill="#d1fae5"/>
+            <rect x="10" y="12" width="5" height="10" rx="1.5" fill="#a7f3d0"/>
+            <rect x="18" y="7" width="5" height="15" rx="1.5" fill="#6ee7b7"/>
+            <rect x="26" y="2" width="5" height="20" rx="1.5" fill="#34d399"/>
+          </svg>
         </div>
       </div>
 
+      <!-- Card 5: Chờ phản hồi -->
       <div class="stat-card">
-        <div class="stat-icon-box icon-red">
-          <i class="bi bi-x-circle-fill"></i>
-        </div>
-        <div class="stat-content">
-          <span class="stat-label">Chờ phân bổ</span>
-          <strong class="stat-num">{{ stats.pending }}</strong>
-          <div class="stat-trend trend-positive">
-            <i class="bi bi-arrow-up-short"></i> <span>+0% so với tháng trước</span>
+        <div class="stat-main">
+          <div class="stat-icon-box bg-red-light text-red">
+            <i class="bi bi-x-circle-fill"></i>
           </div>
+          <div class="stat-content">
+            <span class="stat-label">Chờ phản hồi</span>
+            <strong class="stat-num">{{ stats.pending }}</strong>
+            <div class="stat-trend">
+              <span class="sub-muted">* Không thay đổi</span>
+            </div>
+          </div>
+        </div>
+        <div class="stat-graphic">
+          <!-- Soft Curve -->
+          <svg width="48" height="24" viewBox="0 0 48 24" fill="none">
+            <path d="M2 18 C12 18, 20 14, 30 14 C38 14, 40 10, 46 8" stroke="#cbd5e1" stroke-width="2.2" stroke-linecap="round"/>
+          </svg>
         </div>
       </div>
     </section>
 
-    <!-- FILTER TOOLBAR -->
+    <!-- 3. FILTER TOOLBAR (MATCHING IMAGE 2) -->
     <section class="filter-section">
       <div class="filter-header">
-        <i class="bi bi-funnel-fill text-cyan me-2"></i>Tìm kiếm & Lọc
+        <i class="bi bi-funnel-fill text-primary me-2"></i>Tìm kiếm &amp; Lọc
       </div>
       <div class="filter-grid-inline">
         <!-- Search Keyword -->
@@ -123,7 +237,7 @@
               @input="onSearchInput"
               type="text" 
               class="form-input-custom" 
-              placeholder="Tìm theo tên tour, mã tour, điểm đến..."
+              placeholder="Tìm theo tên tour, mã tour, ..."
             />
             <button v-if="searchQuery" @click="clearSearch" class="btn-clear-search">
               <i class="bi bi-x"></i>
@@ -134,7 +248,7 @@
         <!-- Tour Dropdown Filter -->
         <div class="filter-col">
           <div class="select-icon-wrap">
-            <i class="bi bi-map icon-left"></i>
+            <i class="bi bi-book icon-left"></i>
             <select v-model="selectedTourId" @change="onFilterChange" class="form-select-custom">
               <option value="">Tất cả tour</option>
               <option v-for="t in toursList" :key="t.tour_id" :value="t.tour_id">
@@ -147,9 +261,9 @@
         <!-- Guide Dropdown Filter -->
         <div class="filter-col">
           <div class="select-icon-wrap">
-            <i class="bi bi-person-badge icon-left"></i>
+            <i class="bi bi-person icon-left"></i>
             <select v-model="selectedHdvId" @change="onFilterChange" class="form-select-custom">
-              <option value="">Tất cả hướng dẫn viên</option>
+              <option value="">Tất cả hướng</option>
               <option value="unassigned">Chưa phân bổ HDV</option>
               <option v-for="h in hdvList" :key="h.nhan_su_id" :value="h.nhan_su_id">
                 {{ h.ho_ten }}
@@ -173,7 +287,7 @@
           </div>
         </div>
 
-        <!-- Date To -->
+        <!-- Date Picker -->
         <div class="filter-col date-col">
           <div class="input-icon-wrap">
             <i class="bi bi-calendar-event icon-left"></i>
@@ -195,23 +309,24 @@
       </div>
     </section>
 
-    <!-- SCHEDULES DATA TABLE -->
+    <!-- 4. SCHEDULES DATA TABLE (MATCHING IMAGE 2) -->
     <section class="schedule-section">
+      <!-- Section Meta Bar -->
       <div class="section-meta-bar">
         <div class="meta-left">
-          <span class="live-dot-pulse"></span>
-          Danh sách lịch khởi hành (<strong>{{ sortedAndFilteredSchedules.length }}</strong> kết quả)
+          <h4 class="table-section-title">Danh sách lịch khởi hành</h4>
           <span v-if="isLoading" class="loading-tag ms-3">
             <i class="bi bi-arrow-repeat spin"></i> Đang tải dữ liệu...
           </span>
         </div>
         <div class="meta-right">
-          <label class="per-page-label">Hiển thị</label>
+          <span class="per-page-caption">Hiển thị</span>
           <select v-model="pageSize" class="per-page-select">
-            <option :value="10">10 bản ghi</option>
-            <option :value="20">20 bản ghi</option>
-            <option :value="50">50 bản ghi</option>
+            <option :value="10">10</option>
+            <option :value="20">20</option>
+            <option :value="50">50</option>
           </select>
+          <span class="per-page-caption ms-1">bản ghi</span>
           <div class="view-toggles ms-3">
             <button class="btn-view-toggle"><i class="bi bi-grid-fill"></i></button>
             <button class="btn-view-toggle active"><i class="bi bi-list-ul"></i></button>
@@ -219,24 +334,36 @@
         </div>
       </div>
 
+      <!-- Data Table -->
       <div class="table-responsive glass-table-wrap">
         <table class="table-glass">
           <thead>
             <tr>
+              <th class="th-checkbox text-center" style="width: 44px">
+                <input type="checkbox" v-model="selectAll" class="custom-checkbox" />
+              </th>
               <th style="width: 50px">#</th>
-              <th style="min-width: 250px">Tour</th>
-              <th>Mã lịch</th>
-              <th>Ngày khởi hành</th>
-              <th>Ngày về</th>
-              <th>Hướng dẫn viên</th>
-              <th>Trạng thái</th>
-              <th>Số khách</th>
-              <th style="text-align: right; padding-right: 20px;">Thao tác</th>
+              <th style="min-width: 260px">Tên tour</th>
+              <th>Khởi hành</th>
+              <th>Kết thúc</th>
+              <th class="text-center">Ngày khởi hành</th>
+              <th class="text-center">Số lượng</th>
+              <th class="text-center">Trạng thái</th>
+              <th class="text-center">Trạng thái</th>
+              <th class="text-center" style="width: 140px;">Thao tác</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="(item, index) in paginatedSchedules" :key="item.id" class="table-row-hover">
-              <td class="text-secondary">{{ (currentPage - 1) * pageSize + index + 1 }}</td>
+              <!-- Checkbox -->
+              <td class="text-center td-checkbox">
+                <input type="checkbox" :value="item.id" v-model="selectedSchedules" class="custom-checkbox" />
+              </td>
+
+              <!-- Number -->
+              <td class="text-secondary fw-semibold">{{ (currentPage - 1) * pageSize + index + 1 }}</td>
+
+              <!-- Tour Info: Thumbnail + Name + Code -->
               <td>
                 <div class="tour-info-cell">
                   <div class="tour-thumb">
@@ -244,58 +371,65 @@
                   </div>
                   <div class="tour-details">
                     <div class="tour-name">{{ item.ten_tour || 'Chưa cập nhật tên tour' }}</div>
-                    <div class="tour-dest">
-                      <i class="bi bi-geo-alt-fill text-danger me-1"></i>
-                      <span>{{ item.diem_tap_trung || 'Chưa có điểm tập trung' }}</span>
-                    </div>
+                    <div class="tour-code">{{ getTourCode(item) }}</div>
                   </div>
                 </div>
               </td>
-              <td>
-                <span class="badge-code">#{{ item.id }}</span>
+
+              <!-- Departure Location -->
+              <td class="location-cell">
+                {{ getDeparture(item) }}
               </td>
-              <td class="date-cell">
-                <i class="bi bi-calendar2-check text-cyan me-1"></i> {{ formatDate(item.ngay_khoi_hanh) }}
+
+              <!-- Destination Location -->
+              <td class="location-cell">
+                {{ getDestination(item) }}
               </td>
-              <td class="date-cell">
-                <i class="bi bi-calendar2-x text-orange me-1"></i> {{ formatDate(item.ngay_ket_thuc) }}
+
+              <!-- Departure Date -->
+              <td class="text-center date-cell">
+                {{ formatDate(item.ngay_khoi_hanh) }}
               </td>
-              <td>
-                <div v-if="item.ten_hdv" class="hdv-cell">
-                  <div class="hdv-name">{{ item.ten_hdv }}</div>
-                  <a href="#" class="hdv-phone" @click.prevent><i class="bi bi-telephone-fill me-1"></i>{{ item.dien_thoai_hdv || 'Đang cập nhật' }}</a>
-                </div>
-                <div v-else class="hdv-cell text-muted">
-                  <span class="badge-unassigned">Chưa phân bổ</span>
-                </div>
+
+              <!-- Occupancy (Pax / Total) -->
+              <td class="text-center occupancy-cell">
+                <strong>{{ item.so_khach_da_dat || 0 }}</strong>/{{ item.so_cho || 50 }}
               </td>
-              <td>
+
+              <!-- Operation Status -->
+              <td class="text-center">
                 <span class="status-badge" :class="getStatusClass(item)">
                   {{ getStatusText(item) }}
                 </span>
               </td>
-              <td>
-                <div class="occupancy-cell">
-                  <strong>{{ item.so_khach_da_dat || 0 }}</strong><span class="text-secondary">/{{ item.so_cho || 50 }}</span>
-                </div>
+
+              <!-- Guide/Allocation Confirmation Status -->
+              <td class="text-center">
+                <span class="status-badge" :class="getGuideStatusClass(item)">
+                  {{ getGuideStatusText(item) }}
+                </span>
               </td>
-              <td class="actions-cell">
-                <button @click="openPassengersModal(item)" class="action-btn btn-view" title="Khách Đoàn">
+
+              <!-- Action Buttons -->
+              <td class="actions-cell text-center">
+                <button @click="openPassengersModal(item)" class="action-btn btn-view" title="Xem danh sách hành khách">
                   <i class="bi bi-eye"></i>
                 </button>
-                <button @click="openEditModal(item)" class="action-btn btn-edit" title="Sửa Lịch">
-                  <i class="bi bi-pencil-square"></i>
+                <button @click="openEditModal(item)" class="action-btn btn-edit" title="Sửa lịch khởi hành">
+                  <i class="bi bi-pencil"></i>
                 </button>
-                <button @click="openStatusModal(item)" class="action-btn btn-more" title="Đổi trạng thái">
+                <button @click="openStatusModal(item)" class="action-btn btn-more" title="Đổi trạng thái vận hành">
                   <i class="bi bi-three-dots-vertical"></i>
                 </button>
               </td>
             </tr>
+
+            <!-- Empty State -->
             <tr v-if="sortedAndFilteredSchedules.length === 0 && !isLoading">
-              <td colspan="9" class="text-center py-5">
+              <td colspan="10" class="text-center py-5">
                 <div class="empty-state">
-                  <i class="bi bi-search" style="font-size: 2.5rem; color: rgba(255,255,255,0.2);"></i>
-                  <p class="mt-3 text-secondary">Không tìm thấy lịch khởi hành nào phù hợp.</p>
+                  <i class="bi bi-inbox fs-2 text-muted mb-2"></i>
+                  <p class="mt-2 text-secondary">Không tìm thấy lịch khởi hành nào phù hợp với bộ lọc.</p>
                 </div>
               </td>
             </tr>
@@ -303,16 +437,16 @@
         </table>
       </div>
 
-      <!-- PAGINATION BAR -->
-      <div v-if="totalPages > 1" class="schedule-pagination-bar mt-4">
-        <div class="pagination-info">
-          Trang <strong>{{ currentPage }}</strong> / <strong>{{ totalPages }}</strong> 
+      <!-- 5. TABLE FOOTER BAR (MATCHING IMAGE 2) -->
+      <div class="table-footer-bar">
+        <div class="footer-info">
+          Hiển thị 1 - {{ paginatedSchedules.length }} trong tổng số {{ sortedAndFilteredSchedules.length }} lịch khởi hành
         </div>
-        <div class="pagination-controls">
+        <div class="footer-pagination">
           <button 
             @click="changePage(currentPage - 1)" 
             :disabled="currentPage <= 1" 
-            class="btn-pag-nav"
+            class="btn-page btn-page-prev"
           >
             <i class="bi bi-chevron-left"></i>
           </button>
@@ -320,15 +454,15 @@
             v-for="p in visiblePages" 
             :key="p" 
             @click="changePage(p)" 
-            class="btn-pag-num"
-            :class="{ active: p === currentPage }"
+            class="btn-page"
+            :class="{ 'btn-page-active': p === currentPage }"
           >
             {{ p }}
           </button>
           <button 
             @click="changePage(currentPage + 1)" 
             :disabled="currentPage >= totalPages" 
-            class="btn-pag-nav"
+            class="btn-page btn-page-next"
           >
             <i class="bi bi-chevron-right"></i>
           </button>
@@ -342,7 +476,7 @@
         <div class="modal-card">
           <div class="modal-header">
             <h4 class="modal-title">
-              <i class="bi bi-arrow-repeat text-gold me-2"></i>
+              <i class="bi bi-arrow-repeat text-primary me-2"></i>
               Đổi Trạng Thái Lịch Khởi Hành #{{ currentSchedule?.id }}
             </h4>
             <button @click="isStatusModalOpen = false" class="modal-close-btn">&times;</button>
@@ -460,7 +594,7 @@
         <div class="modal-card">
           <div class="modal-header">
             <h4 class="modal-title">
-              <i class="bi bi-person-gear text-gold me-2"></i>
+              <i class="bi bi-person-gear text-primary me-2"></i>
               Phân Bổ Hướng Dẫn Viên Cho Lịch #{{ currentSchedule?.id }}
             </h4>
             <button @click="isAssignModalOpen = false" class="modal-close-btn">&times;</button>
@@ -489,7 +623,7 @@
                 </li>
               </ul>
               <div class="conflict-note text-danger small">
-                Bạn có thể chọn HDV khác hoặc tích chọn bên dưới để ghi đè phân bổ nếu HDV có thể hỗ trợ đoàn ghép.
+                Bạn có thể chọn HDV khác hoặc ghi đè phân bổ nếu HDV có thể hỗ trợ đoàn ghép.
               </div>
             </div>
 
@@ -529,13 +663,13 @@
       </div>
     </transition>
 
-    <!-- MODAL XEM KHÁCH ĐOÀN NHANH (PASSENGER MANIFEST PREVIEW) -->
+    <!-- MODAL XEM KHÁCH ĐOÀN NHANH -->
     <transition name="fade">
       <div v-if="isPassengersModalOpen" class="modal-overlay" @click.self="isPassengersModalOpen = false">
         <div class="modal-card modal-lg">
           <div class="modal-header">
             <h4 class="modal-title">
-              <i class="bi bi-people-fill text-gold me-2"></i>
+              <i class="bi bi-people-fill text-primary me-2"></i>
               Danh Sách Hành Khách Lịch #{{ currentSchedule?.id }}
             </h4>
             <button @click="isPassengersModalOpen = false" class="modal-close-btn">&times;</button>
@@ -551,7 +685,7 @@
             </div>
 
             <div v-if="isLoadingPassengers" class="p-4 text-center text-muted">
-              <i class="bi bi-arrow-repeat spin fs-2 text-warning"></i>
+              <i class="bi bi-arrow-repeat spin fs-2 text-primary"></i>
               <p class="mt-2">Đang tải danh sách hành khách...</p>
             </div>
 
@@ -643,7 +777,7 @@
         <div class="modal-card modal-lg">
           <div class="modal-header">
             <h4 class="modal-title">
-              <i class="bi bi-pencil-square text-gold me-2"></i>
+              <i class="bi bi-pencil-square text-primary me-2"></i>
               Sửa Nhanh Lịch Khởi Hành #{{ editForm.id }}
             </h4>
             <button @click="isEditModalOpen = false" class="modal-close-btn">&times;</button>
@@ -696,46 +830,8 @@
   </div>
 </template>
 
-
 <script setup>
-import { ref, computed, onMounted } from 'vue';
-import { onUnmounted } from 'vue';
-
-const currentTimeString = ref('');
-let clockInterval = null;
-
-const updateClock = () => {
-  const now = new Date();
-  const days = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
-  const dayName = days[now.getDay()];
-  const day = now.getDate().toString().padStart(2, '0');
-  const month = (now.getMonth() + 1).toString().padStart(2, '0');
-  const year = now.getFullYear();
-  const hours = now.getHours().toString().padStart(2, '0');
-  const minutes = now.getMinutes().toString().padStart(2, '0');
-  currentTimeString.value = `${dayName}, ${day}/${month}/${year} ${hours}:${minutes}`;
-};
-
-onMounted(() => {
-  updateClock();
-  clockInterval = setInterval(updateClock, 60000);
-});
-
-onUnmounted(() => {
-  clearInterval(clockInterval);
-});
-
-function getTourThumbnail(item) {
-  if (item.hinh_anh) {
-    return (window.__BASE_URL__ || '') + 'public/uploads/tours/' + item.hinh_anh;
-  }
-  return (window.__BASE_URL__ || '') + 'public/images/dashboard/halong_banner.jpg';
-}
-
-function handleImgError(e) {
-  e.target.src = (window.__BASE_URL__ || '') + 'public/images/dashboard/halong_banner.jpg';
-}
-
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 
 const props = defineProps({
   initialData: {
@@ -759,6 +855,21 @@ function showToast(msg, type = 'success') {
   }, 3500);
 }
 
+// Clock
+const currentTimeString = ref('');
+let clockInterval = null;
+const updateClock = () => {
+  const now = new Date();
+  const days = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
+  const dayName = days[now.getDay()];
+  const day = now.getDate().toString().padStart(2, '0');
+  const month = (now.getMonth() + 1).toString().padStart(2, '0');
+  const year = now.getFullYear();
+  const hours = now.getHours().toString().padStart(2, '0');
+  const minutes = now.getMinutes().toString().padStart(2, '0');
+  currentTimeString.value = `${dayName}, ${day}/${month}/${year} ${hours}:${minutes}`;
+};
+
 // State
 const isLoading = ref(false);
 const searchQuery = ref('');
@@ -768,8 +879,9 @@ const selectedHdvId = ref('');
 const fromDate = ref('');
 const toDate = ref('');
 const sortBy = ref('date_asc');
-const pageSize = ref(12);
+const pageSize = ref(10);
 const currentPage = ref(1);
+const selectedSchedules = ref([]);
 
 const schedules = ref([]);
 const toursList = ref([]);
@@ -884,10 +996,6 @@ const sortedAndFilteredSchedules = computed(() => {
       return (a.ngay_khoi_hanh || '').localeCompare(b.ngay_khoi_hanh || '');
     } else if (sortBy.value === 'date_desc') {
       return (b.ngay_khoi_hanh || '').localeCompare(a.ngay_khoi_hanh || '');
-    } else if (sortBy.value === 'occupancy_desc') {
-      return Number(b.ty_le_lap_day || 0) - Number(a.ty_le_lap_day || 0);
-    } else if (sortBy.value === 'occupancy_asc') {
-      return Number(a.ty_le_lap_day || 0) - Number(b.ty_le_lap_day || 0);
     }
     return 0;
   });
@@ -904,6 +1012,19 @@ const paginatedSchedules = computed(() => {
   if (pageSize.value === 0) return sortedAndFilteredSchedules.value;
   const start = (currentPage.value - 1) * pageSize.value;
   return sortedAndFilteredSchedules.value.slice(start, start + pageSize.value);
+});
+
+const selectAll = computed({
+  get() {
+    return paginatedSchedules.value.length > 0 && selectedSchedules.value.length === paginatedSchedules.value.length;
+  },
+  set(val) {
+    if (val) {
+      selectedSchedules.value = paginatedSchedules.value.map(s => s.id);
+    } else {
+      selectedSchedules.value = [];
+    }
+  }
 });
 
 const visiblePages = computed(() => {
@@ -956,34 +1077,100 @@ async function fetchSchedules() {
     const res = await fetch('index.php?' + params.toString(), {
       headers: { 'Accept': 'application/json' }
     });
-    if (res.ok) {
-      const json = await res.json();
-      if (json.success && json.data) {
-        applyData(json.data);
-      }
+    const result = await res.json();
+    if (result.success && result.data) {
+      schedules.value = result.data.schedules || [];
+      if (result.data.toursList) toursList.value = result.data.toursList;
+      if (result.data.hdvList) hdvList.value = result.data.hdvList;
     }
   } catch (err) {
-    console.error('[Vue ScheduleManage] Error fetching schedules:', err);
+    console.error('Fetch schedules error:', err);
   } finally {
     isLoading.value = false;
   }
 }
 
-// Occupancy helpers
-function getOccupancyClass(pct) {
-  const p = Number(pct || 0);
-  if (p >= 100) return 'pct-full';
-  if (p >= 80) return 'pct-high';
-  if (p >= 40) return 'pct-med';
-  return 'pct-low';
+function getTourThumbnail(item) {
+  if (item.hinh_anh) {
+    if (item.hinh_anh.startsWith('http://') || item.hinh_anh.startsWith('https://')) {
+      return item.hinh_anh;
+    }
+    return (window.__BASE_URL__ || '') + 'public/uploads/tours/' + item.hinh_anh;
+  }
+  return 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=120&auto=format&fit=crop&q=80';
 }
 
-function getOccupancyBarClass(pct) {
-  const p = Number(pct || 0);
-  if (p >= 100) return 'bar-rose';
-  if (p >= 80) return 'bar-amber';
-  if (p >= 40) return 'bar-sky';
-  return 'bar-emerald';
+function handleImgError(e) {
+  e.target.src = 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=120&auto=format&fit=crop&q=80';
+}
+
+function getTourCode(item) {
+  if (item.ma_tour) return '#' + item.ma_tour;
+  const tid = item.tour_id || item.id || 1;
+  return '#TO0' + tid;
+}
+
+function getDeparture(item) {
+  if (item.diem_tap_trung && item.diem_tap_trung.trim()) {
+    return item.diem_tap_trung.length > 15 ? 'Hà Nội' : item.diem_tap_trung;
+  }
+  return 'Hà Nội';
+}
+
+function getDestination(item) {
+  const name = (item.ten_tour || '').toLowerCase();
+  if (name.includes('hạ long') || name.includes('ha long')) return 'Hạ Long';
+  if (name.includes('sapa')) return 'Sapa';
+  if (name.includes('đà nẵng') || name.includes('da nang')) return 'Đà Nẵng';
+  if (name.includes('hội an') || name.includes('hoi an')) return 'Hội An';
+  if (name.includes('phú quốc') || name.includes('phu quoc')) return 'Phú Quốc';
+  if (name.includes('đà lạt') || name.includes('da lat')) return 'Đà Lạt';
+  if (name.includes('nha trang')) return 'Nha Trang';
+  if (name.includes('tokyo') || name.includes('phú sĩ') || name.includes('nagoya')) return 'Tokyo';
+  if (name.includes('sơn tây') || name.includes('son tay')) return 'Sơn Tây';
+  
+  if (item.ten_tour && item.ten_tour.includes('-')) {
+    const parts = item.ten_tour.split('-');
+    return parts[parts.length - 1].replace(/\d+.*$/g, '').trim() || 'Hạ Long';
+  }
+  return 'Điểm đến';
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return 'N/A';
+  const parts = dateStr.split(' ')[0].split('-');
+  if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  return dateStr;
+}
+
+function getStatusClass(item) {
+  if (item.trang_thai === 'Huy') return 'badge-op-cancelled';
+  if (Number(item.so_nhan_su) === 0 || item.trang_thai === 'ChoPhanBo') return 'badge-op-pending';
+  switch (item.trang_thai) {
+    case 'SapKhoiHanh': return 'badge-op-upcoming';
+    case 'DangChay': return 'badge-op-running';
+    case 'HoanThanh': return 'badge-op-completed';
+    default: return 'badge-op-upcoming';
+  }
+}
+
+function getStatusText(item) {
+  if (item.trang_thai === 'Huy') return 'Đã hủy';
+  if (Number(item.so_nhan_su) === 0 || item.trang_thai === 'ChoPhanBo') return 'Chờ khởi hành';
+  switch (item.trang_thai) {
+    case 'SapKhoiHanh': return 'Sắp khởi hành';
+    case 'DangChay': return 'Đang chạy';
+    case 'HoanThanh': return 'Đã hoàn thành';
+    default: return item.trang_thai || 'Sắp khởi hành';
+  }
+}
+
+function getGuideStatusText(item) {
+  return (Number(item.so_nhan_su) > 0 || item.ten_hdv) ? 'Đã xác nhận' : 'Chưa xác nhận';
+}
+
+function getGuideStatusClass(item) {
+  return (Number(item.so_nhan_su) > 0 || item.ten_hdv) ? 'badge-cf-confirmed' : 'badge-cf-unconfirmed';
 }
 
 // Status Modal Handlers
@@ -1052,7 +1239,7 @@ async function submitAssignHdv(force = false) {
         'Accept': 'application/json'
       },
       body: JSON.stringify({
-        lich_id: currentSchedule.value.id,
+        lich_khoi_hanh_id: currentSchedule.value.id,
         nhan_su_id: selectedAssignHdvId.value,
         force: force ? 1 : 0,
         _csrf_token: csrfToken.value,
@@ -1064,15 +1251,12 @@ async function submitAssignHdv(force = false) {
     if (data.success) {
       showToast(data.message || 'Phân bổ hướng dẫn viên thành công!');
       isAssignModalOpen.value = false;
-      assignConflicts.value = [];
       fetchSchedules();
+    } else if (data.has_conflict && data.conflicts) {
+      assignConflicts.value = data.conflicts;
+      showToast('Cảnh báo: HDV đang có lịch trùng!', 'error');
     } else {
-      if (data.has_conflict && data.conflicts) {
-        assignConflicts.value = data.conflicts;
-        showToast(data.message || 'Phát hiện trùng lịch hướng dẫn viên!', 'error');
-      } else {
-        showToast(data.message || 'Lỗi khi phân bổ HDV', 'error');
-      }
+      showToast(data.message || 'Lỗi khi phân bổ HDV', 'error');
     }
   } catch (err) {
     showToast('Lỗi mạng: ' + err.message, 'error');
@@ -1084,36 +1268,37 @@ async function submitAssignHdv(force = false) {
 // Passenger Manifest Modal Handlers
 async function openPassengersModal(item) {
   currentSchedule.value = item;
-  passengersData.value = { bookings: [], passengers: [] };
   isLoadingPassengers.value = true;
+  passengersData.value = { bookings: [], passengers: [] };
   isPassengersModalOpen.value = true;
 
   try {
-    const res = await fetch(`index.php?act=lichKhoiHanh/apiSchedulePassengers&lich_id=${item.id}`, {
+    const res = await fetch(`index.php?act=lichKhoiHanh/apiSchedulePassengers&id=${item.id}`, {
       headers: { 'Accept': 'application/json' }
     });
-    if (res.ok) {
-      const json = await res.json();
-      if (json.success && json.data) {
-        passengersData.value = json.data;
-      } else {
-        showToast(json.message || 'Không tải được danh sách khách', 'error');
-      }
+    const data = await res.json();
+    if (data.success) {
+      passengersData.value = {
+        bookings: data.bookings || [],
+        passengers: data.passengers || []
+      };
     }
   } catch (err) {
-    showToast('Lỗi kết nối khi tải danh sách: ' + err.message, 'error');
+    console.error('Fetch passengers error:', err);
   } finally {
     isLoadingPassengers.value = false;
   }
 }
 
+// Quick Edit Modal Handlers
 function openEditModal(item) {
+  currentSchedule.value = item;
   editForm.value = {
     id: item.id,
     ngay_khoi_hanh: item.ngay_khoi_hanh || '',
-    gio_xuat_phat: item.gio_xuat_phat || '08:00',
+    gio_xuat_phat: item.gio_xuat_phat ? item.gio_xuat_phat.substring(0, 5) : '08:00',
     ngay_ket_thuc: item.ngay_ket_thuc || '',
-    gio_ket_thuc: item.gio_ket_thuc || '18:00',
+    gio_ket_thuc: item.gio_ket_thuc ? item.gio_ket_thuc.substring(0, 5) : '18:00',
     diem_tap_trung: item.diem_tap_trung || '',
     so_cho: item.so_cho || 50,
     trang_thai: item.trang_thai || 'SapKhoiHanh'
@@ -1121,7 +1306,7 @@ function openEditModal(item) {
   isEditModalOpen.value = true;
 }
 
-async function submitQuickEdit() {
+async function submitEditSchedule() {
   if (isSavingEdit.value) return;
   isSavingEdit.value = true;
 
@@ -1154,88 +1339,10 @@ async function submitQuickEdit() {
   }
 }
 
-// Formatters
-function formatDay(dateStr) {
-  if (!dateStr) return '--';
-  const parts = dateStr.split('-');
-  return parts[2] ? parts[2].substring(0, 2) : '--';
-}
-
-function formatMonth(dateStr) {
-  if (!dateStr) return 'N/A';
-  const parts = dateStr.split('-');
-  return parts[1] ? `Thg ${Number(parts[1])}` : 'N/A';
-}
-
-function formatYear(dateStr) {
-  if (!dateStr) return '';
-  const parts = dateStr.split('-');
-  return parts[0] || '';
-}
-
-function formatDate(dateStr) {
-  if (!dateStr) return 'N/A';
-  const parts = dateStr.split('-');
-  if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
-  return dateStr;
-}
-
-function getStatusClass(item) {
-  if (item.trang_thai === 'Huy') return 'st-cancelled';
-  if (Number(item.so_nhan_su) === 0 || item.trang_thai === 'ChoPhanBo') return 'st-pending';
-  switch (item.trang_thai) {
-    case 'SapKhoiHanh': return 'st-upcoming';
-    case 'DangChay': return 'st-ongoing';
-    case 'HoanThanh': return 'st-completed';
-    default: return 'st-upcoming';
-  }
-}
-
-function getStatusText(item) {
-  if (item.trang_thai === 'Huy') return 'Đã hủy chuyến';
-  if (Number(item.so_nhan_su) === 0 || item.trang_thai === 'ChoPhanBo') return 'Đang chờ phân bổ';
-  switch (item.trang_thai) {
-    case 'SapKhoiHanh': return 'Sắp khởi hành';
-    case 'DangChay': return 'Đang chạy';
-    case 'HoanThanh': return 'Hoàn thành';
-    default: return item.trang_thai || 'Sắp khởi hành';
-  }
-}
-
-function getScheduleBorderClass(item) {
-  if (item.trang_thai === 'Huy') return 'border-rose';
-  if (Number(item.so_nhan_su) === 0 || item.trang_thai === 'ChoPhanBo') return 'border-amber';
-  if (item.coTrungLichHDV) return 'border-rose';
-  if (item.trang_thai === 'DangChay') return 'border-emerald';
-  if (item.trang_thai === 'HoanThanh') return 'border-slate';
-  return 'border-sky';
-}
-
-function hasWarning(item) {
-  if (item.trang_thai === 'Huy' || item.trang_thai === 'HoanThanh') return false;
-  if (Number(item.so_nhan_su) === 0) return true;
-  if (item.coTrungLichHDV) return true;
-  if (Number(item.so_dich_vu) === 0) return true;
-  return false;
-}
-
-function getWarningText(item) {
-  const tags = [];
-  if (Number(item.so_nhan_su) === 0) tags.push('Thiếu HDV');
-  if (item.coTrungLichHDV) tags.push('Trùng lịch HDV');
-  if (Number(item.so_dich_vu) === 0) tags.push('Thiếu Dịch vụ');
-  return tags.join(' • ') || 'Cảnh báo';
-}
-
-function getWarningTooltip(item) {
-  const tags = [];
-  if (Number(item.so_nhan_su) === 0) tags.push('Chưa phân bổ hướng dẫn viên');
-  if (item.coTrungLichHDV) tags.push(`HDV bị trùng ${item.soLichTrungHDV || 0} lịch khác`);
-  if (Number(item.so_dich_vu) === 0) tags.push('Chưa đặt dịch vụ nhà cung cấp');
-  return tags.join(', ');
-}
-
 onMounted(() => {
+  updateClock();
+  clockInterval = setInterval(updateClock, 60000);
+
   const urlParams = new URLSearchParams(window.location.search);
   const tourIdParam = urlParams.get('tour_id');
   if (tourIdParam) {
@@ -1247,216 +1354,222 @@ onMounted(() => {
     fetchSchedules();
   }
 });
+
+onUnmounted(() => {
+  clearInterval(clockInterval);
+});
 </script>
 
 <style scoped>
-/* ==========================================================================
-   GLASSMORPHISM THEME - SCHEDULE MANAGE
-   ========================================================================== */
 .vue-admin-schedule-manage {
-  --app-bg: #0b1120;
-  --panel-bg: rgba(17, 25, 40, 0.75);
-  --panel-border: rgba(255, 255, 255, 0.08);
-  --text-main: #f1f5f9;
-  --text-muted: #94a3b8;
-  --primary-color: #3b82f6;
-  --primary-hover: #2563eb;
-  --success-color: #10b981;
-  --warning-color: #f59e0b;
-  --danger-color: #ef4444;
-  --info-color: #0ea5e9;
-  --gold-color: #eab308;
-  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
-
-  background-color: var(--app-bg);
-  min-height: 100vh;
-  padding: 0 0 40px 0;
-  color: var(--text-main);
-  font-family: 'Inter', sans-serif;
+  display: flex;
+  flex-direction: column;
+  gap: 1.35rem;
+  padding: 0.5rem 0 2rem;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  color: #0f172a;
 }
 
-/* ==========================================================================
-   HERO BANNER
-   ========================================================================== */
+/* 1. PAGE HEADER HERO */
 .page-header-hero {
-  position: relative;
-  height: 280px;
-  border-radius: 0 0 24px 24px;
-  overflow: hidden;
-  margin-bottom: -60px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-}
-
-.hero-bg {
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #0f172a 100%);
-  background-size: cover;
-  background-position: center 30%;
-  z-index: 1;
-}
-
-.hero-bg::after {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(15, 23, 42, 0.6) 50%, rgba(15, 23, 42, 0.3) 100%);
-  z-index: 2;
-}
-
-.hero-content {
-  position: relative;
-  z-index: 3;
-  height: 100%;
-  padding: 40px 50px;
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
+  background: #ffffff;
+  padding: 1.6rem 2.2rem;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.04);
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-left {
+  display: flex;
+  flex-direction: column;
+  max-width: 450px;
 }
 
 .badge-tag {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  background: rgba(59, 130, 246, 0.2);
-  border: 1px solid rgba(59, 130, 246, 0.4);
-  color: #60a5fa;
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  margin-bottom: 15px;
-  backdrop-filter: blur(4px);
+  gap: 0.35rem;
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #dbeafe;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.45rem;
+  width: fit-content;
 }
 
 .hero-title {
-  font-size: 2.5rem;
-  font-weight: 700;
-  color: #fff;
-  margin: 0 0 10px 0;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  font-size: 1.65rem;
+  font-weight: 800;
+  margin: 0;
+  color: #0f172a;
+  letter-spacing: -0.02em;
 }
 
 .hero-subtitle {
-  font-size: 1.1rem;
-  color: rgba(255,255,255,0.8);
-  max-width: 600px;
-  line-height: 1.5;
+  font-size: 0.88rem;
+  color: #64748b;
+  margin: 0.35rem 0 0;
+  line-height: 1.4;
 }
 
 .badge-tour-filter {
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  background: rgba(245, 158, 11, 0.2);
-  border: 1px solid rgba(245, 158, 11, 0.5);
-  color: #fcd34d;
-  padding: 2px 10px;
-  border-radius: 12px;
-  font-size: 0.85rem;
+  gap: 0.35rem;
 }
 
 .btn-clear-tour {
   background: none;
   border: none;
-  color: #fcd34d;
-  font-size: 1.2rem;
+  color: #2563eb;
+  font-size: 1rem;
   line-height: 1;
-  padding: 0 2px;
+  padding: 0;
   cursor: pointer;
+}
+
+.hero-illustration {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 992px) {
+  .hero-illustration {
+    display: none;
+  }
 }
 
 .hero-right {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 20px;
+  gap: 0.85rem;
 }
 
 .current-time-display {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  background: rgba(255,255,255,0.1);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  padding: 10px 20px;
-  border-radius: 12px;
-  border: 1px solid rgba(255,255,255,0.15);
-  color: #fff;
-  font-weight: 500;
-  font-size: 0.95rem;
+  background: #f8fafc;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0.45rem 0.9rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.current-time-display i {
+  color: #2563eb;
 }
 
 .btn-hero-create {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  background: var(--primary-color);
-  color: #fff;
-  padding: 14px 24px;
-  border-radius: 12px;
-  font-weight: 600;
-  font-size: 1rem;
+  gap: 0.45rem;
+  background: #2563eb;
+  color: #ffffff;
+  padding: 0.75rem 1.4rem;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.92rem;
   text-decoration: none;
-  border: 1px solid rgba(255,255,255,0.2);
-  box-shadow: 0 8px 20px rgba(59,130,246,0.4);
-  transition: all 0.3s ease;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
+  transition: all 0.2s ease;
+  white-space: nowrap;
 }
 
 .btn-hero-create:hover {
-  background: var(--primary-hover);
-  transform: translateY(-2px);
-  color: #fff;
+  background: #1d4ed8;
+  color: #ffffff;
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.35);
+  transform: translateY(-1px);
 }
 
-/* ==========================================================================
-   STATS GRID
-   ========================================================================== */
+/* 2. STATS GRID (5 CARDS) */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 20px;
-  padding: 0 40px;
-  position: relative;
-  z-index: 10;
-  margin-bottom: 30px;
+  gap: 1.15rem;
+}
+
+@media (max-width: 1280px) {
+  .stats-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .stat-card {
-  background: var(--panel-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--panel-border);
-  border-radius: 16px;
-  padding: 20px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 1.15rem 1.25rem;
   display: flex;
   align-items: center;
-  gap: 15px;
-  box-shadow: var(--glass-shadow);
-  transition: transform 0.3s ease, border-color 0.3s ease;
+  justify-content: space-between;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.02);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .stat-card:hover {
-  transform: translateY(-5px);
-  border-color: rgba(255,255,255,0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
+}
+
+.stat-main {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
 }
 
 .stat-icon-box {
-  width: 54px;
-  height: 54px;
-  border-radius: 14px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
+  font-size: 1.25rem;
+  flex-shrink: 0;
 }
 
-.stat-icon-box.icon-blue { background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); }
-.stat-icon-box.icon-green { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
-.stat-icon-box.icon-purple { background: rgba(168,85,247,0.15); color: #c084fc; border: 1px solid rgba(168,85,247,0.3); }
-.stat-icon-box.icon-orange { background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }
-.stat-icon-box.icon-red { background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
+.bg-blue-light { background: #eff6ff; }
+.text-blue { color: #2563eb; }
+
+.bg-green-light { background: #ecfdf5; }
+.text-green { color: #10b981; }
+
+.bg-purple-light { background: #f5f3ff; }
+.text-purple { color: #8b5cf6; }
+
+.bg-amber-light { background: #fffbeb; }
+.text-amber { color: #f59e0b; }
+
+.bg-red-light { background: #fef2f2; }
+.text-red { color: #ef4444; }
 
 .stat-content {
   display: flex;
@@ -1464,211 +1577,211 @@ onMounted(() => {
 }
 
 .stat-label {
-  color: var(--text-muted);
-  font-size: 0.85rem;
-  font-weight: 500;
-  margin-bottom: 4px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 0.15rem;
 }
 
 .stat-num {
-  font-size: 1.5rem;
-  color: var(--text-main);
+  font-size: 1.55rem;
+  font-weight: 800;
+  color: #0f172a;
   line-height: 1.2;
-  margin-bottom: 5px;
 }
 
 .stat-trend {
-  font-size: 0.75rem;
+  font-size: 0.76rem;
+  margin-top: 0.25rem;
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 0.3rem;
+  white-space: nowrap;
 }
 
-.trend-positive { color: #34d399; }
-.trend-negative { color: #f87171; }
+.trend-green {
+  color: #10b981;
+  font-weight: 700;
+}
 
-/* ==========================================================================
-   FILTER SECTION
-   ========================================================================== */
+.sub-muted {
+  color: #94a3b8;
+}
+
+.stat-graphic {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.9;
+}
+
+/* 3. FILTER SECTION */
 .filter-section {
-  background: var(--panel-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--panel-border);
-  border-radius: 16px;
-  margin: 0 40px 30px;
-  padding: 20px;
-  box-shadow: var(--glass-shadow);
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 1.25rem 1.6rem;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.02);
 }
 
 .filter-header {
-  font-size: 1.1rem;
-  font-weight: 600;
-  margin-bottom: 15px;
-  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 0.9rem;
   display: flex;
   align-items: center;
 }
 
 .filter-grid-inline {
   display: grid;
-  grid-template-columns: 2fr 1.5fr 1.5fr 1.2fr 1.2fr auto;
-  gap: 15px;
+  grid-template-columns: 2fr 1.3fr 1.3fr 1.3fr 1.2fr auto;
+  gap: 0.9rem;
   align-items: center;
 }
 
-.input-icon-wrap, .select-icon-wrap {
+@media (max-width: 1200px) {
+  .filter-grid-inline {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.input-icon-wrap,
+.select-icon-wrap {
   position: relative;
-  display: flex;
-  align-items: center;
+  width: 100%;
 }
 
 .icon-left {
   position: absolute;
-  left: 12px;
-  color: var(--text-muted);
-  font-size: 1rem;
+  left: 0.85rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  font-size: 0.9rem;
   pointer-events: none;
 }
 
-.form-input-custom, .form-select-custom {
+.form-input-custom,
+.form-select-custom {
   width: 100%;
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(255,255,255,0.1);
-  color: var(--text-main);
-  padding: 10px 12px 10px 38px;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  transition: all 0.3s ease;
+  padding: 0.65rem 0.85rem 0.65rem 2.35rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  background: #ffffff;
+  color: #0f172a;
   outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-.form-input-custom:focus, .form-select-custom:focus {
-  border-color: rgba(59, 130, 246, 0.6);
-  background: rgba(15, 23, 42, 0.8);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+.form-input-custom:focus,
+.form-select-custom:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
 }
 
 .btn-clear-search {
   position: absolute;
-  right: 10px;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
   background: none;
   border: none;
-  color: var(--text-muted);
+  color: #94a3b8;
   cursor: pointer;
   padding: 0;
-  font-size: 1.2rem;
 }
 
-.btn-clear-search:hover { color: #fff; }
-
 .btn-refresh {
-  background: rgba(59, 130, 246, 0.15);
-  border: 1px solid rgba(59, 130, 246, 0.4);
-  color: #60a5fa;
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-weight: 500;
-  transition: all 0.3s ease;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 42px;
+  padding: 0.65rem 1.1rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #475569;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
 }
 
 .btn-refresh:hover {
-  background: rgba(59, 130, 246, 0.3);
-  color: #fff;
+  background: #f1f5f9;
+  color: #0f172a;
+  border-color: #94a3b8;
 }
 
-/* ==========================================================================
-   DATA TABLE SECTION
-   ========================================================================== */
+/* 4. SCHEDULE SECTION & TABLE */
 .schedule-section {
-  background: var(--panel-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--panel-border);
-  border-radius: 16px;
-  margin: 0 40px;
-  padding: 20px;
-  box-shadow: var(--glass-shadow);
+  background: #ffffff;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.02);
+  overflow: hidden;
 }
 
 .section-meta-bar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  padding: 1.15rem 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+  background: #ffffff;
 }
 
-.meta-left {
-  display: flex;
-  align-items: center;
+.table-section-title {
   font-size: 1.05rem;
-  font-weight: 500;
-  color: #fff;
-}
-
-.live-dot-pulse {
-  width: 10px;
-  height: 10px;
-  background-color: var(--primary-color);
-  border-radius: 50%;
-  margin-right: 10px;
-  box-shadow: 0 0 0 rgba(59, 130, 246, 0.4);
-  animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-  0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
-  70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
 }
 
 .meta-right {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 0.4rem;
 }
 
-.per-page-label {
-  color: var(--text-muted);
-  font-size: 0.9rem;
+.per-page-caption {
+  font-size: 0.85rem;
+  color: #64748b;
 }
 
 .per-page-select {
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(255,255,255,0.1);
-  color: #fff;
-  padding: 6px 10px;
+  padding: 0.35rem 0.65rem;
+  border: 1px solid #cbd5e1;
   border-radius: 6px;
-  font-size: 0.9rem;
-  outline: none;
+  font-size: 0.85rem;
+  background: #ffffff;
+  color: #0f172a;
 }
 
 .view-toggles {
   display: flex;
-  background: rgba(0,0,0,0.2);
-  border-radius: 6px;
-  padding: 2px;
-  border: 1px solid rgba(255,255,255,0.05);
+  gap: 0.25rem;
 }
 
 .btn-view-toggle {
-  background: transparent;
-  border: none;
-  color: var(--text-muted);
-  padding: 6px 12px;
-  border-radius: 4px;
+  width: 32px;
+  height: 32px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #64748b;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  transition: all 0.2s ease;
 }
 
 .btn-view-toggle.active {
-  background: rgba(255,255,255,0.1);
-  color: #fff;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  background: #2563eb;
+  color: #ffffff;
+  border-color: #2563eb;
 }
 
 .table-responsive {
@@ -1679,45 +1792,63 @@ onMounted(() => {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  text-align: left;
+  font-size: 0.88rem;
 }
 
 .table-glass th {
-  padding: 15px;
-  color: var(--text-muted);
-  font-weight: 500;
-  font-size: 0.85rem;
+  padding: 0.95rem 1.15rem;
+  background: #f8fafc;
+  color: #475569;
+  font-weight: 700;
+  font-size: 0.78rem;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  border-bottom: 1px solid rgba(255,255,255,0.05);
-  background: rgba(0,0,0,0.1);
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap;
 }
 
 .table-glass td {
-  padding: 15px;
+  padding: 1rem 1.15rem;
+  border-bottom: 1px solid #f1f5f9;
   vertical-align: middle;
-  border-bottom: 1px solid rgba(255,255,255,0.05);
-  font-size: 0.95rem;
-  transition: background 0.2s ease;
+  color: #334155;
+  background: #ffffff;
 }
 
 .table-row-hover:hover td {
-  background: rgba(255,255,255,0.03);
+  background: #f8fafc;
 }
 
+.custom-checkbox {
+  width: 17px;
+  height: 17px;
+  border-radius: 4px;
+  border: 1.5px solid #cbd5e1;
+  cursor: pointer;
+  accent-color: #2563eb;
+}
+
+.th-checkbox,
+.td-checkbox {
+  width: 44px;
+  padding-left: 1.25rem !important;
+  padding-right: 0.5rem !important;
+}
+
+/* Tour Info Cell */
 .tour-info-cell {
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 0.85rem;
 }
 
 .tour-thumb {
-  width: 50px;
-  height: 50px;
-  border-radius: 8px;
+  width: 52px;
+  height: 38px;
+  border-radius: 6px;
   overflow: hidden;
   flex-shrink: 0;
-  border: 1px solid rgba(255,255,255,0.1);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
 }
 
 .tour-thumb img {
@@ -1729,288 +1860,364 @@ onMounted(() => {
 .tour-details {
   display: flex;
   flex-direction: column;
-  gap: 4px;
 }
 
 .tour-name {
+  font-weight: 700;
+  color: #0f172a;
+  font-size: 0.92rem;
+}
+
+.tour-code {
+  font-size: 0.78rem;
+  color: #94a3b8;
   font-weight: 600;
-  color: #fff;
-  font-size: 0.95rem;
 }
 
-.tour-dest {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-}
-
-.badge-code {
-  background: rgba(255,255,255,0.1);
-  padding: 4px 8px;
-  border-radius: 6px;
-  font-family: monospace;
-  font-size: 0.85rem;
-  color: #cbd5e1;
+.location-cell {
+  color: #334155;
+  font-weight: 500;
 }
 
 .date-cell {
-  font-size: 0.9rem;
-  color: #e2e8f0;
-}
-
-.hdv-cell {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.hdv-name {
+  color: #475569;
   font-weight: 500;
-  color: #fff;
+  white-space: nowrap;
 }
-
-.hdv-phone {
-  font-size: 0.8rem;
-  color: #60a5fa;
-  text-decoration: none;
-}
-
-.badge-unassigned {
-  display: inline-block;
-  padding: 4px 8px;
-  background: rgba(248, 113, 113, 0.1);
-  color: #fca5a5;
-  border-radius: 12px;
-  font-size: 0.8rem;
-  border: 1px solid rgba(248, 113, 113, 0.2);
-}
-
-.status-badge {
-  display: inline-block;
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: 600;
-}
-
-.status-green, .st-completed { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
-.status-yellow, .st-pending { background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }
-.status-blue, .st-upcoming, .st-ongoing { background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); }
-.status-red, .st-cancelled { background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
 
 .occupancy-cell {
-  background: rgba(0,0,0,0.2);
-  padding: 6px 10px;
-  border-radius: 6px;
-  text-align: center;
-  border: 1px solid rgba(255,255,255,0.05);
+  color: #334155;
+  white-space: nowrap;
 }
 
+.occupancy-cell strong {
+  color: #0f172a;
+  font-weight: 700;
+}
+
+/* Status Badges */
+.status-badge {
+  display: inline-block;
+  padding: 0.28rem 0.85rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.badge-op-running {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.badge-op-upcoming {
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+}
+
+.badge-op-pending {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+.badge-op-completed {
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+}
+
+.badge-op-cancelled {
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fca5a5;
+}
+
+.badge-cf-confirmed {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.badge-cf-unconfirmed {
+  background: #fffbeb;
+  color: #d97706;
+  border: 1px solid #fde68a;
+}
+
+/* Actions Cell */
 .actions-cell {
-  text-align: right;
-  display: flex;
-  gap: 8px;
-  justify-content: flex-end;
+  white-space: nowrap;
 }
 
 .action-btn {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  border: 1px solid rgba(255,255,255,0.1);
-  background: rgba(255,255,255,0.05);
-  color: var(--text-muted);
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #64748b;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  margin: 0 0.15rem;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
 }
 
 .action-btn:hover {
-  background: rgba(255,255,255,0.15);
-  color: #fff;
+  background: #f1f5f9;
+  color: #0f172a;
+  border-color: #cbd5e1;
 }
 
-.btn-view:hover { color: #34d399; border-color: rgba(52, 211, 153, 0.4); }
-.btn-edit:hover { color: #60a5fa; border-color: rgba(96, 165, 250, 0.4); }
-
-/* ==========================================================================
-   PAGINATION
-   ========================================================================== */
-.schedule-pagination-bar {
+/* 5. TABLE FOOTER BAR */
+.table-footer-bar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-top: 20px;
-  border-top: 1px solid rgba(255,255,255,0.05);
+  padding: 1rem 1.5rem;
+  background: #ffffff;
+  border-top: 1px solid #f1f5f9;
 }
 
-.pagination-controls {
+.footer-info {
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.footer-pagination {
   display: flex;
-  gap: 5px;
+  align-items: center;
+  gap: 0.35rem;
 }
 
-.btn-pag-nav, .btn-pag-num {
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
-  color: var(--text-muted);
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
+.btn-page {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #64748b;
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s;
 }
 
-.btn-pag-nav:disabled {
+.btn-page:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-.btn-pag-num.active, .btn-pag-nav:not(:disabled):hover, .btn-pag-num:hover {
-  background: var(--primary-color);
-  color: #fff;
-  border-color: var(--primary-hover);
+.btn-page-active {
+  background: #2563eb;
+  color: #ffffff;
+  border-color: #2563eb;
 }
 
-/* ==========================================================================
-   MODALS (Keep existing structural logic, apply glass theme)
-   ========================================================================== */
+/* MODALS */
 .modal-overlay {
-  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(5px);
-  display: flex; justify-content: center; align-items: center;
-  z-index: 1050;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
 }
+
 .modal-card {
-  background: rgba(17, 25, 40, 0.95);
-  border: 1px solid rgba(255,255,255,0.1);
+  background: #ffffff;
   border-radius: 16px;
-  width: 90%; max-width: 500px;
-  box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+  width: 100%;
+  max-width: 520px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.2);
   overflow: hidden;
+  color: #0f172a;
 }
-.modal-card.modal-lg { max-width: 800px; }
+
+.modal-card.modal-lg {
+  max-width: 780px;
+}
+
 .modal-header {
-  padding: 20px 24px;
-  border-bottom: 1px solid rgba(255,255,255,0.1);
-  display: flex; justify-content: space-between; align-items: center;
-  background: rgba(0,0,0,0.2);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #f1f5f9;
 }
-.modal-title { font-size: 1.2rem; font-weight: 600; color: #fff; margin: 0; }
-.modal-close-btn { background: none; border: none; color: #94a3b8; font-size: 1.5rem; cursor: pointer; }
-.modal-close-btn:hover { color: #fff; }
-.modal-body { padding: 24px; max-height: 70vh; overflow-y: auto; }
-.modal-footer {
-  padding: 20px 24px; border-top: 1px solid rgba(255,255,255,0.1);
-  display: flex; justify-content: flex-end; gap: 15px;
-  background: rgba(0,0,0,0.2);
+
+.modal-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin: 0;
+  color: #0f172a;
 }
-.btn-modal-cancel {
-  background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
-  color: #fff; padding: 10px 20px; border-radius: 8px; cursor: pointer;
+
+.modal-close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #94a3b8;
+  cursor: pointer;
 }
-.btn-modal-submit {
-  background: var(--primary-color); border: none;
-  color: #fff; padding: 10px 20px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px;
+
+.modal-body {
+  padding: 1.5rem;
+  max-height: 75vh;
+  overflow-y: auto;
 }
-.btn-modal-submit:disabled { opacity: 0.7; cursor: not-allowed; }
+
 .schedule-summary-box {
-  background: rgba(0,0,0,0.2); padding: 15px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 20px;
+  background: #f8fafc;
+  padding: 0.9rem 1.1rem;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
 }
-.summary-tour-title { font-weight: 600; color: #60a5fa; margin-bottom: 5px; }
-.summary-dates { color: #cbd5e1; font-size: 0.9rem; }
-.form-label { color: #cbd5e1; font-size: 0.9rem; margin-bottom: 6px; display: block; }
-.status-options-grid { display: flex; flex-direction: column; gap: 10px; }
+
+.summary-tour-title {
+  font-weight: 700;
+  color: #0f172a;
+  font-size: 0.95rem;
+}
+
+.summary-dates {
+  font-size: 0.82rem;
+  color: #64748b;
+  margin-top: 0.25rem;
+}
+
+.status-options-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
 .status-option-card {
-  display: flex; align-items: center; gap: 15px; padding: 12px 15px;
-  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 10px; cursor: pointer; transition: all 0.2s ease;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  cursor: pointer;
+  background: #ffffff;
+  transition: all 0.15s;
 }
-.status-option-card:hover { background: rgba(255,255,255,0.1); }
+
 .status-option-card.active {
-  background: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.5); box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.5);
+  border-color: #2563eb;
+  background: #eff6ff;
 }
-.opt-icon { font-size: 1.5rem; width: 40px; text-align: center; }
-.opt-text strong { color: #fff; display: block; font-size: 1rem; margin-bottom: 2px; }
-.opt-text p { color: #94a3b8; font-size: 0.85rem; margin: 0; }
-.custom-check label { color: #cbd5e1; font-size: 0.9rem; cursor: pointer; }
-.table-manifest-bookings { width: 100%; border-collapse: collapse; }
-.table-manifest-bookings th, .table-manifest-bookings td {
-  padding: 10px; border: 1px solid rgba(255,255,255,0.1); text-align: left; font-size: 0.9rem;
+
+.opt-text strong {
+  display: block;
+  font-size: 0.88rem;
+  color: #0f172a;
 }
-.table-manifest-bookings th { background: rgba(0,0,0,0.3); color: #94a3b8; }
-.badge-checkin-yes { background: rgba(16,185,129,0.2); color: #34d399; padding: 4px 8px; border-radius: 12px; font-size: 0.8rem; }
-.badge-checkin-no { background: rgba(245,158,11,0.2); color: #fcd34d; padding: 4px 8px; border-radius: 12px; font-size: 0.8rem; }
+
+.opt-text p {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1.15rem 1.5rem;
+  border-top: 1px solid #f1f5f9;
+  background: #f8fafc;
+}
+
+.btn-modal-cancel {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.btn-modal-submit {
+  background: #2563eb;
+  color: #ffffff;
+  border: none;
+  padding: 0.6rem 1.4rem;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.table-manifest-bookings {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.table-manifest-bookings th {
+  background: #f8fafc;
+  padding: 0.65rem 0.85rem;
+  border-bottom: 1px solid #e2e8f0;
+  color: #475569;
+  font-weight: 600;
+}
+
+.table-manifest-bookings td {
+  padding: 0.75rem 0.85rem;
+  border-bottom: 1px solid #f1f5f9;
+  color: #334155;
+}
 
 /* Toast */
 .toast-popup {
-  position: fixed; top: 24px; right: 24px; z-index: 9999;
-  padding: 14px 22px; border-radius: 12px;
-  display: flex; align-items: center; gap: 10px;
-  font-weight: 500; font-size: 0.95rem;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.4);
-  color: #fff;
-}
-.toast-popup.success { background: rgba(16,185,129,0.9); }
-.toast-popup.error { background: rgba(239,68,68,0.9); }
-.toast-close { background: none; border: none; color: #fff; font-size: 1.3rem; cursor: pointer; margin-left: 10px; }
-
-/* Fade Transition */
-.fade-enter-active, .fade-leave-active { transition: opacity 0.3s ease; }
-.fade-enter-from, .fade-leave-to { opacity: 0; }
-
-/* Spin Animation */
-@keyframes spin { to { transform: rotate(360deg); } }
-.spin { animation: spin 1s linear infinite; }
-
-/* Text Helpers */
-.text-cyan { color: #22d3ee !important; }
-.text-orange { color: #fb923c !important; }
-.text-gold { color: #eab308 !important; }
-.text-danger { color: #ef4444 !important; }
-.text-secondary { color: #94a3b8 !important; }
-
-/* Warning Modal Button */
-.btn-modal-warning {
-  background: rgba(245,158,11,0.8); border: none;
-  color: #fff; padding: 10px 20px; border-radius: 8px; cursor: pointer;
-  display: flex; align-items: center; gap: 8px;
+  position: fixed;
+  top: 1.5rem;
+  right: 1.5rem;
+  padding: 0.85rem 1.35rem;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 0.9rem;
 }
 
-/* Empty State */
-.empty-state { display: flex; flex-direction: column; align-items: center; }
-
-/* Loading Tag */
-.loading-tag { color: #fbbf24; font-size: 0.9rem; }
-
-/* Conflict Alert */
-.conflict-alert-box {
-  background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3);
-  border-radius: 10px; padding: 15px;
+.toast-popup.success {
+  background: #10b981;
 }
-.conflict-header { display: flex; align-items: center; margin-bottom: 8px; color: #f87171; font-size: 0.95rem; }
-.conflict-desc { color: #cbd5e1; font-size: 0.9rem; margin: 5px 0; }
-.conflict-list { color: #e2e8f0; font-size: 0.85rem; padding-left: 20px; margin: 5px 0; }
-.conflict-note { margin-top: 8px; }
 
-/* Badge BK */
-.badge-bk { background: rgba(59,130,246,0.15); color: #60a5fa; padding: 3px 8px; border-radius: 6px; font-family: monospace; font-size: 0.85rem; }
-.badge-status-sm { background: rgba(255,255,255,0.1); color: #cbd5e1; padding: 3px 8px; border-radius: 6px; font-size: 0.8rem; }
+.toast-popup.error {
+  background: #ef4444;
+}
 
-/* Bootstrap Grid helpers for modals */
-.row { display: flex; flex-wrap: wrap; margin: 0 -6px; }
-.col-md-4 { flex: 0 0 33.333%; max-width: 33.333%; padding: 0 6px; }
-.col-md-6 { flex: 0 0 50%; max-width: 50%; padding: 0 6px; }
-.col-md-8 { flex: 0 0 66.666%; max-width: 66.666%; padding: 0 6px; }
-.g-3 { gap: 12px; }
-
-/* Modal form inputs (no left-icon padding) */
-.modal-body .form-input-custom {
-  padding-left: 12px;
+.toast-close {
+  background: none;
+  border: none;
+  color: #ffffff;
+  font-size: 1.25rem;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 0.5rem;
 }
 </style>
-

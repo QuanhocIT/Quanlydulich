@@ -602,7 +602,42 @@ class Tour
         $params[] = $offset;
         $stmt = $this->conn->prepare($sql);
         $stmt->execute($params);
-        return $stmt->fetchAll();
+        $tours = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        if (!empty($tours)) {
+            $tourIds = array_column($tours, 'tour_id');
+            $inClause = implode(',', array_map('intval', $tourIds));
+
+            // Attach thumbnail images
+            $imgMap = [];
+            try {
+                $imgStmt = $this->conn->query("SELECT tour_id, url_anh FROM hinh_anh_tour WHERE tour_id IN ($inClause) ORDER BY id ASC");
+                while ($r = $imgStmt->fetch(PDO::FETCH_ASSOC)) {
+                    if (!isset($imgMap[$r['tour_id']])) {
+                        $imgMap[$r['tour_id']] = $r['url_anh'];
+                    }
+                }
+            } catch (Throwable $e) {}
+
+            // Attach schedule counts
+            $schedMap = [];
+            try {
+                $schedStmt = $this->conn->query("SELECT tour_id, COUNT(*) as so_lich, MIN(ngay_khoi_hanh) as nearest_date FROM lich_khoi_hanh WHERE tour_id IN ($inClause) AND (deleted_at IS NULL) GROUP BY tour_id");
+                while ($r = $schedStmt->fetch(PDO::FETCH_ASSOC)) {
+                    $schedMap[$r['tour_id']] = $r;
+                }
+            } catch (Throwable $e) {}
+
+            foreach ($tours as &$tour) {
+                $tid = (int)$tour['tour_id'];
+                $tour['hinh_anh'] = $imgMap[$tid] ?? null;
+                $tour['so_lich'] = (int)($schedMap[$tid]['so_lich'] ?? 0);
+                $tour['nearest_date'] = $schedMap[$tid]['nearest_date'] ?? null;
+            }
+            unset($tour);
+        }
+
+        return $tours;
     }
 
     // Lấy danh sách yêu cầu đặc biệt theo tour_id

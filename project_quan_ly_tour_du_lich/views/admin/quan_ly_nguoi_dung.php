@@ -2,8 +2,13 @@
 $pageTitle = 'Quản lý Người dùng - Vue 3';
 $currentPage = 'nguoiDung';
 
+$cssPath = __DIR__ . '/../../public/dist/admin/user-manage.css';
+$jsPath = __DIR__ . '/../../public/dist/admin/user-manage.js';
+$cssVersion = file_exists($cssPath) ? filemtime($cssPath) : time();
+$jsVersion = file_exists($jsPath) ? filemtime($jsPath) : time();
+
 $additionalCSS = [
-    BASE_URL . 'public/dist/admin/user-manage.css?v=' . rawurlencode(ASSET_VERSION),
+    BASE_URL . 'public/dist/admin/user-manage.css?v=' . $cssVersion,
 ];
 
 ob_start();
@@ -27,7 +32,7 @@ ob_start();
     window.__BASE_URL__ = '<?= BASE_URL ?>';
     window.__ADMIN_USER_MANAGE_INIT__ = <?= json_encode($vueUserManageData ?? [], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
 </script>
-<script type="module" nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>" src="<?= BASE_URL ?>public/dist/admin/user-manage.js?v=<?= rawurlencode(ASSET_VERSION) ?>"></script>
+<script type="module" nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>" src="<?= BASE_URL ?>public/dist/admin/user-manage.js?v=<?= $jsVersion ?>"></script>
 
 <?php
 $content = ob_get_clean();

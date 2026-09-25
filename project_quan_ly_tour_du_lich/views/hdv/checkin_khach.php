@@ -91,6 +91,11 @@
     </style>
 </head>
 <body class="hdv-body">
+<?php
+$selectedLich = $selectedLich ?? null;
+$lichKhoiHanhList = $lichKhoiHanhList ?? [];
+$danhSachKhach = $danhSachKhach ?? [];
+?>
 <?php include __DIR__ . '/partials/hdv_nav.php'; ?>
 
     <div class="page-header">
@@ -127,7 +132,7 @@
                 <label for="lich_id"><strong>Chọn lịch khởi hành:</strong></label>
                 <select name="lich_id" id="lich_id" onchange="this.form.submit()">
                     <?php foreach ($lichKhoiHanhList as $lich): ?>
-                        <option value="<?php echo $lich['id']; ?>" <?php echo (isset($selectedLich) && $selectedLich && $selectedLich['id'] == $lich['id']) ? 'selected' : ''; ?>>
+                        <option value="<?php echo $lich['id']; ?>" <?php echo (!empty($selectedLich) && $selectedLich['id'] == $lich['id']) ? 'selected' : ''; ?>>
                             <?php echo htmlspecialchars($lich['ten_tour'] ?? 'Tour'); ?> 
                             (<?php echo !empty($lich['ngay_khoi_hanh']) ? date('d/m/Y', strtotime($lich['ngay_khoi_hanh'])) : 'N/A'; ?>)
                         </option>
@@ -135,7 +140,7 @@
                 </select>
             </form>
 
-            <?php if ($selectedLich): ?>
+            <?php if (!empty($selectedLich)): ?>
                 <div class="tour-info-card mb-2">
                     <h4 class="fw-bold mb-1 text-primary">
                         <i class="bi bi-geo-alt"></i> <?php echo htmlspecialchars($selectedLich['ten_tour'] ?? 'Tour'); ?>

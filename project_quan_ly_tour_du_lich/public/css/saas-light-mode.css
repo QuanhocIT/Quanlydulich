@@ -1,0 +1,1942 @@
+/**
+ * SAAS LIGHT MODE COMPREHENSIVE STYLESHEET
+ * Ensures all Admin, HDV, and Supplier views display a clean, crisp, modern SaaS light design
+ * High Contrast (WCAG AA Compliant: Minimum 4.5:1 for normal text, 7:1 for body text)
+ * Eliminates all dark navy blocks, dark banners, and washed-out text in Light Mode.
+ * Active whenever html or body has .theme-light
+ */
+
+/* ==========================================================================
+   1. CORE TOKENS & HIGH-CONTRAST CSS VARIABLES
+   ========================================================================== */
+html.theme-light,
+body.theme-light,
+.theme-light {
+  --saas-bg: #f8fafc;
+  --saas-bg-subtle: #f1f5f9;
+  --saas-surface: #ffffff;
+  --saas-surface-subtle: #f8fafc;
+  --saas-surface-hover: #f1f5f9;
+  --saas-border: #cbd5e1;
+  --saas-border-subtle: #e2e8f0;
+  --saas-border-strong: #94a3b8;
+  --saas-text-primary: #0f172a;
+  --saas-text-secondary: #1e293b;
+  --saas-text-muted: #475569;
+  --saas-text-dim: #475569;
+  --saas-shadow-sm: 0 1px 3px 0 rgba(15, 23, 42, 0.08), 0 1px 2px -1px rgba(15, 23, 42, 0.04);
+  --saas-shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.08), 0 2px 4px -2px rgba(15, 23, 42, 0.04);
+  --saas-shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -4px rgba(15, 23, 42, 0.04);
+
+  /* Component variables used across Vue views */
+  --app-bg: #f8fafc !important;
+  --panel-bg: #ffffff !important;
+  --panel-border: #e2e8f0 !important;
+  --text-main: #0f172a !important;
+  --text-muted: #475569 !important;
+  --glass-shadow: 0 4px 16px rgba(15, 23, 42, 0.05) !important;
+
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+html.theme-light body,
+body.theme-light {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+html.theme-light .main-content,
+body.theme-light .main-content,
+html.theme-light .content-area,
+body.theme-light .content-area {
+  background: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+/* Force all Vue view root wrappers to Light Theme */
+html.theme-light .vue-admin-schedule-manage, body.theme-light .vue-admin-schedule-manage,
+html.theme-light .vue-admin-supplier, body.theme-light .vue-admin-supplier,
+html.theme-light .vue-admin-review, body.theme-light .vue-admin-review,
+html.theme-light .vue-admin-user-manage, body.theme-light .vue-admin-user-manage,
+html.theme-light .vue-admin-booking-manage, body.theme-light .vue-admin-booking-manage,
+html.theme-light .vue-admin-personnel-manage, body.theme-light .vue-admin-personnel-manage,
+html.theme-light .vue-admin-salary, body.theme-light .vue-admin-salary,
+html.theme-light .vue-admin-salary-detail, body.theme-light .vue-admin-salary-detail,
+html.theme-light .vue-admin-finance, body.theme-light .vue-admin-finance,
+html.theme-light .vue-admin-automation, body.theme-light .vue-admin-automation,
+html.theme-light .vue-admin-dashboard, body.theme-light .vue-admin-dashboard,
+html.theme-light .vue-admin-tour-list, body.theme-light .vue-admin-tour-list {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+/* ==========================================================================
+   2. TOPBAR HEADER IN LIGHT MODE
+   ========================================================================== */
+html.theme-light .header,
+body.theme-light .header {
+  background: #ffffff !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06) !important;
+}
+
+html.theme-light .header-page-name,
+body.theme-light .header-page-name {
+  color: #0f172a !important;
+  font-weight: 800 !important;
+  font-size: 14px !important;
+}
+
+html.theme-light .header-portal-tag,
+body.theme-light .header-portal-tag {
+  background: #eff6ff !important;
+  border: 1px solid #bfdbfe !important;
+  color: #1d4ed8 !important;
+  font-weight: 700 !important;
+}
+
+html.theme-light .header-quick-action,
+body.theme-light .header-quick-action {
+  background: #f8fafc !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #1e293b !important;
+  font-weight: 700 !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+html.theme-light .header-quick-action i,
+body.theme-light .header-quick-action i {
+  color: #2563eb !important;
+}
+
+html.theme-light .header-quick-action:hover,
+body.theme-light .header-quick-action:hover {
+  background: #eff6ff !important;
+  border-color: #3b82f6 !important;
+  color: #1d4ed8 !important;
+  transform: translateY(-1px);
+}
+
+/* User Profile Dropdown */
+html.theme-light .header-user-btn,
+body.theme-light .header-user-btn {
+  background: #f8fafc !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+html.theme-light .header-user-btn:hover,
+body.theme-light .header-user-btn:hover,
+html.theme-light .header-user-btn.active,
+body.theme-light .header-user-btn.active {
+  background: #ffffff !important;
+  border-color: #94a3b8 !important;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08) !important;
+}
+
+html.theme-light .header-user-name,
+body.theme-light .header-user-name {
+  color: #0f172a !important;
+  font-weight: 700 !important;
+}
+
+html.theme-light .header-user-role,
+body.theme-light .header-user-role {
+  color: #b45309 !important;
+  font-weight: 800 !important;
+}
+
+html.theme-light .header-user-chevron,
+body.theme-light .header-user-chevron {
+  color: #475569 !important;
+}
+
+html.theme-light .header-user-menu,
+body.theme-light .header-user-menu {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12) !important;
+  color: #0f172a !important;
+}
+
+html.theme-light .header-user-menu-header .h-u-title,
+body.theme-light .header-user-menu-header .h-u-title {
+  color: #0f172a !important;
+  font-weight: 700 !important;
+}
+
+html.theme-light .header-user-menu-header .h-u-sub,
+body.theme-light .header-user-menu-header .h-u-sub {
+  color: #475569 !important;
+  font-weight: 600 !important;
+}
+
+html.theme-light .header-user-menu-item,
+body.theme-light .header-user-menu-item {
+  color: #1e293b !important;
+  font-weight: 600 !important;
+}
+
+html.theme-light .header-user-menu-item i,
+body.theme-light .header-user-menu-item i {
+  color: #2563eb !important;
+}
+
+html.theme-light .header-user-menu-item:hover,
+body.theme-light .header-user-menu-item:hover {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+html.theme-light .header-user-menu-divider,
+body.theme-light .header-user-menu-divider {
+  background: #e2e8f0 !important;
+}
+
+html.theme-light .sidebar-toggle,
+body.theme-light .sidebar-toggle,
+html.theme-light .sidebar-theme,
+body.theme-light .sidebar-theme {
+  color: #1e293b !important;
+  border: 1px solid #cbd5e1 !important;
+  background: #f8fafc !important;
+}
+
+html.theme-light .sidebar-toggle:hover,
+body.theme-light .sidebar-toggle:hover,
+html.theme-light .sidebar-theme:hover,
+body.theme-light .sidebar-theme:hover {
+  color: #2563eb !important;
+  border-color: #3b82f6 !important;
+  background: #eff6ff !important;
+}
+
+/* ==========================================================================
+   3. HERO BANNERS & PAGE HEADERS (ELIMINATING DARK NAVY BLOCKS)
+   Fixes ScheduleManage, SupplierManage, ReviewManage, TourList, Dashboard
+   ========================================================================== */
+html.theme-light .page-header, body.theme-light .page-header,
+html.theme-light .page-header-hero, body.theme-light .page-header-hero,
+html.theme-light .tour-hero-banner, body.theme-light .tour-hero-banner,
+html.theme-light .dash-header, body.theme-light .dash-header,
+html.theme-light .header-hero, body.theme-light .header-hero,
+html.theme-light .admin-header, body.theme-light .admin-header,
+html.theme-light .page-banner, body.theme-light .page-banner,
+html.theme-light .top-banner, body.theme-light .top-banner {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05) !important;
+  color: #0f172a !important;
+  height: auto !important;
+  min-height: unset !important;
+  margin: 0 0 24px 0 !important;
+  border-radius: 16px !important;
+  padding: 24px 28px !important;
+}
+
+/* Hide dark overlay pseudos in hero banners */
+html.theme-light .hero-bg, body.theme-light .hero-bg,
+html.theme-light .hero-bg::after, body.theme-light .hero-bg::after,
+html.theme-light .hero-overlay, body.theme-light .hero-overlay,
+html.theme-light .tour-hero-banner::before, body.theme-light .tour-hero-banner::before,
+html.theme-light .dash-header::before, body.theme-light .dash-header::before {
+  display: none !important;
+}
+
+html.theme-light .hero-content, body.theme-light .hero-content {
+  position: relative !important;
+  z-index: 2 !important;
+  height: auto !important;
+  padding: 0 !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+}
+
+html.theme-light .hero-title, body.theme-light .hero-title,
+html.theme-light .dash-title, body.theme-light .dash-title,
+html.theme-light .header-title, body.theme-light .header-title {
+  color: #0f172a !important;
+  text-shadow: none !important;
+  font-weight: 800 !important;
+}
+
+html.theme-light .hero-subtitle, body.theme-light .hero-subtitle,
+html.theme-light .dash-subtitle, body.theme-light .dash-subtitle,
+html.theme-light .header-subtitle, body.theme-light .header-subtitle {
+  color: #475569 !important;
+  font-weight: 500 !important;
+}
+
+html.theme-light .badge-tag, body.theme-light .badge-tag,
+html.theme-light .kicker-pill, body.theme-light .kicker-pill {
+  background: #eff6ff !important;
+  border: 1px solid #bfdbfe !important;
+  color: #1d4ed8 !important;
+  font-weight: 700 !important;
+}
+
+html.theme-light .current-time-display, body.theme-light .current-time-display,
+html.theme-light .hero-live-pill, body.theme-light .hero-live-pill {
+  background: #f1f5f9 !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #1e293b !important;
+  font-weight: 600 !important;
+}
+
+html.theme-light .btn-history, body.theme-light .btn-history,
+html.theme-light .btn-action.btn-glass, body.theme-light .btn-action.btn-glass {
+  background: #f8fafc !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #1e293b !important;
+  font-weight: 700 !important;
+}
+
+html.theme-light .btn-history:hover, body.theme-light .btn-history:hover,
+html.theme-light .btn-action.btn-glass:hover, body.theme-light .btn-action.btn-glass:hover {
+  background: #eff6ff !important;
+  border-color: #3b82f6 !important;
+  color: #1d4ed8 !important;
+}
+
+html.theme-light .btn-hero-create, body.theme-light .btn-hero-create,
+html.theme-light .btn-create, body.theme-light .btn-create,
+html.theme-light .btn-action-primary, body.theme-light .btn-action-primary {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3) !important;
+  font-weight: 700 !important;
+  border: none !important;
+}
+
+/* ==========================================================================
+   4. CARDS, PANELS, SIDEBARS & FILTER SECTIONS (NO DARK BLOCKS)
+   Fixes Supplier Master-Detail, Review Filters, Schedule Data Tables
+   ========================================================================== */
+html.theme-light .card, body.theme-light .card,
+html.theme-light .info-card, body.theme-light .info-card,
+html.theme-light .tour-header-section, body.theme-light .tour-header-section,
+html.theme-light .aventura-card, body.theme-light .aventura-card,
+html.theme-light .section-card, body.theme-light .section-card,
+html.theme-light .filter-section, body.theme-light .filter-section,
+html.theme-light .filter-panel, body.theme-light .filter-panel,
+html.theme-light .stat-card, body.theme-light .stat-card,
+html.theme-light .stat-box, body.theme-light .stat-box,
+html.theme-light .kpi-card, body.theme-light .kpi-card,
+html.theme-light .invoice-card, body.theme-light .invoice-card,
+html.theme-light .invoice-block, body.theme-light .invoice-block,
+html.theme-light .box, body.theme-light .box,
+html.theme-light .panel, body.theme-light .panel,
+html.theme-light .saas-card, body.theme-light .saas-card,
+html.theme-light .table-card, body.theme-light .table-card,
+html.theme-light .table-container-card, body.theme-light .table-container-card,
+html.theme-light .filter-card, body.theme-light .filter-card,
+html.theme-light .bottom-grid-tabs, body.theme-light .bottom-grid-tabs,
+html.theme-light .feed-panel, body.theme-light .feed-panel,
+html.theme-light .manifest-card, body.theme-light .manifest-card,
+html.theme-light .schedule-section, body.theme-light .schedule-section,
+html.theme-light .sidebar-panel, body.theme-light .sidebar-panel,
+html.theme-light .detail-header, body.theme-light .detail-header,
+html.theme-light .desc-card, body.theme-light .desc-card,
+html.theme-light .services-card, body.theme-light .services-card,
+html.theme-light .contract-card, body.theme-light .contract-card,
+html.theme-light .chart-panel, body.theme-light .chart-panel,
+html.theme-light .stat-strip, body.theme-light .stat-strip,
+html.theme-light .card-glass, body.theme-light .card-glass {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05) !important;
+  color: #0f172a !important;
+}
+
+html.theme-light .card:hover, body.theme-light .card:hover,
+html.theme-light .stat-card:hover, body.theme-light .stat-card:hover,
+html.theme-light .kpi-card:hover, body.theme-light .kpi-card:hover,
+html.theme-light .table-card:hover, body.theme-light .table-card:hover,
+html.theme-light .filter-card:hover, body.theme-light .filter-card:hover {
+  border-color: #94a3b8 !important;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08) !important;
+}
+
+/* Panel & Card Headers */
+html.theme-light .panel-header, body.theme-light .panel-header,
+html.theme-light .table-header, body.theme-light .table-header,
+html.theme-light .filter-header, body.theme-light .filter-header,
+html.theme-light .tabs-header, body.theme-light .tabs-header,
+html.theme-light .card-title-line, body.theme-light .card-title-line,
+html.theme-light .section-meta-bar, body.theme-light .section-meta-bar,
+html.theme-light .table-top-meta, body.theme-light .table-top-meta,
+html.theme-light .table-meta-bar, body.theme-light .table-meta-bar {
+  background: #f8fafc !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+html.theme-light .panel-title, body.theme-light .panel-title,
+html.theme-light .table-title, body.theme-light .table-title,
+html.theme-light .card-title-line h4, body.theme-light .card-title-line h4,
+html.theme-light .filter-header h5, body.theme-light .filter-header h5,
+html.theme-light .detail-title, body.theme-light .detail-title {
+  color: #0f172a !important;
+  font-weight: 800 !important;
+}
+
+/* Supplier Master-Detail Sidebar Items */
+html.theme-light .supplier-list, body.theme-light .supplier-list {
+  background: #ffffff !important;
+}
+
+html.theme-light .supplier-item, body.theme-light .supplier-item {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+html.theme-light .supplier-item:hover, body.theme-light .supplier-item:hover {
+  background: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+}
+
+html.theme-light .supplier-item.active, body.theme-light .supplier-item.active {
+  background: #eff6ff !important;
+  border-color: #3b82f6 !important;
+}
+
+html.theme-light .supplier-name, body.theme-light .supplier-name,
+html.theme-light .supplier-item strong, body.theme-light .supplier-item strong {
+  color: #0f172a !important;
+  font-weight: 700 !important;
+}
+
+html.theme-light .supplier-meta, body.theme-light .supplier-meta,
+html.theme-light .supplier-item small, body.theme-light .supplier-item small,
+html.theme-light .sub-item, body.theme-light .sub-item {
+  color: #475569 !important;
+  font-weight: 500 !important;
+}
+
+html.theme-light .detail-sub-bar, body.theme-light .detail-sub-bar {
+  background: #f8fafc !important;
+  border-top: 1px solid #e2e8f0 !important;
+}
+
+html.theme-light .services-table-wrap, body.theme-light .services-table-wrap,
+html.theme-light .glass-table-wrap, body.theme-light .glass-table-wrap {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+html.theme-light .empty-services, body.theme-light .empty-services {
+  background: #f8fafc !important;
+  color: #475569 !important;
+}
+
+/* Filter pills */
+html.theme-light .service-pills .type-pill, body.theme-light .service-pills .type-pill {
+  background: #f1f5f9 !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #334155 !important;
+  font-weight: 600 !important;
+}
+
+html.theme-light .service-pills .type-pill:hover, body.theme-light .service-pills .type-pill:hover {
+  background: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+html.theme-light .service-pills .type-pill.active, body.theme-light .service-pills .type-pill.active {
+  background: #2563eb !important;
+  border-color: #2563eb !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+}
+
+/* ==========================================================================
+   5. ALL TABLES (CRISP LIGHT SLATE HEADER + SOLID DARK CELLS)
+   ========================================================================== */
+html.theme-light table th, body.theme-light table th,
+html.theme-light .user-table th, body.theme-light .user-table th,
+html.theme-light .modern-tour-table th, body.theme-light .modern-tour-table th,
+html.theme-light .booking-table th, body.theme-light .booking-table th,
+html.theme-light .schedule-table th, body.theme-light .schedule-table th,
+html.theme-light .table-glass th, body.theme-light .table-glass th,
+html.theme-light .table-manifest-bookings th, body.theme-light .table-manifest-bookings th,
+html.theme-light .personnel-table th, body.theme-light .personnel-table th,
+html.theme-light .salary-table th, body.theme-light .salary-table th,
+html.theme-light .detail-table th, body.theme-light .detail-table th,
+html.theme-light .data-table th, body.theme-light .data-table th,
+html.theme-light .vue-table th, body.theme-light .vue-table th,
+html.theme-light .services-table th, body.theme-light .services-table th,
+html.theme-light .passenger-table th, body.theme-light .passenger-table th,
+html.theme-light .cron-table th, body.theme-light .cron-table th,
+html.theme-light .finance-table th, body.theme-light .finance-table th,
+html.theme-light .dp-table th, body.theme-light .dp-table th,
+html.theme-light .table th, body.theme-light .table th {
+  background: #f1f5f9 !important;
+  color: #1e293b !important;
+  font-weight: 800 !important;
+  font-size: 12.5px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.04em !important;
+  border-bottom: 2px solid #cbd5e1 !important;
+  border-top: none !important;
+  padding: 12px 14px !important;
+  white-space: nowrap !important;
+}
+
+html.theme-light table td, body.theme-light table td,
+html.theme-light .user-table td, body.theme-light .user-table td,
+html.theme-light .modern-tour-table td, body.theme-light .modern-tour-table td,
+html.theme-light .booking-table td, body.theme-light .booking-table td,
+html.theme-light .schedule-table td, body.theme-light .schedule-table td,
+html.theme-light .table-glass td, body.theme-light .table-glass td,
+html.theme-light .table-manifest-bookings td, body.theme-light .table-manifest-bookings td,
+html.theme-light .personnel-table td, body.theme-light .personnel-table td,
+html.theme-light .salary-table td, body.theme-light .salary-table td,
+html.theme-light .detail-table td, body.theme-light .detail-table td,
+html.theme-light .data-table td, body.theme-light .data-table td,
+html.theme-light .vue-table td, body.theme-light .vue-table td,
+html.theme-light .services-table td, body.theme-light .services-table td,
+html.theme-light .passenger-table td, body.theme-light .passenger-table td,
+html.theme-light .cron-table td, body.theme-light .cron-table td,
+html.theme-light .finance-table td, body.theme-light .finance-table td,
+html.theme-light .dp-table td, body.theme-light .dp-table td,
+html.theme-light .table td, body.theme-light .table td {
+  color: #1e293b !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+  font-weight: 500 !important;
+  background: #ffffff !important;
+  padding: 13px 14px !important;
+  vertical-align: middle !important;
+}
+
+html.theme-light table tbody tr:hover td, body.theme-light table tbody tr:hover td,
+html.theme-light .user-row:hover td, body.theme-light .user-row:hover td,
+html.theme-light .tour-data-row:hover td, body.theme-light .tour-data-row:hover td,
+html.theme-light .table-row-hover:hover td, body.theme-light .table-row-hover:hover td,
+html.theme-light .table tbody tr:hover td, body.theme-light .table tbody tr:hover td {
+  background: #f8fafc !important;
+}
+
+/* ID & Code Badges */
+html.theme-light .id-badge, body.theme-light .id-badge,
+html.theme-light .badge-id, body.theme-light .badge-id,
+html.theme-light .tour-code-badge, body.theme-light .tour-code-badge,
+html.theme-light .booking-code, body.theme-light .booking-code,
+html.theme-light .trip-code, body.theme-light .trip-code,
+html.theme-light .pax-badge, body.theme-light .pax-badge {
+  background: #f1f5f9 !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+  font-weight: 700 !important;
+  font-size: 12px !important;
+  padding: 3px 8px !important;
+  border-radius: 6px !important;
+  display: inline-block !important;
+}
+
+/* User & Customer Names */
+html.theme-light .user-username, body.theme-light .user-username,
+html.theme-light .user-name, body.theme-light .user-name,
+html.theme-light .tour-name-link, body.theme-light .tour-name-link,
+html.theme-light .tour-title, body.theme-light .tour-title,
+html.theme-light .cust-name, body.theme-light .cust-name,
+html.theme-light .customer-name, body.theme-light .customer-name,
+html.theme-light .guide-name, body.theme-light .guide-name,
+html.theme-light .staff-name, body.theme-light .staff-name,
+html.theme-light .reviewer-name, body.theme-light .reviewer-name,
+html.theme-light .supplier-name, body.theme-light .supplier-name,
+html.theme-light .job-title, body.theme-light .job-title,
+html.theme-light .feed-event-name, body.theme-light .feed-event-name,
+html.theme-light .hdv-name, body.theme-light .hdv-name,
+html.theme-light .r-name, body.theme-light .r-name {
+  color: #0f172a !important;
+  font-weight: 700 !important;
+}
+
+html.theme-light .tour-name-link:hover, body.theme-light .tour-name-link:hover {
+  color: #2563eb !important;
+}
+
+/* Contact Info, Phone, Email, Dates */
+html.theme-light .contact-info, body.theme-light .contact-info,
+html.theme-light .contact-item, body.theme-light .contact-item,
+html.theme-light .cust-sub, body.theme-light .cust-sub,
+html.theme-light .tour-sub, body.theme-light .tour-sub,
+html.theme-light .hdv-contact, body.theme-light .hdv-contact,
+html.theme-light .staff-phone, body.theme-light .staff-phone,
+html.theme-light .staff-email, body.theme-light .staff-email,
+html.theme-light .date-text, body.theme-light .date-text,
+html.theme-light .summary-dates, body.theme-light .summary-dates,
+html.theme-light .feed-time, body.theme-light .feed-time,
+html.theme-light .time-text, body.theme-light .time-text,
+html.theme-light .dp-timeline-time, body.theme-light .dp-timeline-time,
+html.theme-light .dp-notif-time, body.theme-light .dp-notif-time,
+html.theme-light .last-run, body.theme-light .last-run,
+html.theme-light .next-run, body.theme-light .next-run {
+  color: #334155 !important;
+  font-weight: 500 !important;
+}
+
+html.theme-light .contact-item i, body.theme-light .contact-item i {
+  color: #2563eb !important;
+}
+
+html.theme-light .date-text, body.theme-light .date-text {
+  color: #334155 !important;
+  font-weight: 600 !important;
+}
+
+/* ==========================================================================
+   6. HIGH-CONTRAST STATUS PILLS & BADGES
+   ========================================================================== */
+/* Green: Khách hàng / Hoạt động / Thành công */
+html.theme-light .role-KhachHang, body.theme-light .role-KhachHang,
+html.theme-light .role-badge.role-KhachHang, body.theme-light .role-badge.role-KhachHang,
+html.theme-light .st-active, body.theme-light .st-active,
+html.theme-light .status-active, body.theme-light .status-active,
+html.theme-light .badge-active, body.theme-light .badge-active,
+html.theme-light .badge-success, body.theme-light .badge-success,
+html.theme-light .badge-soft-success, body.theme-light .badge-soft-success,
+html.theme-light .badge-type-international, body.theme-light .badge-type-international,
+html.theme-light .status-badge.ready, body.theme-light .status-badge.ready,
+html.theme-light .toast-success, body.theme-light .toast-success,
+html.theme-light .supplier-badge-soft.success, body.theme-light .supplier-badge-soft.success {
+  background: #dcfce7 !important;
+  color: #15803d !important;
+  border: 1px solid #86efac !important;
+  font-weight: 700 !important;
+  font-size: 12px !important;
+}
+
+/* Blue: Hướng dẫn viên / Trong nước / Thông tin */
+html.theme-light .role-HDV, body.theme-light .role-HDV,
+html.theme-light .role-badge.role-HDV, body.theme-light .role-badge.role-HDV,
+html.theme-light .badge-type-domestic, body.theme-light .badge-type-domestic,
+html.theme-light .badge-info, body.theme-light .badge-info,
+html.theme-light .badge-soft-info, body.theme-light .badge-soft-info,
+html.theme-light .status-info, body.theme-light .status-info,
+html.theme-light .supplier-badge-soft.info, body.theme-light .supplier-badge-soft.info,
+html.theme-light .supplier-badge-soft.primary, body.theme-light .supplier-badge-soft.primary {
+  background: #dbeafe !important;
+  color: #1d4ed8 !important;
+  border: 1px solid #93c5fd !important;
+  font-weight: 700 !important;
+  font-size: 12px !important;
+}
+
+/* Purple: Quản trị viên / Cấp cao / Tour đặc biệt */
+html.theme-light .role-Admin, body.theme-light .role-Admin,
+html.theme-light .role-badge.role-Admin, body.theme-light .role-badge.role-Admin,
+html.theme-light .super-admin-tag, body.theme-light .super-admin-tag,
+html.theme-light .badge-type-custom, body.theme-light .badge-type-custom {
+  background: #f3e8ff !important;
+  color: #7e22ce !important;
+  border: 1px solid #d8b4fe !important;
+  font-weight: 700 !important;
+  font-size: 12px !important;
+}
+
+/* Amber: Nhà cung cấp / Cảnh báo / Tạm dừng / Nhắc việc */
+html.theme-light .role-NhaCungCap, body.theme-light .role-NhaCungCap,
+html.theme-light .role-badge.role-NhaCungCap, body.theme-light .role-badge.role-NhaCungCap,
+html.theme-light .badge-warning, body.theme-light .badge-warning,
+html.theme-light .badge-soft-warning, body.theme-light .badge-soft-warning,
+html.theme-light .btn-act-schedule, body.theme-light .btn-act-schedule,
+html.theme-light .alert-item.warning, body.theme-light .alert-item.warning,
+html.theme-light .supplier-badge-soft.warning, body.theme-light .supplier-badge-soft.warning {
+  background: #fef3c7 !important;
+  color: #b45309 !important;
+  border: 1px solid #fcd34d !important;
+  font-weight: 700 !important;
+  font-size: 12px !important;
+}
+
+/* Red: Bị khóa / Hủy / Lỗi / Nguy hiểm */
+html.theme-light .st-locked, body.theme-light .st-locked,
+html.theme-light .status-paused, body.theme-light .status-paused,
+html.theme-light .status-locked, body.theme-light .status-locked,
+html.theme-light .badge-danger, body.theme-light .badge-danger,
+html.theme-light .badge-soft-danger, body.theme-light .badge-soft-danger,
+html.theme-light .btn-act-delete, body.theme-light .btn-act-delete,
+html.theme-light .status-badge.busy, body.theme-light .status-badge.busy,
+html.theme-light .toast-error, body.theme-light .toast-error,
+html.theme-light .alert-item.danger, body.theme-light .alert-item.danger,
+html.theme-light .supplier-badge-soft.danger, body.theme-light .supplier-badge-soft.danger {
+  background: #fee2e2 !important;
+  color: #b91c1c !important;
+  border: 1px solid #fca5a5 !important;
+  font-weight: 700 !important;
+  font-size: 12px !important;
+}
+
+/* Neutral / Trung tính */
+html.theme-light .badge-soft-neutral, body.theme-light .badge-soft-neutral,
+html.theme-light .current-user-tag, body.theme-light .current-user-tag,
+html.theme-light .supplier-badge-soft.secondary, body.theme-light .supplier-badge-soft.secondary {
+  background: #f1f5f9 !important;
+  color: #1e293b !important;
+  border: 1px solid #cbd5e1 !important;
+  font-weight: 700 !important;
+  font-size: 12px !important;
+}
+
+/* ==========================================================================
+   7. STATS METRICS & KPI CARDS
+   ========================================================================== */
+html.theme-light .stat-label, body.theme-light .stat-label,
+html.theme-light .kpi-label, body.theme-light .kpi-label,
+html.theme-light .m-lbl, body.theme-light .m-lbl,
+html.theme-light .strip-label, body.theme-light .strip-label {
+  color: #475569 !important;
+  font-weight: 700 !important;
+  font-size: 12px !important;
+  letter-spacing: 0.03em !important;
+  text-transform: uppercase !important;
+}
+
+html.theme-light .stat-num, body.theme-light .stat-num,
+html.theme-light .kpi-value, body.theme-light .kpi-value,
+html.theme-light .kpi-val, body.theme-light .kpi-val,
+html.theme-light .m-val, body.theme-light .m-val,
+html.theme-light .strip-val, body.theme-light .strip-val {
+  color: #0f172a !important;
+  font-weight: 800 !important;
+}
+
+html.theme-light .strip-val.highlight, body.theme-light .strip-val.highlight,
+html.theme-light .pm-amount, body.theme-light .pm-amount {
+  color: #b45309 !important;
+  font-weight: 800 !important;
+}
+
+html.theme-light .kpi-subtext, body.theme-light .kpi-subtext,
+html.theme-light .stat-subtext, body.theme-light .stat-subtext,
+html.theme-light .feed-desc, body.theme-light .feed-desc {
+  color: #475569 !important;
+  font-weight: 500 !important;
+}
+
+html.theme-light .price-number, body.theme-light .price-number,
+html.theme-light .money-val, body.theme-light .money-val {
+  color: #059669 !important;
+  font-weight: 800 !important;
+}
+
+/* ==========================================================================
+   8. FORM CONTROLS, INPUTS, SELECTS & SEARCH BOXES
+   ========================================================================== */
+html.theme-light .filter-label, body.theme-light .filter-label,
+html.theme-light .filter-field-label, body.theme-light .filter-field-label,
+html.theme-light .form-label, body.theme-light .form-label,
+html.theme-light label, body.theme-light label {
+  color: #1e293b !important;
+  font-weight: 700 !important;
+}
+
+html.theme-light .form-control, body.theme-light .form-control,
+html.theme-light .form-select, body.theme-light .form-select,
+html.theme-light .form-input-custom, body.theme-light .form-input-custom,
+html.theme-light .form-select-custom, body.theme-light .form-select-custom,
+html.theme-light .search-input-field, body.theme-light .search-input-field,
+html.theme-light .custom-select-field, body.theme-light .custom-select-field,
+html.theme-light .search-box, body.theme-light .search-box,
+html.theme-light .search-input, body.theme-light .search-input,
+html.theme-light .panel-search, body.theme-light .panel-search,
+html.theme-light .filter-input, body.theme-light .filter-input,
+html.theme-light .filter-select, body.theme-light .filter-select,
+html.theme-light .per-page-select, body.theme-light .per-page-select,
+html.theme-light input[type="text"], body.theme-light input[type="text"],
+html.theme-light input[type="number"], body.theme-light input[type="number"],
+html.theme-light input[type="date"], body.theme-light input[type="date"],
+html.theme-light input[type="email"], body.theme-light input[type="email"],
+html.theme-light select, body.theme-light select,
+html.theme-light textarea, body.theme-light textarea {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+  font-weight: 600 !important;
+  border-radius: 8px !important;
+}
+
+html.theme-light .form-control:focus, body.theme-light .form-control:focus,
+html.theme-light .form-select:focus, body.theme-light .form-select:focus,
+html.theme-light .form-input-custom:focus, body.theme-light .form-input-custom:focus,
+html.theme-light .form-select-custom:focus, body.theme-light .form-select-custom:focus,
+html.theme-light .search-input-field:focus, body.theme-light .search-input-field:focus,
+html.theme-light .custom-select-field:focus, body.theme-light .custom-select-field:focus,
+html.theme-light .panel-search:focus, body.theme-light .panel-search:focus,
+html.theme-light .filter-input:focus, body.theme-light .filter-input:focus,
+html.theme-light .filter-select:focus, body.theme-light .filter-select:focus {
+  background: #ffffff !important;
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+  color: #0f172a !important;
+  outline: none !important;
+}
+
+html.theme-light .form-control::placeholder, body.theme-light .form-control::placeholder,
+html.theme-light .form-input-custom::placeholder, body.theme-light .form-input-custom::placeholder,
+html.theme-light .search-input-field::placeholder, body.theme-light .search-input-field::placeholder,
+html.theme-light .search-input::placeholder, body.theme-light .search-input::placeholder,
+html.theme-light .panel-search::placeholder, body.theme-light .panel-search::placeholder,
+html.theme-light .filter-input::placeholder, body.theme-light .filter-input::placeholder {
+  color: #64748b !important;
+  font-weight: 500 !important;
+}
+
+html.theme-light .icon-left, body.theme-light .icon-left,
+html.theme-light .search-lead-icon, body.theme-light .search-lead-icon,
+html.theme-light .search-input-wrap i, body.theme-light .search-input-wrap i {
+  color: #475569 !important;
+}
+
+html.theme-light .btn-reset, body.theme-light .btn-reset,
+html.theme-light .btn-filter-reset, body.theme-light .btn-filter-reset,
+html.theme-light .btn-reset-filter, body.theme-light .btn-reset-filter,
+html.theme-light .btn-refresh, body.theme-light .btn-refresh {
+  background: #f1f5f9 !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #334155 !important;
+  font-weight: 600 !important;
+}
+
+html.theme-light .btn-reset:hover, body.theme-light .btn-reset:hover,
+html.theme-light .btn-filter-reset:hover, body.theme-light .btn-filter-reset:hover,
+html.theme-light .btn-reset-filter:hover, body.theme-light .btn-reset-filter:hover,
+html.theme-light .btn-refresh:hover, body.theme-light .btn-refresh:hover {
+  background: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+/* ==========================================================================
+   9. ACTION BUTTONS & PAGINATION
+   ========================================================================== */
+html.theme-light .btn-edit, body.theme-light .btn-edit,
+html.theme-light .btn-action-sm.btn-edit, body.theme-light .btn-action-sm.btn-edit,
+html.theme-light .btn-act-edit, body.theme-light .btn-act-edit {
+  background: #eff6ff !important;
+  border: 1px solid #93c5fd !important;
+  color: #1d4ed8 !important;
+  font-weight: 700 !important;
+}
+
+html.theme-light .btn-edit:hover, body.theme-light .btn-edit:hover,
+html.theme-light .btn-action-sm.btn-edit:hover, body.theme-light .btn-action-sm.btn-edit:hover,
+html.theme-light .btn-act-edit:hover, body.theme-light .btn-act-edit:hover {
+  background: #2563eb !important;
+  color: #ffffff !important;
+  border-color: #2563eb !important;
+}
+
+html.theme-light .btn-pwd, body.theme-light .btn-pwd,
+html.theme-light .btn-action-sm.btn-pwd, body.theme-light .btn-action-sm.btn-pwd {
+  background: #fffbeb !important;
+  border: 1px solid #fcd34d !important;
+  color: #b45309 !important;
+  font-weight: 700 !important;
+}
+
+html.theme-light .btn-pwd:hover, body.theme-light .btn-pwd:hover,
+html.theme-light .btn-action-sm.btn-pwd:hover, body.theme-light .btn-action-sm.btn-pwd:hover {
+  background: #f59e0b !important;
+  color: #ffffff !important;
+  border-color: #f59e0b !important;
+}
+
+html.theme-light .btn-action-outline, body.theme-light .btn-action-outline {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #1e293b !important;
+  font-weight: 700 !important;
+}
+
+html.theme-light .btn-action-outline:hover, body.theme-light .btn-action-outline:hover {
+  background: #f1f5f9 !important;
+  border-color: #94a3b8 !important;
+  color: #0f172a !important;
+}
+
+html.theme-light .btn-view-toggle, body.theme-light .btn-view-toggle {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #334155 !important;
+}
+
+html.theme-light .btn-view-toggle.active, body.theme-light .btn-view-toggle.active {
+  background: #2563eb !important;
+  border-color: #2563eb !important;
+  color: #ffffff !important;
+}
+
+/* Pagination Across All Views */
+html.theme-light .table-pagination-bar, body.theme-light .table-pagination-bar,
+html.theme-light .pagination-footer-bar, body.theme-light .pagination-footer-bar,
+html.theme-light .schedule-pagination-bar, body.theme-light .schedule-pagination-bar,
+html.theme-light .pagination-bar, body.theme-light .pagination-bar {
+  background: #f8fafc !important;
+  border-top: 1px solid #e2e8f0 !important;
+  color: #1e293b !important;
+}
+
+html.theme-light .pagination-info, body.theme-light .pagination-info,
+html.theme-light .pagination-summary, body.theme-light .pagination-summary {
+  color: #334155 !important;
+  font-weight: 600 !important;
+}
+
+html.theme-light .pagination-info strong, body.theme-light .pagination-info strong,
+html.theme-light .pagination-summary strong, body.theme-light .pagination-summary strong {
+  color: #0f172a !important;
+  font-weight: 800 !important;
+}
+
+html.theme-light .page-btn, body.theme-light .page-btn,
+html.theme-light .page-num-btn, body.theme-light .page-num-btn,
+html.theme-light .page-nav-btn, body.theme-light .page-nav-btn,
+html.theme-light .vue-pagination li button, body.theme-light .vue-pagination li button {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #1e293b !important;
+  font-weight: 700 !important;
+}
+
+html.theme-light .page-btn:hover:not(:disabled), body.theme-light .page-btn:hover:not(:disabled),
+html.theme-light .page-num-btn:hover, body.theme-light .page-num-btn:hover,
+html.theme-light .page-nav-btn:hover, body.theme-light .page-nav-btn:hover,
+html.theme-light .vue-pagination li button:hover:not(:disabled), body.theme-light .vue-pagination li button:hover:not(:disabled) {
+  background: #f1f5f9 !important;
+  border-color: #94a3b8 !important;
+  color: #0f172a !important;
+}
+
+html.theme-light .page-btn.active, body.theme-light .page-btn.active,
+html.theme-light .modern-pagination-list li.active .page-num-btn, body.theme-light .modern-pagination-list li.active .page-num-btn,
+html.theme-light .vue-pagination li.active button, body.theme-light .vue-pagination li.active button {
+  background: #2563eb !important;
+  border-color: #2563eb !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+}
+
+/* ==========================================================================
+   10. MODALS IN LIGHT MODE
+   ========================================================================== */
+html.theme-light .modal-content, body.theme-light .modal-content,
+html.theme-light .modern-modal-dialog, body.theme-light .modern-modal-dialog,
+html.theme-light .modal-card, body.theme-light .modal-card,
+html.theme-light .modal-box, body.theme-light .modal-box,
+html.theme-light .qr-modal-dialog, body.theme-light .qr-modal-dialog {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.16) !important;
+  color: #0f172a !important;
+}
+
+html.theme-light .modal-header, body.theme-light .modal-header,
+html.theme-light .modal-footer, body.theme-light .modal-footer,
+html.theme-light .qr-modal-header, body.theme-light .qr-modal-header,
+html.theme-light .qr-modal-footer, body.theme-light .qr-modal-footer {
+  background: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+
+html.theme-light .modal-title, body.theme-light .modal-title,
+html.theme-light .qr-modal-title, body.theme-light .qr-modal-title {
+  color: #0f172a !important;
+  font-weight: 800 !important;
+}
+
+html.theme-light .modal-input, body.theme-light .modal-input,
+html.theme-light .modal-select, body.theme-light .modal-select {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+  font-weight: 600 !important;
+}
+
+html.theme-light .form-help, body.theme-light .form-help {
+  color: #475569 !important;
+  font-weight: 500 !important;
+}
+
+html.theme-light .reset-target-box, body.theme-light .reset-target-box {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+html.theme-light .r-user, body.theme-light .r-user {
+  color: #475569 !important;
+  font-weight: 600 !important;
+}
+
+html.theme-light .pwd-copy-bar, body.theme-light .pwd-copy-bar {
+  background: #eff6ff !important;
+  border: 1px dashed #93c5fd !important;
+  color: #1e293b !important;
+  font-weight: 600 !important;
+}
+
+html.theme-light .btn-cancel, body.theme-light .btn-cancel,
+html.theme-light .btn-close-qr-footer, body.theme-light .btn-close-qr-footer {
+  background: #f1f5f9 !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #1e293b !important;
+  font-weight: 700 !important;
+}
+
+html.theme-light .btn-cancel:hover, body.theme-light .btn-cancel:hover,
+html.theme-light .btn-close-qr-footer:hover, body.theme-light .btn-close-qr-footer:hover {
+  background: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+/* =============================================================
+   ADMIN TOUR LIST VUE COMPONENT LIGHT MODE STYLES
+   ============================================================= */
+html.theme-light .vue-admin-tour-list, body.theme-light .vue-admin-tour-list {
+  color: #0f172a !important;
+}
+
+html.theme-light .tour-hero-banner, body.theme-light .tour-hero-banner {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%) !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05) !important;
+}
+
+html.theme-light .tour-hero-banner .hero-title, body.theme-light .tour-hero-banner .hero-title {
+  color: #0f172a !important;
+}
+
+html.theme-light .tour-hero-banner .hero-subtitle, body.theme-light .tour-hero-banner .hero-subtitle {
+  color: #475569 !important;
+}
+
+html.theme-light .tour-hero-banner .hero-live-pill, body.theme-light .tour-hero-banner .hero-live-pill {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05) !important;
+  color: #334155 !important;
+}
+
+html.theme-light .vue-admin-tour-list .kpi-card, body.theme-light .vue-admin-tour-list .kpi-card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05) !important;
+}
+
+html.theme-light .vue-admin-tour-list .kpi-card:hover, body.theme-light .vue-admin-tour-list .kpi-card:hover {
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.09) !important;
+}
+
+html.theme-light .vue-admin-tour-list .kpi-label, body.theme-light .vue-admin-tour-list .kpi-label {
+  color: #64748b !important;
+  font-weight: 700 !important;
+}
+
+html.theme-light .vue-admin-tour-list .kpi-value, body.theme-light .vue-admin-tour-list .kpi-value {
+  color: #0f172a !important;
+  font-weight: 800 !important;
+}
+
+html.theme-light .vue-admin-tour-list .kpi-slash, body.theme-light .vue-admin-tour-list .kpi-slash {
+  color: #94a3b8 !important;
+}
+
+html.theme-light .vue-admin-tour-list .kpi-bg-deco, body.theme-light .vue-admin-tour-list .kpi-bg-deco {
+  color: #0f172a !important;
+  opacity: 0.05 !important;
+}
+
+html.theme-light .segmented-tabs, body.theme-light .segmented-tabs {
+  background: #f1f5f9 !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04) !important;
+}
+
+html.theme-light .seg-tab-btn, body.theme-light .seg-tab-btn {
+  color: #475569 !important;
+  font-weight: 600 !important;
+}
+
+html.theme-light .seg-tab-btn:hover, body.theme-light .seg-tab-btn:hover {
+  color: #0f172a !important;
+  background: rgba(255, 255, 255, 0.8) !important;
+}
+
+html.theme-light .seg-tab-btn.active, body.theme-light .seg-tab-btn.active {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08) !important;
+  font-weight: 700 !important;
+}
+
+html.theme-light .tab-badge, body.theme-light .tab-badge {
+  background: #e2e8f0 !important;
+  color: #1e293b !important;
+  font-weight: 700 !important;
+}
+
+html.theme-light .btn-glass-action, body.theme-light .btn-glass-action {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #334155 !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04) !important;
+}
+
+html.theme-light .btn-glass-action:hover, body.theme-light .btn-glass-action:hover {
+  background: #f8fafc !important;
+  border-color: #94a3b8 !important;
+  color: #0f172a !important;
+}
+
+html.theme-light .filter-panel-card, body.theme-light .filter-panel-card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05) !important;
+}
+
+html.theme-light .filter-field-label, body.theme-light .filter-field-label {
+  color: #1e293b !important;
+  font-weight: 700 !important;
+}
+
+html.theme-light .search-input-field, body.theme-light .search-input-field,
+html.theme-light .custom-select-field, body.theme-light .custom-select-field {
+  background: #f8fafc !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+  font-weight: 500 !important;
+}
+
+html.theme-light .search-input-field:focus, body.theme-light .search-input-field:focus,
+html.theme-light .custom-select-field:focus, body.theme-light .custom-select-field:focus {
+  background: #ffffff !important;
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+}
+
+html.theme-light .search-input-field::placeholder, body.theme-light .search-input-field::placeholder {
+  color: #64748b !important;
+}
+
+html.theme-light .kbd-hint, body.theme-light .kbd-hint {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  color: #64748b !important;
+}
+
+html.theme-light .btn-filter-reset, body.theme-light .btn-filter-reset {
+  background: #f1f5f9 !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #334155 !important;
+  font-weight: 600 !important;
+}
+
+html.theme-light .btn-filter-reset:hover, body.theme-light .btn-filter-reset:hover {
+  background: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+html.theme-light .table-container-card, body.theme-light .table-container-card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05) !important;
+}
+
+html.theme-light .table-top-meta, body.theme-light .table-top-meta,
+html.theme-light .pagination-footer-bar, body.theme-light .pagination-footer-bar {
+  background: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+  color: #475569 !important;
+}
+
+html.theme-light .per-page-caption, body.theme-light .per-page-caption,
+html.theme-light .pagination-summary, body.theme-light .pagination-summary {
+  color: #475569 !important;
+}
+
+html.theme-light .per-page-custom-select, body.theme-light .per-page-custom-select {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+  font-weight: 600 !important;
+}
+
+html.theme-light .modern-tour-table th, body.theme-light .modern-tour-table th {
+  background: #f8fafc !important;
+  color: #475569 !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  font-weight: 800 !important;
+}
+
+html.theme-light .modern-tour-table td, body.theme-light .modern-tour-table td {
+  border-bottom: 1px solid #f1f5f9 !important;
+  color: #334155 !important;
+}
+
+html.theme-light .tour-data-row:hover td, body.theme-light .tour-data-row:hover td {
+  background: #f8fafc !important;
+}
+
+html.theme-light .tour-name-link, body.theme-light .tour-name-link {
+  color: #0f172a !important;
+  font-weight: 700 !important;
+}
+
+html.theme-light .tour-name-link:hover, body.theme-light .tour-name-link:hover {
+  color: #2563eb !important;
+}
+
+html.theme-light .chip-departure, body.theme-light .chip-departure,
+html.theme-light .chip-item, body.theme-light .chip-item {
+  color: #475569 !important;
+}
+
+html.theme-light .chip-duration, body.theme-light .chip-duration {
+  background: #f1f5f9 !important;
+  color: #334155 !important;
+  font-weight: 600 !important;
+}
+
+html.theme-light .page-num-btn, body.theme-light .page-num-btn,
+html.theme-light .page-nav-btn, body.theme-light .page-nav-btn {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #334155 !important;
+  font-weight: 600 !important;
+}
+
+html.theme-light .page-num-btn:hover, body.theme-light .page-num-btn:hover,
+html.theme-light .page-nav-btn:hover, body.theme-light .page-nav-btn:hover {
+  background: #eff6ff !important;
+  border-color: #3b82f6 !important;
+  color: #2563eb !important;
+}
+
+html.theme-light .qr-modal-dialog, body.theme-light .qr-modal-dialog {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.18) !important;
+}
+
+html.theme-light .qr-modal-header, body.theme-light .qr-modal-header,
+html.theme-light .qr-modal-footer, body.theme-light .qr-modal-footer {
+  background: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+
+html.theme-light .qr-modal-title, body.theme-light .qr-modal-title,
+html.theme-light .qr-modal-tour-name, body.theme-light .qr-modal-tour-name {
+  color: #0f172a !important;
+}
+
+/* UPGRADED TOUR TABLE LIGHT MODE RULES */
+html.theme-light .tour-thumbnail-frame, body.theme-light .tour-thumbnail-frame {
+  background: #f1f5f9 !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06) !important;
+}
+
+html.theme-light .tour-name-link, body.theme-light .tour-name-link {
+  color: #0f172a !important;
+  font-weight: 700 !important;
+}
+
+html.theme-light .tour-name-link:hover, body.theme-light .tour-name-link:hover {
+  color: #2563eb !important;
+}
+
+html.theme-light .tour-desc-text, body.theme-light .tour-desc-text {
+  color: #64748b !important;
+}
+
+html.theme-light .chip-duration, body.theme-light .chip-duration {
+  background: #fef3c7 !important;
+  color: #b45309 !important;
+  border: 1px solid #fde68a !important;
+}
+
+html.theme-light .chip-schedule-link.schedule-active, body.theme-light .chip-schedule-link.schedule-active {
+  background: #ecfdf5 !important;
+  color: #047857 !important;
+  border: 1px solid #a7f3d0 !important;
+}
+
+html.theme-light .chip-schedule-link.schedule-active:hover, body.theme-light .chip-schedule-link.schedule-active:hover {
+  background: #d1fae5 !important;
+  color: #065f46 !important;
+}
+
+html.theme-light .chip-schedule-link.schedule-empty, body.theme-light .chip-schedule-link.schedule-empty {
+  background: #f1f5f9 !important;
+  color: #64748b !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+html.theme-light .chip-schedule-link.schedule-empty:hover, body.theme-light .chip-schedule-link.schedule-empty:hover {
+  background: #e2e8f0 !important;
+  color: #334155 !important;
+}
+
+html.theme-light .chip-qr-badge, body.theme-light .chip-qr-badge {
+  background: #e0f2fe !important;
+  color: #0369a1 !important;
+  border: 1px solid #bae6fd !important;
+}
+
+html.theme-light .chip-qr-badge:hover, body.theme-light .chip-qr-badge:hover {
+  background: #bae6fd !important;
+  color: #075985 !important;
+}
+
+html.theme-light .nearest-schedule-sub, body.theme-light .nearest-schedule-sub {
+  color: #0284c7 !important;
+  font-weight: 600 !important;
+}
+
+html.theme-light .price-number, body.theme-light .price-number {
+  color: #059669 !important;
+  font-weight: 800 !important;
+  font-size: 1.15rem !important;
+}
+
+html.theme-light .price-unit, body.theme-light .price-unit {
+  color: #059669 !important;
+  font-weight: 700 !important;
+}
+
+html.theme-light .price-caption, body.theme-light .price-caption {
+  color: #64748b !important;
+}
+
+html.theme-light .saas-icon-buttons, body.theme-light .saas-icon-buttons {
+  background: #f8fafc !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+html.theme-light .btn-saas-icon, body.theme-light .btn-saas-icon {
+  color: #475569 !important;
+}
+
+html.theme-light .btn-saas-icon:hover, body.theme-light .btn-saas-icon:hover {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08) !important;
+}
+
+html.theme-light .btn-saas-delete:hover, body.theme-light .btn-saas-delete:hover {
+  background: #fee2e2 !important;
+  color: #dc2626 !important;
+  border-color: #fca5a5 !important;
+}
+
+html.theme-light .btn-saas-primary, body.theme-light .btn-saas-primary {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
+  color: #ffffff !important;
+  border: 1px solid #1d4ed8 !important;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25) !important;
+}
+
+html.theme-light .btn-saas-primary:hover, body.theme-light .btn-saas-primary:hover {
+  background: linear-gradient(135deg, #1d4ed8, #1e40af) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4) !important;
+}
+
+html.theme-light .tour-code-badge, body.theme-light .tour-code-badge {
+  background: #f1f5f9 !important;
+  color: #334155 !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+/* ==========================================================================
+   ADMIN SALARY MANAGEMENT (QUAN LY LUONG THUONG - MATCHING IMAGE 2)
+   ========================================================================== */
+html.theme-light .vue-admin-salary-manage,
+body.theme-light .vue-admin-salary-manage {
+  color: #0f172a !important;
+}
+
+html.theme-light .vue-admin-salary-manage .page-header,
+body.theme-light .vue-admin-salary-manage .page-header {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.04) !important;
+  color: #0f172a !important;
+}
+
+html.theme-light .vue-admin-salary-manage .header-title,
+body.theme-light .vue-admin-salary-manage .header-title {
+  color: #0f172a !important;
+}
+
+html.theme-light .vue-admin-salary-manage .header-subtitle,
+body.theme-light .vue-admin-salary-manage .header-subtitle {
+  color: #64748b !important;
+}
+
+html.theme-light .vue-admin-salary-manage .badge-tag,
+body.theme-light .vue-admin-salary-manage .badge-tag {
+  background: #eff6ff !important;
+  color: #2563eb !important;
+  border: 1px solid #dbeafe !important;
+}
+
+html.theme-light .vue-admin-salary-manage .header-icon-circle,
+body.theme-light .vue-admin-salary-manage .header-icon-circle {
+  background: #eff6ff !important;
+  color: #2563eb !important;
+  border: 1px solid #dbeafe !important;
+}
+
+html.theme-light .vue-admin-salary-manage .btn-create,
+body.theme-light .vue-admin-salary-manage .btn-create {
+  background: #2563eb !important;
+  color: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25) !important;
+}
+
+html.theme-light .vue-admin-salary-manage .btn-create:hover,
+body.theme-light .vue-admin-salary-manage .btn-create:hover {
+  background: #1d4ed8 !important;
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.35) !important;
+}
+
+/* Stat Cards */
+html.theme-light .vue-admin-salary-manage .stat-card,
+body.theme-light .vue-admin-salary-manage .stat-card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.02) !important;
+}
+
+html.theme-light .vue-admin-salary-manage .stat-label,
+body.theme-light .vue-admin-salary-manage .stat-label {
+  color: #64748b !important;
+}
+
+html.theme-light .vue-admin-salary-manage .stat-val,
+body.theme-light .vue-admin-salary-manage .stat-val {
+  color: #0f172a !important;
+}
+
+/* Filter Card */
+html.theme-light .vue-admin-salary-manage .filter-card,
+body.theme-light .vue-admin-salary-manage .filter-card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.02) !important;
+}
+
+html.theme-light .vue-admin-salary-manage .filter-label,
+body.theme-light .vue-admin-salary-manage .filter-label {
+  color: #475569 !important;
+}
+
+html.theme-light .vue-admin-salary-manage .form-control-search,
+body.theme-light .vue-admin-salary-manage .form-control-search {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+html.theme-light .vue-admin-salary-manage .form-select-custom,
+body.theme-light .vue-admin-salary-manage .form-select-custom {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+html.theme-light .vue-admin-salary-manage .btn-reset,
+body.theme-light .vue-admin-salary-manage .btn-reset {
+  background: #ffffff !important;
+  color: #64748b !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+html.theme-light .vue-admin-salary-manage .btn-reset:hover,
+body.theme-light .vue-admin-salary-manage .btn-reset:hover {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  border-color: #94a3b8 !important;
+}
+
+/* Table Card */
+html.theme-light .vue-admin-salary-manage .table-card,
+body.theme-light .vue-admin-salary-manage .table-card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.02) !important;
+}
+
+html.theme-light .vue-admin-salary-manage .salary-table th,
+body.theme-light .vue-admin-salary-manage .salary-table th {
+  background: #f8fafc !important;
+  color: #475569 !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+html.theme-light .vue-admin-salary-manage .salary-table td,
+body.theme-light .vue-admin-salary-manage .salary-table td {
+  background: #ffffff !important;
+  color: #334155 !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+}
+
+html.theme-light .vue-admin-salary-manage .salary-row:hover td,
+body.theme-light .vue-admin-salary-manage .salary-row:hover td {
+  background: #f8fafc !important;
+}
+
+html.theme-light .vue-admin-salary-manage .staff-name,
+body.theme-light .vue-admin-salary-manage .staff-name {
+  color: #0f172a !important;
+}
+
+html.theme-light .vue-admin-salary-manage .tour-title,
+body.theme-light .vue-admin-salary-manage .tour-title {
+  color: #1e293b !important;
+}
+
+html.theme-light .vue-admin-salary-manage .total-salary-val,
+body.theme-light .vue-admin-salary-manage .total-salary-val {
+  color: #10b981 !important;
+}
+
+html.theme-light .vue-admin-salary-manage .table-footer-bar,
+body.theme-light .vue-admin-salary-manage .table-footer-bar {
+  background: #ffffff !important;
+  border-top: 1px solid #f1f5f9 !important;
+  color: #64748b !important;
+}
+
+/* ==========================================================================
+   ADMIN SCHEDULE MANAGEMENT (QUAN LY LICH KHOI HANH - MATCHING IMAGE 2)
+   ========================================================================== */
+html.theme-light .vue-admin-schedule-manage,
+body.theme-light .vue-admin-schedule-manage {
+  color: #0f172a !important;
+}
+
+html.theme-light .vue-admin-schedule-manage .page-header-hero,
+body.theme-light .vue-admin-schedule-manage .page-header-hero {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.04) !important;
+  color: #0f172a !important;
+}
+
+html.theme-light .vue-admin-schedule-manage .hero-title,
+body.theme-light .vue-admin-schedule-manage .hero-title {
+  color: #0f172a !important;
+}
+
+html.theme-light .vue-admin-schedule-manage .hero-subtitle,
+body.theme-light .vue-admin-schedule-manage .hero-subtitle {
+  color: #64748b !important;
+}
+
+html.theme-light .vue-admin-schedule-manage .current-time-display,
+body.theme-light .vue-admin-schedule-manage .current-time-display {
+  background: #f8fafc !important;
+  color: #334155 !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+html.theme-light .vue-admin-schedule-manage .btn-hero-create,
+body.theme-light .vue-admin-schedule-manage .btn-hero-create {
+  background: #2563eb !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25) !important;
+}
+
+/* 5 Stat Cards */
+html.theme-light .vue-admin-schedule-manage .stat-card,
+body.theme-light .vue-admin-schedule-manage .stat-card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.02) !important;
+}
+
+html.theme-light .vue-admin-schedule-manage .stat-label,
+body.theme-light .vue-admin-schedule-manage .stat-label {
+  color: #64748b !important;
+}
+
+html.theme-light .vue-admin-schedule-manage .stat-num,
+body.theme-light .vue-admin-schedule-manage .stat-num {
+  color: #0f172a !important;
+}
+
+/* Filter Card */
+html.theme-light .vue-admin-schedule-manage .filter-section,
+body.theme-light .vue-admin-schedule-manage .filter-section {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.02) !important;
+}
+
+html.theme-light .vue-admin-schedule-manage .filter-header,
+body.theme-light .vue-admin-schedule-manage .filter-header {
+  color: #0f172a !important;
+}
+
+html.theme-light .vue-admin-schedule-manage .form-input-custom,
+body.theme-light .vue-admin-schedule-manage .form-input-custom,
+html.theme-light .vue-admin-schedule-manage .form-select-custom,
+body.theme-light .vue-admin-schedule-manage .form-select-custom {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+html.theme-light .vue-admin-schedule-manage .btn-refresh,
+body.theme-light .vue-admin-schedule-manage .btn-refresh {
+  background: #ffffff !important;
+  color: #475569 !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+/* Table Section */
+html.theme-light .vue-admin-schedule-manage .schedule-section,
+body.theme-light .vue-admin-schedule-manage .schedule-section {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.02) !important;
+}
+
+html.theme-light .vue-admin-schedule-manage .section-meta-bar,
+body.theme-light .vue-admin-schedule-manage .section-meta-bar {
+  background: #ffffff !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+html.theme-light .vue-admin-schedule-manage .table-section-title,
+body.theme-light .vue-admin-schedule-manage .table-section-title {
+  color: #0f172a !important;
+}
+
+html.theme-light .vue-admin-schedule-manage .table-glass th,
+body.theme-light .vue-admin-schedule-manage .table-glass th {
+  background: #f8fafc !important;
+  color: #475569 !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+html.theme-light .vue-admin-schedule-manage .table-glass td,
+body.theme-light .vue-admin-schedule-manage .table-glass td {
+  background: #ffffff !important;
+  color: #334155 !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+}
+
+html.theme-light .vue-admin-schedule-manage .table-row-hover:hover td,
+body.theme-light .vue-admin-schedule-manage .table-row-hover:hover td {
+  background: #f8fafc !important;
+}
+
+html.theme-light .vue-admin-schedule-manage .tour-name,
+body.theme-light .vue-admin-schedule-manage .tour-name {
+  color: #0f172a !important;
+}
+
+html.theme-light .vue-admin-schedule-manage .table-footer-bar,
+body.theme-light .vue-admin-schedule-manage .table-footer-bar {
+  background: #ffffff !important;
+  border-top: 1px solid #f1f5f9 !important;
+  color: #64748b !important;
+}
+
+/* ==========================================================================
+   VUE ADMIN: CHI TIẾT LƯƠNG NHÂN SỰ (EXACT MATCH TO IMAGE 2)
+   ========================================================================== */
+html.theme-light .vue-admin-salary-detail,
+body.theme-light .vue-admin-salary-detail,
+.vue-admin-salary-detail {
+  background-color: transparent !important;
+  color: #0f172a !important;
+}
+
+html.theme-light .vue-admin-salary-detail .top-nav-bar,
+body.theme-light .vue-admin-salary-detail .top-nav-bar {
+  background: transparent !important;
+}
+
+html.theme-light .vue-admin-salary-detail .btn-back-square,
+body.theme-light .vue-admin-salary-detail .btn-back-square {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #0f172a !important;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04) !important;
+}
+
+html.theme-light .vue-admin-salary-detail .btn-back-square:hover,
+body.theme-light .vue-admin-salary-detail .btn-back-square:hover {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  color: #2563eb !important;
+}
+
+html.theme-light .vue-admin-salary-detail .page-nav-title,
+body.theme-light .vue-admin-salary-detail .page-nav-title {
+  color: #0f172a !important;
+  font-weight: 800 !important;
+}
+
+html.theme-light .vue-admin-salary-detail .select-period-month,
+body.theme-light .vue-admin-salary-detail .select-period-month,
+html.theme-light .vue-admin-salary-detail .select-period-year,
+body.theme-light .vue-admin-salary-detail .select-period-year,
+html.theme-light .vue-admin-salary-detail .btn-toggle-all,
+body.theme-light .vue-admin-salary-detail .btn-toggle-all {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+html.theme-light .vue-admin-salary-detail .btn-toggle-all,
+body.theme-light .vue-admin-salary-detail .btn-toggle-all {
+  color: #475569 !important;
+}
+
+html.theme-light .vue-admin-salary-detail .btn-toggle-all:hover,
+body.theme-light .vue-admin-salary-detail .btn-toggle-all:hover {
+  background: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+html.theme-light .vue-admin-salary-detail .btn-toggle-all.active,
+body.theme-light .vue-admin-salary-detail .btn-toggle-all.active {
+  background: #2563eb !important;
+  color: #ffffff !important;
+  border-color: #2563eb !important;
+}
+
+html.theme-light .vue-admin-salary-detail .staff-profile-card,
+body.theme-light .vue-admin-salary-detail .staff-profile-card,
+html.theme-light .vue-admin-salary-detail .kpi-card,
+body.theme-light .vue-admin-salary-detail .kpi-card,
+html.theme-light .vue-admin-salary-detail .actions-strip,
+body.theme-light .vue-admin-salary-detail .actions-strip,
+html.theme-light .vue-admin-salary-detail .table-card,
+body.theme-light .vue-admin-salary-detail .table-card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.02) !important;
+}
+
+html.theme-light .vue-admin-salary-detail .staff-title,
+body.theme-light .vue-admin-salary-detail .staff-title,
+html.theme-light .vue-admin-salary-detail .kpi-val,
+body.theme-light .vue-admin-salary-detail .kpi-val,
+html.theme-light .vue-admin-salary-detail .card-title,
+body.theme-light .vue-admin-salary-detail .card-title,
+html.theme-light .vue-admin-salary-detail .tour-title,
+body.theme-light .vue-admin-salary-detail .tour-title,
+html.theme-light .vue-admin-salary-detail .empty-title,
+body.theme-light .vue-admin-salary-detail .empty-title {
+  color: #0f172a !important;
+}
+
+html.theme-light .vue-admin-salary-detail .kpi-label,
+body.theme-light .vue-admin-salary-detail .kpi-label,
+html.theme-light .vue-admin-salary-detail .staff-contact-row,
+body.theme-light .vue-admin-salary-detail .staff-contact-row,
+html.theme-light .vue-admin-salary-detail .staff-id-row,
+body.theme-light .vue-admin-salary-detail .staff-id-row,
+html.theme-light .vue-admin-salary-detail .card-subtitle,
+body.theme-light .vue-admin-salary-detail .card-subtitle,
+html.theme-light .vue-admin-salary-detail .empty-subtitle,
+body.theme-light .vue-admin-salary-detail .empty-subtitle,
+html.theme-light .vue-admin-salary-detail .kpi-sub,
+body.theme-light .vue-admin-salary-detail .kpi-sub {
+  color: #64748b !important;
+}
+
+html.theme-light .vue-admin-salary-detail .base-label,
+body.theme-light .vue-admin-salary-detail .base-label {
+  color: #0f172a !important;
+}
+
+html.theme-light .vue-admin-salary-detail .input-salary-field,
+body.theme-light .vue-admin-salary-detail .input-salary-field {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+html.theme-light .vue-admin-salary-detail .btn-recalc,
+body.theme-light .vue-admin-salary-detail .btn-recalc {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #334155 !important;
+}
+
+html.theme-light .vue-admin-salary-detail .btn-recalc:hover,
+body.theme-light .vue-admin-salary-detail .btn-recalc:hover {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+html.theme-light .vue-admin-salary-detail .detail-table th,
+body.theme-light .vue-admin-salary-detail .detail-table th {
+  background: #f8fafc !important;
+  color: #475569 !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+html.theme-light .vue-admin-salary-detail .detail-table td,
+body.theme-light .vue-admin-salary-detail .detail-table td {
+  background: #ffffff !important;
+  color: #334155 !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+}
+
+html.theme-light .vue-admin-salary-detail .detail-row:hover td,
+body.theme-light .vue-admin-salary-detail .detail-row:hover td {
+  background: #f8fafc !important;
+}
+
+html.theme-light .vue-admin-salary-detail .modal-card,
+body.theme-light .vue-admin-salary-detail .modal-card {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+html.theme-light .vue-admin-salary-detail .modal-title,
+body.theme-light .vue-admin-salary-detail .modal-title {
+  color: #0f172a !important;
+}
+
+html.theme-light .vue-admin-salary-detail .form-label,
+body.theme-light .vue-admin-salary-detail .form-label {
+  color: #334155 !important;
+}
+
+html.theme-light .vue-admin-salary-detail .form-control-custom,
+body.theme-light .vue-admin-salary-detail .form-control-custom {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+/* ==========================================================================
+   VUE ADMIN: QUẢN LÝ NHÂN SỰ (EXACT MATCH TO IMAGE 2)
+   ========================================================================== */
+html.theme-light .vue-admin-personnel-manage,
+body.theme-light .vue-admin-personnel-manage,
+.vue-admin-personnel-manage {
+  background-color: transparent !important;
+  color: #0f172a !important;
+}
+
+html.theme-light .vue-admin-personnel-manage .hero-banner,
+body.theme-light .vue-admin-personnel-manage .hero-banner {
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.04) !important;
+}
+
+html.theme-light .vue-admin-personnel-manage .hero-title,
+body.theme-light .vue-admin-personnel-manage .hero-title,
+html.theme-light .vue-admin-personnel-manage .stat-value,
+body.theme-light .vue-admin-personnel-manage .stat-value,
+html.theme-light .vue-admin-personnel-manage .card-heading,
+body.theme-light .vue-admin-personnel-manage .card-heading,
+html.theme-light .vue-admin-personnel-manage .user-fullname,
+body.theme-light .vue-admin-personnel-manage .user-fullname,
+html.theme-light .vue-admin-personnel-manage .guide-heading,
+body.theme-light .vue-admin-personnel-manage .guide-heading,
+html.theme-light .vue-admin-personnel-manage .modal-title,
+body.theme-light .vue-admin-personnel-manage .modal-title {
+  color: #0f172a !important;
+}
+
+html.theme-light .vue-admin-personnel-manage .hero-subtitle,
+body.theme-light .vue-admin-personnel-manage .hero-subtitle,
+html.theme-light .vue-admin-personnel-manage .stat-label,
+body.theme-light .vue-admin-personnel-manage .stat-label,
+html.theme-light .vue-admin-personnel-manage .stat-meta,
+body.theme-light .vue-admin-personnel-manage .stat-meta,
+html.theme-light .vue-admin-personnel-manage .field-title,
+body.theme-light .vue-admin-personnel-manage .field-title,
+html.theme-light .vue-admin-personnel-manage .pagination-info,
+body.theme-light .vue-admin-personnel-manage .pagination-info,
+html.theme-light .vue-admin-personnel-manage .guide-sub,
+body.theme-light .vue-admin-personnel-manage .guide-sub {
+  color: #64748b !important;
+}
+
+html.theme-light .vue-admin-personnel-manage .stat-card,
+body.theme-light .vue-admin-personnel-manage .stat-card,
+html.theme-light .vue-admin-personnel-manage .filter-strip-card,
+body.theme-light .vue-admin-personnel-manage .filter-strip-card,
+html.theme-light .vue-admin-personnel-manage .table-card,
+body.theme-light .vue-admin-personnel-manage .table-card,
+html.theme-light .vue-admin-personnel-manage .info-guide-card,
+body.theme-light .vue-admin-personnel-manage .info-guide-card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.02) !important;
+}
+
+html.theme-light .vue-admin-personnel-manage .filter-search-input,
+body.theme-light .vue-admin-personnel-manage .filter-search-input,
+html.theme-light .vue-admin-personnel-manage .filter-select,
+body.theme-light .vue-admin-personnel-manage .filter-select,
+html.theme-light .vue-admin-personnel-manage .btn-filter-reset,
+body.theme-light .vue-admin-personnel-manage .btn-filter-reset,
+html.theme-light .vue-admin-personnel-manage .btn-page,
+body.theme-light .vue-admin-personnel-manage .btn-page,
+html.theme-light .vue-admin-personnel-manage .btn-icon-square,
+body.theme-light .vue-admin-personnel-manage .btn-icon-square {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+html.theme-light .vue-admin-personnel-manage .personnel-data-table th,
+body.theme-light .vue-admin-personnel-manage .personnel-data-table th {
+  background: #f8fafc !important;
+  color: #475569 !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+html.theme-light .vue-admin-personnel-manage .personnel-data-table td,
+body.theme-light .vue-admin-personnel-manage .personnel-data-table td {
+  background: #ffffff !important;
+  color: #334155 !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+}
+
+html.theme-light .vue-admin-personnel-manage .table-data-row:hover td,
+body.theme-light .vue-admin-personnel-manage .table-data-row:hover td {
+  background: #f8fafc !important;
+}
+
+html.theme-light .vue-admin-personnel-manage .btn-page.active,
+body.theme-light .vue-admin-personnel-manage .btn-page.active {
+  background: #2563eb !important;
+  color: #ffffff !important;
+  border-color: #2563eb !important;
+}
+
+html.theme-light .vue-admin-personnel-manage .modal-card,
+body.theme-light .vue-admin-personnel-manage .modal-card {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+
+
+
+
+
+

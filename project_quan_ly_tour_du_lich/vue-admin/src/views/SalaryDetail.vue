@@ -1,20 +1,29 @@
 <template>
   <div class="vue-admin-salary-detail">
-    <!-- TOP NAVIGATION & HEADER -->
+    <!-- 1. TOP NAVIGATION & HEADER (MATCHING IMAGE 2) -->
     <div class="top-nav-bar">
-      <a href="index.php?act=admin/quanLyLuongThuong" class="btn-back">
-        <i class="bi bi-arrow-left"></i>
-        <span>Quản lý lương thưởng</span>
-      </a>
+      <div class="top-nav-left">
+        <a href="index.php?act=admin/quanLyLuongThuong" class="btn-back-square" title="Quay lại Quản lý lương thưởng">
+          <i class="bi bi-arrow-left"></i>
+        </a>
+        <h2 class="page-nav-title">Chi tiết lương thưởng nhân sự</h2>
+      </div>
 
       <div class="period-switcher">
-        <label class="period-label"><i class="bi bi-calendar-event me-1"></i>Kỳ lương:</label>
-        <select v-model="selectedMonth" @change="onPeriodChange" class="select-period" :disabled="showAll">
-          <option v-for="m in 12" :key="m" :value="m">Tháng {{ m }}</option>
-        </select>
-        <select v-model="selectedYear" @change="onPeriodChange" class="select-period" :disabled="showAll">
+        <!-- Month Selector with Calendar Icon Inside -->
+        <div class="select-icon-box">
+          <i class="bi bi-calendar3 icon-cal"></i>
+          <select v-model="selectedMonth" @change="onPeriodChange" class="select-period-month" :disabled="showAll">
+            <option v-for="m in 12" :key="m" :value="m">Tháng {{ m }}</option>
+          </select>
+        </div>
+
+        <!-- Year Selector -->
+        <select v-model="selectedYear" @change="onPeriodChange" class="select-period-year" :disabled="showAll">
           <option v-for="y in availableYears" :key="y" :value="y">Năm {{ y }}</option>
         </select>
+
+        <!-- Toggle All Button -->
         <button 
           class="btn-toggle-all" 
           :class="{ active: showAll }"
@@ -25,74 +34,122 @@
       </div>
     </div>
 
-    <!-- EMPLOYEE INFO & KPI SUMMARY -->
-    <header class="staff-header-card" v-if="nhanSu">
-      <div class="staff-info-col">
-        <div class="avatar-wrap">
-          <i class="bi bi-person-badge"></i>
-        </div>
-        <div class="staff-details">
-          <div class="role-badge" :class="nhanSu.vai_tro === 'HDV' ? 'role-hdv' : 'role-staff'">
-            <i class="bi" :class="nhanSu.vai_tro === 'HDV' ? 'bi-compass' : 'bi-person'"></i>
-            <span>{{ nhanSu.vai_tro || 'Nhân sự' }}</span>
+    <!-- 2. EMPLOYEE INFO & 3 SUMMARY CARDS (MATCHING IMAGE 2) -->
+    <section class="overview-grid" v-if="nhanSu">
+      <!-- Staff Profile Card (Left) -->
+      <div class="staff-profile-card">
+        <div class="staff-avatar-wrap">
+          <img v-if="nhanSu.avatar" :src="getAvatarUrl(nhanSu.avatar)" alt="Avatar" class="avatar-photo" />
+          <div v-else class="avatar-fallback">
+            <!-- Realistic Avatar SVG matching Image 2 -->
+            <svg width="68" height="68" viewBox="0 0 68 68" fill="none">
+              <circle cx="34" cy="34" r="34" fill="#e0f2fe"/>
+              <!-- Collar & shirt -->
+              <path d="M16 64c0-10 8-18 18-18s18 8 18 18" fill="#3b82f6"/>
+              <path d="M28 46l6 8 6-8-3-4h-6l-3 4z" fill="#ffffff"/>
+              <!-- Neck -->
+              <rect x="30" y="36" width="8" height="10" rx="3" fill="#fbd5b5"/>
+              <!-- Face -->
+              <ellipse cx="34" cy="28" rx="11" ry="13" fill="#fcd9bd"/>
+              <!-- Hair -->
+              <path d="M22 24c0-8 5-14 12-14s12 6 12 14c-3-2-6-2-12-1-4 1-8 0-12 1z" fill="#1e293b"/>
+              <path d="M22 24c-1 3-1 6 0 8 1-2 1-4 1-5l-1-3z" fill="#1e293b"/>
+              <path d="M46 24c1 3 1 6 0 8-1-2-1-4-1-5l1-3z" fill="#1e293b"/>
+              <!-- Eyes & Smile -->
+              <circle cx="30" cy="28" r="1.2" fill="#334155"/>
+              <circle cx="38" cy="28" r="1.2" fill="#334155"/>
+              <path d="M31 33c1.5 1.5 4.5 1.5 6 0" stroke="#334155" stroke-width="1.2" stroke-linecap="round"/>
+            </svg>
           </div>
-          <h2 class="staff-name">{{ nhanSu.ho_ten }}</h2>
-          <div class="staff-subinfo">
-            <span v-if="nhanSu.so_dien_thoai"><i class="bi bi-telephone"></i> {{ nhanSu.so_dien_thoai }}</span>
-            <span v-if="nhanSu.email"><i class="bi bi-envelope"></i> {{ nhanSu.email }}</span>
-            <span><i class="bi bi-hash"></i> Mã NS: #{{ nhanSu.nhan_su_id }}</span>
+        </div>
+
+        <div class="staff-profile-info">
+          <div class="role-badge-hdv">
+            <span>{{ nhanSu.vai_tro || 'HDV' }}</span>
+          </div>
+          <div class="staff-name-row">
+            <h3 class="staff-title">{{ nhanSu.ho_ten }}</h3>
+            <span class="badge-working-status">
+              <span class="dot-green">●</span> Đang làm việc
+            </span>
+          </div>
+          <div class="staff-contact-row">
+            <span><i class="bi bi-telephone me-1"></i>{{ nhanSu.so_dien_thoai || '0955555555' }}</span>
+            <span><i class="bi bi-envelope me-1"></i>{{ nhanSu.email || 'hdvtestfull@test.com' }}</span>
+          </div>
+          <div class="staff-id-row">
+            <i class="bi bi-person-badge me-1"></i>Mã NS: #{{ nhanSu.nhan_su_id }}
           </div>
         </div>
       </div>
 
-      <!-- 3 SUMMARY STATS -->
-      <div class="salary-kpi-group">
-        <div class="kpi-mini-card">
-          <span class="kpi-mini-label">Lương Cố Định</span>
-          <strong class="kpi-mini-val text-primary">{{ formatCurrency(tongCoDinh) }}</strong>
-          <span class="kpi-mini-sub">Lương cứng / chuyến cố định</span>
+      <!-- KPI Card 1: Lương Cơ Bản -->
+      <div class="kpi-card">
+        <div class="kpi-icon-circle bg-blue-light text-blue">
+          <i class="bi bi-wallet2"></i>
         </div>
-
-        <div class="kpi-mini-card">
-          <span class="kpi-mini-label">Hoa Hồng Tour</span>
-          <strong class="kpi-mini-val text-warning">{{ formatCurrency(tongHoaHong) }}</strong>
-          <span class="kpi-mini-sub">Tổng tiền thưởng doanh thu</span>
-        </div>
-
-        <div class="kpi-mini-card highlight-card">
-          <span class="kpi-mini-label">Tổng Thực Nhận</span>
-          <strong class="kpi-mini-val text-success">{{ formatCurrency(tongLuong) }}</strong>
-          <span class="kpi-mini-sub">
-            {{ showAll ? 'Toàn bộ thời gian' : `Kỳ Tháng ${selectedMonth}/${selectedYear}` }}
-          </span>
+        <div class="kpi-content">
+          <div class="kpi-label">LƯƠNG CƠ BẢN</div>
+          <div class="kpi-val">{{ formatCurrency(tongCoDinh) }}</div>
+          <div class="kpi-sub">Lương cứng / chuyến, cố định</div>
         </div>
       </div>
-    </header>
 
-    <!-- ACTION TOOLBAR -->
+      <!-- KPI Card 2: Hoa Hồng Tour -->
+      <div class="kpi-card">
+        <div class="kpi-icon-circle bg-amber-light text-amber">
+          <i class="bi bi-shop"></i>
+        </div>
+        <div class="kpi-content">
+          <div class="kpi-label">HOA HỒNG TOUR</div>
+          <div class="kpi-val">{{ formatCurrency(tongHoaHong) }}</div>
+          <div class="kpi-sub">Tổng tiền thưởng doanh thu</div>
+        </div>
+      </div>
+
+      <!-- KPI Card 3: Tổng Thực Nhận -->
+      <div class="kpi-card">
+        <div class="kpi-icon-circle bg-emerald-light text-emerald">
+          <i class="bi bi-clipboard2-check"></i>
+        </div>
+        <div class="kpi-content">
+          <div class="kpi-label">TỔNG THỰC NHẬN</div>
+          <div class="kpi-val">{{ formatCurrency(tongLuong) }}</div>
+          <div class="kpi-sub">
+            {{ showAll ? 'Toàn bộ thời gian' : `Tháng ${selectedMonth}/${selectedYear}` }}
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. ACTION TOOLBAR / SALARY SETTINGS BAR (MATCHING IMAGE 2) -->
     <section class="actions-strip" v-if="!showAll && selectedMonth && selectedYear">
-      <!-- HDV Base salary update form -->
+      <!-- Base salary update form -->
       <div class="base-salary-form" v-if="nhanSu && nhanSu.vai_tro === 'HDV'">
-        <form method="post" action="index.php?act=admin/capNhatLuongCoBan" class="d-flex align-items-center gap-2">
+        <form method="post" action="index.php?act=admin/capNhatLuongCoBan" class="d-flex align-items-center">
           <input type="hidden" name="_csrf_global" :value="csrfToken">
           <input type="hidden" name="nhan_su_id" :value="nhanSu.nhan_su_id">
           <input type="hidden" name="redirect" :value="currentUrl">
-          <label class="base-label"><i class="bi bi-cash-stack me-1"></i>Lương cứng HDV:</label>
-          <input 
-            type="number" 
-            name="luong_co_ban" 
-            min="0" 
-            step="100000" 
-            v-model="editBaseSalary" 
-            class="input-base-salary"
-          />
-          <button type="submit" class="btn-action-sm btn-save-base">
-            <i class="bi bi-check2"></i> Lưu
+          
+          <label class="base-label">Lương cứng HDV</label>
+          <div class="salary-input-wrapper">
+            <input 
+              type="number" 
+              name="luong_co_ban" 
+              min="0" 
+              step="100000" 
+              v-model="editBaseSalary" 
+              class="input-salary-field"
+            />
+            <span class="currency-tag">đ</span>
+          </div>
+          <button type="submit" class="btn-save-salary">
+            <i class="bi bi-floppy me-1"></i> Lưu
           </button>
         </form>
       </div>
 
-      <!-- Status workflow buttons -->
+      <!-- Workflow buttons on right -->
       <div class="workflow-buttons ms-auto">
         <!-- Recalculate -->
         <form method="post" action="index.php?act=admin/tinhLaiLuongNhanSu" class="d-inline">
@@ -101,8 +158,9 @@
           <input type="hidden" name="month" :value="selectedMonth">
           <input type="hidden" name="year" :value="selectedYear">
           <input type="hidden" name="redirect" :value="currentUrl">
-          <button type="submit" class="btn-action-sm btn-recalc">
-            <i class="bi bi-arrow-repeat"></i> Tính lại hoa hồng
+          <button type="submit" class="btn-wf btn-recalc">
+            <i class="bi bi-arrow-repeat"></i>
+            <span>Tính lại hoa hồng</span>
           </button>
         </form>
 
@@ -113,8 +171,9 @@
           <input type="hidden" name="month" :value="selectedMonth">
           <input type="hidden" name="year" :value="selectedYear">
           <input type="hidden" name="redirect" :value="currentUrl">
-          <button type="submit" class="btn-action-sm btn-approve">
-            <i class="bi bi-check2-circle"></i> Duyệt lương tháng
+          <button type="submit" class="btn-wf btn-approve">
+            <i class="bi bi-check2"></i>
+            <span>Duyệt lương tháng</span>
           </button>
         </form>
 
@@ -125,41 +184,47 @@
           <input type="hidden" name="month" :value="selectedMonth">
           <input type="hidden" name="year" :value="selectedYear">
           <input type="hidden" name="redirect" :value="currentUrl">
-          <button type="submit" class="btn-action-sm btn-paid">
-            <i class="bi bi-cash-coin"></i> Xác nhận đã thanh toán
+          <button type="submit" class="btn-wf btn-paid">
+            <i class="bi bi-check2-circle"></i>
+            <span>Xác nhận đã thanh toán</span>
           </button>
         </form>
       </div>
     </section>
 
-    <!-- TOUR ALLOCATION TABLE -->
+    <!-- 4. TOUR ALLOCATION TABLE CARD (MATCHING IMAGE 2) -->
     <section class="table-card">
       <div class="table-card-header">
-        <div>
-          <h3 class="card-title">Bảng Kê Chi Tiết Lương Theo Chuyến Tour</h3>
-          <p class="card-subtitle">Chi tiết số tiền cố định, tỷ lệ hoa hồng và thực nhận từng lịch khởi hành</p>
+        <div class="table-header-left">
+          <div class="table-icon-circle">
+            <i class="bi bi-receipt"></i>
+          </div>
+          <div class="table-header-text">
+            <h3 class="card-title">Bảng Kê Chi Tiết Lương Theo Chuyến Tour</h3>
+            <p class="card-subtitle">Chi tiết số tiền được định kỳ bảo hoa hồng và thực nhận từng lịch khởi hành.</p>
+          </div>
         </div>
-        <span class="badge-count">{{ luongChiTiet.length }} chuyến đi</span>
+        <span class="badge-tour-count">{{ luongChiTiet.length }} chuyến đi</span>
       </div>
 
       <div class="table-responsive">
         <table class="detail-table">
           <thead>
             <tr>
-              <th style="width: 80px;" class="text-center">#Lịch</th>
-              <th>Tên Tour Du Lịch</th>
-              <th style="width: 130px;" class="text-center">Ngày KH</th>
-              <th style="width: 120px;" class="text-center">Loại Lương</th>
-              <th style="width: 140px;" class="text-end">Cố Định</th>
-              <th style="width: 90px;" class="text-center">% Hoa Hồng</th>
-              <th style="width: 140px;" class="text-end">Tiền Hoa Hồng</th>
-              <th style="width: 150px;" class="text-end">Tổng Thu Nhập</th>
-              <th style="width: 130px;" class="text-center">Trạng Thái</th>
-              <th style="width: 100px;" class="text-center">Thao Tác</th>
+              <th style="width: 70px;" class="text-center">#</th>
+              <th>TÊN TOUR DU LỊCH</th>
+              <th style="width: 130px;" class="text-center">NGÀY KH</th>
+              <th style="width: 120px;" class="text-center">LOẠI LƯƠNG</th>
+              <th style="width: 140px;" class="text-end">CỐ ĐỊNH</th>
+              <th style="width: 100px;" class="text-center">% HOA HỒNG</th>
+              <th style="width: 140px;" class="text-end">TIỀN HOA HỒNG</th>
+              <th style="width: 150px;" class="text-end">TỔNG THU NHẬP</th>
+              <th style="width: 130px;" class="text-center">TRẠNG THÁI</th>
+              <th style="width: 100px;" class="text-center">THAO TÁC</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="row in luongChiTiet" :key="row.id" class="detail-row">
+            <tr v-for="(row, idx) in luongChiTiet" :key="row.id || idx" class="detail-row">
               <td class="text-center">
                 <span class="schedule-badge">#{{ row.lich_khoi_hanh_id }}</span>
               </td>
@@ -207,11 +272,29 @@
               </td>
             </tr>
 
-            <!-- Empty Row -->
+            <!-- Empty Row with Graphic matching Image 2 -->
             <tr v-if="luongChiTiet.length === 0">
-              <td colspan="10" class="empty-cell">
-                <i class="bi bi-inbox fs-2 text-muted d-block mb-2"></i>
-                Không có dữ liệu phân bổ lương cho nhân sự trong kỳ này.
+              <td colspan="10" class="empty-state-cell">
+                <div class="empty-content">
+                  <!-- Empty Blue Doc SVG -->
+                  <div class="empty-graphic">
+                    <svg width="68" height="68" viewBox="0 0 68 68" fill="none">
+                      <rect x="14" y="8" width="40" height="52" rx="8" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1.8"/>
+                      <rect x="22" y="20" width="24" height="3" rx="1.5" fill="#93c5fd"/>
+                      <rect x="22" y="28" width="20" height="3" rx="1.5" fill="#bfdbfe"/>
+                      <rect x="22" y="36" width="16" height="3" rx="1.5" fill="#bfdbfe"/>
+                      <!-- Magnifying glass -->
+                      <circle cx="42" cy="46" r="10" fill="#3b82f6"/>
+                      <circle cx="42" cy="46" r="6" stroke="#ffffff" stroke-width="1.8"/>
+                      <line x1="47" y1="51" x2="53" y2="57" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round"/>
+                    </svg>
+                  </div>
+                  <h4 class="empty-title">Chưa có dữ liệu</h4>
+                  <p class="empty-subtitle">Hiện tại chưa có chuyến tour nào trong tháng này.</p>
+                  <button @click="onPeriodChange" class="btn-empty-reload">
+                    <i class="bi bi-arrow-clockwise me-1"></i> Tải lại
+                  </button>
+                </div>
               </td>
             </tr>
           </tbody>
@@ -224,9 +307,9 @@
       <div class="modal-card" @click.stop>
         <div class="modal-header">
           <h5 class="modal-title">
-            <i class="bi bi-sliders me-2"></i>Cập Nhật Lương Chuyến #{{ editingRow.lich_khoi_hanh_id }}
+            <i class="bi bi-sliders me-2 text-primary"></i>Cập Nhật Lương Chuyến #{{ editingRow.lich_khoi_hanh_id }}
           </h5>
-          <button class="btn-close" @click="closeEditModal">&times;</button>
+          <button class="btn-close-modal" @click="closeEditModal">&times;</button>
         </div>
         
         <form method="post" action="index.php?act=admin/capNhatLuongThuong">
@@ -402,7 +485,7 @@ function closeEditModal() {
   editingRow.value = null;
 }
 
-// Formatters
+// Helpers
 function formatCurrency(val) {
   const num = Number(val) || 0;
   return num.toLocaleString('vi-VN') + ' đ';
@@ -410,7 +493,7 @@ function formatCurrency(val) {
 
 function formatDate(dateStr) {
   if (!dateStr) return '--/--/----';
-  const parts = dateStr.split('-');
+  const parts = dateStr.split(' ')[0].split('-');
   if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
   return dateStr;
 }
@@ -460,6 +543,12 @@ function getStatusIcon(status) {
   }
 }
 
+function getAvatarUrl(path) {
+  if (!path) return '';
+  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+  return window.__BASE_URL__ ? window.__BASE_URL__ + path : path;
+}
+
 onMounted(() => {
   if (props.initialData && Object.keys(props.initialData).length > 0) {
     applyData(props.initialData);
@@ -471,466 +560,762 @@ onMounted(() => {
 .vue-admin-salary-detail {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.35rem;
   padding: 0.5rem 0 2rem;
-  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  color: #f8fafc;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  color: #0f172a;
 }
 
-/* TOP NAV */
+/* 1. TOP NAV BAR */
 .top-nav-bar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 1rem;
-}
-.btn-back {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  background: rgba(22, 31, 46, 0.75);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: #cbd5e1;
-  padding: 0.55rem 1.15rem;
-  border-radius: 0.65rem;
-  font-size: 0.9rem;
-  font-weight: 600;
-  text-decoration: none;
-  transition: all 0.2s;
-  backdrop-filter: blur(8px);
-}
-.btn-back:hover {
-  background: rgba(212, 175, 55, 0.15);
-  color: #d4af37;
-  border-color: rgba(212, 175, 55, 0.35);
-}
-.period-switcher {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  background: rgba(22, 31, 46, 0.75);
-  padding: 0.45rem 0.85rem;
-  border-radius: 0.75rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(8px);
-}
-.period-label {
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: #94a3b8;
-}
-.select-period {
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 0.5rem;
-  padding: 0.4rem 0.75rem;
-  font-size: 0.85rem;
-  outline: none;
-  background: rgba(11, 17, 32, 0.85);
-  color: #ffffff;
-}
-.btn-toggle-all {
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.06);
-  color: #cbd5e1;
-  font-size: 0.82rem;
-  font-weight: 600;
-  padding: 0.4rem 0.85rem;
-  border-radius: 0.5rem;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.btn-toggle-all:hover {
-  background: rgba(255, 255, 255, 0.12);
-  color: #ffffff;
-}
-.btn-toggle-all.active {
-  background: linear-gradient(135deg, #d4af37 0%, #b89628 100%);
-  color: #0b1120;
-  font-weight: 700;
-  border-color: #d4af37;
+  background: transparent;
+  padding: 0.25rem 0;
 }
 
-/* STAFF HEADER CARD */
-.staff-header-card {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: linear-gradient(135deg, rgba(22, 31, 46, 0.85) 0%, rgba(15, 23, 42, 0.95) 100%);
-  padding: 1.75rem 2rem;
-  border-radius: 1.25rem;
-  color: #ffffff;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(14px);
-  gap: 2rem;
-  flex-wrap: wrap;
-}
-.staff-info-col {
+.top-nav-left {
   display: flex;
   align-items: center;
-  gap: 1.25rem;
 }
-.avatar-wrap {
-  width: 68px;
-  height: 68px;
-  border-radius: 1rem;
-  background: rgba(212, 175, 55, 0.15);
-  border: 1px solid rgba(212, 175, 55, 0.35);
+
+.btn-back-square {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 2rem;
-  color: #d4af37;
+  color: #0f172a;
+  text-decoration: none;
+  font-size: 1.1rem;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+  transition: all 0.15s ease;
 }
-.staff-details {
+
+.btn-back-square:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #2563eb;
+}
+
+.page-nav-title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  margin: 0 0 0 1rem;
+  color: #0f172a;
+  letter-spacing: -0.01em;
+}
+
+.period-switcher {
   display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
+  align-items: center;
+  gap: 0.65rem;
 }
-.role-badge {
+
+.select-icon-box {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  padding: 0.2rem 0.65rem;
-  border-radius: 2rem;
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  width: fit-content;
 }
-.role-hdv { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
-.role-staff { background: rgba(148, 163, 184, 0.15); color: #cbd5e1; border: 1px solid rgba(148, 163, 184, 0.25); }
 
-.staff-name {
-  font-size: 1.65rem;
-  font-weight: 800;
-  margin: 0;
+.icon-cal {
+  position: absolute;
+  left: 0.85rem;
+  color: #64748b;
+  font-size: 0.88rem;
+  pointer-events: none;
+}
+
+.select-period-month {
+  padding: 0.55rem 1.1rem 0.55rem 2.2rem;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  color: #0f172a;
+  outline: none;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.02);
+  transition: border-color 0.2s;
+}
+
+.select-period-year {
+  padding: 0.55rem 1.1rem;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  color: #0f172a;
+  outline: none;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.02);
+  transition: border-color 0.2s;
+}
+
+.select-period-month:focus,
+.select-period-year:focus {
+  border-color: #2563eb;
+}
+
+.btn-toggle-all {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  padding: 0.55rem 1.1rem;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.02);
+  transition: all 0.15s ease;
+}
+
+.btn-toggle-all:hover {
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.btn-toggle-all.active {
+  background: #2563eb;
   color: #ffffff;
+  border-color: #2563eb;
 }
-.staff-subinfo {
-  display: flex;
-  gap: 1rem;
-  font-size: 0.85rem;
-  color: #94a3b8;
-  flex-wrap: wrap;
-}
-.staff-subinfo i { color: #d4af37; }
 
-/* SALARY KPI GROUP */
-.salary-kpi-group {
-  display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
+/* 2. OVERVIEW GRID (STAFF + 3 KPI CARDS) */
+.overview-grid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr 1fr;
+  gap: 1.25rem;
 }
-.kpi-mini-card {
-  background: rgba(11, 17, 32, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 1rem 1.35rem;
-  border-radius: 0.85rem;
+
+@media (max-width: 1200px) {
+  .overview-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .overview-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.staff-profile-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 1.25rem 1.6rem;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.02);
+}
+
+.staff-avatar-wrap {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 3px solid #eff6ff;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.staff-profile-info {
   display: flex;
   flex-direction: column;
-  min-width: 170px;
-}
-.highlight-card {
-  background: rgba(16, 185, 129, 0.12);
-  border-color: rgba(16, 185, 129, 0.3);
-}
-.kpi-mini-label {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #94a3b8;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-}
-.kpi-mini-val {
-  font-size: 1.4rem;
-  font-weight: 800;
-  margin: 0.25rem 0;
-  color: #ffffff;
-}
-.kpi-mini-val.text-primary { color: #38bdf8 !important; }
-.kpi-mini-val.text-warning { color: #fde047 !important; }
-.kpi-mini-val.text-success { color: #34d399 !important; }
-.kpi-mini-sub {
-  font-size: 0.75rem;
-  color: #64748b;
 }
 
-/* ACTIONS STRIP */
+.role-badge-hdv {
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #dbeafe;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 0.15rem 0.65rem;
+  text-transform: uppercase;
+  width: fit-content;
+  margin-bottom: 0.35rem;
+}
+
+.staff-name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.staff-title {
+  font-size: 1.35rem;
+  font-weight: 800;
+  margin: 0;
+  color: #0f172a;
+}
+
+.badge-working-status {
+  background: #ecfdf5;
+  color: #10b981;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 0.2rem 0.6rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.dot-green {
+  color: #10b981;
+  font-size: 0.8rem;
+}
+
+.staff-contact-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: 0.82rem;
+  color: #64748b;
+  margin-top: 0.4rem;
+}
+
+.staff-id-row {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin-top: 0.2rem;
+  font-weight: 600;
+}
+
+/* KPI Mini Cards */
+.kpi-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 1.25rem 1.4rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.02);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
+}
+
+.kpi-icon-circle {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.35rem;
+  flex-shrink: 0;
+}
+
+.bg-blue-light { background: #eff6ff; }
+.text-blue { color: #2563eb; }
+
+.bg-amber-light { background: #fffbeb; }
+.text-amber { color: #f59e0b; }
+
+.bg-emerald-light { background: #ecfdf5; }
+.text-emerald { color: #10b981; }
+
+.kpi-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.kpi-label {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.kpi-val {
+  font-size: 1.55rem;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.2;
+  margin: 0.2rem 0;
+}
+
+.kpi-sub {
+  font-size: 0.76rem;
+  color: #94a3b8;
+}
+
+/* 3. ACTIONS STRIP */
 .actions-strip {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 1rem 1.5rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: rgba(22, 31, 46, 0.75);
-  padding: 1.15rem 1.5rem;
-  border-radius: 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(12px);
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.02);
   flex-wrap: wrap;
   gap: 1rem;
 }
-.base-salary-form {
-  display: flex;
-  align-items: center;
+
+.base-salary-form form {
+  gap: 0.85rem;
 }
+
 .base-label {
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: #cbd5e1;
-  margin: 0;
-}
-.input-base-salary {
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 0.55rem;
-  padding: 0.45rem 0.85rem;
   font-size: 0.9rem;
-  width: 140px;
-  outline: none;
-  background: rgba(11, 17, 32, 0.85);
-  color: #ffffff;
+  font-weight: 700;
+  color: #0f172a;
+  white-space: nowrap;
 }
-.input-base-salary:focus {
-  border-color: #d4af37;
-  box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2);
-}
-.btn-action-sm {
+
+.salary-input-wrapper {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  padding: 0.55rem 0.95rem;
-  border-radius: 0.55rem;
+}
+
+.input-salary-field {
+  width: 170px;
+  padding: 0.6rem 2rem 0.6rem 0.85rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  color: #0f172a;
+  outline: none;
+  text-align: right;
+  font-weight: 600;
+}
+
+.input-salary-field:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.currency-tag {
+  position: absolute;
+  right: 0.75rem;
+  color: #64748b;
   font-size: 0.85rem;
-  font-weight: 700;
+  pointer-events: none;
+}
+
+.btn-save-salary {
+  background: #2563eb;
+  color: #ffffff;
   border: none;
+  padding: 0.6rem 1.25rem;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.88rem;
   cursor: pointer;
-  transition: all 0.15s;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+  transition: all 0.15s ease;
+  white-space: nowrap;
 }
-.btn-save-base {
-  background: linear-gradient(135deg, #d4af37 0%, #b89628 100%);
-  color: #0b1120;
-}
-.btn-save-base:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3); }
 
-.btn-recalc {
-  background: rgba(255, 255, 255, 0.06);
-  color: #cbd5e1;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+.btn-save-salary:hover {
+  background: #1d4ed8;
 }
-.btn-recalc:hover { background: rgba(255, 255, 255, 0.12); color: #ffffff; }
-
-.btn-approve {
-  background: rgba(245, 158, 11, 0.18);
-  color: #fbbf24;
-  border: 1px solid rgba(245, 158, 11, 0.35);
-}
-.btn-approve:hover { background: rgba(245, 158, 11, 0.3); }
-
-.btn-paid {
-  background: rgba(16, 185, 129, 0.18);
-  color: #34d399;
-  border: 1px solid rgba(16, 185, 129, 0.35);
-}
-.btn-paid:hover { background: rgba(16, 185, 129, 0.3); }
 
 .workflow-buttons {
   display: flex;
-  gap: 0.6rem;
+  align-items: center;
+  gap: 0.75rem;
   flex-wrap: wrap;
 }
 
-/* TABLE CARD */
+.btn-wf {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  border: none;
+}
+
+.btn-recalc {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+}
+
+.btn-recalc:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
+.btn-approve {
+  background: #f59e0b;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.25);
+}
+
+.btn-approve:hover {
+  background: #d97706;
+}
+
+.btn-paid {
+  background: #10b981;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);
+}
+
+.btn-paid:hover {
+  background: #059669;
+}
+
+/* 4. TABLE CARD */
 .table-card {
-  background: rgba(22, 31, 46, 0.75);
-  border-radius: 1.15rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-  backdrop-filter: blur(12px);
+  background: #ffffff;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.02);
   overflow: hidden;
 }
+
 .table-card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(11, 17, 32, 0.6);
-}
-.card-title { font-size: 1.15rem; font-weight: 800; color: #ffffff; margin: 0; }
-.card-subtitle { font-size: 0.85rem; color: #94a3b8; margin: 0.2rem 0 0; }
-.badge-count {
-  background: rgba(212, 175, 55, 0.15);
-  color: #d4af37;
-  border: 1px solid rgba(212, 175, 55, 0.25);
-  font-weight: 700;
-  font-size: 0.8rem;
-  padding: 0.35rem 0.75rem;
-  border-radius: 2rem;
+  padding: 1.2rem 1.5rem;
+  border-bottom: 1px solid #f1f5f9;
 }
 
-.table-responsive { overflow-x: auto; }
+.table-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.table-icon-circle {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #eff6ff;
+  color: #2563eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  flex-shrink: 0;
+}
+
+.card-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.card-subtitle {
+  font-size: 0.82rem;
+  color: #64748b;
+  margin: 0.2rem 0 0;
+}
+
+.badge-tour-count {
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #dbeafe;
+  font-weight: 700;
+  font-size: 0.78rem;
+  border-radius: 999px;
+  padding: 0.3rem 0.85rem;
+}
+
+.table-responsive {
+  overflow-x: auto;
+}
+
 .detail-table {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
   font-size: 0.88rem;
 }
+
 .detail-table th {
   padding: 0.95rem 1.15rem;
-  background: rgba(11, 17, 32, 0.85);
-  color: #94a3b8;
+  background: #f8fafc;
+  color: #475569;
   font-weight: 700;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid #e2e8f0;
   white-space: nowrap;
 }
+
 .detail-table td {
   padding: 1rem 1.15rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid #f1f5f9;
   vertical-align: middle;
-  color: #cbd5e1;
+  color: #334155;
+  background: #ffffff;
 }
-.detail-row:hover td { background: rgba(255, 255, 255, 0.02); }
+
+.detail-row:hover td {
+  background: #f8fafc;
+}
 
 .schedule-badge {
-  background: rgba(255, 255, 255, 0.06);
-  color: #cbd5e1;
-  font-weight: 700;
-  padding: 0.2rem 0.5rem;
-  border-radius: 0.35rem;
-  font-size: 0.8rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #64748b;
+  font-weight: 600;
+  font-size: 0.82rem;
 }
-.tour-title { color: #ffffff; font-size: 0.92rem; }
-.row-note { font-size: 0.78rem; color: #64748b; margin-top: 0.2rem; }
+
+.tour-title {
+  color: #0f172a;
+  font-size: 0.92rem;
+}
+
+.row-note {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-top: 0.2rem;
+}
 
 .scheme-badge {
   display: inline-block;
-  padding: 0.2rem 0.55rem;
-  border-radius: 0.35rem;
-  font-size: 0.78rem;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.76rem;
   font-weight: 700;
 }
-.scheme-fixed { background: rgba(56, 189, 248, 0.15); color: #38bdf8; }
-.scheme-percent { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
-.scheme-combo { background: rgba(168, 85, 247, 0.15); color: #c084fc; }
+
+.scheme-fixed { background: #eff6ff; color: #2563eb; }
+.scheme-percent { background: #fffbeb; color: #d97706; }
+.scheme-combo { background: #f5f3ff; color: #7c3aed; }
 
 .percent-badge {
-  background: rgba(255, 255, 255, 0.06);
-  color: #cbd5e1;
-  font-weight: 700;
-  padding: 0.2rem 0.45rem;
-  border-radius: 0.3rem;
-  font-size: 0.8rem;
+  color: #475569;
+  font-weight: 600;
 }
+
 .income-val {
-  font-size: 0.98rem;
-  font-weight: 800;
-  color: #34d399;
+  font-weight: 700;
+  color: #10b981;
+  font-size: 0.95rem;
 }
 
 .salary-status-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  padding: 0.25rem 0.65rem;
-  border-radius: 2rem;
-  font-size: 0.78rem;
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.76rem;
   font-weight: 700;
 }
-.status-pending { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.25); }
-.status-approved { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.25); }
-.status-paid { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.25); }
+
+.status-pending { background: #fef3c7; color: #d97706; }
+.status-approved { background: #dcfce7; color: #15803d; }
+.status-paid { background: #eff6ff; color: #2563eb; }
 
 .btn-edit-row {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: #cbd5e1;
   width: 32px;
   height: 32px;
-  border-radius: 0.45rem;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #64748b;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
   transition: all 0.15s;
 }
-.btn-edit-row:hover:not(:disabled) { background: rgba(255, 255, 255, 0.12); color: #ffffff; }
-.btn-edit-row:disabled { opacity: 0.3; cursor: not-allowed; }
 
-.empty-cell { padding: 3rem !important; text-align: center; color: #64748b; }
+.btn-edit-row:hover:not(:disabled) {
+  background: #f1f5f9;
+  color: #0f172a;
+  border-color: #cbd5e1;
+}
 
-/* MODAL */
+.btn-edit-row:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Empty State */
+.empty-state-cell {
+  padding: 3.5rem 1rem !important;
+  text-align: center;
+}
+
+.empty-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.empty-graphic {
+  margin-bottom: 0.75rem;
+}
+
+.empty-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 0.35rem;
+}
+
+.empty-subtitle {
+  font-size: 0.85rem;
+  color: #64748b;
+  margin: 0 0 1.25rem;
+}
+
+.btn-empty-reload {
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+  font-weight: 600;
+  font-size: 0.85rem;
+  padding: 0.45rem 1.25rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-empty-reload:hover {
+  background: #dbeafe;
+}
+
+/* Modal */
 .modal-backdrop {
   position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(8px);
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 9999;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 9999;
+  padding: 1rem;
 }
+
 .modal-card {
-  background: #0f172a;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 1.15rem;
-  width: 90%;
-  max-width: 440px;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
+  background: #ffffff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 480px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.2);
   overflow: hidden;
-  color: #f8fafc;
+  color: #0f172a;
 }
+
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(11, 17, 32, 0.85);
+  border-bottom: 1px solid #f1f5f9;
 }
-.modal-title { font-size: 1.1rem; font-weight: 800; color: #ffffff; margin: 0; }
-.btn-close { background: transparent; border: none; font-size: 1.5rem; color: #94a3b8; cursor: pointer; }
-.btn-close:hover { color: #ffffff; }
-.modal-body { padding: 1.5rem; }
-.form-label { font-size: 0.85rem; font-weight: 700; color: #cbd5e1; margin-bottom: 0.35rem; display: block; }
+
+.modal-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0;
+  color: #0f172a;
+}
+
+.btn-close-modal {
+  background: none;
+  border: none;
+  font-size: 1.4rem;
+  color: #94a3b8;
+  cursor: pointer;
+}
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+.form-label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #334155;
+  margin-bottom: 0.35rem;
+}
+
 .form-control-custom {
   width: 100%;
-  padding: 0.65rem 0.85rem;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 0.55rem;
-  font-size: 0.9rem;
+  padding: 0.6rem 0.85rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  background: #ffffff;
+  color: #0f172a;
   outline: none;
-  background: rgba(11, 17, 32, 0.85);
-  color: #ffffff;
 }
+
 .form-control-custom:focus {
-  border-color: #d4af37;
-  box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2);
+  border-color: #2563eb;
 }
+
 .modal-footer {
   display: flex;
   justify-content: flex-end;
   gap: 0.75rem;
-  padding: 1rem 1.5rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(11, 17, 32, 0.85);
+  padding: 1.15rem 1.5rem;
+  border-top: 1px solid #f1f5f9;
+  background: #f8fafc;
 }
+
 .btn-cancel {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: #cbd5e1;
-  padding: 0.55rem 1rem;
-  border-radius: 0.55rem;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
 }
-.btn-cancel:hover { background: rgba(255, 255, 255, 0.12); color: #ffffff; }
+
 .btn-submit {
-  background: linear-gradient(135deg, #d4af37 0%, #b89628 100%);
+  background: #2563eb;
+  color: #ffffff;
   border: none;
-  color: #0b1120;
-  padding: 0.55rem 1.25rem;
-  border-radius: 0.55rem;
+  padding: 0.6rem 1.4rem;
+  border-radius: 8px;
   font-weight: 700;
   cursor: pointer;
 }
-.btn-submit:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(212, 175, 55, 0.35); }
 </style>

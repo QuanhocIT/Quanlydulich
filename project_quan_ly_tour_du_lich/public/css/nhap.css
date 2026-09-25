@@ -65,6 +65,7 @@ align-items: center;
 z-index: 100;
 border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 font-size: 13px;
+-webkit-backdrop-filter: blur(10px);
 backdrop-filter: blur(10px);
 }
 .header-left,
@@ -274,6 +275,7 @@ border: 1px solid rgba(255, 255, 255, 0.1);
 padding: 20px;
 z-index: 150;
 border-radius: 2px;
+-webkit-backdrop-filter: blur(10px);
 backdrop-filter: blur(10px);
 }
 .float-menu h3 {
@@ -307,6 +309,7 @@ z-index: 3;
 background: rgba(0, 0, 0, 0.6);
 padding: 30px 40px;
 border-radius: 2px;
+-webkit-backdrop-filter: blur(10px);
 backdrop-filter: blur(10px);
 }
 .form-row {
@@ -387,6 +390,7 @@ border: 1px solid rgba(255, 255, 255, 0.1);
 border-radius: 2px;
 padding: 30px;
 margin-bottom: 30px;
+-webkit-backdrop-filter: blur(10px);
 backdrop-filter: blur(10px);
 }
 .card-title {

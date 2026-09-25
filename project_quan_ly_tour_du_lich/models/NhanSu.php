@@ -2,15 +2,16 @@
 
 class NhanSu 
 {
-    public $conn;
-    private static $tableColumnsCache = [];
+    /** @var PDO */
+    public PDO $conn;
+    private static array $tableColumnsCache = [];
     
     public function __construct()
     {
         $this->conn = connectDB();
     }
 
-    private function hasColumn($tableName, $columnName) {
+    private function hasColumn(string $tableName, string $columnName): bool {
         if (!array_key_exists($tableName, self::$tableColumnsCache)) {
             $sql = "SELECT COLUMN_NAME
                     FROM INFORMATION_SCHEMA.COLUMNS
@@ -58,8 +59,8 @@ class NhanSu
     }
 
     // Lấy tất cả nhân sự (join với người dùng)
-    public function getAll($limit = null, $offset = 0) {
-        $sql = "SELECT ns.*, nd.ho_ten, nd.email, nd.so_dien_thoai, nd.ten_dang_nhap, nd.id as nguoi_dung_id_full
+    public function getAll(?int $limit = null, int $offset = 0): array {
+        $sql = "SELECT ns.*, nd.ho_ten, nd.email, nd.so_dien_thoai, nd.ten_dang_nhap, nd.avatar, nd.ngay_tao, nd.trang_thai as trang_thai_tai_khoan, nd.id as nguoi_dung_id_full
                 FROM nhan_su AS ns
                 LEFT JOIN nguoi_dung AS nd ON ns.nguoi_dung_id = nd.id
                                 WHERE " . $this->nhanSuNotDeletedClause('ns') . "
@@ -81,7 +82,7 @@ class NhanSu
         return $stmt->fetchAll();
     }
 
-    public function getOptions($role = null, $limit = null) {
+    public function getOptions(?string $role = null, ?int $limit = null): array {
         $sql = "SELECT ns.nhan_su_id, ns.vai_tro, nd.ho_ten
                 FROM nhan_su AS ns
             LEFT JOIN nguoi_dung AS nd ON ns.nguoi_dung_id = nd.id
@@ -112,8 +113,8 @@ class NhanSu
     }
 
     // Lấy nhân sự theo vai trò
-    public function getByRole($role) {
-        $sql = "SELECT ns.*, nd.ho_ten, nd.email, nd.so_dien_thoai, nd.ten_dang_nhap, nd.id as nguoi_dung_id_full
+    public function getByRole(string $role): array {
+        $sql = "SELECT ns.*, nd.ho_ten, nd.email, nd.so_dien_thoai, nd.ten_dang_nhap, nd.avatar, nd.ngay_tao, nd.trang_thai as trang_thai_tai_khoan, nd.id as nguoi_dung_id_full
                 FROM nhan_su AS ns
                 LEFT JOIN nguoi_dung AS nd ON ns.nguoi_dung_id = nd.id
                                 WHERE ns.vai_tro = ?
@@ -126,7 +127,7 @@ class NhanSu
     }
 
     // Lấy danh sách vai trò có trong hệ thống
-    public function getRoles() {
+    public function getRoles(): array {
         $roles = [];
         try {
             $sql = "SELECT DISTINCT vai_tro AS role FROM nhan_su WHERE vai_tro IS NOT NULL AND vai_tro != '' AND " . $this->nhanSuNotDeletedClause();
@@ -141,8 +142,8 @@ class NhanSu
     }
 
     // Lấy nhân sự theo ID
-    public function findById($id) {
-        $sql = "SELECT ns.*, nd.ho_ten, nd.email, nd.so_dien_thoai, nd.ten_dang_nhap, nd.id as nguoi_dung_id_full
+    public function findById(int|string $id): array|false {
+        $sql = "SELECT ns.*, nd.ho_ten, nd.email, nd.so_dien_thoai, nd.ten_dang_nhap, nd.avatar, nd.id as nguoi_dung_id_full
                 FROM nhan_su AS ns
                 LEFT JOIN nguoi_dung AS nd ON ns.nguoi_dung_id = nd.id
                                 WHERE ns.nhan_su_id = ?
@@ -154,7 +155,7 @@ class NhanSu
     }
 
     // Cập nhật lương cơ bản (cần có cột nhan_su.luong_co_ban)
-    public function updateLuongCoBan($nhan_su_id, $luongCoBan) {
+    public function updateLuongCoBan(int|string $nhan_su_id, float|int|string $luongCoBan): bool {
         try {
             // Check column exists (để tránh lỗi khi DB chưa migrate)
             if (!$this->hasColumn('nhan_su', 'luong_co_ban')) {
@@ -171,7 +172,7 @@ class NhanSu
     }
 
     // Thêm nhân sự (gắn với tài khoản người dùng)
-    public function insert($data) {
+    public function insert(array $data): bool {
         $sql = "INSERT INTO nhan_su (nguoi_dung_id, vai_tro, chung_chi, ngon_ngu, kinh_nghiem, suc_khoe) 
                 VALUES (?, ?, ?, ?, ?, ?)";
         $stmt = $this->conn->prepare($sql);
@@ -193,7 +194,7 @@ class NhanSu
     }
 
     // Cập nhật nhân sự
-    public function update($id, $data) {
+    public function update(int|string $id, array $data): bool {
         $nhanSu = $this->findById($id);
         if (!$nhanSu) return false;
         
@@ -217,7 +218,7 @@ class NhanSu
     }
 
     // Xóa nhân sự (chỉ xóa bản ghi, giữ lại tài khoản người dùng)
-    public function delete($id) {
+    public function delete(int|string $id): bool {
         if ($this->hasColumn('nhan_su', 'is_deleted')) {
             $hasDeletedAt = $this->hasColumn('nhan_su', 'deleted_at');
             $sql = "UPDATE nhan_su
@@ -234,7 +235,7 @@ class NhanSu
     }
 
     // Xóa nhân sự và tài khoản người dùng (cascade delete khach_hang và nha_cung_cap)
-    public function deleteWithUser($nhan_su_id) {
+    public function deleteWithUser(int|string $nhan_su_id): bool {
         $nhanSu = $this->findById($nhan_su_id);
         if (!$nhanSu || !$nhanSu['nguoi_dung_id']) {
             return false;
@@ -278,7 +279,7 @@ class NhanSu
     }
 
     // Trả về danh sách lý do quan trọng không thể xóa (chỉ tour.tao_boi)
-    public function getCriticalDeleteBlockers($nguoi_dung_id) {
+    public function getCriticalDeleteBlockers(int|string $nguoi_dung_id): array {
         $reasons = [];
         // Bị tham chiếu bởi tour (trường tao_boi) - KHÔNG THỂ CASCADE
         try {
@@ -293,7 +294,7 @@ class NhanSu
     }
 
     // Trả về danh sách lý do không thể xóa tài khoản người dùng (tất cả các ràng buộc)
-    public function getDeleteBlockers($nguoi_dung_id) {
+    public function getDeleteBlockers(int|string $nguoi_dung_id): array {
         $reasons = [];
         // Bị tham chiếu bởi khach_hang
         try {
@@ -329,16 +330,16 @@ class NhanSu
     }
 
     // Lấy danh sách người dùng chưa có bản ghi nhân sự
-    public function getAvailableUsers() {
+    public function getAvailableUsers(): array {
         $sql = "SELECT id, ho_ten, email, ten_dang_nhap, vai_tro 
                 FROM nguoi_dung 
                                 WHERE id NOT IN (
-                                        SELECT DISTINCT nguoi_dung_id
-                                        FROM nhan_su
-                                        WHERE nguoi_dung_id IS NOT NULL
-                                            AND " . $this->nhanSuNotDeletedClause() . "
-                                )
-                                    AND " . $this->nguoiDungNotDeletedClause() . "
+                                         SELECT DISTINCT nguoi_dung_id
+                                         FROM nhan_su
+                                         WHERE nguoi_dung_id IS NOT NULL
+                                             AND " . $this->nhanSuNotDeletedClause() . "
+                                 )
+                                     AND " . $this->nguoiDungNotDeletedClause() . "
                 ORDER BY ho_ten ASC";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute();
@@ -346,7 +347,7 @@ class NhanSu
     }
 
     // Map vai_tro nhân sự sang vai_tro người dùng hợp lệ theo ENUM('Admin','HDV','KhachHang','NhaCungCap')
-    private function mapUserRoleFromStaff($staffRole) {
+    private function mapUserRoleFromStaff(string $staffRole): string {
         $staffRole = (string)$staffRole;
         if (in_array($staffRole, ['HDV','DieuHanh','TaiXe','Khac'], true)) {
             return 'HDV';
@@ -355,7 +356,7 @@ class NhanSu
     }
 
     // Cập nhật vai trò người dùng dựa trên vai_tro nhân sự (không ghi đè Admin/NhaCungCap)
-    private function updateUserRoleFromStaff($nguoi_dung_id, $staffRole) {
+    private function updateUserRoleFromStaff(int|string $nguoi_dung_id, string $staffRole): bool {
         // Lấy vai trò hiện tại
         $stmt = $this->conn->prepare("SELECT vai_tro FROM nguoi_dung WHERE id = ?");
         $stmt->execute([$nguoi_dung_id]);
@@ -377,14 +378,14 @@ class NhanSu
     }
 
     // Tìm kiếm nhân sự
-    public function search($q) {
+    public function search(string $q): array {
         $keyword = '%' . $q . '%';
-        $sql = "SELECT ns.*, nd.ho_ten, nd.email, nd.so_dien_thoai, nd.ten_dang_nhap, nd.id as nguoi_dung_id_full
+        $sql = "SELECT ns.*, nd.ho_ten, nd.email, nd.so_dien_thoai, nd.ten_dang_nhap, nd.avatar, nd.ngay_tao, nd.trang_thai as trang_thai_tai_khoan, nd.id as nguoi_dung_id_full
                 FROM nhan_su AS ns
                 LEFT JOIN nguoi_dung AS nd ON ns.nguoi_dung_id = nd.id
                                 WHERE (nd.ho_ten LIKE ? OR nd.email LIKE ? OR nd.so_dien_thoai LIKE ? OR ns.vai_tro LIKE ?)
-                                    AND " . $this->nhanSuNotDeletedClause('ns') . "
-                                    AND (nd.id IS NULL OR " . $this->nguoiDungNotDeletedClause('nd') . ")
+                                     AND " . $this->nhanSuNotDeletedClause('ns') . "
+                                     AND (nd.id IS NULL OR " . $this->nguoiDungNotDeletedClause('nd') . ")
                 ORDER BY nd.ho_ten ASC";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([$keyword, $keyword, $keyword, $keyword]);

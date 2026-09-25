@@ -68,6 +68,12 @@
     </style>
 </head>
 <body class="bg-light hdv-body">
+<?php
+$yeu_cau_list = $yeu_cau_list ?? [];
+$stats = $stats ?? [];
+$tour = $tour ?? null;
+$danhSachKhach = $danhSachKhach ?? [];
+?>
 <?php include __DIR__ . '/partials/hdv_nav.php'; ?>
 
     <div class="page-header">
@@ -206,7 +212,7 @@
         
         <!-- Add Request Button -->
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h5 class="mb-0">Danh sách yêu cầu đặc biệt (<?php echo count($yeu_cau_list); ?> yêu cầu)</h5>
+            <h5 class="mb-0">Danh sách yêu cầu đặc biệt (<?php echo count($yeu_cau_list ?? []); ?> yêu cầu)</h5>
             <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addRequestModal">
                 <i class="bi bi-plus-circle"></i> Thêm yêu cầu
             </button>

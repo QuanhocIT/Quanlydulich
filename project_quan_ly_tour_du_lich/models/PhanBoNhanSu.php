@@ -653,6 +653,7 @@ class PhanBoNhanSu
         $sql = "SELECT
                     pbn.nhan_su_id,
                     nd.ho_ten,
+                    nd.avatar,
                     ns.vai_tro,
                     {$selectLuongCoBan}
                     COUNT(*) AS so_dong,
@@ -660,6 +661,9 @@ class PhanBoNhanSu
                     COALESCE(SUM(pbn.tien_hoa_hong), 0) AS tong_hoa_hong,
                     COALESCE(SUM(pbn.tong_luong), 0) AS tong_luong,
                     MAX(pbn.ngay_cap_nhat_luong) AS ngay_cap_nhat_luong,
+                    SUBSTRING_INDEX(GROUP_CONCAT(COALESCE(t.ten_tour, '') ORDER BY lk.ngay_khoi_hanh DESC SEPARATOR '||'), '||', 1) AS ten_tour_gan_nhat,
+                    MAX(lk.ngay_khoi_hanh) AS ngay_khoi_hanh_gan_nhat,
+                    COUNT(DISTINCT lk.tour_id) AS so_tour_phu_trach,
                     CASE
                         WHEN SUM(CASE WHEN pbn.trang_thai_luong = 'ChoDuyet' THEN 1 ELSE 0 END) > 0 THEN 'ChoDuyet'
                         WHEN SUM(CASE WHEN pbn.trang_thai_luong = 'DaDuyet' THEN 1 ELSE 0 END) > 0 THEN 'DaDuyet'
@@ -693,7 +697,7 @@ class PhanBoNhanSu
             $params[] = $filters['trang_thai_luong'];
         }
 
-        $sql .= " GROUP BY pbn.nhan_su_id, nd.ho_ten, ns.vai_tro
+        $sql .= " GROUP BY pbn.nhan_su_id, nd.ho_ten, nd.avatar, ns.vai_tro, ns.luong_co_ban
                   ORDER BY tong_luong DESC, nd.ho_ten ASC";
 
         $stmt = $this->conn->prepare($sql);

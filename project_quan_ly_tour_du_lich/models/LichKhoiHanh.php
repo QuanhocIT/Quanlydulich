@@ -154,6 +154,7 @@ class LichKhoiHanh
                     " . $this->lichKhoiHanhSelectColumns('lk') . ",
                     t.ten_tour,
                     t.loai_tour,
+                    (SELECT hat.url_anh FROM hinh_anh_tour hat WHERE hat.tour_id = t.tour_id ORDER BY hat.id ASC LIMIT 1) AS hinh_anh,
                     COUNT(DISTINCT pbn.id) AS so_nhan_su,
                     COUNT(DISTINCT pbdv.id) AS so_dich_vu,
                     GROUP_CONCAT(DISTINCT CASE WHEN pbn.vai_tro = 'HDV' THEN pbn.nhan_su_id END ORDER BY pbn.nhan_su_id SEPARATOR ',') AS hdv_ids

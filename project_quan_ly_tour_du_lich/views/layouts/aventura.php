@@ -49,6 +49,7 @@ $userRoleLabel = $currentRole ? htmlspecialchars((string)$currentRole) : 'Quản
         <meta http-equiv="refresh" content="<?php echo (int)$metaRefreshSeconds; ?>">
     <?php endif; ?>
     <title><?php echo isset($pageTitle) ? $pageTitle . ' - ' : ''; ?>AVENTURA - Life's A Journey</title>
+    <link rel="stylesheet" href="<?php echo BASE_URL; ?>public/css/saas-design-system.css?v=<?php echo rawurlencode(ASSET_VERSION) . '_' . (file_exists(__DIR__ . '/../../public/css/saas-design-system.css') ? filemtime(__DIR__ . '/../../public/css/saas-design-system.css') : time()); ?>">
     <link rel="stylesheet" href="<?php echo BASE_URL; ?>public/css/aventura.css?v=<?php echo rawurlencode(ASSET_VERSION) . '_' . (file_exists(__DIR__ . '/../../public/css/aventura.css') ? filemtime(__DIR__ . '/../../public/css/aventura.css') : time()); ?>">
     <?php if (isset($currentPage) && $currentPage === 'baoCaoTaiChinh'): ?>
         <link rel="stylesheet" href="<?php echo BASE_URL; ?>public/css/finance-report-unified.css?v=<?php echo rawurlencode(ASSET_VERSION); ?>">
@@ -60,6 +61,18 @@ $userRoleLabel = $currentRole ? htmlspecialchars((string)$currentRole) : 'Quản
             <link rel="stylesheet" href="<?php echo $css; ?>">
         <?php endforeach; ?>
     <?php endif; ?>
+    <script nonce="<?= defined('CSP_NONCE') ? CSP_NONCE : '' ?>">
+    (function() {
+        try {
+            var mode = localStorage.getItem('aventura_theme_mode') || (localStorage.getItem('aventura_theme_light') === '1' ? 'soft-light' : 'dark');
+            if (mode === 'soft-light') {
+                document.documentElement.classList.add('theme-light');
+            } else if (mode === 'business-dark') {
+                document.documentElement.classList.add('theme-business-dark');
+            }
+        } catch(e) {}
+    })();
+    </script>
     <style>
         .table-auto-pagination {
             display: flex;
@@ -790,37 +803,106 @@ $userRoleLabel = $currentRole ? htmlspecialchars((string)$currentRole) : 'Quản
         }
 
         /* ==========================================================================
-           TĂNG KÍCH THƯỚC NỘI DUNG TẤT CẢ CÁC TRANG TÀI KHOẢN ADMIN
+           MODERN SAAS RESPONSIVE CONTENT AREA FOR ADMIN
            ========================================================================== */
         body.is-admin .content-area,
         body.role-admin .content-area {
-            zoom: 1.07;
-            padding: 26px 36px 60px;
+            padding: 24px 32px 64px;
             max-width: 100%;
             box-sizing: border-box;
         }
 
         body.is-admin .content-area table,
         body.role-admin .content-area table {
-            font-size: 14.5px;
+            font-size: 13.5px;
         }
 
-        @media (max-width: 1366px) {
+        @media (max-width: 1200px) {
             body.is-admin .content-area,
             body.role-admin .content-area {
-                zoom: 1.05;
-                padding: 22px 28px 50px;
+                padding: 20px 20px 48px;
             }
         }
 
-        @media (max-width: 992px) {
+        @media (max-width: 768px) {
             body.is-admin .content-area,
             body.role-admin .content-area {
-                zoom: 1.0;
-                padding: 16px 16px 40px;
+                padding: 16px 12px 36px;
             }
+        }
+
+        /* Modern SaaS Header Context */
+        .header-page-context {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .header-portal-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 3px 9px;
+            border-radius: 6px;
+            background: rgba(37, 99, 235, 0.15);
+            border: 1px solid rgba(37, 99, 235, 0.3);
+            color: #60a5fa;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .header-page-name {
+            font-size: 13.5px;
+            font-weight: 700;
+            color: #f8fafc;
+            letter-spacing: -0.01em;
+            max-width: 320px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .header-quick-action {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 11px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #cbd5e1;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 8px;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+        .header-quick-action:hover {
+            background: rgba(37, 99, 235, 0.2);
+            border-color: rgba(37, 99, 235, 0.4);
+            color: #ffffff;
+            transform: translateY(-1px);
+        }
+        html.theme-light .header-page-name,
+        body.theme-light .header-page-name {
+            color: #0f172a !important;
+        }
+        html.theme-light .header-quick-action,
+        body.theme-light .header-quick-action {
+            background: #f8fafc !important;
+            border-color: #cbd5e1 !important;
+            color: #1e293b !important;
+        }
+        html.theme-light .header-quick-action i,
+        body.theme-light .header-quick-action i {
+            color: #2563eb !important;
+        }
+        html.theme-light .header-quick-action:hover,
+        body.theme-light .header-quick-action:hover {
+            background: #eff6ff !important;
+            border-color: #3b82f6 !important;
+            color: #1d4ed8 !important;
         }
     </style>
+    <link rel="stylesheet" href="<?php echo BASE_URL; ?>public/css/saas-light-mode.css?v=<?php echo rawurlencode(ASSET_VERSION) . '_' . (file_exists(__DIR__ . '/../../public/css/saas-light-mode.css') ? filemtime(__DIR__ . '/../../public/css/saas-light-mode.css') : time()); ?>">
 </head>
 <body class="<?php echo htmlspecialchars(trim(implode(' ', array_filter($bodyClasses))), ENT_QUOTES, 'UTF-8'); ?>">
     <div class="container">
@@ -965,16 +1047,14 @@ $userRoleLabel = $currentRole ? htmlspecialchars((string)$currentRole) : 'Quản
                         <button type="button" class="sidebar-toggle" id="sidebarToggle" title="Thu gọn/mở rộng sidebar" aria-label="Thu gọn/mở rộng sidebar"><i class="bi bi-chevron-left"></i></button>
                         <button type="button" class="sidebar-theme" id="sidebarTheme" title="Chuyển chế độ sáng/tối" aria-label="Chuyển chế độ sáng/tối"><i class="bi bi-moon-stars"></i></button>
                     </div>
-                    <div class="header-item">
-                        <span>☎</span>
-                        <a href="tel:+1-888-665-5553">Call Center: +1-888-665-5553</a>
-                    </div>
-                    <div class="header-item">
-                        <span>✉</span>
-                        <a href="mailto:info@aventura.com">info@aventura.com</a>
+                    <div class="header-page-context">
+                        <span class="header-portal-tag"><i class="bi bi-shield-check"></i> SaaS Admin</span>
+                        <span class="header-page-name"><?php echo htmlspecialchars((string)($pageTitle ?? 'Quản Trị Hệ Thống')); ?></span>
                     </div>
                 </div>
                 <div class="header-right">
+                    <a href="index.php?act=admin/quanLyTour" class="header-quick-action" title="Quản lý danh mục tour"><i class="bi bi-map"></i> <span>Tours</span></a>
+                    <a href="index.php?act=admin/quanLyBooking" class="header-quick-action" title="Quản lý booking"><i class="bi bi-journal-bookmark"></i> <span>Bookings</span></a>
                     <?php if (isset($_SESSION['user_name'])): ?>
                         <?php 
                             $currentAdminName = htmlspecialchars((string)$_SESSION['user_name']);
@@ -1027,10 +1107,6 @@ $userRoleLabel = $currentRole ? htmlspecialchars((string)$currentRole) : 'Quản
                             </div>
                         </div>
                     <?php endif; ?>
-                    <div class="header-item">
-                        <span>📍</span>
-                        <span>8 Boulevard...</span>
-                    </div>
                 </div>
             </header>
 
@@ -1504,11 +1580,14 @@ $userRoleLabel = $currentRole ? htmlspecialchars((string)$currentRole) : 'Quản
         function applyThemeMode(mode) {
             const safeMode = THEME_MODES.includes(mode) ? mode : 'dark';
             document.body.classList.remove('theme-light', 'theme-business-dark');
+            document.documentElement.classList.remove('theme-light', 'theme-business-dark');
             if (safeMode === 'soft-light') {
                 document.body.classList.add('theme-light');
+                document.documentElement.classList.add('theme-light');
             }
             if (safeMode === 'business-dark') {
                 document.body.classList.add('theme-business-dark');
+                document.documentElement.classList.add('theme-business-dark');
             }
             return safeMode;
         }

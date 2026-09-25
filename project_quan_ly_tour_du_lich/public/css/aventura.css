@@ -209,6 +209,7 @@ body.theme-business-dark {
   z-index: 100;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   font-size: 13px;
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
 }
 
@@ -772,6 +773,7 @@ body.theme-business-dark .invoice-block {
   padding: 20px;
   z-index: 150;
   border-radius: 2px;
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
 }
 
@@ -811,6 +813,7 @@ body.theme-business-dark .invoice-block {
   background: rgba(0, 0, 0, 0.6);
   padding: 30px 40px;
   border-radius: 2px;
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
 }
 
@@ -1034,6 +1037,7 @@ body.role-admin .aventura-badge.badge-warning {
   border-radius: 2px;
   padding: 30px;
   margin-bottom: 30px;
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
 }
 
@@ -1380,6 +1384,7 @@ body.role-admin .aventura-badge.badge-warning {
     left: 0;
     z-index: 340;
     background: rgba(4, 8, 15, 0.38);
+    -webkit-backdrop-filter: blur(2px);
     backdrop-filter: blur(2px);
     opacity: 0;
     pointer-events: none;
@@ -1502,3 +1507,121 @@ body.role-admin .aventura-badge.badge-warning {
     animation: none !important;
   }
 }
+
+/* ==========================================================================
+   MODERN SAAS ENHANCEMENTS & OVERRIDES FOR ADMIN VIEWS
+   ========================================================================== */
+body.is-admin,
+body.role-admin {
+  background-color: var(--saas-bg) !important;
+  color: var(--saas-text-primary);
+}
+
+body.is-admin:not(.theme-light) .content-area .card,
+body.is-admin:not(.theme-light) .content-area .info-card,
+body.is-admin:not(.theme-light) .content-area .tour-header-section,
+body.is-admin:not(.theme-light) .content-area .aventura-card,
+body.role-admin:not(.theme-light) .content-area .card,
+body.role-admin:not(.theme-light) .content-area .info-card,
+body.role-admin:not(.theme-light) .content-area .tour-header-section,
+body.role-admin:not(.theme-light) .content-area .aventura-card {
+  background: #0f172a !important;
+  border: 1px solid rgba(255, 255, 255, 0.09) !important;
+  border-radius: var(--saas-radius-lg) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
+  transition: all var(--saas-dur-fast) var(--saas-ease);
+}
+
+body.is-admin:not(.theme-light) .content-area .card:hover,
+body.is-admin:not(.theme-light) .content-area .info-card:hover,
+body.role-admin:not(.theme-light) .content-area .card:hover,
+body.role-admin:not(.theme-light) .content-area .info-card:hover {
+  border-color: rgba(255, 255, 255, 0.18) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35) !important;
+}
+
+body.is-admin:not(.theme-light) .content-area .form-control,
+body.is-admin:not(.theme-light) .content-area .form-select,
+body.role-admin:not(.theme-light) .content-area .form-control,
+body.role-admin:not(.theme-light) .content-area .form-select {
+  background: #141e33 !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: #f8fafc !important;
+  border-radius: var(--saas-radius-md) !important;
+  padding: 8px 14px !important;
+  font-size: 13.5px !important;
+  transition: all var(--saas-dur-fast) var(--saas-ease);
+}
+
+body.is-admin:not(.theme-light) .content-area .form-control:focus,
+body.is-admin:not(.theme-light) .content-area .form-select:focus,
+body.role-admin:not(.theme-light) .content-area .form-control:focus,
+body.role-admin:not(.theme-light) .content-area .form-select:focus {
+  border-color: var(--saas-primary) !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25) !important;
+  outline: none !important;
+}
+
+body.is-admin:not(.theme-light) .content-area .table,
+body.role-admin:not(.theme-light) .content-area .table {
+  color: #f8fafc !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  margin-bottom: 0;
+}
+
+body.is-admin:not(.theme-light) .content-area .table th,
+body.role-admin:not(.theme-light) .content-area .table th {
+  background: #141e33 !important;
+  color: #94a3b8 !important;
+  font-size: 11.5px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
+  padding: 12px 16px !important;
+}
+
+body.is-admin:not(.theme-light) .content-area .table td,
+body.role-admin:not(.theme-light) .content-area .table td {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+  padding: 13px 16px !important;
+  vertical-align: middle !important;
+}
+
+body.is-admin:not(.theme-light) .content-area .table tr:hover td,
+body.role-admin:not(.theme-light) .content-area .table tr:hover td {
+  background: rgba(255, 255, 255, 0.03) !important;
+}
+
+body.is-admin .content-area .btn,
+body.role-admin .content-area .btn {
+  border-radius: var(--saas-radius-md);
+  font-weight: 600;
+  font-size: 13px;
+  padding: 7px 15px;
+  transition: all var(--saas-dur-fast) var(--saas-ease);
+}
+
+body.is-admin .content-area .btn-primary,
+body.role-admin .content-area .btn-primary {
+  background: var(--saas-primary) !important;
+  border-color: var(--saas-primary) !important;
+  color: #ffffff !important;
+}
+body.is-admin .content-area .btn-primary:hover,
+body.role-admin .content-area .btn-primary:hover {
+  background: var(--saas-primary-hover) !important;
+  border-color: var(--saas-primary-hover) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3) !important;
+}
+
+body.is-admin .content-area .badge,
+body.role-admin .content-area .badge {
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 4px 9px;
+  border-radius: var(--saas-radius-full);
+}
+
